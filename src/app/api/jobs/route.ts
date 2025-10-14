@@ -34,10 +34,6 @@ export async function GET(request: Request) {
       query = query.where('employeeId', '==', employeeId);
     }
     
-    if (searchParams.get('search')) {
-        const search = searchParams.get('search') as string;
-        query = query.orderBy('title').startAt(search).endAt(search + '\uf8ff');
-    }
     if (searchParams.get('experience')) {
         query = query.where('experienceLevel', '==', searchParams.get('experience'));
     }
@@ -115,7 +111,7 @@ export async function GET(request: Request) {
     }, {} as { [key: string]: number });
 
 
-    const jobs = jobsSnapshot.docs.map(doc => {
+    let jobs = jobsSnapshot.docs.map(doc => {
       const jobData = doc.data() as Job;
       const location = locationMap.get(parseInt(jobData.locationId));
       const domain = domainMap.get(String(jobData.domainId));
@@ -134,6 +130,13 @@ export async function GET(request: Request) {
           applicantCount: applicationCounts[doc.id] || 0,
       }
     });
+
+    // Handle case-insensitive search after fetching
+    if (searchParams.get('search')) {
+        const searchTerm = searchParams.get('search')!.toLowerCase();
+        jobs = jobs.filter(job => job.title.toLowerCase().includes(searchTerm));
+    }
+
 
     return NextResponse.json(jobs);
   } catch (e: any) {
