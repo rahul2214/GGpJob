@@ -92,9 +92,10 @@ export function JobFilters({ isSheet = false }: JobFiltersProps) {
         
         Object.keys(filters).forEach(key => {
             const filterKey = key as keyof typeof filters;
-            params.delete(filterKey);
+            params.delete(filterKey); // Clear existing params for this key
             const value = filters[filterKey];
-             if (Array.isArray(value)) {
+
+            if (Array.isArray(value)) {
                 if (value.length > 0) {
                     value.forEach(v => params.append(filterKey, v));
                 }
