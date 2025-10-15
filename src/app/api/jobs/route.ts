@@ -37,14 +37,16 @@ export async function GET(request: Request) {
       query = query.where('employeeId', '==', employeeId);
     }
     
-    if (searchParams.get('experience')) {
-        query = query.where('experienceLevel', '==', searchParams.get('experience'));
+    const experienceId = searchParams.get('experience');
+    if (experienceId) {
+        query = query.where('experienceLevelId', '==', experienceId);
         hasComplexFilters = true;
     }
 
     // Date filter
-    if (searchParams.get('posted')) {
-        const days = parseInt(searchParams.get('posted') as string, 10);
+    const postedDays = searchParams.get('posted');
+    if (postedDays && postedDays !== 'all') {
+        const days = parseInt(postedDays as string, 10);
         if (!isNaN(days)) {
             const date = new Date();
             date.setDate(date.getDate() - days);
