@@ -21,6 +21,9 @@ export async function GET(request: Request) {
     const jobsRef = db.collection('jobs');
     let query: adminFirestore.Query = jobsRef;
 
+    // --- Start Filtering Logic ---
+    let hasComplexFilters = false;
+
     // String-based filters
     if (searchParams.get('isReferral') !== null) {
       query = query.where('isReferral', '==', searchParams.get('isReferral') === 'true');
@@ -36,6 +39,7 @@ export async function GET(request: Request) {
     
     if (searchParams.get('experience')) {
         query = query.where('experienceLevel', '==', searchParams.get('experience'));
+        hasComplexFilters = true;
     }
 
     // Date filter
@@ -45,29 +49,31 @@ export async function GET(request: Request) {
             const date = new Date();
             date.setDate(date.getDate() - days);
             query = query.where('postedAt', '>=', date.toISOString());
+            hasComplexFilters = true;
         }
     }
     
+    // Array-based filters
     const locationsParams = searchParams.getAll('location').filter(l => l && l !== 'all');
-    const domainsParams = searchParams.getAll('domain').filter(d => d && d !== 'all');
-    const jobTypesParams = searchParams.getAll('jobType').filter(jt => jt && jt !== 'all');
-    
-    // Firestore limitation: Cannot have inequality filters on more than one field.
-    // 'in' and 'array-contains-any' are considered inequality filters.
     if (locationsParams.length > 0) {
         query = query.where('locationId', 'in', locationsParams);
+        hasComplexFilters = true;
     } 
+    const domainsParams = searchParams.getAll('domain').filter(d => d && d !== 'all');
     if (domainsParams.length > 0) {
         query = query.where('domainId', 'in', domainsParams);
+        hasComplexFilters = true;
     }
+    const jobTypesParams = searchParams.getAll('jobType').filter(jt => jt && jt !== 'all');
     if (jobTypesParams.length > 0) {
          query = query.where('jobTypeId', 'in', jobTypesParams);
+         hasComplexFilters = true;
     }
     
-    const hasArrayFilters = locationsParams.length > 0 || domainsParams.length > 0 || jobTypesParams.length > 0;
-    
-    // Default sort order if not searching by title or complex filters that require client-side sorting
-    if (!searchParams.get('search') && !hasArrayFilters) {
+    // --- End Filtering Logic ---
+
+    // Only apply orderBy at the DB level if there are no complex filters
+    if (!searchParams.get('search') && !hasComplexFilters) {
         query = query.orderBy('postedAt', 'desc');
     }
     
@@ -140,7 +146,7 @@ export async function GET(request: Request) {
     }
     
     // If we have filters that prevented DB sorting, sort client-side
-    if (hasArrayFilters || searchParams.get('search')) {
+    if (hasComplexFilters || searchParams.get('search')) {
         jobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
     }
 
