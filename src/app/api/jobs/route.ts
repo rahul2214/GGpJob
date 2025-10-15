@@ -115,11 +115,11 @@ export async function GET(request: Request) {
 
     let jobs = jobsSnapshot.docs.map(doc => {
       const jobData = doc.data() as Job;
-      const location = locationMap.get(jobData.locationId);
+      const location = locationMap.get(parseInt(jobData.locationId));
       const domain = domainMap.get(String(jobData.domainId));
-      const jobType = jobTypeMap.get(jobData.jobTypeId);
-      const workplaceType = jobData.workplaceTypeId ? workplaceTypeMap.get(jobData.workplaceTypeId) : null;
-      const experienceLevel = jobData.experienceLevelId ? experienceLevelMap.get(jobData.experienceLevelId) : null;
+      const jobType = jobTypeMap.get(parseInt(jobData.jobTypeId));
+      const workplaceType = jobData.workplaceTypeId ? workplaceTypeMap.get(parseInt(jobData.workplaceTypeId)) : null;
+      const experienceLevel = jobData.experienceLevelId ? experienceLevelMap.get(parseInt(jobData.experienceLevelId)) : null;
 
       return {
           id: doc.id,
