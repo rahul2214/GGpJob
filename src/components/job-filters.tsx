@@ -63,14 +63,16 @@ export function JobFilters({ isSheet = false }: JobFiltersProps) {
     }, []);
 
     useEffect(() => {
-        setHasActiveFilters(
-            searchParams.get('posted') !== null && searchParams.get('posted') !== 'all' ||
-            searchParams.getAll('location').length > 0 && !searchParams.getAll('location').includes('all') ||
-            searchParams.get('experience') !== null && searchParams.get('experience') !== 'all' ||
-            searchParams.getAll('domain').length > 0 && !searchParams.getAll('domain').includes('all') ||
-            searchParams.getAll('jobType').length > 0 && !searchParams.getAll('jobType').includes('all')
-        );
-    }, [searchParams]);
+        const checkActiveFilters = () => {
+            for (const key in filters) {
+                const value = filters[key as keyof typeof filters];
+                if (Array.isArray(value) && value.length > 0) return true;
+                if (typeof value === 'string' && value && value !== 'all') return true;
+            }
+            return false;
+        };
+        setHasActiveFilters(checkActiveFilters());
+    }, [filters]);
 
 
     useEffect(() => {
@@ -120,6 +122,7 @@ export function JobFilters({ isSheet = false }: JobFiltersProps) {
     const locationOptions = Array.isArray(locations) ? locations.map(loc => ({ value: String(loc.id), label: loc.name })) : [];
     const domainOptions = Array.isArray(domains) ? domains.map(d => ({ value: String(d.id), label: d.name })) : [];
     const jobTypeOptions = Array.isArray(jobTypes) ? jobTypes.map(jt => ({ value: String(jt.id), label: jt.name })) : [];
+    const experienceLevelOptions = Array.isArray(experienceLevels) ? experienceLevels.map(el => ({ value: String(el.id), label: el.name })) : [];
 
     const postedOptions = [
         { value: "all", label: "All Dates" },
@@ -214,10 +217,10 @@ export function JobFilters({ isSheet = false }: JobFiltersProps) {
                                         <RadioGroupItem value="all" id="exp-all" />
                                         <Label htmlFor="exp-all">All Levels</Label>
                                     </div>
-                                    {Array.isArray(experienceLevels) && experienceLevels.map(level => (
-                                        <div key={level.id} className="flex items-center space-x-2">
-                                            <RadioGroupItem value={level.name} id={`exp-${level.id}`} />
-                                            <Label htmlFor={`exp-${level.id}`}>{level.name}</Label>
+                                    {experienceLevelOptions.map(level => (
+                                        <div key={level.value} className="flex items-center space-x-2">
+                                            <RadioGroupItem value={level.value} id={`exp-${level.value}`} />
+                                            <Label htmlFor={`exp-${level.value}`}>{level.label}</Label>
                                         </div>
                                     ))}
                                 </RadioGroup>
@@ -306,7 +309,7 @@ export function JobFilters({ isSheet = false }: JobFiltersProps) {
                         </SelectTrigger>
                         <SelectContent>
                         <SelectItem value="all">All Levels</SelectItem>
-                        {Array.isArray(experienceLevels) && experienceLevels.map(level => <SelectItem key={level.id} value={level.name}>{level.name}</SelectItem>)}
+                        {experienceLevelOptions.map(level => <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
