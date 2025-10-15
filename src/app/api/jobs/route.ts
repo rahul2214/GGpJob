@@ -54,17 +54,20 @@ export async function GET(request: Request) {
     
     // Firestore limitation: Cannot have inequality filters on more than one field.
     // 'in' and 'array-contains-any' are considered inequality filters.
-    // We prioritize location if multiple are present.
     if (locationsParams.length > 0) {
-        query = query.where('locationId', 'in', locationsParams.map(l => parseInt(l, 10)));
-    } else if (domainsParams.length > 0) {
+        query = query.where('locationId', 'in', locationsParams);
+    } 
+    if (domainsParams.length > 0) {
         query = query.where('domainId', 'in', domainsParams);
-    } else if (jobTypesParams.length > 0) {
-         query = query.where('jobTypeId', 'in', jobTypesParams.map(jt => parseInt(jt, 10)));
+    }
+    if (jobTypesParams.length > 0) {
+         query = query.where('jobTypeId', 'in', jobTypesParams);
     }
     
-    // Default sort order if not searching by title or complex filters
-    if (!searchParams.get('search') && !recruiterId && !employeeId && domainsParams.length === 0) {
+    const hasArrayFilters = locationsParams.length > 0 || domainsParams.length > 0 || jobTypesParams.length > 0;
+    
+    // Default sort order if not searching by title or complex filters that require client-side sorting
+    if (!searchParams.get('search') && !hasArrayFilters) {
         query = query.orderBy('postedAt', 'desc');
     }
     
@@ -91,7 +94,7 @@ export async function GET(request: Request) {
     ]);
 
     const applications = applicationsSnapshot.docs.map(doc => doc.data() as Application);
-    const locations = locationsSnapshot.docs.map(doc => doc.data() as Location);
+    const locations = locationsSnapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }) as Location);
     const domains = domainsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Domain);
     const jobTypes = jobTypesSnapshot.docs.map(doc => doc.data() as JobType);
     const workplaceTypes = workplaceTypesSnapshot.docs.map(doc => doc.data() as WorkplaceType);
@@ -112,11 +115,11 @@ export async function GET(request: Request) {
 
     let jobs = jobsSnapshot.docs.map(doc => {
       const jobData = doc.data() as Job;
-      const location = locationMap.get(parseInt(jobData.locationId));
+      const location = locationMap.get(jobData.locationId);
       const domain = domainMap.get(String(jobData.domainId));
-      const jobType = jobTypeMap.get(parseInt(jobData.jobTypeId));
-      const workplaceType = jobData.workplaceTypeId ? workplaceTypeMap.get(parseInt(jobData.workplaceTypeId)) : null;
-      const experienceLevel = jobData.experienceLevelId ? experienceLevelMap.get(parseInt(jobData.experienceLevelId)) : null;
+      const jobType = jobTypeMap.get(jobData.jobTypeId);
+      const workplaceType = jobData.workplaceTypeId ? workplaceTypeMap.get(jobData.workplaceTypeId) : null;
+      const experienceLevel = jobData.experienceLevelId ? experienceLevelMap.get(jobData.experienceLevelId) : null;
 
       return {
           id: doc.id,
@@ -136,8 +139,8 @@ export async function GET(request: Request) {
         jobs = jobs.filter(job => job.title.toLowerCase().includes(searchTerm));
     }
     
-    // If we filtered by domain, sort client-side to avoid index requirement
-    if (domainsParams.length > 0) {
+    // If we have filters that prevented DB sorting, sort client-side
+    if (hasArrayFilters || searchParams.get('search')) {
         jobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
     }
 
