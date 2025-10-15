@@ -47,25 +47,24 @@ export async function GET(request: Request) {
             query = query.where('postedAt', '>=', date.toISOString());
         }
     }
-
+    
     const locationsParams = searchParams.getAll('location').filter(l => l && l !== 'all');
-    if (locationsParams.length > 0) {
-        query = query.where('locationId', 'in', locationsParams.map(l => parseInt(l)));
-    }
-
     const domainsParams = searchParams.getAll('domain').filter(d => d && d !== 'all');
-    if (domainsParams.length > 0 && locationsParams.length === 0) {
-        query = query.where('domainId', 'in', domainsParams);
-    }
-
     const jobTypesParams = searchParams.getAll('jobType').filter(jt => jt && jt !== 'all');
-    if (jobTypesParams.length > 0 && locationsParams.length === 0 && domainsParams.length === 0) {
-        query = query.where('jobTypeId', 'in', jobTypesParams);
+    
+    // Firestore limitation: Cannot have inequality filters on more than one field.
+    // 'in' and 'array-contains-any' are considered inequality filters.
+    // We prioritize location if multiple are present.
+    if (locationsParams.length > 0) {
+        query = query.where('locationId', 'in', locationsParams.map(l => parseInt(l, 10)));
+    } else if (domainsParams.length > 0) {
+        query = query.where('domainId', 'in', domainsParams);
+    } else if (jobTypesParams.length > 0) {
+         query = query.where('jobTypeId', 'in', jobTypesParams.map(jt => parseInt(jt, 10)));
     }
     
-    // Default sort order if not searching by title
-    // Avoid complex sorting for recruiter/employee specific queries to prevent index errors
-    if (!searchParams.get('search') && !recruiterId && !employeeId) {
+    // Default sort order if not searching by title or complex filters
+    if (!searchParams.get('search') && !recruiterId && !employeeId && domainsParams.length === 0) {
         query = query.orderBy('postedAt', 'desc');
     }
     
@@ -100,9 +99,9 @@ export async function GET(request: Request) {
     
     const locationMap = createMap(locations, 'id');
     const domainMap = createMap(domains);
-    const jobTypeMap = createMap(jobTypes);
-    const workplaceTypeMap = createMap(workplaceTypes);
-    const experienceLevelMap = createMap(experienceLevels);
+    const jobTypeMap = createMap(jobTypes, 'id');
+    const workplaceTypeMap = createMap(workplaceTypes, 'id');
+    const experienceLevelMap = createMap(experienceLevels, 'id');
 
 
     const applicationCounts = applications.reduce((acc, app) => {
@@ -135,6 +134,11 @@ export async function GET(request: Request) {
     if (searchParams.get('search')) {
         const searchTerm = searchParams.get('search')!.toLowerCase();
         jobs = jobs.filter(job => job.title.toLowerCase().includes(searchTerm));
+    }
+    
+    // If we filtered by domain, sort client-side to avoid index requirement
+    if (domainsParams.length > 0) {
+        jobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
     }
 
 
