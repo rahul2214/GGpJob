@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import Link from "next/link";
@@ -23,7 +24,9 @@ import {
   Award,
   Network,
   MapPin,
-  X
+  X,
+  Search,
+  Star
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -142,7 +145,7 @@ export default function Header() {
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col p-0">
                 <SheetHeader className="p-4">
-                    <SheetTitle>
+                    <SheetTitle asChild>
                          <SheetClose asChild>
                             <Link href="/" className="flex items-center gap-2 font-semibold">
                                 <BriefcaseBusiness className="h-6 w-6 text-primary" />
@@ -158,7 +161,8 @@ export default function Header() {
                            <>
                             {adminNavItems.map(item => (
                                <SheetClose asChild key={item.href}>
-                                 <Link href={item.href} className="text-muted-foreground hover:text-foreground">
+                                 <Link href={item.href} className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                    <item.icon className="h-5 w-5" />
                                     {item.label}
                                   </Link>
                                </SheetClose>
@@ -168,7 +172,8 @@ export default function Header() {
                           <>
                             {isClient && !loading && user && (
                               <SheetClose asChild>
-                                  <Link href="/" className="text-muted-foreground hover:text-foreground">
+                                  <Link href="/" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                      <LayoutGrid className="h-5 w-5" />
                                       Dashboard
                                   </Link>
                               </SheetClose>
@@ -176,13 +181,15 @@ export default function Header() {
                              {isClient && !loading && user?.role === 'Job Seeker' && (
                                <>
                                 <SheetClose asChild>
-                                    <Link href="/jobs" className="text-muted-foreground hover:text-foreground">
+                                    <Link href="/jobs" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                        <Search className="h-5 w-5" />
                                         Jobs
                                     </Link>
                                 </SheetClose>
                                 {user.domainId && (
                                     <SheetClose asChild>
-                                       <Link href={`/jobs?domain=${user.domainId}`} className="text-muted-foreground hover:text-foreground">
+                                       <Link href={`/jobs?domain=${user.domainId}`} className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                            <Star className="h-5 w-5" />
                                             Recommended Jobs
                                        </Link>
                                     </SheetClose>
@@ -214,14 +221,6 @@ export default function Header() {
                                  {['Job Seeker', 'Recruiter', 'Employee'].includes(user.role) && (
                                     <SheetClose asChild>
                                         <Link href="/feedback" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
-                                            <MessageSquareQuote className="h-5 w-5" />
-                                            Feedback
-                                        </Link>
-                                    </SheetClose>
-                                )}
-                                 {user.role === 'Super Admin' && (
-                                    <SheetClose asChild>
-                                        <Link href="/" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
                                             <MessageSquareQuote className="h-5 w-5" />
                                             Feedback
                                         </Link>
