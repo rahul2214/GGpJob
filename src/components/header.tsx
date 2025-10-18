@@ -138,7 +138,7 @@ export default function Header() {
               <SheetHeader>
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
               </SheetHeader>
-                <nav className="grid gap-4 text-lg font-medium">
+                <nav className="grid gap-3 text-lg font-medium">
                     <Link href="/" className="flex items-center gap-2 font-semibold">
                         <BriefcaseBusiness className="h-6 w-6 text-primary" />
                         <span className="text-lg">GGP Portal</span>
@@ -184,7 +184,7 @@ export default function Header() {
                 {isClient && !loading && user && (
                     <>
                         <Separator className="my-4" />
-                        <nav className="grid gap-4 text-lg font-medium">
+                        <nav className="grid gap-3 text-lg font-medium">
                            <div className="text-sm font-semibold text-muted-foreground px-1">My Account</div>
                             <SheetClose asChild>
                                 <Link href="/profile" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
