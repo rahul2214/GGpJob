@@ -142,7 +142,7 @@ export default function Header() {
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col p-0">
                 <SheetHeader className="p-4 flex flex-row items-center justify-between">
-                    <SheetTitle>
+                    <SheetTitle className="sr-only">
                         Navigation Menu
                     </SheetTitle>
                     <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
