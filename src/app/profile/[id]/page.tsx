@@ -91,14 +91,14 @@ export default function PublicProfilePage() {
             <div className="max-w-3xl mx-auto space-y-8">
                  <Card>
                     <CardHeader className="flex flex-row items-center gap-6 space-y-0">
-                        <Avatar className="h-24 w-24">
-                            <AvatarFallback className="text-3xl">
+                        <Avatar className="h-20 w-20">
+                            <AvatarFallback className="text-2xl">
                                 {profileUser.firstName.charAt(0)}{profileUser.lastName.charAt(0)}
                             </AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
-                            <CardTitle className="text-3xl">{profileUser.name}</CardTitle>
-                            <CardDescription className="text-lg">{profileUser.headline}</CardDescription>
+                            <CardTitle className="text-2xl">{profileUser.name}</CardTitle>
+                            <CardDescription className="text-md">{profileUser.headline}</CardDescription>
                         </div>
                     </CardHeader>
                     <CardContent>
