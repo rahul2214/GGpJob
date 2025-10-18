@@ -22,7 +22,8 @@ import {
   BarChart3,
   Award,
   Network,
-  MapPin
+  MapPin,
+  X
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -35,7 +36,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { useUser } from "@/contexts/user-context";
-import { Sheet, SheetContent, SheetClose, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "./ui/separator";
 import { JobFilters } from "./job-filters";
 import { useEffect, useState, Suspense } from "react";
@@ -80,8 +81,12 @@ export default function Header() {
     router.push('/login');
   };
   
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const getInitials = (name: string) => {
+    const names = name.split(' ');
+    if (names.length > 1) {
+      return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
+    }
+    return `${name.charAt(0)}`.toUpperCase();
   }
 
   const adminNavItems = [
@@ -136,14 +141,15 @@ export default function Header() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col p-0">
-              <SheetHeader className="p-6 pb-4">
-                 <SheetTitle>
-                    <Link href="/" className="flex items-center gap-2 font-semibold">
-                        <BriefcaseBusiness className="h-6 w-6 text-primary" />
-                        <span className="text-lg">GGP Portal</span>
-                    </Link>
-                 </SheetTitle>
-              </SheetHeader>
+                <SheetHeader className="p-4 flex flex-row items-center justify-between">
+                    <SheetTitle>
+                        Navigation Menu
+                    </SheetTitle>
+                    <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Close</span>
+                    </SheetClose>
+                </SheetHeader>
                <ScrollArea className="flex-1">
                 <div className="p-6 pt-0">
                     <nav className="grid gap-3 text-lg font-medium">
@@ -353,7 +359,7 @@ export default function Header() {
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="rounded-full">
                     <Avatar>
-                        <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
+                        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                     </Avatar>
                     </Button>
                 </DropdownMenuTrigger>
@@ -417,7 +423,5 @@ export default function Header() {
     </header>
   );
 }
-
-    
 
     

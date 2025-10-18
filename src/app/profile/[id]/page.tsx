@@ -47,21 +47,33 @@ export default function PublicProfilePage() {
     useEffect(() => {
         fetchUser();
     }, [fetchUser]);
+
+    const getInitials = (name: string) => {
+        const names = name.split(' ');
+        if (names.length > 1) {
+          return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
+        }
+        return `${name.charAt(0)}`.toUpperCase();
+    }
     
     if (loading || currentUserLoading) {
         return (
             <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-3xl mx-auto space-y-8">
                     <Card>
-                        <CardHeader className="flex flex-col items-center text-center">
-                            <Skeleton className="h-24 w-24 rounded-full mb-4" />
-                            <Skeleton className="h-8 w-48 mb-2" />
-                            <Skeleton className="h-6 w-64" />
+                        <CardHeader className="flex flex-row items-center gap-6 space-y-0">
+                            <Skeleton className="h-20 w-20 rounded-full" />
+                            <div className="space-y-2">
+                                <Skeleton className="h-7 w-48" />
+                                <Skeleton className="h-5 w-64" />
+                            </div>
                         </CardHeader>
-                        <CardContent className="flex justify-center items-center gap-6 text-sm text-muted-foreground">
-                           <Skeleton className="h-5 w-24" />
-                           <Skeleton className="h-5 w-24" />
-                           <Skeleton className="h-5 w-24" />
+                        <CardContent>
+                           <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                                <Skeleton className="h-5 w-24" />
+                                <Skeleton className="h-5 w-24" />
+                                <Skeleton className="h-5 w-24" />
+                           </div>
                         </CardContent>
                     </Card>
                     <Separator />
@@ -93,7 +105,7 @@ export default function PublicProfilePage() {
                     <CardHeader className="flex flex-row items-center gap-6 space-y-0">
                         <Avatar className="h-20 w-20">
                             <AvatarFallback className="text-2xl">
-                                {profileUser.firstName.charAt(0)}{profileUser.lastName.charAt(0)}
+                                {getInitials(profileUser.name)}
                             </AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">

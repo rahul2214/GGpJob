@@ -4,8 +4,6 @@ export type Role = "Job Seeker" | "Recruiter" | "Employee" | "Admin" | "Super Ad
 
 export interface User {
   id: string; // Changed to string for Firestore UID
-  firstName: string;
-  lastName: string;
   name: string;
   email: string;
   phone?: string;
