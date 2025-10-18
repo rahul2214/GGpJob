@@ -136,14 +136,16 @@ export default function Header() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col p-0">
-              <SheetHeader className="p-6 pb-0">
-                 <Link href="/" className="flex items-center gap-2 font-semibold">
-                    <BriefcaseBusiness className="h-6 w-6 text-primary" />
-                    <span className="text-lg">GGP Portal</span>
-                </Link>
+              <SheetHeader className="p-6 pb-4">
+                 <SheetTitle>
+                    <Link href="/" className="flex items-center gap-2 font-semibold">
+                        <BriefcaseBusiness className="h-6 w-6 text-primary" />
+                        <span className="text-lg">GGP Portal</span>
+                    </Link>
+                 </SheetTitle>
               </SheetHeader>
                <ScrollArea className="flex-1">
-                <div className="p-6">
+                <div className="p-6 pt-0">
                     <nav className="grid gap-3 text-lg font-medium">
                         {isClient && !loading && user && (user.role === 'Admin' || user.role === 'Super Admin') ? (
                            <>
