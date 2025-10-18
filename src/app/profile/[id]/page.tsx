@@ -90,30 +90,34 @@ export default function PublicProfilePage() {
         <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto space-y-8">
                  <Card>
-                    <CardHeader className="flex flex-col items-center text-center">
-                        <Avatar className="h-24 w-24 mb-4">
+                    <CardHeader className="flex flex-row items-center gap-6 space-y-0">
+                        <Avatar className="h-24 w-24">
                             <AvatarFallback className="text-3xl">
                                 {profileUser.firstName.charAt(0)}{profileUser.lastName.charAt(0)}
                             </AvatarFallback>
                         </Avatar>
-                        <CardTitle className="text-3xl">{profileUser.name}</CardTitle>
-                        <CardDescription className="text-lg">{profileUser.headline}</CardDescription>
+                        <div className="space-y-1">
+                            <CardTitle className="text-3xl">{profileUser.name}</CardTitle>
+                            <CardDescription className="text-lg">{profileUser.headline}</CardDescription>
+                        </div>
                     </CardHeader>
-                    <CardContent className="flex justify-center items-center gap-6 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                           <AtSign className="h-4 w-4"/> {profileUser.email}
-                        </div>
-                         <div className="flex items-center gap-2">
-                           <Phone className="h-4 w-4"/> {profileUser.phone}
-                        </div>
-                        {profileUser.location && (
-                             <div className="flex items-center gap-2">
-                               <MapPin className="h-4 w-4"/> {profileUser.location}
+                    <CardContent>
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                               <AtSign className="h-4 w-4"/> {profileUser.email}
                             </div>
-                        )}
+                             <div className="flex items-center gap-2">
+                               <Phone className="h-4 w-4"/> {profileUser.phone}
+                            </div>
+                            {profileUser.location && (
+                                 <div className="flex items-center gap-2">
+                                   <MapPin className="h-4 w-4"/> {profileUser.location}
+                                </div>
+                            )}
+                        </div>
                     </CardContent>
                     {isOwnProfile && (
-                        <CardFooter className="justify-center">
+                        <CardFooter>
                            <button onClick={() => router.push('/profile')} className="text-primary hover:underline text-sm">
                                 Edit My Profile
                             </button>
