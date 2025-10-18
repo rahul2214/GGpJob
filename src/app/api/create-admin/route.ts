@@ -5,9 +5,9 @@ import { User } from '@/lib/types';
 
 export async function POST(request: Request) {
     try {
-        const { firstName, lastName, email, phone, password } = await request.json();
+        const { name, email, phone, password } = await request.json();
 
-        if (!firstName || !lastName || !email || !phone || !password) {
+        if (!name || !email || !phone || !password) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
         
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
         const userRecord = await auth.createUser({
             email,
             password,
-            displayName: `${firstName} ${lastName}`,
+            displayName: name,
         });
 
         // 2. Set custom claim for Admin role
@@ -23,9 +23,7 @@ export async function POST(request: Request) {
 
         // 3. Create user profile in Firestore
         const userProfile: Omit<User, 'id'> = {
-            firstName,
-            lastName,
-            name: `${firstName} ${lastName}`,
+            name,
             email,
             phone,
             role: 'Admin',

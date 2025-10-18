@@ -41,18 +41,16 @@ export async function GET(request: Request, { params }: { params: { id: string }
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
     try {
         const { id } = params;
-        const { firstName, lastName, email, phone, headline, locationId, domainId } = await request.json();
+        const { name, email, phone, headline, locationId, domainId } = await request.json();
         
-        if (!firstName || !lastName || !email || !phone) {
+        if (!name || !email || !phone) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
         
         const userDocRef = db.collection('users').doc(id);
         
         const dataToUpdate: Partial<User> = {
-            firstName,
-            lastName,
-            name: `${firstName} ${lastName}`,
+            name,
             email,
             phone,
             headline: headline || '',

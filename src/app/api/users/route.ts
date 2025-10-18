@@ -32,16 +32,14 @@ export async function GET(request: Request) {
 // POST a new user (create profile after signup)
 export async function POST(request: Request) {
   try {
-    const { id, firstName, lastName, email, role } = await request.json();
+    const { id, name, email, role } = await request.json();
 
-    if (!id || !firstName || !lastName || !email || !role) {
+    if (!id || !name || !email || !role) {
         return NextResponse.json({ error: 'Missing required fields for profile creation' }, { status: 400 });
     }
     
     const dataToSave: Omit<User, 'id'> = {
-        firstName,
-        lastName,
-        name: `${firstName} ${lastName}`,
+        name,
         email,
         role,
         phone: '',
