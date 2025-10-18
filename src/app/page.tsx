@@ -60,7 +60,7 @@ export default function Home() {
          <div className="flex items-center justify-center h-[calc(100vh-200px)]">
             <Card className="w-full max-w-md text-center">
                 <CardHeader>
-                    <CardTitle>Welcome to GGP Portal</CardTitle>
+                    <CardTitle>Welcome to Job Portal</CardTitle>
                     <CardDescription>Please log in to access your dashboard.</CardDescription>
                 </CardHeader>
                 <CardContent>

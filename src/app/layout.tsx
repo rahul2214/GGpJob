@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
@@ -10,7 +11,7 @@ import { UserProvider } from '@/contexts/user-context';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'GGP Portal',
+  title: 'Job Portal',
   description: 'The premier platform for connecting talent with opportunity.',
 };
 
