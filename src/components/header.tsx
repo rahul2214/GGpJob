@@ -39,7 +39,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { useUser } from "@/contexts/user-context";
-import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "./ui/separator";
 import { JobFilters } from "./job-filters";
 import { useEffect, useState, Suspense } from "react";
@@ -144,12 +144,12 @@ export default function Header() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col p-0">
-                <SheetHeader className="p-4">
+                 <SheetHeader className="p-4">
                     <SheetTitle asChild>
-                         <SheetClose asChild>
+                        <SheetClose asChild>
                             <Link href="/" className="flex items-center gap-2 font-semibold">
                                 <BriefcaseBusiness className="h-6 w-6 text-primary" />
-                                <span>GGP Portal</span>
+                                <span>Job Portal</span>
                             </Link>
                         </SheetClose>
                     </SheetTitle>
@@ -305,7 +305,7 @@ export default function Header() {
         {renderMobileLeftButton()}
         <Link href="/" className="hidden md:flex items-center gap-2 font-semibold whitespace-nowrap">
             <BriefcaseBusiness className="h-6 w-6 text-primary" />
-            <span className="text-lg">GGP Portal</span>
+            <span className="text-lg">Job Portal</span>
         </Link>
         {isClient && (isProfileSectionEditPage || (isMobile && (isAdminAddPage || isAdminEditPage))) && (
           <div className="md:hidden text-lg font-semibold whitespace-nowrap">

@@ -54,7 +54,7 @@ export default function FeedbackPage() {
                     <CardHeader>
                         <CardTitle>Share Your Feedback</CardTitle>
                         <CardDescription>
-                            We value your opinion! Let us know about your experience using the GGP Portal. 
+                            We value your opinion! Let us know about your experience using the Job Portal. 
                             Your feedback helps us improve.
                         </CardDescription>
                     </CardHeader>
