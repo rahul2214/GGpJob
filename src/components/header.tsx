@@ -141,7 +141,7 @@ export default function Header() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col p-0">
-                <SheetHeader className="p-4 border-b">
+                <SheetHeader className="p-4">
                     <SheetTitle>
                          <SheetClose asChild>
                             <Link href="/" className="flex items-center gap-2 font-semibold">
@@ -424,3 +424,5 @@ export default function Header() {
     </header>
   );
 }
+
+    
