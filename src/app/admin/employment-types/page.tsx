@@ -219,7 +219,7 @@ export default function ManageEmploymentTypesPage() {
                 </div>
                 <Button onClick={handleAdd} className="whitespace-nowrap">
                   <PlusCircle className="mr-2 h-4 w-4" />
-                  Add {typeName}
+                  Add
                 </Button>
             </div>
           </div>
