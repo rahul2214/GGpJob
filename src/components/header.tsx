@@ -141,18 +141,19 @@ export default function Header() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col p-0">
-                <SheetHeader className="p-4 flex flex-row items-center justify-between">
-                    <SheetTitle className="sr-only">
-                        Navigation Menu
+                <SheetHeader className="p-4 border-b">
+                    <SheetTitle>
+                         <SheetClose asChild>
+                            <Link href="/" className="flex items-center gap-2 font-semibold">
+                                <BriefcaseBusiness className="h-6 w-6 text-primary" />
+                                <span>GGP Portal</span>
+                            </Link>
+                        </SheetClose>
                     </SheetTitle>
-                    <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-                        <X className="h-4 w-4" />
-                        <span className="sr-only">Close</span>
-                    </SheetClose>
                 </SheetHeader>
                <ScrollArea className="flex-1">
                 <div className="p-6 pt-0">
-                    <nav className="grid gap-3 text-lg font-medium">
+                    <nav className="grid gap-3 text-lg font-medium mt-6">
                         {isClient && !loading && user && (user.role === 'Admin' || user.role === 'Super Admin') ? (
                            <>
                             {adminNavItems.map(item => (
@@ -423,5 +424,3 @@ export default function Header() {
     </header>
   );
 }
-
-    
