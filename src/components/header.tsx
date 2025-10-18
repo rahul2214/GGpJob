@@ -42,6 +42,7 @@ import { useEffect, useState, Suspense } from "react";
 import { ShareButton } from "./share-button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import HeaderSearch from "./header-search";
+import { ScrollArea } from "./ui/scroll-area";
 
 export default function Header() {
   const { user, logout } = useUser();
@@ -134,119 +135,125 @@ export default function Header() {
                     <span className="sr-only">Toggle navigation menu</span>
                 </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col">
-              <SheetHeader>
-                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+            <SheetContent side="left" className="flex flex-col p-0">
+              <SheetHeader className="p-6 pb-0">
+                 <Link href="/" className="flex items-center gap-2 font-semibold">
+                    <BriefcaseBusiness className="h-6 w-6 text-primary" />
+                    <span className="text-lg">GGP Portal</span>
+                </Link>
               </SheetHeader>
-                <nav className="grid gap-3 text-lg font-medium">
-                    <Link href="/" className="flex items-center gap-2 font-semibold">
-                        <BriefcaseBusiness className="h-6 w-6 text-primary" />
-                        <span className="text-lg">GGP Portal</span>
-                    </Link>
-                    {isClient && !loading && user && (user.role === 'Admin' || user.role === 'Super Admin') ? (
-                       <>
-                        {adminNavItems.map(item => (
-                           <SheetClose asChild key={item.href}>
-                             <Link href={item.href} className="text-muted-foreground hover:text-foreground">
-                                {item.label}
-                              </Link>
-                           </SheetClose>
-                        ))}
-                       </>
-                    ) : (
-                      <>
-                        {isClient && !loading && user && (
-                          <SheetClose asChild>
-                              <Link href="/" className="text-muted-foreground hover:text-foreground">
-                                  Dashboard
-                              </Link>
-                          </SheetClose>
-                        )}
-                         {isClient && !loading && user?.role === 'Job Seeker' && (
+               <ScrollArea className="flex-1">
+                <div className="p-6">
+                    <nav className="grid gap-3 text-lg font-medium">
+                        {isClient && !loading && user && (user.role === 'Admin' || user.role === 'Super Admin') ? (
                            <>
-                            <SheetClose asChild>
-                                <Link href="/jobs" className="text-muted-foreground hover:text-foreground">
-                                    Jobs
-                                </Link>
-                            </SheetClose>
-                            {user.domainId && (
-                                <SheetClose asChild>
-                                   <Link href={`/jobs?domain=${user.domainId}`} className="text-muted-foreground hover:text-foreground">
-                                        Recommended Jobs
-                                   </Link>
-                                </SheetClose>
-                            )}
+                            {adminNavItems.map(item => (
+                               <SheetClose asChild key={item.href}>
+                                 <Link href={item.href} className="text-muted-foreground hover:text-foreground">
+                                    {item.label}
+                                  </Link>
+                               </SheetClose>
+                            ))}
                            </>
+                        ) : (
+                          <>
+                            {isClient && !loading && user && (
+                              <SheetClose asChild>
+                                  <Link href="/" className="text-muted-foreground hover:text-foreground">
+                                      Dashboard
+                                  </Link>
+                              </SheetClose>
+                            )}
+                             {isClient && !loading && user?.role === 'Job Seeker' && (
+                               <>
+                                <SheetClose asChild>
+                                    <Link href="/jobs" className="text-muted-foreground hover:text-foreground">
+                                        Jobs
+                                    </Link>
+                                </SheetClose>
+                                {user.domainId && (
+                                    <SheetClose asChild>
+                                       <Link href={`/jobs?domain=${user.domainId}`} className="text-muted-foreground hover:text-foreground">
+                                            Recommended Jobs
+                                       </Link>
+                                    </SheetClose>
+                                )}
+                               </>
+                            )}
+                          </>
                         )}
-                      </>
+                    </nav>
+                    {isClient && !loading && user && (
+                        <>
+                            <Separator className="my-4" />
+                            <nav className="grid gap-3 text-lg font-medium">
+                               <div className="text-sm font-semibold text-muted-foreground px-1">My Account</div>
+                                <SheetClose asChild>
+                                    <Link href="/profile" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                        <User className="h-5 w-5" />
+                                        Profile
+                                    </Link>
+                                </SheetClose>
+                                {user.role === 'Job Seeker' && (
+                                    <SheetClose asChild>
+                                        <Link href="/applications" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                            <LayoutGrid className="h-5 w-5" />
+                                            My Applications
+                                        </Link>
+                                    </SheetClose>
+                                )}
+                                 {['Job Seeker', 'Recruiter', 'Employee'].includes(user.role) && (
+                                    <SheetClose asChild>
+                                        <Link href="/feedback" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                            <MessageSquareQuote className="h-5 w-5" />
+                                            Feedback
+                                        </Link>
+                                    </SheetClose>
+                                )}
+                                 {user.role === 'Super Admin' && (
+                                    <SheetClose asChild>
+                                        <Link href="/" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                            <MessageSquareQuote className="h-5 w-5" />
+                                            Feedback
+                                        </Link>
+                                    </SheetClose>
+                                )}
+                                 <SheetClose asChild>
+                                    <Link href="#" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                        <Settings className="h-5 w-5" />
+                                        Settings
+                                    </Link>
+                                </SheetClose>
+                            </nav>
+                        </>
                     )}
-                </nav>
-                {isClient && !loading && user && (
-                    <>
-                        <Separator className="my-4" />
-                        <nav className="grid gap-3 text-lg font-medium">
-                           <div className="text-sm font-semibold text-muted-foreground px-1">My Account</div>
-                            <SheetClose asChild>
-                                <Link href="/profile" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
-                                    <User className="h-5 w-5" />
-                                    Profile
-                                </Link>
-                            </SheetClose>
-                            {user.role === 'Job Seeker' && (
-                                <SheetClose asChild>
-                                    <Link href="/applications" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
-                                        <LayoutGrid className="h-5 w-5" />
-                                        My Applications
-                                    </Link>
-                                </SheetClose>
-                            )}
-                             {['Job Seeker', 'Recruiter', 'Employee'].includes(user.role) && (
-                                <SheetClose asChild>
-                                    <Link href="/feedback" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
-                                        <MessageSquareQuote className="h-5 w-5" />
-                                        Feedback
-                                    </Link>
-                                </SheetClose>
-                            )}
-                             {user.role === 'Super Admin' && (
-                                <SheetClose asChild>
-                                    <Link href="/" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
-                                        <MessageSquareQuote className="h-5 w-5" />
-                                        Feedback
-                                    </Link>
-                                </SheetClose>
-                            )}
-                             <SheetClose asChild>
-                                <Link href="#" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
-                                    <Settings className="h-5 w-5" />
-                                    Settings
-                                </Link>
-                            </SheetClose>
-                        </nav>
-                         <div className="mt-auto">
-                            <Button variant="ghost" onClick={handleLogout} className="w-full justify-start text-lg text-muted-foreground">
-                                <LogOut className="mr-3 h-5 w-5" />
-                                Logout
-                            </Button>
-                        </div>
-                    </>
-                )}
-                 {isClient && !loading && !user && (
-                  <div className="mt-auto flex flex-col gap-2">
-                     <Button asChild>
-                        <Link href="/login">
-                          <LogIn className="mr-2 h-4 w-4" />
-                          Login
-                        </Link>
-                      </Button>
-                      <Button asChild variant="secondary">
-                        <Link href="/signup">
-                          <UserPlus className="mr-2 h-4 w-4" />
-                          Sign Up
-                        </Link>
-                      </Button>
-                  </div>
-                 )}
+                </div>
+                </ScrollArea>
+
+                <div className="mt-auto p-6 border-t">
+                     {isClient && !loading && user && (
+                        <Button variant="ghost" onClick={handleLogout} className="w-full justify-start text-lg text-muted-foreground">
+                            <LogOut className="mr-3 h-5 w-5" />
+                            Logout
+                        </Button>
+                     )}
+                     {isClient && !loading && !user && (
+                      <div className="flex flex-col gap-2">
+                         <Button asChild>
+                            <Link href="/login">
+                              <LogIn className="mr-2 h-4 w-4" />
+                              Login
+                            </Link>
+                          </Button>
+                          <Button asChild variant="secondary">
+                            <Link href="/signup">
+                              <UserPlus className="mr-2 h-4 w-4" />
+                              Sign Up
+                            </Link>
+                          </Button>
+                      </div>
+                     )}
+                </div>
             </SheetContent>
         </Sheet>
     );
@@ -408,5 +415,7 @@ export default function Header() {
     </header>
   );
 }
+
+    
 
     
