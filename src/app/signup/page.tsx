@@ -211,12 +211,6 @@ export default function SignupPage() {
               Sign in
             </Link>
           </div>
-           <div className="mt-2 text-center text-sm">
-            Recruiter or Employee?{" "}
-            <Link href="/company/signup" className="underline">
-              Sign up here
-            </Link>
-          </div>
         </CardContent>
       </Card>
     </div>
