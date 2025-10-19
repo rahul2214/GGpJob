@@ -340,6 +340,7 @@ export default function LoginPage() {
                              <FormLabel>Phone Number</FormLabel>
                              <FormControl>
                                 <PhoneInput
+                                  countries={["IN"]}
                                   defaultCountry="IN"
                                   placeholder="Enter phone number"
                                   {...field}
