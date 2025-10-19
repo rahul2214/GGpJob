@@ -1,3 +1,4 @@
+
 "use client";
 
 import { createContext, useState, useContext, useEffect, ReactNode, useCallback } from 'react';
@@ -21,14 +22,28 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const fetchUserProfile = useCallback(async (uid: string) => {
     try {
-      const res = await fetch(`/api/users?uid=${uid}`);
+      // Attempt to fetch from 'users' collection first (Job Seekers)
+      let res = await fetch(`/api/users?uid=${uid}`);
+      
       if (res.ok) {
         const userProfile = await res.json();
-        setUserState(userProfile);
-      } else {
-        // This error will be caught by the catch block
-        throw new Error('Failed to fetch user profile');
+         // The endpoint now searches both collections, but we double-check the role.
+        if (userProfile.role) {
+           setUserState(userProfile);
+           return;
+        }
       }
+
+      // If not found or role doesn't match, check 'recruiters' collection
+      // This is a fallback, the /api/users?uid=... endpoint should handle this logic primarily.
+      res = await fetch(`/api/users?uid=${uid}`);
+      if(res.ok) {
+          const userProfile = await res.json();
+          setUserState(userProfile);
+      } else {
+         throw new Error('Failed to fetch user profile from any collection');
+      }
+
     } catch (error) {
       console.error(error);
       // If fetching fails, ensure the user is logged out of the app state

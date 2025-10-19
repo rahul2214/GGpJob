@@ -27,14 +27,18 @@ export async function GET(request: Request) {
     const toDate = searchParams.get('to') ? new Date(searchParams.get('to') as string) : null;
 
     // Fetch all necessary data in parallel
-    const [usersSnap, jobsSnap, applicationsSnap, domainsSnap] = await Promise.all([
+    const [usersSnap, recruitersSnap, jobsSnap, applicationsSnap, domainsSnap] = await Promise.all([
         db.collection('users').get(),
+        db.collection('recruiters').get(),
         db.collection('jobs').get(),
         db.collection('applications').get(),
         db.collection('domains').get()
     ]);
 
-    const allUsers = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
+    const jobSeekers = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
+    const companyUsers = recruitersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
+    const allUsers = [...jobSeekers, ...companyUsers];
+
     let allJobs = jobsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Job[];
     let allApplications = applicationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Application[];
     const domains = domainsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Domain[];
@@ -59,9 +63,9 @@ export async function GET(request: Request) {
     }
 
     // 1. User role counts
-    const totalJobSeekers = allUsers.filter(u => u.role === 'Job Seeker').length;
-    const totalRecruiters = allUsers.filter(u => u.role === 'Recruiter').length;
-    const totalEmployees = allUsers.filter(u => u.role === 'Employee').length;
+    const totalJobSeekers = jobSeekers.length;
+    const totalRecruiters = companyUsers.filter(u => u.role === 'Recruiter').length;
+    const totalEmployees = companyUsers.filter(u => u.role === 'Employee').length;
 
     // 2. Job type counts
     const totalDirectJobs = allJobs.filter(j => !j.isReferral).length;
@@ -85,7 +89,7 @@ export async function GET(request: Request) {
     const referralJobsByDomain = groupByDomain(allJobs.filter(j => j.isReferral), 'domainId');
 
     // 5. Users by domain
-    const usersByDomain = groupByDomain(allUsers.filter(u => u.role === 'Job Seeker'), 'domainId');
+    const usersByDomain = groupByDomain(jobSeekers, 'domainId');
     
     // 6. Applications by domain
     // To do this, we need to map applications to jobs to find the domain.

@@ -30,7 +30,7 @@ export async function POST(request: Request) {
             headline: 'Administrator',
         };
 
-        await db.collection('users').doc(userRecord.uid).set(userProfile);
+        await db.collection('recruiters').doc(userRecord.uid).set(userProfile);
 
         return NextResponse.json({ uid: userRecord.uid, ...userProfile }, { status: 201 });
 
