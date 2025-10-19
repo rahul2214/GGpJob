@@ -37,7 +37,7 @@ const formSchema = z.object({
 
 type LoginFormValues = z.infer<typeof formSchema>;
 
-export default function LoginPage() {
+export default function CompanyLoginPage() {
   const { toast } = useToast();
   const router = useRouter();
   const { user, loading, login } = useUser();
@@ -64,9 +64,6 @@ export default function LoginPage() {
       const auth = getAuth(firebaseApp);
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       
-      // The user object from Firebase Auth doesn't contain custom fields like 'role'.
-      // We need to fetch our custom user profile from our API (or Firestore).
-      // The `login` function in `useUser` context will handle this.
       await login(userCredential.user);
 
       toast({
@@ -104,9 +101,9 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-[calc(100vh-128px)] bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle>Job Seeker Login</CardTitle>
+          <CardTitle>Company Login</CardTitle>
           <CardDescription>
-            Access your profile and applications.
+            Recruiter & Employee access.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -121,7 +118,7 @@ export default function LoginPage() {
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="your.email@example.com"
+                        placeholder="your.email@company.com"
                         {...field}
                       />
                     </FormControl>
@@ -152,14 +149,14 @@ export default function LoginPage() {
           </Form>
           <div className="mt-4 text-center text-sm">
             Don't have an account?{" "}
-            <Link href="/signup" className="underline">
+            <Link href="/company/signup" className="underline">
               Sign up
             </Link>
           </div>
-           <div className="mt-2 text-center text-sm">
-            Recruiter or Employee?{" "}
-            <Link href="/company/login" className="underline">
-              Login here
+          <div className="mt-2 text-center text-sm">
+            Not a company user?{" "}
+            <Link href="/login" className="underline">
+              Job Seeker Login
             </Link>
           </div>
         </CardContent>
