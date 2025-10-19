@@ -4,16 +4,28 @@ import { db } from '@/firebase/admin-config';
 import { User } from '@/lib/types';
 
 
+async function getUserDocRef(id: string): Promise<FirebaseFirestore.DocumentReference | null> {
+    const userDocRef = db.collection('users').doc(id);
+    const userDoc = await userDocRef.get();
+    if (userDoc.exists) return userDocRef;
+
+    const recruiterDocRef = db.collection('recruiters').doc(id);
+    const recruiterDoc = await recruiterDocRef.get();
+    if (recruiterDoc.exists) return recruiterDocRef;
+    
+    return null;
+}
+
 export async function GET(request: Request, { params }: { params: { id: string } }) {
     try {
         const { id } = params;
-        const userDocRef = db.collection('users').doc(id);
-        const userDoc = await userDocRef.get();
+        const userDocRef = await getUserDocRef(id);
 
-        if (!userDoc.exists) {
+        if (!userDocRef) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
         
+        const userDoc = await userDocRef.get();
         const user = { id: userDoc.id, ...userDoc.data() } as User;
 
         // Fetch location if locationId exists
@@ -47,7 +59,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
         
-        const userDocRef = db.collection('users').doc(id);
+        const userDocRef = await getUserDocRef(id);
+
+        if (!userDocRef) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
         
         const dataToUpdate: Partial<User> = {
             name,
@@ -76,7 +92,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
     try {
         const { id } = params;
-        await db.collection('users').doc(id).delete();
+        const userDocRef = await getUserDocRef(id);
+
+        if (!userDocRef) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
+        await userDocRef.delete();
         // Note: This does NOT delete the Firebase Auth user. That requires the Admin SDK.
         return NextResponse.json({ message: 'User profile deleted successfully' }, { status: 200 });
     } catch (e) {

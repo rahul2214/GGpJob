@@ -10,19 +10,28 @@ export async function GET(request: Request) {
     const uid = searchParams.get('uid');
 
     if (uid) {
-        const userDoc = await db.collection('users').doc(uid).get();
+        let userDoc = await db.collection('users').doc(uid).get();
 
         if (userDoc.exists) {
             return NextResponse.json({ id: userDoc.id, ...userDoc.data() });
-        } else {
-             return NextResponse.json({ error: 'User profile not found in database.' }, { status: 404 });
+        } 
+        
+        userDoc = await db.collection('recruiters').doc(uid).get();
+        if (userDoc.exists) {
+            return NextResponse.json({ id: userDoc.id, ...userDoc.data() });
         }
+
+        return NextResponse.json({ error: 'User profile not found in database.' }, { status: 404 });
     }
 
     // This part of the function gets all users and is typically for admin purposes.
     const usersSnapshot = await db.collection('users').get();
+    const recruitersSnapshot = await db.collection('recruiters').get();
+    
     const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    return NextResponse.json(users);
+    const recruiters = recruitersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    return NextResponse.json([...users, ...recruiters]);
   } catch (e: any) {
     console.error("[API_USERS_GET] Error:", e.message);
     return NextResponse.json({ error: 'Failed to fetch users', details: e.message }, { status: 500 });
@@ -49,7 +58,8 @@ export async function POST(request: Request) {
         locationId: null,
     };
     
-    await db.collection("users").doc(id).set(dataToSave);
+    const collectionName = role === 'Job Seeker' ? 'users' : 'recruiters';
+    await db.collection(collectionName).doc(id).set(dataToSave);
     
     return NextResponse.json({ id, ...dataToSave }, { status: 201 });
   } catch (e: any) {
