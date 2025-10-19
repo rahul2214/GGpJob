@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import Link from "next/link";
@@ -25,7 +26,8 @@ import {
   MapPin,
   X,
   Search,
-  Star
+  Star,
+  PlusCircle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -414,6 +416,12 @@ export default function Header() {
                     Sign Up
                     </Link>
                 </Button>
+                <Button asChild variant="outline">
+                    <Link href="/company/login">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Post Job
+                    </Link>
+                </Button>
                 </div>
              )
           )}
@@ -422,5 +430,3 @@ export default function Header() {
     </header>
   );
 }
-
-    
