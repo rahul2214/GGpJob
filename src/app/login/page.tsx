@@ -39,6 +39,13 @@ const formSchema = z.object({
 
 type LoginFormValues = z.infer<typeof formSchema>;
 
+const otpFormSchema = z.object({
+  phone: z.string().min(1, "Phone number is required."),
+  otp: z.string().optional(),
+});
+
+type OtpFormValues = z.infer<typeof otpFormSchema>;
+
 const GoogleIcon = () => (
     <svg className="mr-2 h-4 w-4" viewBox="0 0 48 48">
         <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
@@ -54,8 +61,6 @@ export default function LoginPage() {
   const { user, loading, login } = useUser();
   const [showPassword, setShowPassword] = useState(false);
   const [loginMethod, setLoginMethod] = useState<'email' | 'otp'>('email');
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [isOtpLoading, setIsOtpLoading] = useState(false);
 
@@ -71,6 +76,11 @@ export default function LoginPage() {
       email: "",
       password: "",
     },
+  });
+
+  const otpForm = useForm<OtpFormValues>({
+    resolver: zodResolver(otpFormSchema),
+    defaultValues: { phone: "", otp: "" },
   });
 
   const { isSubmitting } = form.formState;
@@ -175,6 +185,7 @@ export default function LoginPage() {
 
     const auth = getAuth(firebaseApp);
     const appVerifier = (window as any).recaptchaVerifier;
+    const phone = otpForm.getValues("phone");
 
     signInWithPhoneNumber(auth, phone, appVerifier)
       .then((confirmationResult) => {
@@ -191,6 +202,7 @@ export default function LoginPage() {
 
   const onOTPVerify = async () => {
     setIsOtpLoading(true);
+    const otp = otpForm.getValues("otp");
     (window as any).confirmationResult.confirm(otp).then(async (result: any) => {
       const firebaseUser = result.user;
       
@@ -299,40 +311,51 @@ export default function LoginPage() {
               </form>
             </Form>
           ) : (
-            <div className="space-y-4">
-              {showOtpInput ? (
-                <>
-                  <FormLabel>Enter OTP</FormLabel>
-                  <Input 
-                    type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    placeholder="Enter OTP"
-                  />
-                  <Button onClick={onOTPVerify} className="w-full" disabled={isOtpLoading}>
+             <Form {...otpForm}>
+                <form onSubmit={otpForm.handleSubmit(showOtpInput ? onOTPVerify : onSignup)} className="space-y-4">
+                  {showOtpInput ? (
+                     <FormField
+                        control={otpForm.control}
+                        name="otp"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Enter OTP</FormLabel>
+                                <FormControl>
+                                    <Input 
+                                        type="text"
+                                        placeholder="Enter OTP"
+                                        {...field}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                  ) : (
+                     <FormField
+                        control={otpForm.control}
+                        name="phone"
+                        render={({ field }) => (
+                           <FormItem>
+                             <FormLabel>Phone Number</FormLabel>
+                             <FormControl>
+                                <PhoneInput
+                                  defaultCountry="IN"
+                                  placeholder="Enter phone number"
+                                  {...field}
+                                />
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                        )}
+                      />
+                  )}
+                   <Button type="submit" className="w-full" disabled={isOtpLoading || (!otpForm.getValues("phone") && !showOtpInput)}>
                      {isOtpLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                     Verify OTP
-                  </Button>
-                </>
-              ) : (
-                 <>
-                  <FormLabel>Phone Number</FormLabel>
-                  <PhoneInput
-                    defaultCountry="IN"
-                    value={phone}
-                    onChange={setPhone}
-                    placeholder="Enter phone number"
-                  />
-                   <Button onClick={onSignup} className="w-full" disabled={isOtpLoading || !phone}>
-                     {isOtpLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                     Send OTP
+                     {showOtpInput ? 'Verify OTP' : 'Send OTP'}
                    </Button>
-                 </>
-              )}
-               <Button variant="link" className="w-full" onClick={() => setLoginMethod('email')}>
-                    Login with Email
-                </Button>
-            </div>
+                 </form>
+            </Form>
           )}
 
            <div className="relative my-6">
@@ -354,6 +377,11 @@ export default function LoginPage() {
                  {loginMethod === 'email' && (
                     <Button variant="link" className="w-full" onClick={() => setLoginMethod('otp')}>
                         Use OTP to Login
+                    </Button>
+                 )}
+                 {loginMethod === 'otp' && (
+                    <Button variant="link" className="w-full" onClick={() => setLoginMethod('email')}>
+                        Login with Email
                     </Button>
                  )}
             </div>
