@@ -23,6 +23,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
@@ -34,6 +41,7 @@ const formSchema = z
   .object({
     name: z.string().min(2, "Full name must be at least 2 characters."),
     email: z.string().email("Please enter a valid email address."),
+    role: z.enum(["Recruiter", "Employee"]),
     password: z.string().min(8, "Password must be at least 8 characters."),
     confirmPassword: z.string(),
   })
@@ -44,7 +52,7 @@ const formSchema = z
 
 type SignupFormValues = z.infer<typeof formSchema>;
 
-export default function SignupPage() {
+export default function CompanySignupPage() {
   const { toast } = useToast();
   const router = useRouter();
   const { user, loading, login } = useUser();
@@ -74,12 +82,11 @@ export default function SignupPage() {
       
       const firebaseUser = userCredential.user;
 
-      // Create user profile in our database (Firestore)
       const profileData = {
         id: firebaseUser.uid,
         name: data.name,
         email: data.email,
-        role: 'Job Seeker',
+        role: data.role,
       };
 
       const response = await fetch("/api/users", {
@@ -133,9 +140,9 @@ export default function SignupPage() {
     <div className="flex items-center justify-center min-h-[calc(100vh-128px)] bg-gray-50 py-12">
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
-          <CardTitle>Create your Job Seeker Account</CardTitle>
+          <CardTitle>Create a Company Account</CardTitle>
           <CardDescription>
-            Join our platform to find your next opportunity.
+            Join as a Recruiter or Employee.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -163,10 +170,31 @@ export default function SignupPage() {
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="your.email@example.com"
+                        placeholder="your.email@company.com"
                         {...field}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>You are a...</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Recruiter">Recruiter</SelectItem>
+                        <SelectItem value="Employee">Employee</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -207,14 +235,14 @@ export default function SignupPage() {
           </Form>
           <div className="mt-4 text-center text-sm">
             Already have an account?{" "}
-            <Link href="/login" className="underline">
+            <Link href="/company/login" className="underline">
               Sign in
             </Link>
           </div>
-           <div className="mt-2 text-center text-sm">
-            Recruiter or Employee?{" "}
-            <Link href="/company/signup" className="underline">
-              Sign up here
+          <div className="mt-2 text-center text-sm">
+            Looking for a job?{" "}
+            <Link href="/signup" className="underline">
+              Sign up as a Job Seeker
             </Link>
           </div>
         </CardContent>
