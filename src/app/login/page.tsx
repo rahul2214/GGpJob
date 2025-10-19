@@ -345,6 +345,7 @@ export default function LoginPage() {
                                   countries={["IN"]}
                                   defaultCountry="IN"
                                   placeholder="Enter phone number"
+                                  withCountryCallingCode
                                   {...field}
                                 />
                              </FormControl>
@@ -401,5 +402,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
