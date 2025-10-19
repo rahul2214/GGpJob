@@ -67,3 +67,25 @@
     @apply bg-background text-foreground;
   }
 }
+
+.PhoneInputInput {
+    border: none;
+    outline: none;
+    background: transparent;
+    padding-left: 0.5rem;
+    width: 100%;
+}
+
+.PhoneInput {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border: 1px solid hsl(var(--input));
+    border-radius: var(--radius);
+    background-color: hsl(var(--background));
+}
+
+.PhoneInput--focus {
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(var(--ring));
+}
