@@ -22,26 +22,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const fetchUserProfile = useCallback(async (uid: string) => {
     try {
-      // Attempt to fetch from 'users' collection first (Job Seekers)
-      let res = await fetch(`/api/users?uid=${uid}`);
+      const res = await fetch(`/api/users?uid=${uid}`);
       
       if (res.ok) {
         const userProfile = await res.json();
-         // The endpoint now searches both collections, but we double-check the role.
-        if (userProfile.role) {
-           setUserState(userProfile);
-           return;
-        }
-      }
-
-      // If not found or role doesn't match, check 'recruiters' collection
-      // This is a fallback, the /api/users?uid=... endpoint should handle this logic primarily.
-      res = await fetch(`/api/users?uid=${uid}`);
-      if(res.ok) {
-          const userProfile = await res.json();
-          setUserState(userProfile);
+        setUserState(userProfile);
+      } else if (res.status === 404) {
+        // User profile doesn't exist in DB yet. This can happen right after signup.
+        // The signup flow should handle creating the profile.
+        setUserState(null);
       } else {
-         throw new Error('Failed to fetch user profile from any collection');
+        // For other errors, log it and sign out.
+        console.error("Failed to fetch user profile, status:", res.status);
+        setUserState(null);
+        getAuth(firebaseApp).signOut();
       }
 
     } catch (error) {
