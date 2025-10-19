@@ -156,12 +156,6 @@ export default function LoginPage() {
               Sign up
             </Link>
           </div>
-           <div className="mt-2 text-center text-sm">
-            Recruiter or Employee?{" "}
-            <Link href="/company/login" className="underline">
-              Login here
-            </Link>
-          </div>
         </CardContent>
       </Card>
     </div>
