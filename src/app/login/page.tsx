@@ -170,11 +170,11 @@ export default function LoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email ID / Username</FormLabel>
+                    <FormLabel>Email ID</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="Enter your active Email ID / Username"
+                        placeholder="Enter your active Email ID"
                         {...field}
                       />
                     </FormControl>
