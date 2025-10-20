@@ -172,7 +172,7 @@ export default function LoginPage() {
     if (!(window as any).recaptchaVerifier) {
       (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
-        'callback': (response: any) => {
+        'callback': () => {
           onSignup();
         },
         'expired-callback': () => {
@@ -205,6 +205,11 @@ export default function LoginPage() {
   const onOTPVerify = async () => {
     setIsOtpLoading(true);
     const otp = otpForm.getValues("otp");
+    if(!otp) {
+        setIsOtpLoading(false);
+        toast({ title: "OTP Required", description: "Please enter the OTP.", variant: "destructive" });
+        return;
+    }
     (window as any).confirmationResult.confirm(otp).then(async (result: any) => {
       const firebaseUser = result.user;
       
