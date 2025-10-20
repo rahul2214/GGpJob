@@ -27,10 +27,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { useEffect, useState } from "react";
-import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+} from "firebase/auth";
 import { firebaseApp } from "@/firebase/config";
-import PhoneInput from 'react-phone-number-input';
-import 'react-phone-number-input/style.css';
+import PhoneInput from "react-phone-number-input/react-hook-form-input";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -40,19 +46,55 @@ const formSchema = z.object({
 type LoginFormValues = z.infer<typeof formSchema>;
 
 const otpFormSchema = z.object({
-  phone: z.string().min(1, "Phone number is required."),
+  phone: z
+    .string()
+    .regex(/^\+91[6-9]\d{9}$/, "Enter a valid 10-digit Indian phone number."),
   otp: z.string().optional(),
 });
 
 type OtpFormValues = z.infer<typeof otpFormSchema>;
 
 const GoogleIcon = () => (
-    <svg className="mr-2 h-4 w-4" viewBox="0 0 48 48">
-        <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
-        <path fill="#FF3D00" d="m6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z" />
-        <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A8 8 0 0 1 24 36c-5.222 0-9.61-3.868-11.28-8.892l-6.522 5.025C9.505 39.556 16.227 44 24 44z" />
-        <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
-    </svg>
+  <svg className="mr-2 h-4 w-4" viewBox="0 0 48 48">
+    <path
+      fill="#FFC107"
+      d="M43.611 20.083H42V20H24v8h11.303
+      c-1.649 4.657-6.08 8-11.303 8c-6.627
+      0-12-5.373-12-12s5.373-12 12-12
+      c3.059 0 5.842 1.154 7.961
+      3.039l5.657-5.657C34.046 6.053
+      29.268 4 24 4C12.955 4 4
+      12.955 4 24s8.955 20 20
+      20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
+    />
+    <path
+      fill="#FF3D00"
+      d="m6.306 14.691l6.571
+      4.819C14.655 15.108 18.961 12 24
+      12c3.059 0 5.842 1.154 7.961
+      3.039l5.657-5.657C34.046 6.053
+      29.268 4 24 4C16.318 4
+      9.656 8.337 6.306 14.691z"
+    />
+    <path
+      fill="#4CAF50"
+      d="M24 44c5.166 0
+      9.86-1.977 13.409-5.192l-6.19-5.238A8
+      8 0 0 1 24 36c-5.222 0-9.61-3.868-11.28-8.892l-6.522
+      5.025C9.505 39.556 16.227 44 24 44z"
+    />
+    <path
+      fill="#1976D2"
+      d="M43.611 20.083H42V20H24v8h11.303
+      c-1.649 4.657-6.08 8-11.303
+      8c-6.627 0-12-5.373-12-12s5.373-12
+      12-12c3.059 0 5.842 1.154 7.961
+      3.039l5.657-5.657C34.046 6.053
+      29.268 4 24 4C12.955 4 4 12.955
+      4 24s8.955 20 20 20s20-8.955
+      20-20c0-1.341-.138-2.65-.389-3.917z"
+    />
+  </svg>
 );
 
 export default function LoginPage() {
@@ -60,22 +102,19 @@ export default function LoginPage() {
   const router = useRouter();
   const { user, loading, login } = useUser();
   const [showPassword, setShowPassword] = useState(false);
-  const [loginMethod, setLoginMethod] = useState<'email' | 'otp'>('email');
+  const [loginMethod, setLoginMethod] = useState<"email" | "otp">("email");
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [isOtpLoading, setIsOtpLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
-      router.push('/');
+      router.push("/");
     }
   }, [user, loading, router]);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
   const otpForm = useForm<OtpFormValues>({
@@ -86,28 +125,27 @@ export default function LoginPage() {
   const { isSubmitting } = form.formState;
   const phoneValue = otpForm.watch("phone");
 
-
   const onEmailSubmit = async (data: LoginFormValues) => {
     try {
       const auth = getAuth(firebaseApp);
-      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        data.email,
+        data.password
+      );
+
       await login(userCredential.user);
 
-      toast({
-        title: "Login Successful!",
-        description: "Welcome back!",
-      });
-
+      toast({ title: "Login Successful!", description: "Welcome back!" });
       router.push("/");
     } catch (error: any) {
       let errorMessage = "An unexpected error occurred.";
       if (error.code) {
         switch (error.code) {
-          case 'auth/user-not-found':
-          case 'auth/wrong-password':
-          case 'auth/invalid-credential':
-            errorMessage = 'Invalid email or password.';
+          case "auth/user-not-found":
+          case "auth/wrong-password":
+          case "auth/invalid-credential":
+            errorMessage = "Invalid email or password.";
             break;
           default:
             errorMessage = error.message;
@@ -128,37 +166,28 @@ export default function LoginPage() {
       const result = await signInWithPopup(auth, provider);
       const firebaseUser = result.user;
 
-      // Check if user profile exists in our DB
       const profileRes = await fetch(`/api/users?uid=${firebaseUser.uid}`);
-      
       if (profileRes.status === 404) {
-        // User does not exist, create a profile
         const profileData = {
           id: firebaseUser.uid,
-          name: firebaseUser.displayName || 'New User',
+          name: firebaseUser.displayName || "New User",
           email: firebaseUser.email,
-          role: 'Job Seeker',
+          role: "Job Seeker",
         };
-        const createProfileRes = await fetch('/api/users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(profileData),
+        await fetch("/api/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(profileData),
         });
-        if (!createProfileRes.ok) {
-            throw new Error('Failed to create user profile.');
-        }
       }
 
       await login(firebaseUser);
-      
       toast({
         title: "Signed In with Google!",
         description: "Welcome to Job Portal!",
       });
       router.push("/");
-
     } catch (error: any) {
-      console.error(error);
       toast({
         title: "Google Sign-In Failed",
         description: error.message || "An unexpected error occurred.",
@@ -170,16 +199,12 @@ export default function LoginPage() {
   const onCaptchVerify = () => {
     const auth = getAuth(firebaseApp);
     if (!(window as any).recaptchaVerifier) {
-      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': () => {
-          onSignup();
-        },
-        'expired-callback': () => {
-        }
+      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+        size: "invisible",
+        callback: () => onSignup(),
       });
     }
-  }
+  };
 
   const onSignup = () => {
     setIsOtpLoading(true);
@@ -195,61 +220,79 @@ export default function LoginPage() {
         setIsOtpLoading(false);
         setShowOtpInput(true);
         toast({ title: "OTP Sent!", description: "An OTP has been sent to your phone number." });
-      }).catch((error) => {
-        console.log(error);
+      })
+      .catch(() => {
         setIsOtpLoading(false);
-        toast({ title: "OTP Send Failed", description: "Failed to send OTP. Please try again.", variant: "destructive" });
+        toast({
+          title: "OTP Send Failed",
+          description: "Failed to send OTP. Please try again.",
+          variant: "destructive",
+        });
       });
-  }
+  };
 
   const onOTPVerify = async () => {
     setIsOtpLoading(true);
     const otp = otpForm.getValues("otp");
-    if(!otp) {
-        setIsOtpLoading(false);
-        toast({ title: "OTP Required", description: "Please enter the OTP.", variant: "destructive" });
-        return;
+
+    if (!otp) {
+      setIsOtpLoading(false);
+      toast({
+        title: "OTP Required",
+        description: "Please enter the OTP.",
+        variant: "destructive",
+      });
+      return;
     }
-    (window as any).confirmationResult.confirm(otp).then(async (result: any) => {
-      const firebaseUser = result.user;
-      
-      const profileRes = await fetch(`/api/users?uid=${firebaseUser.uid}`);
-      if (profileRes.status === 404) {
-        const profileData = { id: firebaseUser.uid, name: 'New User', email: firebaseUser.email, role: 'Job Seeker', phone: firebaseUser.phoneNumber };
-        await fetch('/api/users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+
+    (window as any).confirmationResult
+      .confirm(otp)
+      .then(async (result: any) => {
+        const firebaseUser = result.user;
+
+        const profileRes = await fetch(`/api/users?uid=${firebaseUser.uid}`);
+        if (profileRes.status === 404) {
+          const profileData = {
+            id: firebaseUser.uid,
+            name: "New User",
+            role: "Job Seeker",
+            phone: firebaseUser.phoneNumber,
+          };
+          await fetch("/api/users", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(profileData),
+          });
+        }
+
+        await login(firebaseUser);
+        setIsOtpLoading(false);
+        toast({ title: "Login Successful!", description: "Welcome back!" });
+        router.push("/");
+      })
+      .catch(() => {
+        setIsOtpLoading(false);
+        toast({
+          title: "OTP Verification Failed",
+          description: "Invalid OTP. Please try again.",
+          variant: "destructive",
         });
-      }
+      });
+  };
 
-      await login(firebaseUser);
-      setIsOtpLoading(false);
-      toast({ title: "Login Successful!", description: "Welcome back!" });
-      router.push("/");
-    }).catch((error: any) => {
-      setIsOtpLoading(false);
-      toast({ title: "OTP Verification Failed", description: "Invalid OTP. Please try again.", variant: "destructive" });
-    });
-  }
-
-
-  if (loading || user) {
-    return null;
-  }
+  if (loading || user) return null;
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-128px)] bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle>Job Seeker Login</CardTitle>
-          <CardDescription>
-            Access your account.
-          </CardDescription>
+          <CardDescription>Access your account.</CardDescription>
         </CardHeader>
         <CardContent>
           <div id="recaptcha-container"></div>
-          {loginMethod === 'email' ? (
+
+          {loginMethod === "email" ? (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onEmailSubmit)} className="space-y-4">
                 <FormField
@@ -259,11 +302,7 @@ export default function LoginPage() {
                     <FormItem>
                       <FormLabel>Email ID</FormLabel>
                       <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="Enter your active Email ID"
-                          {...field}
-                        />
+                        <Input type="email" placeholder="Enter your Email" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -275,33 +314,26 @@ export default function LoginPage() {
                   render={({ field }) => (
                     <FormItem>
                       <div className="flex items-center justify-between">
-                          <FormLabel>Password</FormLabel>
-                          <Link href="#" className="text-sm text-primary hover:underline">
-                              Forgot Password?
-                          </Link>
+                        <FormLabel>Password</FormLabel>
+                        <Link href="#" className="text-sm text-primary hover:underline">
+                          Forgot Password?
+                        </Link>
                       </div>
                       <FormControl>
                         <div className="relative">
                           <Input
-                              type={showPassword ? "text" : "password"}
-                              placeholder="Enter your password"
-                              {...field}
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Enter your password"
+                            {...field}
                           />
                           <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() => setShowPassword(!showPassword)}
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
                           >
-                              {showPassword ? (
-                                  <EyeOff className="h-4 w-4" aria-hidden="true" />
-                              ) : (
-                                  <Eye className="h-4 w-4" aria-hidden="true" />
-                              )}
-                              <span className="sr-only">
-                                  {showPassword ? "Hide password" : "Show password"}
-                              </span>
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </Button>
                         </div>
                       </FormControl>
@@ -310,94 +342,94 @@ export default function LoginPage() {
                   )}
                 />
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting && (
-                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                  )}
+                  {isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                   Login
                 </Button>
               </form>
             </Form>
           ) : (
-             <Form {...otpForm}>
-                <form onSubmit={otpForm.handleSubmit(showOtpInput ? onOTPVerify : onSignup)} className="space-y-4">
-                  {showOtpInput ? (
-                     <FormField
-                        control={otpForm.control}
-                        name="otp"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Enter OTP</FormLabel>
-                                <FormControl>
-                                    <Input 
-                                        type="text"
-                                        placeholder="Enter OTP"
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                  ) : (
-                     <FormField
-                        control={otpForm.control}
-                        name="phone"
-                        render={({ field }) => (
-                           <FormItem>
-                             <FormLabel>Phone Number</FormLabel>
-                             <FormControl>
-                                <PhoneInput
-                                  countries={["IN"]}
-                                  defaultCountry="IN"
-                                  placeholder="Enter phone number"
-                                  withCountryCallingCode
-                                  {...field}
-                                />
-                             </FormControl>
-                             <FormMessage />
-                           </FormItem>
-                        )}
-                      />
-                  )}
-                   <Button type="submit" className="w-full" disabled={isOtpLoading || !phoneValue}>
-                     {isOtpLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                     {showOtpInput ? 'Verify OTP' : 'Send OTP'}
-                   </Button>
-                 </form>
+            <Form {...otpForm}>
+              <form
+                onSubmit={otpForm.handleSubmit(showOtpInput ? onOTPVerify : onSignup)}
+                className="space-y-4"
+              >
+                {!showOtpInput ? (
+                  <FormField
+                    control={otpForm.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <PhoneInput
+                            {...field}
+                            control={otpForm.control}
+                            name="phone"
+                            placeholder="Enter phone number"
+                            defaultCountry="IN"
+                            countries={["IN"]}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <FormField
+                    control={otpForm.control}
+                    name="otp"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Enter OTP</FormLabel>
+                        <FormControl>
+                          <Input type="text" placeholder="Enter OTP" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isOtpLoading || !phoneValue}
+                >
+                  {isOtpLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                  {showOtpInput ? "Verify OTP" : "Send OTP"}
+                </Button>
+              </form>
             </Form>
           )}
 
-           <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                    Or
-                    </span>
-                </div>
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
             </div>
-            
-            <div className="space-y-4">
-                 <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
-                    <GoogleIcon />
-                    Sign in with Google
-                </Button>
-                 {loginMethod === 'email' && (
-                    <Button variant="link" className="w-full" onClick={() => setLoginMethod('otp')}>
-                        Use OTP to Login
-                    </Button>
-                 )}
-                 {loginMethod === 'otp' && (
-                    <Button variant="link" className="w-full" onClick={() => setLoginMethod('email')}>
-                        Login with Email
-                    </Button>
-                 )}
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or</span>
             </div>
+          </div>
 
+          <div className="space-y-4">
+            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
+              <GoogleIcon />
+              Sign in with Google
+            </Button>
+
+            {loginMethod === "email" ? (
+              <Button variant="link" className="w-full" onClick={() => setLoginMethod("otp")}>
+                Use OTP to Login
+              </Button>
+            ) : (
+              <Button variant="link" className="w-full" onClick={() => setLoginMethod("email")}>
+                Login with Email
+              </Button>
+            )}
+          </div>
 
           <div className="mt-4 text-center text-sm">
-            Don't have an account?{" "}
+            Don’t have an account?{" "}
             <Link href="/signup" className="underline">
               Sign up
             </Link>
