@@ -33,7 +33,6 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { firebaseApp } from "@/firebase/config";
-import PhoneInput from "react-phone-number-input/react-hook-form-input";
 
 // Google Icon Component
 const GoogleIcon = () => (
@@ -80,7 +79,7 @@ const formSchema = z
     email: z.string().email("Please enter a valid email address."),
     phone: z
       .string()
-      .regex(/^\+91[6-9]\d{9}$/, "Enter a valid 10-digit Indian phone number."),
+      .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian phone number."),
     password: z.string().min(8, "Password must be at least 8 characters."),
     confirmPassword: z.string(),
   })
@@ -131,7 +130,7 @@ export default function SignupPage() {
         id: firebaseUser.uid,
         name: data.name,
         email: data.email,
-        phone: data.phone,
+        phone: `+91${data.phone}`,
         role: "Job Seeker",
       };
 
@@ -269,6 +268,7 @@ export default function SignupPage() {
                 )}
               />
 
+              {/* ✅ Only +91 Phone Number Input */}
               <FormField
                 control={form.control}
                 name="phone"
@@ -276,15 +276,23 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <PhoneInput
-                        {...field}
-                        control={form.control}
-                        name="phone"
-                        placeholder="Enter phone number"
-                        defaultCountry="IN"
-                        countries={["IN"]}
-                        withCountryCallingCode
-                      />
+                      <div className="flex items-center">
+                        <span className="px-3 py-2 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-gray-600 text-sm">
+                          +91
+                        </span>
+                        <Input
+                          type="tel"
+                          maxLength={10}
+                          placeholder="Enter 10-digit phone number"
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, "");
+                            field.onChange(value);
+                          }}
+                          value={field.value}
+                          className="rounded-l-none"
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
