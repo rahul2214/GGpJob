@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -27,26 +26,61 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { useEffect } from "react";
-import { getAuth, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "firebase/auth";
 import { firebaseApp } from "@/firebase/config";
-import PhoneInput from 'react-phone-number-input';
-import 'react-phone-number-input/style.css';
+import PhoneInput from "react-phone-number-input/react-hook-form-input";
 
-
+// Google Icon Component
 const GoogleIcon = () => (
-    <svg className="mr-2 h-4 w-4" viewBox="0 0 48 48">
-        <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
-        <path fill="#FF3D00" d="m6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z" />
-        <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A8 8 0 0 1 24 36c-5.222 0-9.61-3.868-11.28-8.892l-6.522 5.025C9.505 39.556 16.227 44 24 44z" />
-        <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
-    </svg>
+  <svg className="mr-2 h-4 w-4" viewBox="0 0 48 48">
+    <path
+      fill="#FFC107"
+      d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8
+      c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154
+      7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24
+      4C12.955 4 4 12.955 4 24s8.955 20 20
+      20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
+    />
+    <path
+      fill="#FF3D00"
+      d="m6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24
+      12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046
+      6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306
+      14.691z"
+    />
+    <path
+      fill="#4CAF50"
+      d="M24 44c5.166 0 9.86-1.977
+      13.409-5.192l-6.19-5.238A8 8 0 0 1 24
+      36c-5.222 0-9.61-3.868-11.28-8.892l-6.522
+      5.025C9.505 39.556 16.227 44 24 44z"
+    />
+    <path
+      fill="#1976D2"
+      d="M43.611 20.083H42V20H24v8h11.303c-1.649
+      4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12
+      12-12c3.059 0 5.842 1.154 7.961
+      3.039l5.657-5.657C34.046 6.053 29.268
+      4 24 4C12.955 4 4 12.955 4
+      24s8.955 20 20 20s20-8.955
+      20-20c0-1.341-.138-2.65-.389-3.917z"
+    />
+  </svg>
 );
 
+// ✅ Validation Schema
 const formSchema = z
   .object({
     name: z.string().min(2, "Full name must be at least 2 characters."),
     email: z.string().email("Please enter a valid email address."),
-    phone: z.string().min(10, "Please enter a valid phone number."),
+    phone: z
+      .string()
+      .regex(/^\+91[6-9]\d{9}$/, "Enter a valid 10-digit Indian phone number."),
     password: z.string().min(8, "Password must be at least 8 characters."),
     confirmPassword: z.string(),
   })
@@ -64,7 +98,7 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.push('/');
+      router.push("/");
     }
   }, [user, loading, router]);
 
@@ -81,20 +115,24 @@ export default function SignupPage() {
 
   const { isSubmitting } = form.formState;
 
+  // ✅ Email/Password Signup
   const onSubmit = async (data: SignupFormValues) => {
     try {
       const auth = getAuth(firebaseApp);
-      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-      
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        data.email,
+        data.password
+      );
+
       const firebaseUser = userCredential.user;
 
-      // Create user profile in our database (Firestore)
       const profileData = {
         id: firebaseUser.uid,
         name: data.name,
         email: data.email,
         phone: data.phone,
-        role: 'Job Seeker',
+        role: "Job Seeker",
       };
 
       const response = await fetch("/api/users", {
@@ -117,14 +155,14 @@ export default function SignupPage() {
 
       router.push("/");
     } catch (error: any) {
-       let errorMessage = "An unexpected error occurred.";
+      let errorMessage = "An unexpected error occurred.";
       if (error.code) {
         switch (error.code) {
-          case 'auth/email-already-in-use':
-            errorMessage = 'This email address is already in use.';
+          case "auth/email-already-in-use":
+            errorMessage = "This email address is already in use.";
             break;
-           case 'auth/weak-password':
-            errorMessage = 'The password is too weak.';
+          case "auth/weak-password":
+            errorMessage = "The password is too weak.";
             break;
           default:
             errorMessage = error.message;
@@ -140,6 +178,7 @@ export default function SignupPage() {
     }
   };
 
+  // ✅ Google Signup
   const handleGoogleSignUp = async () => {
     const auth = getAuth(firebaseApp);
     const provider = new GoogleAuthProvider();
@@ -148,32 +187,31 @@ export default function SignupPage() {
       const firebaseUser = result.user;
 
       const profileRes = await fetch(`/api/users?uid=${firebaseUser.uid}`);
-      
+
       if (profileRes.status === 404) {
         const profileData = {
           id: firebaseUser.uid,
-          name: firebaseUser.displayName || 'New User',
+          name: firebaseUser.displayName || "New User",
           email: firebaseUser.email,
-          role: 'Job Seeker',
+          role: "Job Seeker",
         };
-        const createProfileRes = await fetch('/api/users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(profileData),
+        const createProfileRes = await fetch("/api/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(profileData),
         });
         if (!createProfileRes.ok) {
-            throw new Error('Failed to create user profile.');
+          throw new Error("Failed to create user profile.");
         }
       }
 
       await login(firebaseUser);
-      
+
       toast({
         title: "Signed Up with Google!",
         description: "Welcome to Job Portal!",
       });
       router.push("/");
-
     } catch (error: any) {
       console.error(error);
       toast({
@@ -183,7 +221,6 @@ export default function SignupPage() {
       });
     }
   };
-
 
   if (loading || user) {
     return null;
@@ -231,25 +268,29 @@ export default function SignupPage() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="phone"
                 render={({ field }) => (
-                   <FormItem>
-                     <FormLabel>Phone Number</FormLabel>
-                     <FormControl>
-                        <PhoneInput
-                          countries={["IN"]}
-                          defaultCountry="IN"
-                          withCountryCallingCode
-                          placeholder="Enter phone number"
-                          {...field}
-                        />
-                     </FormControl>
-                     <FormMessage />
-                   </FormItem>
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <PhoneInput
+                        {...field}
+                        control={form.control}
+                        name="phone"
+                        placeholder="Enter phone number"
+                        defaultCountry="IN"
+                        countries={["IN"]}
+                        withCountryCallingCode
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="password"
@@ -285,22 +326,19 @@ export default function SignupPage() {
             </form>
           </Form>
 
-           <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                    Or
-                    </span>
-                </div>
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
             </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or</span>
+            </div>
+          </div>
 
-            <Button variant="outline" className="w-full" onClick={handleGoogleSignUp}>
-                <GoogleIcon />
-                Sign up with Google
-            </Button>
-
+          <Button variant="outline" className="w-full" onClick={handleGoogleSignUp}>
+            <GoogleIcon />
+            Sign up with Google
+          </Button>
 
           <div className="mt-4 text-center text-sm">
             Already have an account?{" "}
