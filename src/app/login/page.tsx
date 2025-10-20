@@ -359,7 +359,7 @@ export default function LoginPage() {
                         )}
                       />
                   )}
-                   <Button type="submit" className="w-full" disabled={isOtpLoading || (!phoneValue && !showOtpInput)}>
+                   <Button type="submit" className="w-full" disabled={isOtpLoading || !phoneValue}>
                      {isOtpLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                      {showOtpInput ? 'Verify OTP' : 'Send OTP'}
                    </Button>
