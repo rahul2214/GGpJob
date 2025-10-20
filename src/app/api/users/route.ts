@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 // POST a new user (create profile after signup)
 export async function POST(request: Request) {
   try {
-    const { id, name, email, role } = await request.json();
+    const { id, name, email, role, phone } = await request.json();
 
     if (!id || !name || !email || !role) {
         return NextResponse.json({ error: 'Missing required fields for profile creation' }, { status: 400 });
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         name,
         email,
         role,
-        phone: '',
+        phone: phone || '',
         headline: '',
         resumeUrl: '',
         domainId: null,

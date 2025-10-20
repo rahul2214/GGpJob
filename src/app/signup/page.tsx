@@ -29,20 +29,9 @@ import { useUser } from "@/contexts/user-context";
 import { useEffect } from "react";
 import { getAuth, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { firebaseApp } from "@/firebase/config";
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
-const formSchema = z
-  .object({
-    name: z.string().min(2, "Full name must be at least 2 characters."),
-    email: z.string().email("Please enter a valid email address."),
-    password: z.string().min(8, "Password must be at least 8 characters."),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
-type SignupFormValues = z.infer<typeof formSchema>;
 
 const GoogleIcon = () => (
     <svg className="mr-2 h-4 w-4" viewBox="0 0 48 48">
@@ -52,6 +41,21 @@ const GoogleIcon = () => (
         <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
     </svg>
 );
+
+const formSchema = z
+  .object({
+    name: z.string().min(2, "Full name must be at least 2 characters."),
+    email: z.string().email("Please enter a valid email address."),
+    phone: z.string().min(10, "Please enter a valid phone number."),
+    password: z.string().min(8, "Password must be at least 8 characters."),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+type SignupFormValues = z.infer<typeof formSchema>;
 
 export default function SignupPage() {
   const { toast } = useToast();
@@ -69,6 +73,7 @@ export default function SignupPage() {
     defaultValues: {
       name: "",
       email: "",
+      phone: "",
       password: "",
       confirmPassword: "",
     },
@@ -88,6 +93,7 @@ export default function SignupPage() {
         id: firebaseUser.uid,
         name: data.name,
         email: data.email,
+        phone: data.phone,
         role: 'Job Seeker',
       };
 
@@ -223,6 +229,25 @@ export default function SignupPage() {
                     </FormControl>
                     <FormMessage />
                   </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                   <FormItem>
+                     <FormLabel>Phone Number</FormLabel>
+                     <FormControl>
+                        <PhoneInput
+                          countries={["IN"]}
+                          defaultCountry="IN"
+                          withCountryCallingCode
+                          placeholder="Enter phone number"
+                          {...field}
+                        />
+                     </FormControl>
+                     <FormMessage />
+                   </FormItem>
                 )}
               />
               <FormField
