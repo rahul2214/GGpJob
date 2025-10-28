@@ -9,11 +9,11 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center gap-2 mb-4 md:mb-0 whitespace-nowrap">
             <BriefcaseBusiness className="h-6 w-6 text-primary" />
-            <span className="font-semibold text-lg">Job Portal</span>
+            <span className="font-semibold text-lg">VELTRIA</span>
           </div>
           <div className="text-center md:text-left mb-4 md:mb-0">
             <p className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} Job Portal. All rights reserved.
+              &copy; {new Date().getFullYear()} VELTRIA. All rights reserved.
             </p>
           </div>
           <div className="flex items-center space-x-4">
