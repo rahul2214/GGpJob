@@ -7,15 +7,10 @@ export default function Footer() {
     <footer className="border-t bg-card text-card-foreground">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row justify-between items-center">
-          <Link
-            href="https://veltria.in"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 mb-4 md:mb-0"
-          >
+          <div className="flex items-center gap-2 mb-4 md:mb-0">
             <BriefcaseBusiness className="h-6 w-6 text-primary" />
             <span className="font-semibold text-lg">VELTRIA</span>
-          </Link>
+          </div>
           
           <div className="text-center md:text-left mb-4 md:mb-0">
             <p className="text-sm text-muted-foreground">
