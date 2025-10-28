@@ -18,7 +18,16 @@ export default function Footer() {
           </Link>
           <div className="text-center md:text-left mb-4 md:mb-0">
             <p className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} VELTRIA. All rights reserved.
+              &copy; {new Date().getFullYear()}{" "}
+              <Link
+                href="https://veltria.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-primary transition-colors"
+              >
+                VELTRIA
+              </Link>
+              . All rights reserved.
             </p>
           </div>
           <div className="flex items-center space-x-4">
