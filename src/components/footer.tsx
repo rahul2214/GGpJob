@@ -11,11 +11,12 @@ export default function Footer() {
             href="https://veltria.in"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 mb-4 md:mb-0 whitespace-nowrap"
+            className="flex items-center gap-2 mb-4 md:mb-0"
           >
             <BriefcaseBusiness className="h-6 w-6 text-primary" />
             <span className="font-semibold text-lg">VELTRIA</span>
           </Link>
+          
           <div className="text-center md:text-left mb-4 md:mb-0">
             <p className="text-sm text-muted-foreground">
               &copy; {new Date().getFullYear()}{" "}
