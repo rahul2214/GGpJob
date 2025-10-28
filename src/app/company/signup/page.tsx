@@ -239,12 +239,6 @@ export default function CompanySignupPage() {
               Sign in
             </Link>
           </div>
-          <div className="mt-2 text-center text-sm">
-            Looking for a job?{" "}
-            <Link href="/signup" className="underline">
-              Sign up as a Job Seeker
-            </Link>
-          </div>
         </CardContent>
       </Card>
     </div>
