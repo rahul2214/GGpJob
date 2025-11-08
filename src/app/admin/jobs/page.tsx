@@ -91,6 +91,8 @@ export default function ManageJobsPage() {
               <TableHead>Company</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Date Posted</TableHead>
+              <TableHead>Total Applicants</TableHead>
+              <TableHead>Selected</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -101,6 +103,8 @@ export default function ManageJobsPage() {
                 <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                 <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                 <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-8 w-8" /></TableCell>
               </TableRow>
             ))}
@@ -117,6 +121,8 @@ export default function ManageJobsPage() {
             <TableHead>Company</TableHead>
             <TableHead>Type</TableHead>
             <TableHead>Date Posted</TableHead>
+            <TableHead>Total Applicants</TableHead>
+            <TableHead>Selected</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -131,6 +137,8 @@ export default function ManageJobsPage() {
                 </Badge>
               </TableCell>
               <TableCell>{format(new Date(job.postedAt), "PPP")}</TableCell>
+              <TableCell className="text-center">{job.applicantCount || 0}</TableCell>
+              <TableCell className="text-center">{job.selectedApplicantCount || 0}</TableCell>
               <TableCell className="text-right">
                  <DropdownMenu>
                   <DropdownMenuTrigger asChild>

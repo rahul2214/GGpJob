@@ -116,9 +116,15 @@ export async function GET(request: Request) {
 
 
     const applicationCounts = applications.reduce((acc, app) => {
-        acc[app.jobId] = (acc[app.jobId] || 0) + 1;
+        if (!acc[app.jobId]) {
+            acc[app.jobId] = { total: 0, selected: 0 };
+        }
+        acc[app.jobId].total++;
+        if (app.statusId === 4) { // Status ID for 'Selected'
+            acc[app.jobId].selected++;
+        }
         return acc;
-    }, {} as { [key: string]: number });
+    }, {} as { [key: string]: { total: number; selected: number } });
 
 
     let jobs = jobsSnapshot.docs.map(doc => {
@@ -128,6 +134,7 @@ export async function GET(request: Request) {
       const jobType = jobTypeMap.get(parseInt(jobData.jobTypeId));
       const workplaceType = jobData.workplaceTypeId ? workplaceTypeMap.get(parseInt(jobData.workplaceTypeId)) : null;
       const experienceLevel = jobData.experienceLevelId ? experienceLevelMap.get(parseInt(jobData.experienceLevelId)) : null;
+      const counts = applicationCounts[doc.id] || { total: 0, selected: 0 };
 
       return {
           id: doc.id,
@@ -137,7 +144,8 @@ export async function GET(request: Request) {
           type: jobType?.name || 'N/A',
           workplaceType: workplaceType?.name || 'N/A',
           experienceLevel: experienceLevel?.name || 'N/A',
-          applicantCount: applicationCounts[doc.id] || 0,
+          applicantCount: counts.total,
+          selectedApplicantCount: counts.selected,
       }
     });
 
