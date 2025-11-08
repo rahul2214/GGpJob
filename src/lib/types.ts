@@ -64,6 +64,7 @@ export interface Job {
   experienceLevel?: string;
   domain?: string;
   applicantCount?: number;
+  selectedApplicantCount?: number;
 }
 
 export interface ApplicationStatus {
