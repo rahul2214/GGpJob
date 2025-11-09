@@ -10,11 +10,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { AnimatedCounter } from '@/components/animated-counter';
+import { Briefcase, Users, Building } from 'lucide-react';
+
+interface AnalyticsData {
+  totalDirectJobs: number;
+  totalReferralJobs: number;
+  totalJobSeekers: number;
+  totalRecruiters: number;
+  totalEmployees: number;
+}
 
 export default function Home() {
   const { user, loading } = useUser();
   const router = useRouter();
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && user) {
@@ -23,6 +35,25 @@ export default function Home() {
       }
     }
   }, [user, loading, router]);
+  
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      setAnalyticsLoading(true);
+      try {
+        const res = await fetch(`/api/analytics`);
+        const data = await res.json();
+        setAnalytics(data);
+      } catch (error) {
+        console.error("Failed to fetch analytics", error);
+      } finally {
+        setAnalyticsLoading(false);
+      }
+    };
+
+    if (!user && !loading) {
+       fetchAnalytics();
+    }
+  }, [user, loading]);
 
   if (loading) {
     return (
@@ -57,18 +88,58 @@ export default function Home() {
   const renderDashboard = () => {
     if (!user) {
        return (
-         <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-            <Card className="w-full max-w-md text-center">
-                <CardHeader>
-                    <CardTitle>Welcome to Job Portal</CardTitle>
-                    <CardDescription>Please log in to access your dashboard.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button asChild>
-                        <Link href="/login">Go to Login</Link>
-                    </Button>
-                </CardContent>
-            </Card>
+         <div className="h-[calc(100vh-200px)] flex flex-col items-center justify-center text-center p-4">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Welcome to VELTRIA</h1>
+            <p className="mt-4 text-lg text-muted-foreground max-w-2xl">
+              Your premier destination for connecting with top talent and finding the perfect job opportunity. Explore thousands of listings today.
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <Button asChild size="lg">
+                  <Link href="/login">Get Started</Link>
+              </Button>
+               <Button asChild variant="outline" size="lg">
+                  <Link href="/jobs">Browse Jobs</Link>
+              </Button>
+            </div>
+            
+             <div className="mt-16 w-full max-w-4xl">
+              {analyticsLoading ? (
+                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+                    {[...Array(3)].map((_, i) => (
+                      <Card key={i} className="text-center">
+                        <CardHeader>
+                          <Skeleton className="h-8 w-20 mx-auto mb-2" />
+                          <Skeleton className="h-5 w-32 mx-auto" />
+                        </CardHeader>
+                      </Card>
+                    ))}
+                 </div>
+              ) : analytics ? (
+                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+                  <Card>
+                    <CardHeader className="items-center text-center">
+                      <Briefcase className="h-8 w-8 text-primary mb-2" />
+                      <AnimatedCounter value={analytics.totalDirectJobs + analytics.totalReferralJobs} className="text-4xl font-bold" />
+                      <CardDescription>Live Jobs</CardDescription>
+                    </CardHeader>
+                  </Card>
+                   <Card>
+                    <CardHeader className="items-center text-center">
+                      <Users className="h-8 w-8 text-primary mb-2" />
+                      <AnimatedCounter value={analytics.totalJobSeekers} className="text-4xl font-bold" />
+                      <CardDescription>Candidates</CardDescription>
+                    </CardHeader>
+                  </Card>
+                   <Card>
+                    <CardHeader className="items-center text-center">
+                      <Building className="h-8 w-8 text-primary mb-2" />
+                      <AnimatedCounter value={analytics.totalRecruiters + analytics.totalEmployees} className="text-4xl font-bold" />
+                      <CardDescription>Companies</CardDescription>
+                    </CardHeader>
+                  </Card>
+                </div>
+              ) : null}
+            </div>
          </div>
        );
     }
