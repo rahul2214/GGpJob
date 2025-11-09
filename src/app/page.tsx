@@ -89,7 +89,7 @@ export default function Home() {
     if (!user) {
        return (
          <div className="h-[calc(100vh-200px)] flex flex-col items-center justify-center text-center p-4">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Welcome to VELTRIA</h1>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Welcome to VELTRIA Job Portal</h1>
             <p className="mt-4 text-lg text-muted-foreground max-w-2xl">
               Your premier destination for connecting with top talent and finding the perfect job opportunity. Explore thousands of listings today.
             </p>
