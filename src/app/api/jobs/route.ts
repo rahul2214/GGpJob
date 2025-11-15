@@ -68,8 +68,8 @@ export async function GET(request: Request) {
     }
     const jobTypesParams = searchParams.getAll('jobType').filter(jt => jt && jt !== 'all');
     if (jobTypesParams.length > 0) {
-         query = query.where('jobTypeId', 'in', jobTypesParams);
-         hasComplexFilters = true;
+        query = query.where('jobTypeId', 'in', jobTypesParams);
+        hasComplexFilters = true;
     }
     
     // --- End Filtering Logic ---
