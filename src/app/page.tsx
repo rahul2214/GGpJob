@@ -63,22 +63,6 @@ export default function Home() {
                 </div>
             </section>
 
-             <section className="py-16 sm:py-24 bg-muted/40">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center">
-                        <h2 className="text-3xl font-bold tracking-tight">Hiring in Top MNCs</h2>
-                        <p className="mt-4 text-lg text-muted-foreground">Join the world's leading companies.</p>
-                    </div>
-                    <div className="mt-12 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 items-center">
-                        {['Google', 'Microsoft', 'Amazon', 'Meta', 'Apple', 'Netflix'].map((company) => (
-                            <div key={company} className="flex justify-center">
-                                <span className="text-2xl font-semibold text-muted-foreground/80">{company}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
              <section className="py-16 sm:py-24">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                      <div className="text-center">
@@ -170,6 +154,23 @@ export default function Home() {
                     </div>
                 </div>
             </section>
+
+             <section className="py-16 sm:py-24 bg-muted/40">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center">
+                        <h2 className="text-3xl font-bold tracking-tight">Hiring in Top MNCs</h2>
+                        <p className="mt-4 text-lg text-muted-foreground">Join the world's leading companies.</p>
+                    </div>
+                    <div className="mt-12 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 items-center">
+                        {['Google', 'Microsoft', 'Amazon', 'Meta', 'Apple', 'Netflix'].map((company) => (
+                            <div key={company} className="flex justify-center">
+                                <span className="text-2xl font-semibold text-muted-foreground/80">{company}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
         </div>
        );
     }
