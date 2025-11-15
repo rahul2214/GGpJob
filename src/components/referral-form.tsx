@@ -70,7 +70,10 @@ export function ReferralForm({ job }: ReferralFormProps) {
             ]);
             
             setDomains(await domainsRes.json());
-            setJobTypes(await jobTypesRes.json());
+            const fetchedJobTypes = await jobTypesRes.json();
+            if (Array.isArray(fetchedJobTypes)) {
+                setJobTypes(fetchedJobTypes.filter(jt => jt.name !== 'Walk-in Interview'));
+            }
             setWorkplaceTypes(await workplaceTypesRes.json());
             setExperienceLevels(await experienceLevelsRes.json());
             setLocations(await locationsRes.json());
