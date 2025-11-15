@@ -69,7 +69,12 @@ export function JobForm({ job }: JobFormProps) {
             ]);
             
             setDomains(await domainsRes.json());
-            setJobTypes(await jobTypesRes.json());
+            const fetchedJobTypes = await jobTypesRes.json();
+            if (Array.isArray(fetchedJobTypes) && !fetchedJobTypes.some(jt => jt.name === 'Walk-in Interview')) {
+                const highestId = fetchedJobTypes.reduce((maxId, item) => Math.max(item.id, maxId), 0);
+                fetchedJobTypes.push({ id: highestId + 1, name: 'Walk-in Interview' });
+            }
+            setJobTypes(fetchedJobTypes);
             setWorkplaceTypes(await workplaceTypesRes.json());
             setExperienceLevels(await experienceLevelsRes.json());
             setLocations(await locationsRes.json());
