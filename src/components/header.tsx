@@ -197,6 +197,14 @@ export default function Header() {
                                 )}
                                </>
                             )}
+                             {isClient && !loading && user && (user.role === 'Recruiter' || user.role === 'Employee') && (
+                                 <SheetClose asChild>
+                                    <Link href={user.role === 'Recruiter' ? '/jobs/post' : '/referrals/post'} className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                        <PlusCircle className="h-5 w-5" />
+                                        Post Job
+                                    </Link>
+                                </SheetClose>
+                            )}
                           </>
                         )}
                     </nav>
@@ -258,6 +266,12 @@ export default function Header() {
                             <Link href="/signup">
                               <UserPlus className="mr-2 h-4 w-4" />
                               Sign Up
+                            </Link>
+                          </Button>
+                           <Button asChild variant="outline">
+                            <Link href="/company/login">
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Post Job
                             </Link>
                           </Button>
                       </div>
