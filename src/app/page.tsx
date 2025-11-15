@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, GraduationCap, Layers, ThumbsUp } from 'lucide-react';
 
 export default function Home() {
   const { user, loading } = useUser();
@@ -79,7 +79,53 @@ export default function Home() {
                 </div>
             </section>
 
-            <section className="py-16 sm:py-24">
+             <section className="py-16 sm:py-24">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                     <div className="text-center">
+                        <h2 className="text-3xl font-bold tracking-tight">Find Your Perfect Fit</h2>
+                        <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+                            Whatever your career goals, we have an opportunity for you. Explore a wide range of jobs tailored to your skills and aspirations.
+                        </p>
+                    </div>
+                     <div className="mt-12 grid md:grid-cols-3 gap-8">
+                        <Card>
+                            <CardHeader className="items-center text-center">
+                                <div className="bg-primary/10 p-3 rounded-full">
+                                    <Layers className="h-8 w-8 text-primary" />
+                                </div>
+                                <CardTitle>Diverse Job Domains</CardTitle>
+                            </CardHeader>
+                            <CardContent className="text-center">
+                                <p className="text-muted-foreground">From tech and finance to creative arts, explore opportunities across a wide spectrum of industries.</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                             <CardHeader className="items-center text-center">
+                                <div className="bg-primary/10 p-3 rounded-full">
+                                    <ThumbsUp className="h-8 w-8 text-primary" />
+                                </div>
+                                <CardTitle>Exclusive Referrals</CardTitle>
+                            </CardHeader>
+                            <CardContent className="text-center">
+                               <p className="text-muted-foreground">Get a competitive edge with jobs posted by company insiders. Referrals increase your chances of getting hired.</p>
+                            </CardContent>
+                        </Card>
+                         <Card>
+                             <CardHeader className="items-center text-center">
+                                <div className="bg-primary/10 p-3 rounded-full">
+                                    <GraduationCap className="h-8 w-8 text-primary" />
+                                </div>
+                                <CardTitle>Internship Opportunities</CardTitle>
+                            </CardHeader>
+                            <CardContent className="text-center">
+                                <p className="text-muted-foreground">Kickstart your career. Find paid internships and entry-level positions at top companies to gain valuable experience.</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </section>
+
+            <section className="py-16 sm:py-24 bg-muted/40">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid md:grid-cols-2 gap-12 items-center">
                         <div className="order-2 md:order-1">
