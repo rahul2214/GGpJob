@@ -34,7 +34,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { useEffect } from "react";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { firebaseApp } from "@/firebase/config";
 
 const formSchema = z
@@ -82,6 +82,9 @@ export default function CompanySignupPage() {
       
       const firebaseUser = userCredential.user;
 
+      // Send verification email
+      await sendEmailVerification(firebaseUser);
+
       const profileData = {
         id: firebaseUser.uid,
         name: data.name,
@@ -99,15 +102,16 @@ export default function CompanySignupPage() {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to create user profile.");
       }
-
-      await login(firebaseUser);
+      
+      // Sign the user out immediately so they have to verify their email
+      await auth.signOut();
 
       toast({
         title: "Account Created!",
-        description: "Welcome to Job Portal!",
+        description: "A verification email has been sent. Please check your inbox to complete the registration.",
       });
 
-      router.push("/");
+      router.push("/company/login");
     } catch (error: any) {
        let errorMessage = "An unexpected error occurred.";
       if (error.code) {
