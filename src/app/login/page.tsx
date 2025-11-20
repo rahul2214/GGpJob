@@ -27,7 +27,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { useEffect, useState } from "react";
-import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendEmailVerification } from "firebase/auth";
 import { firebaseApp } from "@/firebase/config";
 
 const formSchema = z.object({
@@ -68,12 +68,42 @@ export default function LoginPage() {
 
   const { isSubmitting } = form.formState;
 
+  const handleResendVerification = async (email: string) => {
+    try {
+        const auth = getAuth(firebaseApp);
+        const { password } = form.getValues();
+        if (!password) {
+            toast({ title: 'Password Required', description: 'Please enter your password to resend verification.', variant: 'destructive' });
+            return;
+        }
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        if (userCredential.user && !userCredential.user.emailVerified) {
+            await sendEmailVerification(userCredential.user);
+            toast({ title: 'Verification Email Sent', description: 'A new verification email has been sent to your address.' });
+        }
+        await auth.signOut(); // Sign out immediately
+    } catch (error: any) {
+        toast({ title: 'Error', description: 'Failed to resend verification email. Please check your credentials.', variant: 'destructive' });
+    }
+  };
+
 
   const onEmailSubmit = async (data: LoginFormValues) => {
     try {
       const auth = getAuth(firebaseApp);
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       
+      if (!userCredential.user.emailVerified) {
+        await auth.signOut();
+        toast({
+          title: "Email Not Verified",
+          description: "Please verify your email address before logging in. Check your inbox for the verification link.",
+          variant: "destructive",
+           action: <Button variant="secondary" size="sm" onClick={() => handleResendVerification(data.email)}>Resend Email</Button>
+        });
+        return;
+      }
+
       await login(userCredential.user);
 
       toast({
@@ -261,3 +291,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
