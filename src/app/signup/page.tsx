@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -31,6 +32,7 @@ import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  sendEmailVerification,
 } from "firebase/auth";
 import { firebaseApp } from "@/firebase/config";
 
@@ -125,6 +127,8 @@ export default function SignupPage() {
       );
 
       const firebaseUser = userCredential.user;
+      
+      await sendEmailVerification(firebaseUser);
 
       const profileData = {
         id: firebaseUser.uid,
@@ -144,15 +148,16 @@ export default function SignupPage() {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to create user profile.");
       }
-
-      await login(firebaseUser);
+      
+      await auth.signOut();
 
       toast({
         title: "Account Created!",
-        description: "Welcome to Job Portal!",
+        description: "A verification email has been sent to your inbox. Please verify your email to log in.",
       });
 
-      router.push("/");
+      router.push("/login");
+
     } catch (error: any) {
       let errorMessage = "An unexpected error occurred.";
       if (error.code) {
@@ -359,3 +364,4 @@ export default function SignupPage() {
     </div>
   );
 }
+
