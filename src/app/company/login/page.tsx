@@ -86,7 +86,6 @@ export default function CompanyLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       
       if (!userCredential.user.emailVerified) {
-        // Sign the user out because they are not verified
         await auth.signOut();
         toast({
           title: "Email Not Verified",
