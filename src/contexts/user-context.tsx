@@ -10,8 +10,9 @@ interface UserContextType {
   user: User | null;
   setUser: (user: User | null) => void;
   loading: boolean;
-  login: (firebaseUser: FirebaseUser) => Promise<void>;
+  login: (userProfile: User) => Promise<void>;
   logout: () => Promise<void>;
+  fetchUserProfile: (uid: string) => Promise<User | null>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -19,30 +20,25 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggingIn, setIsLoggingIn] = useState(false); // New state to prevent race conditions
 
-  const fetchUserProfile = useCallback(async (uid: string) => {
+  const fetchUserProfile = useCallback(async (uid: string): Promise<User | null> => {
     try {
       const res = await fetch(`/api/users?uid=${uid}`);
       
       if (res.ok) {
         const userProfile = await res.json();
-        setUserState(userProfile);
+        return userProfile;
       } else if (res.status === 404) {
-        // User profile doesn't exist in DB yet. This can happen right after signup.
-        // The signup flow should handle creating the profile.
-        setUserState(null);
+        console.warn(`User profile not found in DB for UID: ${uid}`);
+        return null;
       } else {
-        // For other errors, log it and sign out.
         console.error("Failed to fetch user profile, status:", res.status);
-        setUserState(null);
-        getAuth(firebaseApp).signOut();
+        return null;
       }
-
     } catch (error) {
-      console.error(error);
-      // If fetching fails, ensure the user is logged out of the app state
-      setUserState(null);
-      getAuth(firebaseApp).signOut();
+      console.error("Error fetching user profile:", error);
+      return null;
     }
   }, []);
 
@@ -56,9 +52,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
       
     const auth = getAuth(firebaseApp);
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // If a login process is active, let it handle the state update
+      if (isLoggingIn) return;
+
       setLoading(true);
       if (firebaseUser) {
-        await fetchUserProfile(firebaseUser.uid);
+        const userProfile = await fetchUserProfile(firebaseUser.uid);
+        setUserState(userProfile);
       } else {
         // User is signed out
         setUserState(null);
@@ -67,16 +67,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [fetchUserProfile]);
+  }, [fetchUserProfile, isLoggingIn]);
 
   const setUser = (user: User | null) => {
     setUserState(user);
   };
 
-  const login = async (firebaseUser: FirebaseUser) => {
-    setLoading(true);
-    await fetchUserProfile(firebaseUser.uid);
-    setLoading(false);
+  const login = async (userProfile: User) => {
+    setIsLoggingIn(true);
+    setUserState(userProfile);
+    setIsLoggingIn(false);
   }
 
   const logout = async () => {
@@ -86,7 +86,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }
   
   return (
-    <UserContext.Provider value={{ user, setUser, loading, login, logout }}>
+    <UserContext.Provider value={{ user, setUser, loading, login, logout, fetchUserProfile }}>
       {children}
     </UserContext.Provider>
   );

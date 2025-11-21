@@ -40,7 +40,7 @@ type LoginFormValues = z.infer<typeof formSchema>;
 export default function CompanyLoginPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { user, loading, login } = useUser();
+  const { user, loading, login, setUser, fetchUserProfile } = useUser();
 
   useEffect(() => {
     if (!loading && user) {
@@ -84,8 +84,9 @@ export default function CompanyLoginPage() {
     try {
       const auth = getAuth(firebaseApp);
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+      const firebaseUser = userCredential.user;
       
-      if (!userCredential.user.emailVerified) {
+      if (!firebaseUser.emailVerified) {
         await auth.signOut();
         toast({
           title: "Email Not Verified",
@@ -95,8 +96,15 @@ export default function CompanyLoginPage() {
         });
         return;
       }
-
-      await login(userCredential.user);
+      
+      const userProfile = await fetchUserProfile(firebaseUser.uid);
+      if (!userProfile) {
+        await auth.signOut();
+        toast({ title: "Login Failed", description: "User profile not found. Please contact support.", variant: "destructive" });
+        return;
+      }
+      
+      await login(userProfile);
 
       toast({
         title: "Login Successful!",
