@@ -1,6 +1,6 @@
 
 import Link from "next/link";
-import { BriefcaseBusiness, Linkedin, Twitter, Github } from "lucide-react";
+import { BriefcaseBusiness, Linkedin, Twitter, Github, Instagram } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -35,6 +35,9 @@ export default function Footer() {
             </Link>
             <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
               <Github className="h-5 w-5" />
+            </Link>
+            <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+              <Instagram className="h-5 w-5" />
             </Link>
           </div>
         </div>
