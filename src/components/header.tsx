@@ -256,24 +256,30 @@ export default function Header() {
                      )}
                      {isClient && !loading && !user && (
                       <div className="flex flex-col gap-2">
+                         <SheetClose asChild>
                          <Button asChild>
                             <Link href="/login">
                               <LogIn className="mr-2 h-4 w-4" />
                               Login
                             </Link>
                           </Button>
+                          </SheetClose>
+                          <SheetClose asChild>
                           <Button asChild variant="secondary">
                             <Link href="/signup">
                               <UserPlus className="mr-2 h-4 w-4" />
                               Sign Up
                             </Link>
                           </Button>
+                           </SheetClose>
+                           <SheetClose asChild>
                            <Button asChild variant="outline">
                             <Link href="/company/login">
                                 <PlusCircle className="mr-2 h-4 w-4" />
                                 Post Job
                             </Link>
                           </Button>
+                          </SheetClose>
                       </div>
                      )}
                 </div>
