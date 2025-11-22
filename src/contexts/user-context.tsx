@@ -10,7 +10,6 @@ interface UserContextType {
   user: User | null;
   setUser: (user: User | null) => void;
   loading: boolean;
-  login: (userProfile: User) => Promise<void>;
   logout: () => Promise<void>;
   fetchUserProfile: (uid: string) => Promise<User | null>;
 }
@@ -20,7 +19,6 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isLoggingIn, setIsLoggingIn] = useState(false); // New state to prevent race conditions
 
   const fetchUserProfile = useCallback(async (uid: string): Promise<User | null> => {
     try {
@@ -52,13 +50,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
       
     const auth = getAuth(firebaseApp);
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      // If a login process is active, let it handle the state update
-      if (isLoggingIn) return;
-
       setLoading(true);
       if (firebaseUser) {
-        const userProfile = await fetchUserProfile(firebaseUser.uid);
-        setUserState(userProfile);
+        // Additional check for email verification before fetching profile
+        if (firebaseUser.emailVerified) {
+            const userProfile = await fetchUserProfile(firebaseUser.uid);
+            setUserState(userProfile);
+        } else {
+            // If email is not verified, ensure user is logged out of the app's state
+            setUserState(null);
+            // Optionally, you can sign them out of Firebase as well to be strict
+            // await auth.signOut(); 
+        }
       } else {
         // User is signed out
         setUserState(null);
@@ -67,17 +70,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [fetchUserProfile, isLoggingIn]);
+  }, [fetchUserProfile]);
 
   const setUser = (user: User | null) => {
     setUserState(user);
   };
-
-  const login = async (userProfile: User) => {
-    setIsLoggingIn(true);
-    setUserState(userProfile);
-    setIsLoggingIn(false);
-  }
 
   const logout = async () => {
     const auth = getAuth(firebaseApp);
@@ -86,7 +83,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }
   
   return (
-    <UserContext.Provider value={{ user, setUser, loading, login, logout, fetchUserProfile }}>
+    <UserContext.Provider value={{ user, setUser, loading, logout, fetchUserProfile }}>
       {children}
     </UserContext.Provider>
   );
