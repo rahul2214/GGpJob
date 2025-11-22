@@ -36,7 +36,7 @@ export default function Footer() {
             <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
               <Github className="h-5 w-5" />
             </Link>
-            <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+            <Link href="https://www.instagram.com/veltria/?igsh=dGg5NjJidzNqZXp6" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
               <Instagram className="h-5 w-5" />
             </Link>
           </div>
