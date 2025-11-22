@@ -27,7 +27,7 @@ export default function Footer() {
             </p>
           </div>
           <div className="flex items-center space-x-4">
-            <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+            <Link href="https://www.linkedin.com/company/veltria/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
               <Linkedin className="h-5 w-5" />
             </Link>
             <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
