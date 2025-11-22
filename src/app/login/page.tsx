@@ -20,6 +20,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle, Eye, EyeOff } from "lucide-react";
@@ -27,7 +38,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { useEffect, useState } from "react";
-import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendEmailVerification } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendEmailVerification, sendPasswordResetEmail } from "firebase/auth";
 import { firebaseApp } from "@/firebase/config";
 
 const formSchema = z.object({
@@ -49,8 +60,9 @@ const GoogleIcon = () => (
 export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { user, loading, fetchUserProfile } = useUser();
+  const { user, loading } = useUser();
   const [showPassword, setShowPassword] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -105,18 +117,6 @@ export default function LoginPage() {
         return;
       }
 
-      const userProfile = await fetchUserProfile(firebaseUser.uid);
-      if (!userProfile) {
-        await auth.signOut();
-        toast({ title: "Login Failed", description: "User profile not found. Please contact support.", variant: "destructive" });
-        return;
-      }
-
-      toast({
-        title: "Login Successful!",
-        description: "Welcome back!",
-      });
-
       router.push("/");
     } catch (error: any) {
       let errorMessage = "An unexpected error occurred.";
@@ -167,10 +167,6 @@ export default function LoginPage() {
         }
       }
       
-      toast({
-        title: "Signed In with Google!",
-        description: "Welcome to Job Portal!",
-      });
       router.push("/");
 
     } catch (error: any) {
@@ -180,6 +176,38 @@ export default function LoginPage() {
         description: error.message || "An unexpected error occurred.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    const email = form.getValues("email");
+    if (!email) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address in the form to reset your password.",
+        variant: "destructive",
+      });
+      return false; // Indicate failure
+    }
+    
+    setIsResettingPassword(true);
+    try {
+      const auth = getAuth(firebaseApp);
+      await sendPasswordResetEmail(auth, email);
+      toast({
+        title: "Password Reset Email Sent",
+        description: "Check your inbox for a link to reset your password.",
+      });
+      return true; // Indicate success
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send password reset email.",
+        variant: "destructive",
+      });
+      return false; // Indicate failure
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
@@ -223,9 +251,47 @@ export default function LoginPage() {
                   <FormItem>
                     <div className="flex items-center justify-between">
                         <FormLabel>Password</FormLabel>
-                        <Link href="#" className="text-sm text-primary hover:underline">
-                            Forgot Password?
-                        </Link>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="link" type="button" className="p-0 h-auto text-sm">Forgot Password?</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Reset Password</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Enter your email address below. If an account exists, we'll send you a link to reset your password.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <div className="py-4">
+                                     <Input
+                                        id="reset-email"
+                                        type="email"
+                                        placeholder="your.email@example.com"
+                                        defaultValue={form.getValues("email")}
+                                        onChange={(e) => form.setValue("email", e.target.value)}
+                                    />
+                                </div>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={async (e) => {
+                                    e.preventDefault();
+                                    const success = await handlePasswordReset();
+                                    // This is a bit of a hack to keep the dialog open on failure.
+                                    // A more robust solution might use a custom Dialog component.
+                                    if(success) {
+                                      const cancel = document.querySelector('[data-radix-collection-item][aria-label="Cancel"]');
+                                      if(cancel instanceof HTMLElement) cancel.click();
+                                    }
+                                }}
+                                disabled={isResettingPassword}>
+                                     {isResettingPassword && (
+                                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                    )}
+                                    Send Reset Link
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                     <FormControl>
                       <div className="relative">
