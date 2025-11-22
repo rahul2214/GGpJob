@@ -49,7 +49,7 @@ const GoogleIcon = () => (
 export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { user, loading, login, fetchUserProfile } = useUser();
+  const { user, loading, fetchUserProfile } = useUser();
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
@@ -111,8 +111,6 @@ export default function LoginPage() {
         toast({ title: "Login Failed", description: "User profile not found. Please contact support.", variant: "destructive" });
         return;
       }
-      
-      await login(userProfile);
 
       toast({
         title: "Login Successful!",
@@ -150,7 +148,6 @@ export default function LoginPage() {
 
       // Check if user profile exists in our DB
       const profileRes = await fetch(`/api/users?uid=${firebaseUser.uid}`);
-      let userProfile;
       
       if (profileRes.status === 404) {
         // User does not exist, create a profile
@@ -168,12 +165,7 @@ export default function LoginPage() {
         if (!createProfileRes.ok) {
             throw new Error('Failed to create user profile.');
         }
-        userProfile = profileData;
-      } else {
-        userProfile = await profileRes.json();
       }
-
-      await login(userProfile);
       
       toast({
         title: "Signed In with Google!",

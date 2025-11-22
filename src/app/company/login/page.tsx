@@ -40,7 +40,7 @@ type LoginFormValues = z.infer<typeof formSchema>;
 export default function CompanyLoginPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { user, loading, login, setUser, fetchUserProfile } = useUser();
+  const { user, loading, fetchUserProfile } = useUser();
 
   useEffect(() => {
     if (!loading && user) {
@@ -104,8 +104,6 @@ export default function CompanyLoginPage() {
         return;
       }
       
-      await login(userProfile);
-
       toast({
         title: "Login Successful!",
         description: "Welcome back!",
