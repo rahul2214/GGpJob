@@ -20,14 +20,25 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
-import { useEffect } from "react";
-import { getAuth, signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { useEffect, useState } from "react";
+import { getAuth, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } from "firebase/auth";
 import { firebaseApp } from "@/firebase/config";
 
 const formSchema = z.object({
@@ -40,7 +51,8 @@ type LoginFormValues = z.infer<typeof formSchema>;
 export default function CompanyLoginPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { user, loading, fetchUserProfile } = useUser();
+  const { user, loading } = useUser();
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -97,18 +109,6 @@ export default function CompanyLoginPage() {
         return;
       }
       
-      const userProfile = await fetchUserProfile(firebaseUser.uid);
-      if (!userProfile) {
-        await auth.signOut();
-        toast({ title: "Login Failed", description: "User profile not found. Please contact support.", variant: "destructive" });
-        return;
-      }
-      
-      toast({
-        title: "Login Successful!",
-        description: "Welcome back!",
-      });
-
       router.push("/");
     } catch (error: any) {
       let errorMessage = "An unexpected error occurred.";
@@ -128,6 +128,38 @@ export default function CompanyLoginPage() {
         description: errorMessage,
         variant: "destructive",
       });
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    const email = form.getValues("email");
+    if (!email) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address in the form to reset your password.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    setIsResettingPassword(true);
+    try {
+      const auth = getAuth(firebaseApp);
+      await sendPasswordResetEmail(auth, email);
+      toast({
+        title: "Password Reset Email Sent",
+        description: "Check your inbox for a link to reset your password.",
+      });
+      return true;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send password reset email.",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
@@ -169,7 +201,50 @@ export default function CompanyLoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                     <div className="flex items-center justify-between">
+                        <FormLabel>Password</FormLabel>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="link" type="button" className="p-0 h-auto text-sm">Forgot Password?</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Reset Password</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Enter your email address below. If an account exists, we'll send you a link to reset your password.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <div className="py-4">
+                                     <Input
+                                        id="reset-email"
+                                        type="email"
+                                        placeholder="your.email@company.com"
+                                        defaultValue={form.getValues("email")}
+                                        onChange={(e) => form.setValue("email", e.target.value)}
+                                    />
+                                </div>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={async (e) => {
+                                    e.preventDefault();
+                                    const success = await handlePasswordReset();
+                                    // This is a bit of a hack to keep the dialog open on failure.
+                                    // A more robust solution might use a custom Dialog component.
+                                    if(success) {
+                                      const cancel = document.querySelector('[data-radix-collection-item][aria-label="Cancel"]');
+                                      if(cancel instanceof HTMLElement) cancel.click();
+                                    }
+                                }}
+                                disabled={isResettingPassword}>
+                                     {isResettingPassword && (
+                                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                    )}
+                                    Send Reset Link
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
