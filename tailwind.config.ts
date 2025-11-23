@@ -18,6 +18,11 @@ export default {
       },
     },
     extend: {
+       backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+        'gradient-primary': 'linear-gradient(to right, hsl(var(--primary)), hsl(var(--primary-foreground)))'
+      },
       fontFamily: {
         sans: ["var(--font-inter)", ...fontFamily.sans],
         body: ['Inter', 'sans-serif'],
