@@ -95,7 +95,7 @@ type SignupFormValues = z.infer<typeof formSchema>;
 export default function SignupPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { user, loading, fetchUserProfile } = useUser();
+  const { user, loading } = useUser();
 
   useEffect(() => {
     if (!loading && user) {
@@ -129,26 +129,8 @@ export default function SignupPage() {
       const firebaseUser = userCredential.user;
       
       await sendEmailVerification(firebaseUser);
-
-      const profileData = {
-        id: firebaseUser.uid,
-        name: data.name,
-        email: data.email,
-        phone: `+91${data.phone}`,
-        role: "Job Seeker",
-      };
-
-      const response = await fetch("/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profileData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create user profile.");
-      }
       
+      // We sign out here to force the user to log in and verify their email
       await auth.signOut();
 
       toast({
@@ -187,31 +169,8 @@ export default function SignupPage() {
     const auth = getAuth(firebaseApp);
     const provider = new GoogleAuthProvider();
     try {
-      const result = await signInWithPopup(auth, provider);
-      const firebaseUser = result.user;
-
-      const profileRes = await fetch(`/api/users?uid=${firebaseUser.uid}`);
-
-      if (profileRes.status === 404) {
-        const profileData = {
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName || "New User",
-          email: firebaseUser.email,
-          role: "Job Seeker",
-        };
-        const createProfileRes = await fetch("/api/users", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(profileData),
-        });
-        if (!createProfileRes.ok) {
-          throw new Error("Failed to create user profile.");
-        }
-      }
-      
-      // The onAuthStateChanged listener will handle the user state update
-      router.push("/");
-
+      await signInWithPopup(auth, provider);
+      // The onAuthStateChanged listener will handle profile creation and redirect
     } catch (error: any) {
       console.error(error);
       toast({
@@ -344,7 +303,7 @@ export default function SignupPage() {
             </div>
           </div>
 
-          <Button variant="outline" className="w-full bg-white text-black hover:bg-gray-100" onClick={handleGoogleSignUp}>
+          <Button variant="google" className="w-full" onClick={handleGoogleSignUp}>
             <GoogleIcon />
             Sign up with Google
           </Button>
@@ -361,3 +320,4 @@ export default function SignupPage() {
   );
 }
 
+    
