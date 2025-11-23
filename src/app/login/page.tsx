@@ -146,6 +146,9 @@ export default function LoginPage() {
       await signInWithPopup(auth, provider);
       // The onAuthStateChanged listener will handle profile creation and redirect
     } catch (error: any) {
+      if (error.code === 'auth/popup-closed-by-user') {
+        return;
+      }
       console.error(error);
       toast({
         title: "Google Sign-In Failed",
