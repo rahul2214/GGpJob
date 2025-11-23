@@ -60,7 +60,7 @@ const GoogleIcon = () => (
 export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { user, loading } = useUser();
+  const { user, loading, fetchUserProfile } = useUser();
   const [showPassword, setShowPassword] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
@@ -117,7 +117,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/");
+      // The onAuthStateChanged listener will handle the redirect
     } catch (error: any) {
       let errorMessage = "An unexpected error occurred.";
       if (error.code) {
@@ -143,32 +143,8 @@ export default function LoginPage() {
     const auth = getAuth(firebaseApp);
     const provider = new GoogleAuthProvider();
     try {
-      const result = await signInWithPopup(auth, provider);
-      const firebaseUser = result.user;
-
-      // Check if user profile exists in our DB
-      const profileRes = await fetch(`/api/users?uid=${firebaseUser.uid}`);
-      
-      if (profileRes.status === 404) {
-        // User does not exist, create a profile
-        const profileData = {
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName || 'New User',
-          email: firebaseUser.email,
-          role: 'Job Seeker',
-        };
-        const createProfileRes = await fetch('/api/users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(profileData),
-        });
-        if (!createProfileRes.ok) {
-            throw new Error('Failed to create user profile.');
-        }
-      }
-      
-      router.push("/");
-
+      await signInWithPopup(auth, provider);
+      // The onAuthStateChanged listener will handle profile creation and redirect
     } catch (error: any) {
       console.error(error);
       toast({
@@ -343,7 +319,7 @@ export default function LoginPage() {
             </div>
             
             <div className="space-y-4">
-                 <Button variant="outline" className="w-full bg-white text-black hover:bg-gray-100" onClick={handleGoogleSignIn}>
+                 <Button variant="google" className="w-full" onClick={handleGoogleSignIn}>
                     <GoogleIcon />
                     Sign in with Google
                 </Button>
@@ -361,3 +337,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
