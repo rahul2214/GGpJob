@@ -95,7 +95,7 @@ type SignupFormValues = z.infer<typeof formSchema>;
 export default function SignupPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { user, loading, login } = useUser();
+  const { user, loading, fetchUserProfile } = useUser();
 
   useEffect(() => {
     if (!loading && user) {
@@ -208,14 +208,10 @@ export default function SignupPage() {
           throw new Error("Failed to create user profile.");
         }
       }
-
-      await login(firebaseUser);
-
-      toast({
-        title: "Signed Up with Google!",
-        description: "Welcome to Job Portal!",
-      });
+      
+      // The onAuthStateChanged listener will handle the user state update
       router.push("/");
+
     } catch (error: any) {
       console.error(error);
       toast({
@@ -348,7 +344,7 @@ export default function SignupPage() {
             </div>
           </div>
 
-          <Button variant="outline" className="w-full" onClick={handleGoogleSignUp}>
+          <Button variant="outline" className="w-full bg-white text-black hover:bg-gray-100" onClick={handleGoogleSignUp}>
             <GoogleIcon />
             Sign up with Google
           </Button>
