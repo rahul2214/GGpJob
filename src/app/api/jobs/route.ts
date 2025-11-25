@@ -150,6 +150,22 @@ export async function GET(request: Request) {
       }
     });
 
+    // Handle automatic job expiration
+    const now = new Date();
+    jobs = jobs.filter(job => {
+        const postedAt = new Date(job.postedAt);
+        const daysSincePosted = (now.getTime() - postedAt.getTime()) / (1000 * 3600 * 24);
+        
+        if (job.employeeId) { // Job posted by an employee (referral)
+            return daysSincePosted <= 14;
+        }
+        if (job.recruiterId) { // Job posted by a recruiter
+            return daysSincePosted <= 30;
+        }
+        // If neither is set, default to not expiring for now
+        return true;
+    });
+
     // Handle case-insensitive search after fetching
     if (searchParams.get('search')) {
         const searchTerm = searchParams.get('search')!.toLowerCase();
