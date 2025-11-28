@@ -14,6 +14,313 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
 import { CheckCircle, GraduationCap, Layers, ThumbsUp } from 'lucide-react';
 
+const JobConnectHome = () => {
+
+    useEffect(() => {
+        const animateOnScroll = () => {
+            const elements = document.querySelectorAll('.feature-card, .step, .stat-item, .referral-card, .company-card');
+            elements.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const windowHeight = window.innerHeight;
+                if (elementTop < windowHeight - 100) {
+                    element.classList.add('animate');
+                }
+            });
+        };
+
+        window.addEventListener('load', animateOnScroll);
+        window.addEventListener('scroll', animateOnScroll);
+
+        const buttons = document.querySelectorAll<HTMLElement>('#jobconnect-page .btn');
+        buttons.forEach(button => {
+            const mouseEnterHandler = () => {
+                button.style.transform = 'translateY(-3px)';
+            };
+            const mouseLeaveHandler = () => {
+                button.style.transform = 'translateY(0)';
+            };
+            button.addEventListener('mouseenter', mouseEnterHandler);
+            button.addEventListener('mouseleave', mouseLeaveHandler);
+        });
+
+        return () => {
+            window.removeEventListener('load', animateOnScroll);
+            window.removeEventListener('scroll', animateOnScroll);
+            buttons.forEach(button => {
+                 button.removeEventListener('mouseenter', () => {});
+                 button.removeEventListener('mouseleave', () => {});
+            })
+        };
+    }, []);
+
+
+    return (
+        <div id="jobconnect-page">
+            <section className="hero">
+                <div className="container">
+                    <div className="hero-content">
+                        <div className="hero-text">
+                            <h1>Find Your Dream Job or Top Talent</h1>
+                            <p>Your premier destination for connecting with top talent and finding the perfect job opportunity. Explore thousands of listings today.</p>
+                            <div className="search-box">
+                                <input type="text" placeholder="Job title, keywords, or company" />
+                                <input type="text" placeholder="City, state, or remote" />
+                                <button>Search Jobs</button>
+                            </div>
+                        </div>
+                        <div className="hero-image">
+                            <div className="floating-card">
+                                <h3>Senior Developer</h3>
+                                <p>Tech Company • Remote • $90k-$120k</p>
+                                <i className="fas fa-heart" style={{ position: 'absolute', right: '20px', bottom: '20px', color: '#f72585' }}></i>
+                            </div>
+                            <div className="floating-card">
+                                <h3>Marketing Manager</h3>
+                                <p>Creative Agency • New York • $75k-$95k</p>
+                            </div>
+                            <div className="floating-card">
+                                <h3>UX Designer</h3>
+                                <p>Startup • Hybrid • $80k-$110k</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="features" id="features">
+                <div className="container">
+                    <div className="section-title">
+                        <h2>Why Choose JobConnect?</h2>
+                        <p>Our platform is designed to make job hunting and hiring simple, effective, and accessible to everyone.</p>
+                    </div>
+                    <div className="features-grid">
+                        <div className="feature-card">
+                            <div className="feature-icon">
+                                <i className="fas fa-users"></i>
+                            </div>
+                            <h3>Inclusive Platform</h3>
+                            <p>We believe everyone deserves equal opportunities. Our platform is designed to be accessible to job seekers and employers from all backgrounds.</p>
+                        </div>
+                        <div className="feature-card">
+                            <div className="feature-icon">
+                                <i className="fas fa-dollar-sign"></i>
+                            </div>
+                            <h3>Completely Free</h3>
+                            <p>Post jobs, apply for positions, and connect with potential employers or employees without any fees. We have removed the financial barriers.</p>
+                        </div>
+                        <div className="feature-card">
+                            <div className="feature-icon">
+                                <i className="fas fa-bolt"></i>
+                            </div>
+                            <h3>Quick & Easy</h3>
+                            <p>Our streamlined process makes job posting and application submission fast and straightforward. Save time with our intuitive interface.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="how-it-works" id="how-it-works">
+                <div className="container">
+                    <div className="section-title">
+                        <h2>How It Works</h2>
+                        <p>Getting started with JobConnect is simple for both job seekers and employers.</p>
+                    </div>
+                    <div className="steps">
+                        <div className="step">
+                            <div className="step-number">1</div>
+                            <h3>Create Your Profile</h3>
+                            <p>Sign up and build your professional profile in minutes. Highlight your skills, experience, and what you are looking for.</p>
+                        </div>
+                        <div className="step">
+                            <div className="step-number">2</div>
+                            <h3>Post or Search</h3>
+                            <p>Employers can post jobs for free. Job seekers can browse thousands of opportunities across various industries.</p>
+                        </div>
+                        <div className="step">
+                            <div className="step-number">3</div>
+                            <h3>Connect & Succeed</h3>
+                            <p>Apply for jobs or review applications. Our platform facilitates direct communication between employers and candidates.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="stats" id="stats">
+                <div className="container">
+                    <div className="stats-grid">
+                        <div className="stat-item">
+                            <h3>50K+</h3>
+                            <p>Jobs Posted</p>
+                        </div>
+                        <div className="stat-item">
+                            <h3>200K+</h3>
+                            <p>Active Users</p>
+                        </div>
+                        <div className="stat-item">
+                            <h3>85%</h3>
+                            <p>Success Rate</p>
+                        </div>
+                        <div className="stat-item">
+                            <h3>150+</h3>
+                            <p>Countries</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="top-mncs" id="top-mncs">
+                <div className="container">
+                    <div className="mncs-header">
+                        <h2>Hiring in Top MNCs</h2>
+                        <p>Join the worlds leading companies. Explore opportunities at these industry giants.</p>
+                    </div>
+                    <div className="companies-grid">
+                        <div className="company-card">
+                            <div className="hiring-badge">Hiring!</div>
+                            <div className="company-logo">
+                                <i className="fab fa-google"></i>
+                            </div>
+                            <div className="company-name">Google</div>
+                            <div className="company-jobs">120+ Open Roles</div>
+                        </div>
+                        <div className="company-card">
+                            <div className="hiring-badge">Hiring!</div>
+                            <div className="company-logo">
+                                <i className="fab fa-microsoft"></i>
+                            </div>
+                            <div className="company-name">Microsoft</div>
+                            <div className="company-jobs">95+ Open Roles</div>
+                        </div>
+                        <div className="company-card">
+                            <div className="hiring-badge">Hiring!</div>
+                            <div className="company-logo">
+                                <i className="fab fa-amazon"></i>
+                            </div>
+                            <div className="company-name">Amazon</div>
+                            <div className="company-jobs">150+ Open Roles</div>
+                        </div>
+                        <div className="company-card">
+                            <div className="hiring-badge">Hiring!</div>
+                            <div className="company-logo">
+                                <i className="fab fa-meta"></i>
+                            </div>
+                            <div className="company-name">Meta</div>
+                            <div className="company-jobs">80+ Open Roles</div>
+                        </div>
+                        <div className="company-card">
+                            <div className="hiring-badge">Hiring!</div>
+                            <div className="company-logo">
+                                <i className="fab fa-apple"></i>
+                            </div>
+                            <div className="company-name">Apple</div>
+                            <div className="company-jobs">65+ Open Roles</div>
+                        </div>
+                        <div className="company-card">
+                            <div className="hiring-badge">Hiring!</div>
+                            <div className="company-logo">
+                                <i className="fab fa-netflix"></i>
+                            </div>
+                            <div className="company-name">Netflix</div>
+                            <div className="company-jobs">45+ Open Roles</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="referrals-showcase" id="referrals">
+                <div className="container">
+                    <div className="referrals-header">
+                        <h2>Find Your Perfect Fit</h2>
+                        <p>Get an edge in your job search. Employee referrals are one of the most effective ways to land your dream job.</p>
+                    </div>
+                    
+                    <div className="referrals-grid">
+                        <div className="referral-card">
+                            <div className="referral-icon">
+                                <i className="fas fa-globe-americas"></i>
+                            </div>
+                            <h3>Diverse Job Domains</h3>
+                            <p>From tech and finance to creative arts, explore opportunities across a wide spectrum of industries. Find your perfect fit in any field.</p>
+                            <div className="referral-stats">
+                                <div className="stat">
+                                    <span className="stat-value">50+</span>
+                                    <span className="stat-label">Industries</span>
+                                </div>
+                                <div className="stat">
+                                    <span className="stat-value">10K+</span>
+                                    <span className="stat-label">Companies</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="referral-card">
+                            <div className="referral-icon">
+                                <i className="fas fa-user-friends"></i>
+                            </div>
+                            <h3>Exclusive Referrals</h3>
+                            <p>Get a competitive edge with jobs posted by company insiders. Referrals increase your chances of getting hired by up to 15x.</p>
+                            <div className="referral-stats">
+                                <div className="stat">
+                                    <span className="stat-value">5x</span>
+                                    <span className="stat-label">More Interviews</span>
+                                </div>
+                                <div className="stat">
+                                    <span className="stat-value">40%</span>
+                                    <span className="stat-label">Hire Rate</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="referral-card">
+                            <div className="referral-icon">
+                                <i className="fas fa-graduation-cap"></i>
+                            </div>
+                            <h3>Internship Opportunities</h3>
+                            <p>Kickstart your career. Find paid internships and entry-level positions at top companies to gain valuable experience.</p>
+                            <div className="referral-stats">
+                                <div className="stat">
+                                    <span className="stat-value">5K+</span>
+                                    <span className="stat-label">Internships</span>
+                                </div>
+                                <div className="stat">
+                                    <span className="stat-value">70%</span>
+                                    <span className="stat-label">Convert to FT</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <section className="referral-cta">
+                <div className="container">
+                    <h2>Ready to Boost Your Career with Referrals?</h2>
+                    <p>Join thousands of job seekers who have landed their dream jobs through our referral-powered platform. Employees can post referrals and help others while building their professional network.</p>
+                    <div className="cta-buttons">
+                        <button className="btn btn-outline btn-large">Browse Referral Jobs</button>
+                        <button className="btn btn-primary btn-large">Post a Referral</button>
+                    </div>
+                </div>
+            </section>
+
+            <section className="cta" id="cta">
+                <div className="container">
+                    <div className="cta-content">
+                        <h2>Ready to Find Your Next Opportunity?</h2>
+                        <p>Join thousands of employers and job seekers who have already found success with JobConnect.</p>
+                        <div className="cta-buttons">
+                            <button className="btn btn-primary btn-large">Post a Job for Free</button>
+                            <button className="btn btn-outline btn-large" style={{borderColor: 'var(--jobconnect-primary)', color: 'var(--jobconnect-primary)'}}>Browse Jobs</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    );
+};
+
 export default function Home() {
   const { user, loading } = useUser();
   const router = useRouter();
@@ -46,133 +353,7 @@ export default function Home() {
 
   const renderDashboard = () => {
     if (!user) {
-       return (
-         <div className="flex flex-col">
-            <section className="h-[calc(100vh-200px)] flex flex-col items-center justify-center text-center p-4 bg-background">
-                <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Welcome to VELTRIA Job Portal</h1>
-                <p className="mt-4 text-lg text-muted-foreground max-w-2xl">
-                Your premier destination for connecting with top talent and finding the perfect job opportunity. Explore thousands of listings today.
-                </p>
-                <div className="mt-8 flex flex-wrap justify-center gap-4">
-                <Button asChild size="lg">
-                    <Link href="/login">Get Started</Link>
-                </Button>
-                <Button asChild variant="outline" size="lg">
-                    <Link href="/jobs">Browse Jobs</Link>
-                </Button>
-                </div>
-            </section>
-
-             <section className="py-16 sm:py-24">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                     <div className="text-center">
-                        <h2 className="text-3xl font-bold tracking-tight">Find Your Perfect Fit</h2>
-                        <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-                            Whatever your career goals, we have an opportunity for you. Explore a wide range of jobs tailored to your skills and aspirations.
-                        </p>
-                    </div>
-                     <div className="mt-12 grid md:grid-cols-3 gap-8">
-                        <Card>
-                            <CardHeader className="items-center text-center">
-                                <div className="bg-primary/10 p-3 rounded-full">
-                                    <Layers className="h-8 w-8 text-primary" />
-                                </div>
-                                <CardTitle>Diverse Job Domains</CardTitle>
-                            </CardHeader>
-                            <CardContent className="text-center">
-                                <p className="text-muted-foreground">From tech and finance to creative arts, explore opportunities across a wide spectrum of industries.</p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                             <CardHeader className="items-center text-center">
-                                <div className="bg-primary/10 p-3 rounded-full">
-                                    <ThumbsUp className="h-8 w-8 text-primary" />
-                                </div>
-                                <CardTitle>Exclusive Referrals</CardTitle>
-                            </CardHeader>
-                            <CardContent className="text-center">
-                               <p className="text-muted-foreground">Get a competitive edge with jobs posted by company insiders. Referrals increase your chances of getting hired.</p>
-                            </CardContent>
-                        </Card>
-                         <Card>
-                             <CardHeader className="items-center text-center">
-                                <div className="bg-primary/10 p-3 rounded-full">
-                                    <GraduationCap className="h-8 w-8 text-primary" />
-                                </div>
-                                <CardTitle>Internship Opportunities</CardTitle>
-                            </CardHeader>
-                            <CardContent className="text-center">
-                                <p className="text-muted-foreground">Kickstart your career. Find paid internships and entry-level positions at top companies to gain valuable experience.</p>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-            </section>
-
-            <section className="py-16 sm:py-24 bg-muted/40">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid md:grid-cols-2 gap-12 items-center">
-                        <div className="order-2 md:order-1">
-                             <h2 className="text-3xl font-bold tracking-tight">Unlock Your Career with Referrals</h2>
-                             <p className="mt-4 text-lg text-muted-foreground">
-                                Get an edge in your job search. Employee referrals are one of the most effective ways to land your dream job.
-                             </p>
-                             <ul className="mt-6 space-y-4">
-                                <li className="flex items-start gap-3">
-                                    <CheckCircle className="h-6 w-6 text-primary mt-1" />
-                                    <div>
-                                        <h3 className="font-semibold">Stand Out from the Crowd</h3>
-                                        <p className="text-muted-foreground">Referred candidates are often fast-tracked through the application process.</p>
-                                    </div>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <CheckCircle className="h-6 w-6 text-primary mt-1" />
-                                    <div>
-                                        <h3 className="font-semibold">Gain Insider Information</h3>
-                                        <p className="text-muted-foreground">Connect with employees to learn about company culture and the role.</p>
-                                    </div>
-                                </li>
-                                 <li className="flex items-start gap-3">
-                                    <CheckCircle className="h-6 w-6 text-primary mt-1" />
-                                    <div>
-                                        <h3 className="font-semibold">Increase Your Chances</h3>
-                                        <p className="text-muted-foreground">Studies show referrals have a significantly higher chance of getting hired.</p>
-                                    </div>
-                                </li>
-                             </ul>
-                        </div>
-                         <div className="order-1 md:order-2">
-                             <Image 
-                                src="https://picsum.photos/seed/referral/600/500"
-                                alt="Job Referrals"
-                                width={600}
-                                height={500}
-                                className="rounded-lg shadow-lg"
-                                data-ai-hint="team collaboration"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-             <section className="py-16 sm:py-24 bg-muted/40">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center">
-                        <h2 className="text-3xl font-bold tracking-tight">Hiring in Top MNCs</h2>
-                        <p className="mt-4 text-lg text-muted-foreground">Join the world's leading companies.</p>
-                    </div>
-                    <div className="mt-12 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 items-center">
-                        {['Google', 'Microsoft', 'Amazon', 'Meta', 'Apple', 'Netflix'].map((company) => (
-                            <div key={company} className="flex justify-center">
-                                <span className="text-2xl font-semibold text-muted-foreground/80">{company}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-        </div>
-       );
+       return <JobConnectHome />;
     }
     
     switch(user.role) {
@@ -184,7 +365,6 @@ export default function Home() {
         return <EmployeeDashboard />;
       case "Admin":
       case "Super Admin":
-        // Redirect is handled by useEffect, show a loader or null
         return (
              <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
                 <p>Loading Admin Dashboard...</p>
@@ -197,7 +377,7 @@ export default function Home() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div>
       {renderDashboard()}
     </div>
   );
