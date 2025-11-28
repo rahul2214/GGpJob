@@ -31,15 +31,15 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
-     /* New variables from JobConnect design */
-    --jobconnect-primary: #4361ee;
-    --jobconnect-secondary: #3a0ca3;
-    --jobconnect-accent: #f72585;
-    --jobconnect-light: #f8f9fa;
-    --jobconnect-dark: #212529;
-    --jobconnect-success: #4cc9f0;
-    --jobconnect-gradient: linear-gradient(135deg, #4361ee, #3a0ca3);
-    --jobconnect-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+     /* New variables from Job Portal design */
+    --job-portal-primary: #4361ee;
+    --job-portal-secondary: #3a0ca3;
+    --job-portal-accent: #f72585;
+    --job-portal-light: #f8f9fa;
+    --job-portal-dark: #212529;
+    --job-portal-success: #4cc9f0;
+    --job-portal-gradient: linear-gradient(135deg, #4361ee, #3a0ca3);
+    --job-portal-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
 
   .dark {
@@ -101,30 +101,30 @@
     box-shadow: 0 0 0 2px hsl(var(--ring));
 }
 
-/* JobConnect Styles */
-#jobconnect-page * {
+/* Job Portal Styles */
+#job-portal-page * {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-#jobconnect-page {
+#job-portal-page {
     background-color: #f5f7fb;
-    color: var(--jobconnect-dark);
+    color: var(--job-portal-dark);
     overflow-x: hidden;
     line-height: 1.6;
 }
 
-#jobconnect-page .container {
+#job-portal-page .container {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
 }
 
-#jobconnect-page section {
+#job-portal-page section {
     padding: 5rem 0;
 }
 
-#jobconnect-page .btn {
+#job-portal-page .btn {
     display: inline-block;
     padding: 0.8rem 1.8rem;
     border-radius: 50px;
@@ -136,45 +136,45 @@
     text-decoration: none;
 }
 
-#jobconnect-page .btn-primary {
-    background: var(--jobconnect-accent);
+#job-portal-page .btn-primary {
+    background: var(--job-portal-accent);
     color: white;
 }
 
-#jobconnect-page .btn-primary:hover {
+#job-portal-page .btn-primary:hover {
     background: #d9047a;
     transform: translateY(-3px);
     box-shadow: 0 5px 15px rgba(247, 37, 133, 0.4);
 }
 
-#jobconnect-page .btn-outline {
+#job-portal-page .btn-outline {
     background: transparent;
     border: 2px solid white;
     color: white;
 }
 
-#jobconnect-page .btn-outline:hover {
+#job-portal-page .btn-outline:hover {
     background: white;
-    color: var(--jobconnect-primary);
+    color: var(--job-portal-primary);
 }
 
-#jobconnect-page .btn-large {
+#job-portal-page .btn-large {
     padding: 1rem 2.5rem;
     font-size: 1.1rem;
 }
 
-#jobconnect-page .section-title {
+#job-portal-page .section-title {
     text-align: center;
     margin-bottom: 3rem;
 }
 
-#jobconnect-page .section-title h2 {
+#job-portal-page .section-title h2 {
     font-size: 2.5rem;
-    color: var(--jobconnect-secondary);
+    color: var(--job-portal-secondary);
     margin-bottom: 1rem;
 }
 
-#jobconnect-page .section-title p {
+#job-portal-page .section-title p {
     font-size: 1.2rem;
     color: #666;
     max-width: 600px;
@@ -182,15 +182,15 @@
 }
 
 /* Hero Section */
-#jobconnect-page .hero {
+#job-portal-page .hero {
     padding: 10rem 0 5rem;
-    background: var(--jobconnect-gradient);
+    background: var(--job-portal-gradient);
     color: white;
     position: relative;
     overflow: hidden;
 }
 
-#jobconnect-page .hero-content {
+#job-portal-page .hero-content {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -198,25 +198,25 @@
     z-index: 2;
 }
 
-#jobconnect-page .hero-text {
+#job-portal-page .hero-text {
     flex: 1;
     padding-right: 2rem;
     animation: jc-fadeInLeft 1s ease-out;
 }
 
-#jobconnect-page .hero-text h1 {
+#job-portal-page .hero-text h1 {
     font-size: 3.5rem;
     margin-bottom: 1.5rem;
     line-height: 1.2;
 }
 
-#jobconnect-page .hero-text p {
+#job-portal-page .hero-text p {
     font-size: 1.2rem;
     margin-bottom: 2rem;
     opacity: 0.9;
 }
 
-#jobconnect-page .hero-image {
+#job-portal-page .hero-image {
     flex: 1;
     display: flex;
     justify-content: center;
@@ -226,40 +226,40 @@
     animation: jc-fadeInRight 1s ease-out;
 }
 
-#jobconnect-page .floating-card {
+#job-portal-page .floating-card {
     width: 280px;
     height: 160px;
     background: white;
     border-radius: 10px;
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
     padding: 1.5rem;
-    color: var(--jobconnect-dark);
+    color: var(--job-portal-dark);
     position: absolute;
 }
 
-#jobconnect-page .floating-card:nth-child(1) {
+#job-portal-page .floating-card:nth-child(1) {
     top: 20px;
     left: 0;
     animation: jc-float 6s ease-in-out infinite;
 }
 
-#jobconnect-page .floating-card:nth-child(2) {
+#job-portal-page .floating-card:nth-child(2) {
     top: 50px;
     right: 50px;
     width: 240px;
     height: 140px;
     animation: jc-float 6s ease-in-out infinite 1s;
-    background: var(--jobconnect-success);
+    background: var(--job-portal-success);
     color: white;
 }
 
-#jobconnect-page .floating-card:nth-child(3) {
+#job-portal-page .floating-card:nth-child(3) {
     bottom: 30px;
     right: 0;
     width: 200px;
     height: 120px;
     animation: jc-float 6s ease-in-out infinite 2s;
-    background: var(--jobconnect-accent);
+    background: var(--job-portal-accent);
     color: white;
 }
 
@@ -297,7 +297,7 @@
     }
 }
 
-#jobconnect-page .search-box {
+#job-portal-page .search-box {
     background: white;
     border-radius: 50px;
     padding: 0.5rem;
@@ -307,18 +307,18 @@
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
-#jobconnect-page .search-box input {
+#job-portal-page .search-box input {
     flex: 1;
     border: none;
     padding: 1rem 1.5rem;
     border-radius: 50px;
     font-size: 1rem;
     outline: none;
-    color: var(--jobconnect-dark);
+    color: var(--job-portal-dark);
 }
 
-#jobconnect-page .search-box button {
-    background: var(--jobconnect-accent);
+#job-portal-page .search-box button {
+    background: var(--job-portal-accent);
     color: white;
     border: none;
     padding: 1rem 2rem;
@@ -328,47 +328,47 @@
     transition: all 0.3s ease;
 }
 
-#jobconnect-page .search-box button:hover {
+#job-portal-page .search-box button:hover {
     background: #d9047a;
 }
 
 /* Features Section */
-#jobconnect-page .features {
+#job-portal-page .features {
     background: white;
 }
 
-#jobconnect-page .features-grid {
+#job-portal-page .features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2rem;
 }
 
-#jobconnect-page .feature-card {
+#job-portal-page .feature-card {
     background: white;
     border-radius: 10px;
     padding: 2rem;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
     text-align: center;
-    border-top: 4px solid var(--jobconnect-primary);
+    border-top: 4px solid var(--job-portal-primary);
     opacity: 0;
     transform: translateY(20px);
 }
 
-#jobconnect-page .feature-card.animate {
+#job-portal-page .feature-card.animate {
     opacity: 1;
     transform: translateY(0);
 }
 
-#jobconnect-page .feature-card:hover {
+#job-portal-page .feature-card:hover {
     transform: translateY(-10px);
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
 }
 
-#jobconnect-page .feature-icon {
+#job-portal-page .feature-icon {
     width: 70px;
     height: 70px;
-    background: var(--jobconnect-gradient);
+    background: var(--job-portal-gradient);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -378,23 +378,23 @@
     font-size: 1.8rem;
 }
 
-#jobconnect-page .feature-card h3 {
+#job-portal-page .feature-card h3 {
     font-size: 1.5rem;
     margin-bottom: 1rem;
-    color: var(--jobconnect-secondary);
+    color: var(--job-portal-secondary);
 }
 
-#jobconnect-page .feature-card p {
+#job-portal-page .feature-card p {
     color: #666;
     line-height: 1.6;
 }
 
 /* How It Works */
-#jobconnect-page .how-it-works {
+#job-portal-page .how-it-works {
     background: #f5f7fb;
 }
 
-#jobconnect-page .steps {
+#job-portal-page .steps {
     display: flex;
     justify-content: space-between;
     max-width: 1000px;
@@ -402,18 +402,18 @@
     position: relative;
 }
 
-#jobconnect-page .steps::before {
+#job-portal-page .steps::before {
     content: '';
     position: absolute;
     top: 40px;
     left: 10%;
     right: 10%;
     height: 4px;
-    background: var(--jobconnect-primary);
+    background: var(--job-portal-primary);
     z-index: 1;
 }
 
-#jobconnect-page .step {
+#job-portal-page .step {
     text-align: center;
     position: relative;
     z-index: 2;
@@ -423,12 +423,12 @@
     transform: translateY(20px);
 }
 
-#jobconnect-page .step.animate {
+#job-portal-page .step.animate {
     opacity: 1;
     transform: translateY(0);
 }
 
-#jobconnect-page .step-number {
+#job-portal-page .step-number {
     width: 80px;
     height: 80px;
     background: white;
@@ -439,82 +439,82 @@
     margin: 0 auto 1.5rem;
     font-size: 1.8rem;
     font-weight: 700;
-    color: var(--jobconnect-primary);
-    border: 4px solid var(--jobconnect-primary);
+    color: var(--job-portal-primary);
+    border: 4px solid var(--job-portal-primary);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
-#jobconnect-page .step h3 {
+#job-portal-page .step h3 {
     font-size: 1.3rem;
     margin-bottom: 1rem;
-    color: var(--jobconnect-secondary);
+    color: var(--job-portal-secondary);
 }
 
-#jobconnect-page .step p {
+#job-portal-page .step p {
     color: #666;
     line-height: 1.6;
 }
 
 /* Stats Section */
-#jobconnect-page .stats {
-    background: var(--jobconnect-gradient);
+#job-portal-page .stats {
+    background: var(--job-portal-gradient);
     color: white;
     text-align: center;
 }
 
-#jobconnect-page .stats-grid {
+#job-portal-page .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 2rem;
 }
 
-#jobconnect-page .stat-item {
+#job-portal-page .stat-item {
     opacity: 0;
     transform: translateY(20px);
 }
 
-#jobconnect-page .stat-item.animate {
+#job-portal-page .stat-item.animate {
     opacity: 1;
     transform: translateY(0);
 }
 
-#jobconnect-page .stat-item h3 {
+#job-portal-page .stat-item h3 {
     font-size: 3rem;
     margin-bottom: 0.5rem;
 }
 
-#jobconnect-page .stat-item p {
+#job-portal-page .stat-item p {
     font-size: 1.2rem;
     opacity: 0.9;
 }
 
 /* Top MNCs Section */
-#jobconnect-page .top-mncs {
+#job-portal-page .top-mncs {
     background: white;
     padding: 5rem 0;
     position: relative;
     overflow: hidden;
 }
 
-#jobconnect-page .mncs-header {
+#job-portal-page .mncs-header {
     text-align: center;
     margin-bottom: 3rem;
 }
 
-#jobconnect-page .mncs-header h2 {
+#job-portal-page .mncs-header h2 {
     font-size: 2.8rem;
-    color: var(--jobconnect-secondary);
+    color: var(--job-portal-secondary);
     margin-bottom: 1rem;
 }
 
-#jobconnect-page .mncs-header p {
+#job-portal-page .mncs-header p {
     font-size: 1.2rem;
     color: #666;
     max-width: 600px;
     margin: 0 auto;
 }
 
-#jobconnect-page .companies-grid {
+#job-portal-page .companies-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 2rem;
@@ -522,7 +522,7 @@
     margin: 0 auto;
 }
 
-#jobconnect-page .company-card {
+#job-portal-page .company-card {
     background: white;
     border-radius: 12px;
     padding: 2rem 1.5rem;
@@ -534,29 +534,29 @@
     overflow: hidden;
 }
 
-#jobconnect-page .company-card::before {
+#job-portal-page .company-card::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 4px;
-    background: var(--jobconnect-gradient);
+    background: var(--job-portal-gradient);
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 0.4s ease;
 }
 
-#jobconnect-page .company-card:hover::before {
+#job-portal-page .company-card:hover::before {
     transform: scaleX(1);
 }
 
-#jobconnect-page .company-card:hover {
+#job-portal-page .company-card:hover {
     transform: translateY(-8px);
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
 }
 
-#jobconnect-page .company-logo {
+#job-portal-page .company-logo {
     width: 80px;
     height: 80px;
     margin: 0 auto 1.5rem;
@@ -564,32 +564,32 @@
     align-items: center;
     justify-content: center;
     font-size: 2.5rem;
-    color: var(--jobconnect-primary);
+    color: var(--job-portal-primary);
     transition: all 0.4s ease;
 }
 
-#jobconnect-page .company-card:hover .company-logo {
+#job-portal-page .company-card:hover .company-logo {
     transform: scale(1.1);
 }
 
-#jobconnect-page .company-name {
+#job-portal-page .company-name {
     font-size: 1.3rem;
     font-weight: 700;
-    color: var(--jobconnect-dark);
+    color: var(--job-portal-dark);
     margin-bottom: 0.5rem;
 }
 
-#jobconnect-page .company-jobs {
+#job-portal-page .company-jobs {
     font-size: 0.9rem;
-    color: var(--jobconnect-accent);
+    color: var(--job-portal-accent);
     font-weight: 600;
 }
 
-#jobconnect-page .hiring-badge {
+#job-portal-page .hiring-badge {
     position: absolute;
     top: 15px;
     right: 15px;
-    background: var(--jobconnect-accent);
+    background: var(--job-portal-accent);
     color: white;
     padding: 0.3rem 0.8rem;
     border-radius: 20px;
@@ -611,41 +611,41 @@
 }
 
 /* Referrals Showcase Section */
-#jobconnect-page .referrals-showcase {
+#job-portal-page .referrals-showcase {
     background: white;
     position: relative;
     overflow: hidden;
 }
 
-#jobconnect-page .referrals-header {
+#job-portal-page .referrals-header {
     text-align: center;
     margin-bottom: 4rem;
 }
 
-#jobconnect-page .referrals-header h2 {
+#job-portal-page .referrals-header h2 {
     font-size: 3rem;
-    background: var(--jobconnect-gradient);
+    background: var(--job-portal-gradient);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
     margin-bottom: 1.5rem;
 }
 
-#jobconnect-page .referrals-header p {
+#job-portal-page .referrals-header p {
     font-size: 1.3rem;
     color: #666;
     max-width: 800px;
     margin: 0 auto;
 }
 
-#jobconnect-page .referrals-grid {
+#job-portal-page .referrals-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     gap: 2.5rem;
     margin-bottom: 4rem;
 }
 
-#jobconnect-page .referral-card {
+#job-portal-page .referral-card {
     background: white;
     border-radius: 15px;
     padding: 2.5rem 2rem;
@@ -654,35 +654,35 @@
     text-align: center;
     position: relative;
     overflow: hidden;
-    border-top: 5px solid var(--jobconnect-primary);
+    border-top: 5px solid var(--job-portal-primary);
 }
 
-#jobconnect-page .referral-card::before {
+#job-portal-page .referral-card::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 5px;
-    background: var(--jobconnect-gradient);
+    background: var(--job-portal-gradient);
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 0.4s ease;
 }
 
-#jobconnect-page .referral-card:hover::before {
+#job-portal-page .referral-card:hover::before {
     transform: scaleX(1);
 }
 
-#jobconnect-page .referral-card:hover {
+#job-portal-page .referral-card:hover {
     transform: translateY(-10px);
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
 }
 
-#jobconnect-page .referral-icon {
+#job-portal-page .referral-icon {
     width: 80px;
     height: 80px;
-    background: var(--jobconnect-gradient);
+    background: var(--job-portal-gradient);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -693,100 +693,100 @@
     transition: all 0.4s ease;
 }
 
-#jobconnect-page .referral-card:hover .referral-icon {
+#job-portal-page .referral-card:hover .referral-icon {
     transform: scale(1.1) rotate(5deg);
 }
 
-#jobconnect-page .referral-card h3 {
+#job-portal-page .referral-card h3 {
     font-size: 1.6rem;
     margin-bottom: 1rem;
-    color: var(--jobconnect-secondary);
+    color: var(--job-portal-secondary);
 }
 
-#jobconnect-page .referral-card p {
+#job-portal-page .referral-card p {
     color: #666;
     line-height: 1.7;
     margin-bottom: 1.5rem;
 }
 
-#jobconnect-page .referral-stats {
+#job-portal-page .referral-stats {
     display: flex;
     justify-content: center;
     gap: 1.5rem;
     margin-top: 1.5rem;
 }
 
-#jobconnect-page .stat {
+#job-portal-page .stat {
     text-align: center;
 }
 
-#jobconnect-page .stat-value {
+#job-portal-page .stat-value {
     font-size: 2rem;
     font-weight: 700;
-    color: var(--jobconnect-accent);
+    color: var(--job-portal-accent);
     display: block;
 }
 
-#jobconnect-page .stat-label {
+#job-portal-page .stat-label {
     font-size: 0.9rem;
     color: #777;
 }
 
 /* Referral Benefits Section */
-#jobconnect-page .referral-benefits {
+#job-portal-page .referral-benefits {
     background: #f8f9ff;
     padding: 5rem 0;
     position: relative;
 }
 
-#jobconnect-page .benefits-container {
+#job-portal-page .benefits-container {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 3rem;
 }
 
-#jobconnect-page .benefits-content {
+#job-portal-page .benefits-content {
     flex: 1;
 }
 
-#jobconnect-page .benefits-content h2 {
+#job-portal-page .benefits-content h2 {
     font-size: 2.8rem;
-    color: var(--jobconnect-secondary);
+    color: var(--job-portal-secondary);
     margin-bottom: 1.5rem;
     line-height: 1.2;
 }
 
-#jobconnect-page .benefits-content p {
+#job-portal-page .benefits-content p {
     font-size: 1.2rem;
     color: #666;
     margin-bottom: 2rem;
 }
 
-#jobconnect-page .benefits-list {
+#job-portal-page .benefits-list {
     list-style: none;
 }
 
-#jobconnect-page .benefits-list li {
+#job-portal-page .benefits-list li {
     margin-bottom: 1.5rem;
     display: flex;
     align-items: flex-start;
 }
 
-#jobconnect-page .benefits-list i {
-    color: var(--jobconnect-success);
+#job-portal-page .benefits-list i {
+    color: var(--job-portal-success);
     font-size: 1.5rem;
     margin-right: 1rem;
     margin-top: 0.2rem;
 }
 
-#jobconnect-page .benefits-list span {
+#job-portal-page .benefits-list span {
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--jobconnect-dark);
+    color: var(--job-portal-dark);
 }
 
-#jobconnect-page .benefits-visual {
+#job-portal-page .benefits-visual {
     flex: 1;
     display: flex;
     justify-content: center;
@@ -795,7 +795,7 @@
     height: 400px;
 }
 
-#jobconnect-page .floating-element {
+#job-portal-page .floating-element {
     position: absolute;
     background: white;
     border-radius: 10px;
@@ -806,38 +806,38 @@
     animation: jc-floatElement 8s ease-in-out infinite;
 }
 
-#jobconnect-page .floating-element:nth-child(1) {
+#job-portal-page .floating-element:nth-child(1) {
     top: 20px;
     left: 0;
     width: 200px;
-    background: var(--jobconnect-gradient);
+    background: var(--job-portal-gradient);
     color: white;
     animation-delay: 0s;
 }
 
-#jobconnect-page .floating-element:nth-child(2) {
+#job-portal-page .floating-element:nth-child(2) {
     top: 120px;
     right: 20px;
     width: 180px;
     background: white;
-    color: var(--jobconnect-dark);
+    color: var(--job-portal-dark);
     animation-delay: 1s;
 }
 
-#jobconnect-page .floating-element:nth-child(3) {
+#job-portal-page .floating-element:nth-child(3) {
     bottom: 80px;
     left: 40px;
     width: 220px;
-    background: var(--jobconnect-accent);
+    background: var(--job-portal-accent);
     color: white;
     animation-delay: 2s;
 }
 
-#jobconnect-page .floating-element:nth-child(4) {
+#job-portal-page .floating-element:nth-child(4) {
     bottom: 40px;
     right: 0;
     width: 160px;
-    background: var(--jobconnect-success);
+    background: var(--job-portal-success);
     color: white;
     animation-delay: 3s;
 }
@@ -854,39 +854,39 @@
     }
 }
 
-#jobconnect-page .element-icon {
+#job-portal-page .element-icon {
     font-size: 1.8rem;
     margin-right: 1rem;
 }
 
-#jobconnect-page .element-text {
+#job-portal-page .element-text {
     font-weight: 600;
 }
 
 /* CTA Section */
-#jobconnect-page .cta {
+#job-portal-page .cta {
     background: white;
     text-align: center;
 }
 
-#jobconnect-page .cta-content {
+#job-portal-page .cta-content {
     max-width: 800px;
     margin: 0 auto;
 }
 
-#jobconnect-page .cta h2 {
+#job-portal-page .cta h2 {
     font-size: 2.5rem;
     margin-bottom: 1.5rem;
-    color: var(--jobconnect-secondary);
+    color: var(--job-portal-secondary);
 }
 
-#jobconnect-page .cta p {
+#job-portal-page .cta p {
     font-size: 1.2rem;
     margin-bottom: 2rem;
     color: #666;
 }
 
-#jobconnect-page .cta-buttons {
+#job-portal-page .cta-buttons {
     display: flex;
     justify-content: center;
     gap: 1.5rem;
@@ -894,8 +894,8 @@
 }
 
 /* Referral CTA Section */
-#jobconnect-page .referral-cta {
-    background: var(--jobconnect-gradient);
+#job-portal-page .referral-cta {
+    background: var(--job-portal-gradient);
     color: white;
     text-align: center;
     padding: 6rem 0;
@@ -903,7 +903,7 @@
     overflow: hidden;
 }
 
-#jobconnect-page .referral-cta::before {
+#job-portal-page .referral-cta::before {
     content: '';
     position: absolute;
     top: -50%;
@@ -923,14 +923,14 @@
     }
 }
 
-#jobconnect-page .referral-cta h2 {
+#job-portal-page .referral-cta h2 {
     font-size: 3rem;
     margin-bottom: 1.5rem;
     position: relative;
     z-index: 2;
 }
 
-#jobconnect-page .referral-cta p {
+#job-portal-page .referral-cta p {
     font-size: 1.3rem;
     margin-bottom: 2.5rem;
     max-width: 700px;
@@ -944,190 +944,190 @@
 
 /* Responsive Design */
 @media (max-width: 992px) {
-    #jobconnect-page .hero-content {
+    #job-portal-page .hero-content {
         flex-direction: column;
         text-align: center;
     }
     
-    #jobconnect-page .hero-text {
+    #job-portal-page .hero-text {
         padding-right: 0;
         margin-bottom: 3rem;
     }
     
-    #jobconnect-page .steps {
+    #job-portal-page .steps {
         flex-direction: column;
         gap: 3rem;
     }
     
-    #jobconnect-page .steps::before {
+    #job-portal-page .steps::before {
         display: none;
     }
     
-    #jobconnect-page .benefits-container {
+    #job-portal-page .benefits-container {
         flex-direction: column;
         text-align: center;
     }
     
-    #jobconnect-page .benefits-visual {
+    #job-portal-page .benefits-visual {
         height: 300px;
         margin-top: 2rem;
     }
     
-    #jobconnect-page .floating-element {
+    #job-portal-page .floating-element {
         padding: 1rem;
     }
     
-    #jobconnect-page .floating-element:nth-child(1) {
+    #job-portal-page .floating-element:nth-child(1) {
         width: 180px;
     }
     
-    #jobconnect-page .floating-element:nth-child(2) {
+    #job-portal-page .floating-element:nth-child(2) {
         width: 160px;
     }
     
-    #jobconnect-page .floating-element:nth-child(3) {
+    #job-portal-page .floating-element:nth-child(3) {
         width: 200px;
     }
     
-    #jobconnect-page .floating-element:nth-child(4) {
+    #job-portal-page .floating-element:nth-child(4) {
         width: 140px;
     }
     
-    #jobconnect-page .companies-grid {
+    #job-portal-page .companies-grid {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 1.5rem;
     }
 }
 
 @media (max-width: 768px) {
-    #jobconnect-page .hero-text h1 {
+    #job-portal-page .hero-text h1 {
         font-size: 2.5rem;
     }
     
-    #jobconnect-page .search-box {
+    #job-portal-page .search-box {
         flex-direction: column;
         border-radius: 10px;
         gap: 0.5rem;
         padding: 1rem;
     }
     
-    #jobconnect-page .search-box input, #jobconnect-page .search-box button {
+    #job-portal-page .search-box input, #job-portal-page .search-box button {
         border-radius: 10px;
         width: 100%;
     }
     
-    #jobconnect-page .floating-card:nth-child(2),
-    #jobconnect-page .floating-card:nth-child(3) {
+    #job-portal-page .floating-card:nth-child(2),
+    #job-portal-page .floating-card:nth-child(3) {
         display: none;
     }
     
-    #jobconnect-page .floating-card:nth-child(1) {
+    #job-portal-page .floating-card:nth-child(1) {
         position: relative;
         margin: 0 auto;
     }
     
-    #jobconnect-page .hero-image {
+    #job-portal-page .hero-image {
         height: auto;
     }
     
-    #jobconnect-page .cta-buttons, #jobconnect-page .referral-cta .cta-buttons {
+    #job-portal-page .cta-buttons, #job-portal-page .referral-cta .cta-buttons {
         flex-direction: column;
         align-items: center;
     }
     
-    #jobconnect-page .btn-large {
+    #job-portal-page .btn-large {
         width: 100%;
         max-width: 300px;
     }
     
-    #jobconnect-page .referrals-header h2 {
+    #job-portal-page .referrals-header h2 {
         font-size: 2.5rem;
     }
     
-    #jobconnect-page .referrals-grid {
+    #job-portal-page .referrals-grid {
         grid-template-columns: 1fr;
     }
     
-    #jobconnect-page .referral-cta h2 {
+    #job-portal-page .referral-cta h2 {
         font-size: 2.5rem;
     }
     
-    #jobconnect-page .benefits-content h2 {
+    #job-portal-page .benefits-content h2 {
         font-size: 2.2rem;
     }
     
-    #jobconnect-page .mncs-header h2 {
+    #job-portal-page .mncs-header h2 {
         font-size: 2.2rem;
     }
     
-    #jobconnect-page .companies-grid {
+    #job-portal-page .companies-grid {
         grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
         gap: 1rem;
     }
 }
 
 @media (max-width: 576px) {
-    #jobconnect-page .section-title h2 {
+    #job-portal-page .section-title h2 {
         font-size: 2rem;
     }
     
-    #jobconnect-page .hero-text h1 {
+    #job-portal-page .hero-text h1 {
         font-size: 2rem;
     }
     
-    #jobconnect-page .feature-card, #jobconnect-page .step, #jobconnect-page .stat-item {
+    #job-portal-page .feature-card, #job-portal-page .step, #job-portal-page .stat-item {
         padding: 1.5rem;
     }
     
-    #jobconnect-page .feature-icon {
+    #job-portal-page .feature-icon {
         width: 60px;
         height: 60px;
         font-size: 1.5rem;
     }
     
-    #jobconnect-page .referrals-header h2 {
+    #job-portal-page .referrals-header h2 {
         font-size: 2rem;
     }
     
-    #jobconnect-page .referral-cta h2 {
+    #job-portal-page .referral-cta h2 {
         font-size: 2rem;
     }
     
-    #jobconnect-page .benefits-content h2 {
+    #job-portal-page .benefits-content h2 {
         font-size: 1.8rem;
     }
     
-    #jobconnect-page .referral-card {
+    #job-portal-page .referral-card {
         padding: 2rem 1.5rem;
     }
     
-    #jobconnect-page .referral-stats {
+    #job-portal-page .referral-stats {
         flex-direction: column;
         gap: 1rem;
     }
     
-    #jobconnect-page .floating-element {
+    #job-portal-page .floating-element {
         display: none;
     }
     
-    #jobconnect-page .floating-element:nth-child(1) {
+    #job-portal-page .floating-element:nth-child(1) {
         display: flex;
     }
     
-    #jobconnect-page .mncs-header h2 {
+    #job-portal-page .mncs-header h2 {
         font-size: 1.8rem;
     }
     
-    #jobconnect-page .companies-grid {
+    #job-portal-page .companies-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
     }
     
-    #jobconnect-page .company-card {
+    #job-portal-page .company-card {
         padding: 1.5rem 1rem;
     }
     
-    #jobconnect-page .company-logo {
+    #job-portal-page .company-logo {
         width: 60px;
         height: 60px;
         font-size: 2rem;

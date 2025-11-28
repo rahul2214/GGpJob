@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
 import { CheckCircle, GraduationCap, Layers, ThumbsUp } from 'lucide-react';
 
-const JobConnectHome = () => {
+const JobPortalHome = () => {
 
     useEffect(() => {
         const animateOnScroll = () => {
@@ -31,7 +31,7 @@ const JobConnectHome = () => {
         window.addEventListener('load', animateOnScroll);
         window.addEventListener('scroll', animateOnScroll);
 
-        const buttons = document.querySelectorAll<HTMLElement>('#jobconnect-page .btn');
+        const buttons = document.querySelectorAll<HTMLElement>('#job-portal-page .btn');
         buttons.forEach(button => {
             const mouseEnterHandler = () => {
                 button.style.transform = 'translateY(-3px)';
@@ -55,7 +55,7 @@ const JobConnectHome = () => {
 
 
     return (
-        <div id="jobconnect-page">
+        <div id="job-portal-page">
             <section className="hero">
                 <div className="container">
                     <div className="hero-content">
@@ -90,7 +90,7 @@ const JobConnectHome = () => {
             <section className="features" id="features">
                 <div className="container">
                     <div className="section-title">
-                        <h2>Why Choose JobConnect?</h2>
+                        <h2>Why Choose Job Portal?</h2>
                         <p>Our platform is designed to make job hunting and hiring simple, effective, and accessible to everyone.</p>
                     </div>
                     <div className="features-grid">
@@ -123,7 +123,7 @@ const JobConnectHome = () => {
                 <div className="container">
                     <div className="section-title">
                         <h2>How It Works</h2>
-                        <p>Getting started with JobConnect is simple for both job seekers and employers.</p>
+                        <p>Getting started with Job Portal is simple for both job seekers and employers.</p>
                     </div>
                     <div className="steps">
                         <div className="step">
@@ -308,10 +308,10 @@ const JobConnectHome = () => {
                 <div className="container">
                     <div className="cta-content">
                         <h2>Ready to Find Your Next Opportunity?</h2>
-                        <p>Join thousands of employers and job seekers who have already found success with JobConnect.</p>
+                        <p>Join thousands of employers and job seekers who have already found success with Job Portal.</p>
                         <div className="cta-buttons">
                             <button className="btn btn-primary btn-large">Post a Job for Free</button>
-                            <button className="btn btn-outline btn-large" style={{borderColor: 'var(--jobconnect-primary)', color: 'var(--jobconnect-primary)'}}>Browse Jobs</button>
+                            <button className="btn btn-outline btn-large" style={{borderColor: 'var(--job-portal-primary)', color: 'var(--job-portal-primary)'}}>Browse Jobs</button>
                         </div>
                     </div>
                 </div>
@@ -353,7 +353,7 @@ export default function Home() {
 
   const renderDashboard = () => {
     if (!user) {
-       return <JobConnectHome />;
+       return <JobPortalHome />;
     }
     
     switch(user.role) {
