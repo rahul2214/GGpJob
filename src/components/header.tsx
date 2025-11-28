@@ -148,9 +148,9 @@ export default function Header() {
                  <SheetHeader className="p-4">
                     <SheetTitle asChild>
                         <SheetClose asChild>
-                            <Link href="/" className="flex items-center gap-2 font-semibold">
+                            <Link href="/" className="flex items-center gap-2 font-bold">
                                 <BriefcaseBusiness className="h-6 w-6 text-primary" />
-                                <span>Job Portal</span>
+                                <span className="text-xl">Job Portal</span>
                             </Link>
                         </SheetClose>
                     </SheetTitle>
@@ -324,9 +324,9 @@ export default function Header() {
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6">
        <div className="flex items-center gap-4">
         {renderMobileLeftButton()}
-        <Link href="/" className="hidden md:flex items-center gap-2 font-semibold whitespace-nowrap">
+        <Link href="/" className="hidden md:flex items-center gap-2 font-bold whitespace-nowrap">
             <BriefcaseBusiness className="h-6 w-6 text-primary" />
-            <span className="text-lg">Job Portal</span>
+            <span className="text-xl">Job Portal</span>
         </Link>
         {isClient && (isProfileSectionEditPage || (isMobile && (isAdminAddPage || isAdminEditPage))) && (
           <div className="md:hidden text-lg font-semibold whitespace-nowrap">
