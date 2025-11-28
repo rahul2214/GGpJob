@@ -22,6 +22,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
+       <head>
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+      </head>
       <body className={cn('relative h-full font-sans antialiased', inter.variable)}>
         <UserProvider>
           <div className="flex flex-col min-h-screen">
