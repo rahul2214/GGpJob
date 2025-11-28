@@ -183,7 +183,7 @@
 
 /* Hero Section */
 #job-portal-page .hero {
-    padding: 10rem 0 5rem;
+    padding: 6rem 0 5rem;
     background: var(--job-portal-gradient);
     color: white;
     position: relative;
@@ -1133,3 +1133,4 @@
         font-size: 2rem;
     }
 }
+    
