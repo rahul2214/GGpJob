@@ -36,6 +36,7 @@ export async function GET(request: Request) {
     const employeeId = searchParams.get('employeeId');
     if (employeeId) {
       query = query.where('employeeId', '==', employeeId);
+      hasComplexFilters = true; // Sorting will be done client-side to avoid index issues
     }
     
     const experienceId = searchParams.get('experience');
