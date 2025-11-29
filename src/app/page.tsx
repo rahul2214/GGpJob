@@ -92,7 +92,7 @@ const JobPortalHome = () => {
                             <form className="search-box" onSubmit={handleSearch}>
                                 <input name="search" type="text" placeholder="Job title, keywords, or company" />
                                 <input type="text" placeholder="City, state, or remote" disabled />
-                                <button type="submit">Search Jobs</button>
+                                <button type="submit" className="btn">Search Jobs</button>
                             </form>
                         </div>
                         <div className="hero-image">
@@ -376,8 +376,8 @@ const JobPortalHome = () => {
                     <h2>Ready to Boost Your Career with Referrals?</h2>
                     <p>Join thousands of job seekers who have landed their dream jobs through our referral-powered platform. Employees can post referrals and help others while building their professional network.</p>
                     <div className="cta-buttons">
-                        <button className="btn btn-outline btn-large">Browse Referral Jobs</button>
-                        <button className="btn btn-primary btn-large">Post a Referral</button>
+                        <Link href="/jobs?isReferral=true" className="btn btn-outline btn-large">Browse Referral Jobs</Link>
+                        <Link href="/referrals/post" className="btn btn-primary btn-large">Post a Referral</Link>
                     </div>
                 </div>
             </section>
@@ -388,8 +388,12 @@ const JobPortalHome = () => {
                         <h2>Ready to Find Your Next Opportunity?</h2>
                         <p>Join thousands of employers and job seekers who have already found success with Job Portal.</p>
                         <div className="cta-buttons">
-                            <button className="btn btn-primary btn-large">Post a Job for Free</button>
-                            <button className="btn btn-outline btn-large" style={{borderColor: 'var(--job-portal-primary)', color: 'var(--job-portal-primary)'}}>Browse Jobs</button>
+                            <Button asChild className="btn btn-primary btn-large">
+                                <Link href="/company/signup">Post a Job for Free</Link>
+                            </Button>
+                            <Button asChild className="btn btn-outline btn-large" style={{borderColor: 'var(--job-portal-primary)', color: 'var(--job-portal-primary)'}}>
+                                <Link href="/jobs">Browse Jobs</Link>
+                            </Button>
                         </div>
                     </div>
                 </div>
