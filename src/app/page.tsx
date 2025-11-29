@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
 import { CheckCircle, GraduationCap, Layers, ThumbsUp } from 'lucide-react';
+import { AnimatedCounter } from '@/components/animated-counter';
 
 const JobPortalHome = () => {
 
@@ -149,19 +150,27 @@ const JobPortalHome = () => {
                 <div className="container">
                     <div className="stats-grid">
                         <div className="stat-item">
-                            <h3>50K+</h3>
+                            <h3 className="flex items-center justify-center">
+                                <AnimatedCounter value={50} />K+
+                            </h3>
                             <p>Jobs Posted</p>
                         </div>
                         <div className="stat-item">
-                            <h3>200K+</h3>
+                            <h3 className="flex items-center justify-center">
+                                <AnimatedCounter value={200} />K+
+                            </h3>
                             <p>Active Users</p>
                         </div>
                         <div className="stat-item">
-                            <h3>85%</h3>
+                            <h3 className="flex items-center justify-center">
+                                <AnimatedCounter value={85} />%
+                            </h3>
                             <p>Success Rate</p>
                         </div>
                         <div className="stat-item">
-                            <h3>150+</h3>
+                             <h3 className="flex items-center justify-center">
+                                <AnimatedCounter value={150} />+
+                            </h3>
                             <p>Countries</p>
                         </div>
                     </div>
