@@ -30,7 +30,8 @@ export function ShareButton({ jobId, jobTitle }: ShareButtonProps) {
         }
     };
 
-    const handleShare = async () => {
+    const handleShare = async (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
         const jobUrl = `${window.location.origin}/jobs/${jobId}`;
         const shareData = {
             title: `Job Opening: ${jobTitle}`,
@@ -53,6 +54,19 @@ export function ShareButton({ jobId, jobTitle }: ShareButtonProps) {
             await copyToClipboard(jobUrl);
         }
     };
+
+    const isDashboard = typeof window !== 'undefined' && (
+        window.location.pathname.includes('/dashboard') ||
+        window.location.pathname === '/'
+    );
+
+    if (isDashboard) {
+        return (
+             <button onClick={(e: any) => handleShare(e)} className="flex items-center w-full">
+                <span>Share</span>
+            </button>
+        )
+    }
 
     return (
         <Button variant="outline" size="icon" onClick={handleShare}>
