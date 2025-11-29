@@ -15,6 +15,8 @@ const firebaseConfig = {
 // Initialize Firebase
 const firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(firebaseApp);
-const storage = getStorage(firebaseApp);
+
+// Explicitly provide the storage bucket URL to getStorage
+const storage = getStorage(firebaseApp, `gs://${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}`);
 
 export { firebaseApp, db, storage };
