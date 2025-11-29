@@ -89,6 +89,7 @@ export interface Application {
   applicantHeadline?: string;
   applicantId?: string; // Changed to string for Firestore UID
   applicantSkills?: string;
+  applicantResumeUrl?: string;
 }
 
 export interface Domain {
