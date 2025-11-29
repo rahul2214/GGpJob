@@ -13,6 +13,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 export const metadata: Metadata = {
   title: 'Job Portal',
   description: 'The premier platform for connecting talent with opportunity.',
+  icons: null,
 };
 
 export default function RootLayout({
