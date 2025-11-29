@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Users } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Users, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import {
   DropdownMenu,
@@ -29,6 +29,7 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "../ui/skeleton";
 import { useUser } from "@/contexts/user-context";
+import { ShareButton } from "../share-button";
 
 
 export default function RecruiterDashboard() {
@@ -197,6 +198,10 @@ export default function RecruiterDashboard() {
                                 <Users className="mr-2 h-4 w-4" />
                                 View Applications
                             </Link>
+                         </DropdownMenuItem>
+                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            <Share2 className="mr-2 h-4 w-4" />
+                            <ShareButton jobId={job.id} jobTitle={job.title} />
                          </DropdownMenuItem>
                          <DropdownMenuItem asChild>
                            <Link href={`/jobs/edit/${job.id}`}>
