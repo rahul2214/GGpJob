@@ -3,7 +3,7 @@
 
 import { createContext, useState, useContext, useEffect, ReactNode, useCallback } from 'react';
 import type { User } from '@/lib/types';
-import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import { getAuth, onAuthStateChanged, User as FirebaseUser, isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
 import { firebaseApp } from '@/firebase/config';
 
 interface UserContextType {
@@ -23,27 +23,51 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const fetchUserProfile = useCallback(async (uid: string): Promise<User | null> => {
     try {
       const res = await fetch(`/api/users?uid=${uid}`);
-      
       if (res.ok) {
-        const userProfile = await res.json();
-        return userProfile;
-      } else if (res.status === 404) {
-        console.warn(`User profile not found in DB for UID: ${uid}`);
-        return null;
-      } else {
-        console.error("Failed to fetch user profile, status:", res.status);
-        return null;
+        return await res.json();
       }
+      return null;
     } catch (error) {
       console.error("Error fetching user profile:", error);
       return null;
     }
   }, []);
+  
+  const createNewUserProfile = async (firebaseUser: FirebaseUser): Promise<User | null> => {
+      const { uid, email, displayName, phoneNumber } = firebaseUser;
+      
+      const role = email?.endsWith('.com') ? 'Job Seeker' : 'Recruiter';
+
+      const profileData = {
+        id: uid,
+        name: displayName || email?.split('@')[0] || 'New User',
+        email: email!,
+        phone: phoneNumber || '',
+        role: role,
+      };
+
+      try {
+        const response = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profileData),
+        });
+        if (response.ok) {
+            return await response.json();
+        } else {
+             console.error("Failed to create user profile in DB");
+            return null;
+        }
+      } catch (error) {
+           console.error("Error creating user profile in DB:", error);
+           return null;
+      }
+  }
+
 
   useEffect(() => {
-    // Check for Firebase config before initializing auth
     if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
-        console.error("Firebase config not found. Make sure .env.local is set up correctly.");
+        console.error("Firebase config not found.");
         setLoading(false);
         return;
     }
@@ -52,15 +76,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setLoading(true);
       if (firebaseUser) {
-        // Additional check for email verification before fetching profile
         if (firebaseUser.emailVerified) {
-            const userProfile = await fetchUserProfile(firebaseUser.uid);
+            let userProfile = await fetchUserProfile(firebaseUser.uid);
+            // If user exists in Auth but not in DB (e.g., first Google sign-in)
+            if (!userProfile) {
+                userProfile = await createNewUserProfile(firebaseUser);
+            }
             setUserState(userProfile);
         } else {
-            // If email is not verified, ensure user is logged out of the app's state
+            // User exists but email is not verified
             setUserState(null);
-            // Optionally, you can sign them out of Firebase as well to be strict
-            // await auth.signOut(); 
         }
       } else {
         // User is signed out
@@ -96,3 +121,5 @@ export function useUser() {
   }
   return context;
 }
+
+    

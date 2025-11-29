@@ -128,6 +128,26 @@ export default function SignupPage() {
 
       const firebaseUser = userCredential.user;
       
+      // Create profile in Firestore
+      const profileData = {
+        id: firebaseUser.uid,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        role: "Job Seeker",
+      };
+
+      const response = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create user profile.");
+      }
+
       await sendEmailVerification(firebaseUser);
       
       // We sign out here to force the user to log in and verify their email
@@ -322,5 +342,7 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    
 
     
