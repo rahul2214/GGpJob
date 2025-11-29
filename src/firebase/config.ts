@@ -15,8 +15,6 @@ const firebaseConfig = {
 // Initialize Firebase
 const firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(firebaseApp);
-
-// Let the SDK automatically resolve the correct storage bucket from the initialized app.
 const storage = getStorage(firebaseApp);
 
 export { firebaseApp, db, storage };
