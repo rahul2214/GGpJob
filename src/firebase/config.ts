@@ -17,6 +17,6 @@ const firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp()
 const db = getFirestore(firebaseApp);
 
 // Explicitly provide the storage bucket URL to getStorage
-const storage = getStorage(firebaseApp, `gs://${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}`);
+const storage = getStorage(firebaseApp, "gs://careerconnect-kmzv9.firebaseapp.com");
 
 export { firebaseApp, db, storage };
