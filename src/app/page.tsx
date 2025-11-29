@@ -16,6 +16,7 @@ import { CheckCircle, GraduationCap, Layers, ThumbsUp } from 'lucide-react';
 import { AnimatedCounter } from '@/components/animated-counter';
 
 const JobPortalHome = () => {
+    const router = useRouter();
 
     useEffect(() => {
         const animateOnScroll = () => {
@@ -44,6 +45,20 @@ const JobPortalHome = () => {
             button.addEventListener('mouseleave', mouseLeaveHandler);
         });
 
+        // Animate stats on scroll
+        const statsSection = document.getElementById('stats');
+        if (statsSection) {
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    const statItems = statsSection.querySelectorAll('.stat-item');
+                    statItems.forEach(item => item.classList.add('animate'));
+                    observer.disconnect();
+                }
+            }, { threshold: 0.5 });
+            observer.observe(statsSection);
+        }
+
+
         return () => {
             window.removeEventListener('load', animateOnScroll);
             window.removeEventListener('scroll', animateOnScroll);
@@ -54,6 +69,17 @@ const JobPortalHome = () => {
         };
     }, []);
 
+    const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        const searchQuery = formData.get('search') as string;
+        const newParams = new URLSearchParams();
+        if (searchQuery) {
+            newParams.set('search', searchQuery);
+        }
+        router.push(`/jobs?${newParams.toString()}`);
+    };
+
 
     return (
         <div id="job-portal-page">
@@ -63,11 +89,11 @@ const JobPortalHome = () => {
                         <div className="hero-text">
                             <h1>Find Your Dream Job or Top Talent</h1>
                             <p>Your premier destination for connecting with top talent and finding the perfect job opportunity. Explore thousands of listings today.</p>
-                            <div className="search-box">
-                                <input type="text" placeholder="Job title, keywords, or company" />
-                                <input type="text" placeholder="City, state, or remote" />
-                                <button>Search Jobs</button>
-                            </div>
+                            <form className="search-box" onSubmit={handleSearch}>
+                                <input name="search" type="text" placeholder="Job title, keywords, or company" />
+                                <input type="text" placeholder="City, state, or remote" disabled />
+                                <button type="submit">Search Jobs</button>
+                            </form>
                         </div>
                         <div className="hero-image">
                             <div className="floating-card">
