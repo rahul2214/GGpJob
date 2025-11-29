@@ -172,6 +172,7 @@
     font-size: 2.5rem;
     color: var(--job-portal-secondary);
     margin-bottom: 1rem;
+    font-weight: 700;
 }
 
 #job-portal-page .section-title p {
@@ -506,6 +507,7 @@
     font-size: 2.8rem;
     color: var(--job-portal-secondary);
     margin-bottom: 1rem;
+    font-weight: 700;
 }
 
 #job-portal-page .mncs-header p {
@@ -634,6 +636,7 @@
     color: var(--job-portal-secondary);
     margin-bottom: 1.5rem;
     line-height: 1.2;
+    font-weight: 700;
 }
 
 #job-portal-page .benefits-content p {
@@ -763,6 +766,7 @@
     background-clip: text;
     color: transparent;
     margin-bottom: 1.5rem;
+    font-weight: 700;
 }
 
 #job-portal-page .referrals-header p {
@@ -881,6 +885,7 @@
     font-size: 2.5rem;
     margin-bottom: 1.5rem;
     color: var(--job-portal-secondary);
+    font-weight: 700;
 }
 
 #job-portal-page .cta p {
@@ -931,6 +936,7 @@
     margin-bottom: 1.5rem;
     position: relative;
     z-index: 2;
+    font-weight: 700;
 }
 
 #job-portal-page .referral-cta p {
