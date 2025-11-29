@@ -92,7 +92,7 @@ const JobPortalHome = () => {
                             <form className="search-box" onSubmit={handleSearch}>
                                 <input name="search" type="text" placeholder="Job title, keywords, or company" />
                                 <input type="text" placeholder="City, state, or remote" disabled />
-                                <button type="submit" className="btn">Search Jobs</button>
+                                <button type="submit" className="btn btn-primary">Search Jobs</button>
                             </form>
                         </div>
                         <div className="hero-image">
