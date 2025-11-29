@@ -610,6 +610,139 @@
     }
 }
 
+/* Referral Benefits Section */
+#job-portal-page .referral-benefits {
+    background: #f8f9ff;
+    padding: 5rem 0;
+    position: relative;
+}
+
+#job-portal-page .benefits-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3rem;
+}
+
+#job-portal-page .benefits-content {
+    flex: 1;
+}
+
+#job-portal-page .benefits-content h2 {
+    font-size: 2.8rem;
+    color: var(--job-portal-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+}
+
+#job-portal-page .benefits-content p {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+#job-portal-page .benefits-list {
+    list-style: none;
+    padding: 0;
+}
+
+#job-portal-page .benefits-list li {
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+}
+
+#job-portal-page .benefits-list i {
+    color: var(--job-portal-success);
+    font-size: 1.5rem;
+    margin-right: 1rem;
+    margin-top: 0.2rem;
+}
+
+#job-portal-page .benefits-list span {
+    font-size: 1.1rem;
+    color: var(--job-portal-dark);
+}
+
+
+#job-portal-page .benefits-visual {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    height: 400px;
+}
+
+#job-portal-page .floating-element {
+    position: absolute;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    animation: jc-floatElement 8s ease-in-out infinite;
+}
+
+#job-portal-page .floating-element:nth-child(1) {
+    top: 20px;
+    left: 0;
+    width: 200px;
+    background: var(--job-portal-gradient);
+    color: white;
+    animation-delay: 0s;
+}
+
+#job-portal-page .floating-element:nth-child(2) {
+    top: 120px;
+    right: 20px;
+    width: 180px;
+    background: white;
+    color: var(--job-portal-dark);
+    animation-delay: 1s;
+}
+
+#job-portal-page .floating-element:nth-child(3) {
+    bottom: 80px;
+    left: 40px;
+    width: 220px;
+    background: var(--job-portal-accent);
+    color: white;
+    animation-delay: 2s;
+}
+
+#job-portal-page .floating-element:nth-child(4) {
+    bottom: 40px;
+    right: 0;
+    width: 160px;
+    background: var(--job-portal-success);
+    color: white;
+    animation-delay: 3s;
+}
+
+@keyframes jc-floatElement {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+#job-portal-page .element-icon {
+    font-size: 1.8rem;
+    margin-right: 1rem;
+}
+
+#job-portal-page .element-text {
+    font-weight: 600;
+}
+
+
 /* Referrals Showcase Section */
 #job-portal-page .referrals-showcase {
     background: white;
@@ -730,137 +863,6 @@
 #job-portal-page .stat-label {
     font-size: 0.9rem;
     color: #777;
-}
-
-/* Referral Benefits Section */
-#job-portal-page .referral-benefits {
-    background: #f8f9ff;
-    padding: 5rem 0;
-    position: relative;
-}
-
-#job-portal-page .benefits-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 3rem;
-}
-
-#job-portal-page .benefits-content {
-    flex: 1;
-}
-
-#job-portal-page .benefits-content h2 {
-    font-size: 2.8rem;
-    color: var(--job-portal-secondary);
-    margin-bottom: 1.5rem;
-    line-height: 1.2;
-}
-
-#job-portal-page .benefits-content p {
-    font-size: 1.2rem;
-    color: #666;
-    margin-bottom: 2rem;
-}
-
-#job-portal-page .benefits-list {
-    list-style: none;
-}
-
-#job-portal-page .benefits-list li {
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: flex-start;
-}
-
-#job-portal-page .benefits-list i {
-    color: var(--job-portal-success);
-    font-size: 1.5rem;
-    margin-right: 1rem;
-    margin-top: 0.2rem;
-}
-
-#job-portal-page .benefits-list span {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--job-portal-dark);
-}
-
-#job-portal-page .benefits-visual {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    height: 400px;
-}
-
-#job-portal-page .floating-element {
-    position: absolute;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    padding: 1.5rem;
-    display: flex;
-    align-items: center;
-    animation: jc-floatElement 8s ease-in-out infinite;
-}
-
-#job-portal-page .floating-element:nth-child(1) {
-    top: 20px;
-    left: 0;
-    width: 200px;
-    background: var(--job-portal-gradient);
-    color: white;
-    animation-delay: 0s;
-}
-
-#job-portal-page .floating-element:nth-child(2) {
-    top: 120px;
-    right: 20px;
-    width: 180px;
-    background: white;
-    color: var(--job-portal-dark);
-    animation-delay: 1s;
-}
-
-#job-portal-page .floating-element:nth-child(3) {
-    bottom: 80px;
-    left: 40px;
-    width: 220px;
-    background: var(--job-portal-accent);
-    color: white;
-    animation-delay: 2s;
-}
-
-#job-portal-page .floating-element:nth-child(4) {
-    bottom: 40px;
-    right: 0;
-    width: 160px;
-    background: var(--job-portal-success);
-    color: white;
-    animation-delay: 3s;
-}
-
-@keyframes jc-floatElement {
-    0% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-20px);
-    }
-    100% {
-        transform: translateY(0px);
-    }
-}
-
-#job-portal-page .element-icon {
-    font-size: 1.8rem;
-    margin-right: 1rem;
-}
-
-#job-portal-page .element-text {
-    font-weight: 600;
 }
 
 /* CTA Section */
