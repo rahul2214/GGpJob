@@ -227,6 +227,49 @@ const JobPortalHome = () => {
                 </div>
             </section>
 
+             <section className="referral-benefits" id="job-referrals">
+                <div className="container">
+                    <div className="benefits-container">
+                        <div className="benefits-content">
+                            <h2>Unlock Your Career with Referrals</h2>
+                            <p>Get an edge in your job search. Employee referrals are one of the most effective ways to land your dream job.</p>
+                            <ul className="benefits-list">
+                                <li>
+                                    <i className="fas fa-rocket"></i>
+                                    <span><strong>Stand Out from the Crowd:</strong> Referred candidates are often fast-tracked through the application process.</span>
+                                </li>
+                                <li>
+                                    <i className="fas fa-lightbulb"></i>
+                                    <span><strong>Gain Insider Information:</strong> Connect with employees to learn about company culture and the role.</span>
+                                </li>
+                                <li>
+                                    <i className="fas fa-chart-line"></i>
+                                    <span><strong>Increase Your Chances:</strong> Studies show referrals have a significantly higher chance of getting hired.</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div className="benefits-visual">
+                            <div className="floating-element">
+                                <div className="element-icon"><i className="fas fa-network-wired"></i></div>
+                                <div className="element-text">Stronger Network</div>
+                            </div>
+                            <div className="floating-element">
+                                <div className="element-icon"><i className="fas fa-user-check"></i></div>
+                                <div className="element-text">Priority Review</div>
+                            </div>
+                            <div className="floating-element">
+                                <div className="element-icon"><i className="fas fa-trophy"></i></div>
+                                <div className="element-text">Higher Success</div>
+                            </div>
+                            <div className="floating-element">
+                                <div className="element-icon"><i className="fas fa-file-signature"></i></div>
+                                <div className="element-text">Get Hired Faster</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <section className="referrals-showcase" id="referrals">
                 <div className="container">
                     <div className="referrals-header">
