@@ -159,7 +159,7 @@
 }
 
 #job-portal-page .btn-large {
-    padding: 1rem 2.5rem;
+    padding: 1.2rem 2.5rem;
     font-size: 1.1rem;
 }
 
@@ -458,7 +458,7 @@
 }
 
 /* Stats Section */
-#job-portal-page .stats {
+#job-portal-page #stats {
     background: var(--job-portal-gradient);
     color: white;
     text-align: center;
@@ -479,6 +479,7 @@
     opacity: 1;
     transform: translateY(0);
 }
+
 
 #job-portal-page .stat-item h3 {
     font-size: 3rem;
@@ -1142,4 +1143,6 @@
         font-size: 2rem;
     }
 }
+    
+
     
