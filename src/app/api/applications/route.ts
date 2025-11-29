@@ -72,6 +72,7 @@ export async function GET(request: Request) {
           applicantHeadline: applicant?.headline,
           applicantId: applicant?.id,
           applicantSkills: skills,
+          applicantResumeUrl: applicant?.resumeUrl,
           jobTitle: job?.title,
           companyName: job?.companyName,
           statusName,

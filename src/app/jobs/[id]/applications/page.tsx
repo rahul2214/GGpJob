@@ -173,9 +173,11 @@ export default function JobApplicationsPage() {
                                                             View Profile
                                                         </Link>
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem>
-                                                        <Download className="mr-2 h-4 w-4" />
-                                                        Resume
+                                                    <DropdownMenuItem asChild disabled={!app.applicantResumeUrl}>
+                                                        <a href={app.applicantResumeUrl} target="_blank" rel="noopener noreferrer">
+                                                            <Download className="mr-2 h-4 w-4" />
+                                                            Resume
+                                                        </a>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuLabel>Change Status</DropdownMenuLabel>
