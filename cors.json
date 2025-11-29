@@ -1,9 +1,17 @@
 [
-    {
-      "origin": ["https://6000-firebase-studio-1756535815754.cluster-w5vd22whf5gmav2vgkomwtc4go.cloudworkstations.dev"],
-      "method": ["POST"],
-      "maxAgeSeconds": 3600,
-      "responseHeader": ["Content-Type"]
-    }
-  ]
-  
+  {
+    "origin": [
+      "https://6000-firebase-studio-1756535815754.cluster-w5vd22whf5gmav2vgkomwtc4go.cloudworkstations.dev",
+      "http://localhost:3000",
+      "https://veltriajobportal.vercel.app/"
+    ],
+    "method": ["GET", "POST", "PUT"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": [
+      "Content-Type",
+      "Authorization",
+      "x-goog-meta-*",
+      "x-goog-resumable"
+    ]
+  }
+]
