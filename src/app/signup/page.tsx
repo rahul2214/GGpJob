@@ -26,7 +26,7 @@ import { LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -35,6 +35,8 @@ import {
   sendEmailVerification,
 } from "firebase/auth";
 import { firebaseApp } from "@/firebase/config";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { Domain } from "@/lib/types";
 
 // Google Icon Component
 const GoogleIcon = () => (
@@ -82,6 +84,7 @@ const formSchema = z
     phone: z
       .string()
       .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian phone number."),
+    domainId: z.string().min(1, "Please select your domain."),
     password: z.string().min(8, "Password must be at least 8 characters."),
     confirmPassword: z.string(),
   })
@@ -96,6 +99,21 @@ export default function SignupPage() {
   const { toast } = useToast();
   const router = useRouter();
   const { user, loading } = useUser();
+  const [domains, setDomains] = useState<Domain[]>([]);
+
+  useEffect(() => {
+    const fetchDomains = async () => {
+        try {
+            const res = await fetch('/api/domains');
+            if (res.ok) {
+                setDomains(await res.json());
+            }
+        } catch (error) {
+            console.error("Failed to fetch domains", error);
+        }
+    }
+    fetchDomains();
+  }, []);
 
   useEffect(() => {
     if (!loading && user) {
@@ -109,6 +127,7 @@ export default function SignupPage() {
       name: "",
       email: "",
       phone: "",
+      domainId: "",
       password: "",
       confirmPassword: "",
     },
@@ -135,6 +154,7 @@ export default function SignupPage() {
         email: data.email,
         phone: data.phone,
         role: "Job Seeker",
+        domainId: data.domainId,
       };
 
       const response = await fetch("/api/users", {
@@ -281,6 +301,31 @@ export default function SignupPage() {
                   </FormItem>
                 )}
               />
+              
+              <FormField
+                control={form.control}
+                name="domainId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Domain</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your primary job domain" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {domains.map(domain => (
+                          <SelectItem key={domain.id} value={domain.id}>
+                            {domain.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
@@ -342,7 +387,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
-    
-
-    
