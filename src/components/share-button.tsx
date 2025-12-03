@@ -32,6 +32,7 @@ export function ShareButton({ jobId, jobTitle }: ShareButtonProps) {
 
     const handleShare = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
+        e.preventDefault();
         const jobUrl = `${window.location.origin}/jobs/${jobId}`;
         const shareData = {
             title: `Job Opening: ${jobTitle}`,
@@ -57,12 +58,13 @@ export function ShareButton({ jobId, jobTitle }: ShareButtonProps) {
 
     const isDashboard = typeof window !== 'undefined' && (
         window.location.pathname.includes('/dashboard') ||
-        window.location.pathname === '/'
+        window.location.pathname === '/' ||
+        window.location.pathname === '/admin/jobs'
     );
 
     if (isDashboard) {
-        return (
-             <button onClick={(e: any) => handleShare(e)} className="flex items-center w-full">
+         return (
+             <button onClick={handleShare} className="flex items-center w-full">
                 <span>Share</span>
             </button>
         )

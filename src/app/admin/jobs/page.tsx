@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash2, Search, MoreHorizontal, Eye } from "lucide-react";
+import { Trash2, Search, MoreHorizontal, Eye, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { ShareButton } from "@/components/share-button";
 
 export default function ManageJobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -152,6 +153,10 @@ export default function ManageJobsPage() {
                           <Eye className="mr-2 h-4 w-4" />
                           View Details
                        </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <Share2 className="mr-2 h-4 w-4" />
+                      <ShareButton jobId={job.id} jobTitle={job.title} />
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setJobToDelete(job)} className="text-destructive">
                       <Trash2 className="mr-2 h-4 w-4" />
