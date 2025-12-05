@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -67,7 +66,9 @@ export default function JobSeekerDashboard() {
   return (
     <div className="space-y-4">
         
-       {user && <ProfileStrength user={user} />}
+       <div className="md:hidden">
+        {user && <ProfileStrength user={user} />}
+       </div>
 
        <Card>
         <CardHeader>
