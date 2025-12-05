@@ -98,7 +98,7 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
             <CardContent className="space-y-4">
                 <div className="flex items-center gap-4">
                     <Progress value={completion} className="w-full" />
-                    <span className="font-bold text-lg text-primary">{completion}%</span>
+                    <span className="font-bold text-base text-primary">{completion}%</span>
                 </div>
                 {completion < 100 && (
                      <Button asChild variant="secondary">
