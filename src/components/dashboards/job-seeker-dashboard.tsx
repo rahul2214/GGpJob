@@ -12,6 +12,7 @@ import { useUser } from "@/contexts/user-context";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Link from "next/link";
 import { Skeleton } from "../ui/skeleton";
+import { ProfileStrength } from "../profile-strength";
 
 export default function JobSeekerDashboard() {
   const { user } = useUser();
@@ -65,6 +66,9 @@ export default function JobSeekerDashboard() {
   
   return (
     <div className="space-y-4">
+        
+       {user && <ProfileStrength user={user} />}
+
        <Card>
         <CardHeader>
           <CardTitle>Find your next job</CardTitle>
