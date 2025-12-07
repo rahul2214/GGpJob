@@ -105,9 +105,8 @@ export default function JobSeekerDashboard() {
           </CardHeader>
           <CardContent>
             <div className="flex space-x-4">
-                <Skeleton className="h-48 w-1/3" />
-                <Skeleton className="h-48 w-1/3" />
-                <Skeleton className="h-48 w-1/3" />
+                <Skeleton className="h-48 w-3/4" />
+                <Skeleton className="h-48 w-1/4" />
               </div>
           </CardContent>
         </Card>
@@ -140,7 +139,7 @@ export default function JobSeekerDashboard() {
                 >
                     <CarouselContent className="-ml-1">
                         {recommendedJobs.map((job) => (
-                        <CarouselItem key={job.id} className="md:basis-1/2 lg:basis-1/3 pl-1">
+                        <CarouselItem key={job.id} className="basis-3/4 md:basis-1/2 lg:basis-1/3 pl-1">
                             <div className="p-1 h-full">
                                <JobCard job={job} isApplied={appliedJobIds.has(job.id)} />
                             </div>
