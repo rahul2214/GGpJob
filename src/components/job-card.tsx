@@ -14,16 +14,16 @@ interface JobCardProps {
 
 export default function JobCard({ job, isApplied = false }: JobCardProps) {
   return (
-    <Link href={`/jobs/${job.id}`} className="block hover:shadow-lg transition-shadow duration-300 rounded-lg">
+    <Link href={`/jobs/${job.id}`} className="block hover:shadow-lg transition-shadow duration-300 rounded-lg h-full">
       <Card className="h-full flex flex-col md:border">
         <CardHeader>
           <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <CardTitle className="text-lg">{job.title}</CardTitle>
-              <CardDescription>{job.companyName}</CardDescription>
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-lg truncate">{job.title}</CardTitle>
+              <CardDescription className="truncate">{job.companyName}</CardDescription>
             </div>
             {job.isReferral && (
-              <Badge variant="outline" className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200">
+              <Badge variant="outline" className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200 ml-2 shrink-0">
                 <Star className="h-3 w-3" />
                 Referral
               </Badge>
