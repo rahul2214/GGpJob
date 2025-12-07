@@ -73,7 +73,7 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
     
     if (loading) {
         return (
-             <div className="p-4 border rounded-lg">
+             <div className="p-4 border rounded-lg bg-card">
                 <div className="mb-2">
                     <Skeleton className="h-5 w-48 mb-2" />
                     <Skeleton className="h-3 w-64" />
@@ -87,7 +87,7 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
     }
 
     return (
-        <div className="p-4 border rounded-lg">
+        <div className="p-4 border rounded-lg bg-card">
             <div className="mb-2">
                 <p className="text-sm font-semibold">Profile Strength: <span className="text-primary">{getStrengthText(completion)}</span></p>
                 <p className="text-xs text-muted-foreground">
