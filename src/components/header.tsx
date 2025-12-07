@@ -140,7 +140,7 @@ export default function Header() {
         <Sheet>
             <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="shrink-0 md:hidden">
-                    <Menu className="h-5 w-5" />
+                    <Menu className="h-6 w-6" />
                     <span className="sr-only">Toggle navigation menu</span>
                 </Button>
             </SheetTrigger>
@@ -321,7 +321,7 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-2 sm:px-6">
        <div className="flex items-center gap-4">
         {renderMobileLeftButton()}
         <Link href="/" className="hidden md:flex items-center gap-2 font-bold whitespace-nowrap">
