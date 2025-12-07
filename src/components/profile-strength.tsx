@@ -3,7 +3,6 @@
 
 import { useState, useEffect } from 'react';
 import type { User, Education, Employment, Project, Language, Skill } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -74,28 +73,28 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
     
     if (loading) {
         return (
-             <Card>
-                <CardHeader>
-                    <Skeleton className="h-7 w-48 mb-1" />
-                    <Skeleton className="h-4 w-64" />
-                </CardHeader>
-                <CardContent className="space-y-4">
+             <div className="p-4 border rounded-lg">
+                <div className="mb-2">
+                    <Skeleton className="h-5 w-48 mb-2" />
+                    <Skeleton className="h-3 w-64" />
+                </div>
+                <div className="space-y-2">
                      <Skeleton className="h-4 w-full" />
-                     <Skeleton className="h-10 w-32" />
-                </CardContent>
-            </Card>
+                     <Skeleton className="h-8 w-32" />
+                </div>
+            </div>
         )
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-base font-semibold">Profile Strength: <span className="text-primary">{getStrengthText(completion)}</span></CardTitle>
-                <CardDescription className="text-xs">
+        <div className="p-4 border rounded-lg">
+            <div className="mb-2">
+                <p className="text-sm font-semibold">Profile Strength: <span className="text-primary">{getStrengthText(completion)}</span></p>
+                <p className="text-xs text-muted-foreground">
                     A complete profile increases your visibility to recruiters.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
+                </p>
+            </div>
+            <div className="space-y-2">
                 <div className="flex items-center gap-2">
                     <Progress value={completion} className="w-full" />
                     <span className="font-bold text-sm text-primary">{completion}%</span>
@@ -107,7 +106,7 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
                         </Link>
                     </Button>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }
