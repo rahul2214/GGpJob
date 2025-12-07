@@ -71,7 +71,7 @@ export function ShareButton({ jobId, jobTitle }: ShareButtonProps) {
     }
 
     return (
-        <Button variant="outline" size="icon" onClick={handleShare}>
+        <Button variant="ghost" size="icon" onClick={handleShare}>
             <Share2 className="h-4 w-4" />
             <span className="sr-only">Share this job</span>
         </Button>
