@@ -10,8 +10,9 @@ import { useEffect, useState, useCallback } from "react";
 import { ProfileSections } from "@/components/profile-sections";
 import type { User as UserType } from "@/lib/types";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AtSign, Phone, MapPin } from "lucide-react";
+import { AtSign, Phone, MapPin, Linkedin } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 
 export default function PublicProfilePage() {
     const { user: currentUser, loading: currentUserLoading } = useUser();
@@ -125,6 +126,11 @@ export default function PublicProfilePage() {
                                  <div className="flex items-center gap-2">
                                    <MapPin className="h-4 w-4"/> {profileUser.location}
                                 </div>
+                            )}
+                             {profileUser.linkedinUrl && (
+                                <Link href={profileUser.linkedinUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-primary hover:underline">
+                                    <Linkedin className="h-4 w-4"/> LinkedIn
+                                </Link>
                             )}
                         </div>
                     </CardContent>

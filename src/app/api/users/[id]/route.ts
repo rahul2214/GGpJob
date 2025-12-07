@@ -1,4 +1,5 @@
 
+
 import { NextResponse } from 'next/server';
 import { db } from '@/firebase/admin-config';
 import { User } from '@/lib/types';
@@ -53,7 +54,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
     try {
         const { id } = params;
-        const { name, email, phone, headline, locationId, domainId } = await request.json();
+        const { name, email, phone, headline, locationId, domainId, linkedinUrl } = await request.json();
         
         if (!name || !email || !phone) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -72,6 +73,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             headline: headline || '',
             locationId: locationId || null,
             domainId: domainId || null,
+            linkedinUrl: linkedinUrl || '',
         };
 
         await userDocRef.update(dataToUpdate);
