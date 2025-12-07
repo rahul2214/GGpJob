@@ -139,8 +139,8 @@ export default function Header() {
     return (
         <Sheet>
             <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="shrink-0 md:hidden pl-2">
-                    <Menu className="h-6 w-6" />
+                <Button variant="ghost" size="icon" className="shrink-0 md:hidden p-0">
+                    <Menu className="h-7 w-7" />
                     <span className="sr-only">Toggle navigation menu</span>
                 </Button>
             </SheetTrigger>
@@ -303,7 +303,7 @@ export default function Header() {
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon">
-                    <SlidersHorizontal className="h-4 w-4" />
+                    <SlidersHorizontal className="h-6 w-6" />
                     <span className="sr-only">Open filters</span>
                   </Button>
                 </SheetTrigger>
