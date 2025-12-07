@@ -1,4 +1,5 @@
 
+
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,12 +41,10 @@ export default function JobCard({ job, isApplied = false }: JobCardProps) {
               <Briefcase className="h-4 w-4" />
               <span>{job.type}</span>
             </div>
-            {job.salary && (
-               <div className="flex items-center gap-2">
-                  <BadgeDollarSign className="h-4 w-4" />
-                  <span className="font-semibold text-primary/80">{job.salary}</span>
-               </div>
-            )}
+            <div className="flex items-center gap-2">
+                <BadgeDollarSign className="h-4 w-4" />
+                <span className="font-semibold text-primary/80">{job.salary || 'Not Disclosed'}</span>
+            </div>
           </div>
         </CardContent>
         <CardFooter className="flex justify-between items-center">
