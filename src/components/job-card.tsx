@@ -14,7 +14,7 @@ interface JobCardProps {
 
 export default function JobCard({ job, isApplied = false }: JobCardProps) {
   return (
-    <div className="hover:shadow-md transition-shadow duration-300 flex flex-col h-full bg-card p-6 rounded-lg border">
+    <div className="hover:shadow-md transition-shadow duration-300 flex flex-col h-full bg-card p-6 rounded-lg border md:border-0 md:border-b">
       <div className="flex justify-between items-start">
         <div className="flex-1">
           <h3 className="text-lg font-semibold">{job.title}</h3>
