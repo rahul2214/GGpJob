@@ -11,9 +11,10 @@ import { cn } from '@/lib/utils';
 interface JobCardProps {
   job: Job;
   isApplied?: boolean;
+  hideDetails?: boolean;
 }
 
-export default function JobCard({ job, isApplied = false }: JobCardProps) {
+export default function JobCard({ job, isApplied = false, hideDetails = false }: JobCardProps) {
   return (
     <Link href={`/jobs/${job.id}`} className="block hover:shadow-lg transition-shadow duration-300 rounded-lg h-full">
       <Card className="h-full flex flex-col md:border">
@@ -37,14 +38,18 @@ export default function JobCard({ job, isApplied = false }: JobCardProps) {
               <MapPin className="h-4 w-4" />
               <span>{job.location}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Briefcase className="h-4 w-4" />
-              <span>{job.type}</span>
-            </div>
-            <div className="flex items-center gap-2">
-                <BadgeDollarSign className="h-4 w-4" />
-                <span className="font-semibold text-primary/80">{job.salary || 'Not Disclosed'}</span>
-            </div>
+            {!hideDetails && (
+              <>
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4" />
+                  <span>{job.type}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <BadgeDollarSign className="h-4 w-4" />
+                    <span className="font-semibold text-primary/80">{job.salary || 'Not Disclosed'}</span>
+                </div>
+              </>
+            )}
           </div>
         </CardContent>
         <CardFooter className="flex justify-between items-center">

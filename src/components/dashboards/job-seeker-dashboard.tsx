@@ -66,7 +66,7 @@ export default function JobSeekerDashboard() {
   return (
     <div className="space-y-4">
         
-       <div className="md:hidden">
+       <div className="p-4 border rounded-lg bg-card">
         {user && <ProfileStrength user={user} />}
        </div>
 
@@ -141,7 +141,7 @@ export default function JobSeekerDashboard() {
                         {recommendedJobs.map((job) => (
                         <CarouselItem key={job.id} className="basis-3/4 md:basis-1/2 lg:basis-1/3 pl-1">
                             <div className="p-1 h-full">
-                               <JobCard job={job} isApplied={appliedJobIds.has(job.id)} />
+                               <JobCard job={job} isApplied={appliedJobIds.has(job.id)} hideDetails={true} />
                             </div>
                         </CarouselItem>
                         ))}
