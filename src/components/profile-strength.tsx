@@ -90,18 +90,18 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Profile Strength: <span className="text-primary">{getStrengthText(completion)}</span></CardTitle>
-                <CardDescription>
+                <CardTitle className="text-base font-semibold">Profile Strength: <span className="text-primary">{getStrengthText(completion)}</span></CardTitle>
+                <CardDescription className="text-xs">
                     A complete profile increases your visibility to recruiters.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
                 <div className="flex items-center gap-2">
                     <Progress value={completion} className="w-full" />
-                    <span className="font-bold text-base text-primary">{completion}%</span>
+                    <span className="font-bold text-sm text-primary">{completion}%</span>
                 </div>
                 {completion < 100 && (
-                     <Button asChild variant="secondary">
+                     <Button asChild variant="secondary" size="sm" className="text-xs">
                         <Link href="/profile">
                             Complete Your Profile
                         </Link>
