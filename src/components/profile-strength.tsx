@@ -89,8 +89,8 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
     return (
         <div className="p-4 border rounded-lg bg-card">
             <div className="mb-2">
-                <p className="text-sm font-semibold">Profile Strength: <span className="text-primary">{getStrengthText(completion)}</span></p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-base font-semibold">Profile Strength: <span className="text-primary">{getStrengthText(completion)}</span></p>
+                <p className="text-sm text-muted-foreground">
                     A complete profile increases your visibility to recruiters.
                 </p>
             </div>
