@@ -79,6 +79,13 @@
   }
 }
 
+@layer utilities {
+    .p-6 {
+        padding: 1rem;
+    }
+}
+
+
 .PhoneInputInput {
     border: none;
     outline: none;
