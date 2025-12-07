@@ -138,9 +138,9 @@ export default function JobSeekerDashboard() {
                     }}
                     className="w-full"
                 >
-                    <CarouselContent>
+                    <CarouselContent className="-ml-1">
                         {recommendedJobs.map((job) => (
-                        <CarouselItem key={job.id} className="md:basis-1/2 lg:basis-1/3">
+                        <CarouselItem key={job.id} className="md:basis-1/2 lg:basis-1/3 pl-1">
                             <div className="p-1 h-full">
                                <JobCard job={job} isApplied={appliedJobIds.has(job.id)} />
                             </div>

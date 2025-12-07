@@ -141,36 +141,31 @@ export default function ApplicationsPage() {
                 <CardContent>
                     {applications.length > 0 ? (
                         <>
-                            {/* Mobile View - Cards */}
+                            {/* Mobile View - List */}
                             <div className="md:hidden space-y-4">
                                 {applications.map((app) => (
-                                    <Card key={app.id} className="w-full">
-                                        <CardHeader>
-                                            <CardTitle className="text-base">{app.jobTitle}</CardTitle>
-                                            <CardDescription className="flex items-center gap-2 pt-1">
-                                                <Briefcase className="h-4 w-4" /> {app.companyName}
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="space-y-3">
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-muted-foreground flex items-center gap-2">
-                                                    <Calendar className="h-4 w-4"/> Date Applied
-                                                </span>
-                                                <span>{format(new Date(app.appliedAt), 'PPP')}</span>
+                                    <div key={app.id} className="border-b pb-4">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h3 className="font-semibold text-base">{app.jobTitle}</h3>
+                                                <p className="text-sm text-muted-foreground flex items-center gap-2 pt-1">
+                                                    <Briefcase className="h-4 w-4" /> {app.companyName}
+                                                </p>
                                             </div>
-                                             <div className="flex items-center justify-between text-sm">
-                                                <span className="text-muted-foreground">Status</span>
-                                                {getStatusBadge(app.statusName)}
-                                            </div>
-                                        </CardContent>
-                                        <CardFooter>
-                                             <Button asChild variant="secondary" size="sm" className="w-full">
-                                                <Link href={`/jobs/${app.jobId}`}>
-                                                    View Job <ArrowRight className="ml-2 h-4 w-4" />
-                                                </Link>
-                                            </Button>
-                                        </CardFooter>
-                                    </Card>
+                                            {getStatusBadge(app.statusName)}
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm mt-3">
+                                            <span className="text-muted-foreground flex items-center gap-2">
+                                                <Calendar className="h-4 w-4"/> Date Applied
+                                            </span>
+                                            <span>{format(new Date(app.appliedAt), 'PPP')}</span>
+                                        </div>
+                                        <Button asChild variant="secondary" size="sm" className="w-full mt-4">
+                                            <Link href={`/jobs/${app.jobId}`}>
+                                                View Job <ArrowRight className="ml-2 h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    </div>
                                 ))}
                             </div>
                             

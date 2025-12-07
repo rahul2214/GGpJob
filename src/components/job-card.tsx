@@ -14,22 +14,20 @@ interface JobCardProps {
 
 export default function JobCard({ job, isApplied = false }: JobCardProps) {
   return (
-    <Card className="hover:shadow-md transition-shadow duration-300 flex flex-col h-full">
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <CardTitle className="text-lg">{job.title}</CardTitle>
-            <CardDescription>{job.companyName}</CardDescription>
-          </div>
-          {job.isReferral && (
-            <Badge variant="outline" className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200">
-              <Star className="h-3 w-3" />
-              Referral
-            </Badge>
-          )}
+    <div className="hover:shadow-md transition-shadow duration-300 flex flex-col h-full bg-card p-6 rounded-lg border">
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold">{job.title}</h3>
+          <p className="text-sm text-muted-foreground">{job.companyName}</p>
         </div>
-      </CardHeader>
-      <CardContent className="flex-grow">
+        {job.isReferral && (
+          <Badge variant="outline" className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200">
+            <Star className="h-3 w-3" />
+            Referral
+          </Badge>
+        )}
+      </div>
+      <div className="flex-grow my-4">
         <div className="flex flex-col space-y-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
@@ -46,8 +44,8 @@ export default function JobCard({ job, isApplied = false }: JobCardProps) {
              </div>
           )}
         </div>
-      </CardContent>
-      <CardFooter className="flex justify-between items-center">
+      </div>
+      <div className="flex justify-between items-center">
         <div className="text-xs text-muted-foreground flex items-center gap-1">
           <Clock className="h-3 w-3" />
           {formatDistanceToNow(new Date(job.postedAt), { addSuffix: true })}
@@ -63,7 +61,7 @@ export default function JobCard({ job, isApplied = false }: JobCardProps) {
                 <Link href={`/jobs/${job.id}`}>View Details</Link>
             </Button>
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }

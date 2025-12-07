@@ -69,7 +69,7 @@ function JobSearchContent() {
     const renderJobCards = () => {
         if (loading) {
             return (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="space-y-4">
                     {[...Array(6)].map((_, i) => (
                         <Card key={i}>
                             <CardHeader>
@@ -91,7 +91,7 @@ function JobSearchContent() {
         }
         if (jobs.length > 0) {
             return (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="space-y-4">
                     {jobs.map((job) => (
                         <JobCard key={job.id} job={job} isApplied={appliedJobIds.has(job.id)} />
                     ))}
