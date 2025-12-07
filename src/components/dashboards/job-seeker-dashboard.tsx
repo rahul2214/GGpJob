@@ -166,8 +166,7 @@ export default function JobSeekerDashboard() {
          <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                    <CardTitle className="flex items-center gap-2">
-                        <Star className="text-yellow-500 fill-yellow-400"/>
+                    <CardTitle>
                         Referrals for You
                     </CardTitle>
                     
