@@ -1,9 +1,12 @@
-import type {NextConfig} from 'next';
-import {config} from 'dotenv';
+
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { config } = require('dotenv');
 
 config();
 
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   /* config options here */
   typescript: {
     ignoreBuildErrors: true,
