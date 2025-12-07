@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { notFound, useParams, useSearchParams } from 'next/navigation';
@@ -96,7 +97,7 @@ function JobDetailsContent() {
     const detailItems = [
         { icon: MapPin, label: "Location", value: job.location },
         { icon: Briefcase, label: "Job Type", value: job.type },
-        { icon: BadgeDollarSign, label: "Salary", value: job.salary },
+        { icon: BadgeDollarSign, label: "Salary", value: job.salary || 'Not Disclosed' },
         { icon: Workflow, label: "Domain", value: job.domain },
         { icon: UserCheck, label: "Role", value: job.role },
         { icon: Building, label: "Workplace", value: job.workplaceType },
@@ -130,7 +131,7 @@ function JobDetailsContent() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                             <div className="flex flex-col md:grid md:grid-cols-2 gap-x-4 gap-y-3 mb-6">
+                             <div className="flex flex-col gap-y-3 mb-6">
                                 {detailItems.map(item => item.value ? (
                                     <div key={item.label} className="flex items-center gap-3">
                                         <item.icon className="h-5 w-5 text-primary shrink-0"/>
