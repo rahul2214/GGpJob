@@ -130,7 +130,7 @@ export default function Header() {
 
     if (isClient && showBackButton) {
       return (
-        <Button variant="outline" size="icon" className="shrink-0 md:hidden" onClick={() => router.back()}>
+        <Button variant="ghost" size="icon" className="shrink-0 md:hidden" onClick={() => router.back()}>
             <ArrowLeft className="h-5 w-5" />
             <span className="sr-only">Back</span>
         </Button>
@@ -139,7 +139,7 @@ export default function Header() {
     return (
         <Sheet>
             <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+                <Button variant="ghost" size="icon" className="shrink-0 md:hidden">
                     <Menu className="h-5 w-5" />
                     <span className="sr-only">Toggle navigation menu</span>
                 </Button>
