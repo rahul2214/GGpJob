@@ -29,6 +29,7 @@ const formSchema = z.object({
   headline: z.string().optional(),
   locationId: z.string().optional(),
   domainId: z.string().optional(),
+  linkedinUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
 });
 
 type ProfileFormValues = z.infer<typeof formSchema>;
@@ -68,6 +69,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
       headline: user.headline || "",
       locationId: String(user.locationId || ''),
       domainId: String(user.domainId || ''),
+      linkedinUrl: user.linkedinUrl || "",
     },
   });
   
@@ -83,6 +85,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
       headline: user.headline || "",
       locationId: String(user.locationId || ''),
       domainId: String(user.domainId || ''),
+      linkedinUrl: user.linkedinUrl || "",
     });
   }, [user, reset]);
 
@@ -214,6 +217,19 @@ export function ProfileForm({ user }: ProfileFormProps) {
                         <FormMessage />
                     </FormItem>
                 )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="linkedinUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>LinkedIn URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://linkedin.com/in/your-profile" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
             </>
         )}

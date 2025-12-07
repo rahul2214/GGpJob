@@ -12,6 +12,7 @@ export interface User {
   locationId?: string;
   domainId?: string;
   resumeUrl?: string;
+  linkedinUrl?: string;
   // Joined fields
   location?: string;
 }
