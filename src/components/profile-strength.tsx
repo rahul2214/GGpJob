@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -7,6 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from './ui/button';
 import Link from 'next/link';
 import { Skeleton } from './ui/skeleton';
+import { TrendingUp, User as UserIcon } from 'lucide-react';
+import { Separator } from './ui/separator';
 
 interface ProfileStrengthProps {
     user: User;
@@ -67,46 +68,55 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
     const getStrengthText = (percentage: number) => {
         if (percentage < 50) return "Beginner";
         if (percentage < 80) return "Intermediate";
-        if (percentage < 100) return "All-Star!";
-        return "All-Star!";
+        return "All-Star";
     };
     
     if (loading) {
         return (
              <div className="p-4 border rounded-lg bg-card">
-                <div className="mb-2">
-                    <Skeleton className="h-5 w-48 mb-2" />
-                    <Skeleton className="h-3 w-64" />
+                <div className="flex items-center justify-between mb-4">
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-6 w-6" />
                 </div>
-                <div className="space-y-2">
-                     <Skeleton className="h-4 w-full" />
-                     <Skeleton className="h-8 w-32" />
+                <Separator />
+                <div className="mt-4 space-y-4">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-2 w-full" />
+                     <div className="flex justify-between text-sm text-muted-foreground">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-12" />
+                    </div>
+                     <Skeleton className="h-10 w-full" />
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="p-4 border rounded-lg bg-card">
-            <div className="mb-2">
-                <p className="text-base font-semibold">Profile Strength: <span className="text-primary">{getStrengthText(completion)}</span></p>
-                <p className="text-sm text-muted-foreground">
+        <div className="p-4 border rounded-lg bg-card space-y-4">
+            <div className="flex items-center justify-between">
+                <p className="font-semibold text-lg">Profile Strength</p>
+                <TrendingUp className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <Separator />
+            <div>
+                 <p className="text-sm text-muted-foreground mb-4">
                     A complete profile increases your visibility to recruiters.
                 </p>
-            </div>
-            <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                    <Progress value={completion} className="w-full" />
-                    <span className="font-bold text-sm text-primary">{completion}%</span>
+                <Progress value={completion} className="w-full h-2 mb-2" />
+                 <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>{getStrengthText(completion)}</span>
+                    <span>{completion}%</span>
                 </div>
-                {completion < 100 && (
-                     <Button asChild variant="secondary" size="sm" className="text-xs">
-                        <Link href="/profile">
-                            Complete Your Profile
-                        </Link>
-                    </Button>
-                )}
             </div>
+            {completion < 100 && (
+                <Button asChild className="w-full">
+                    <Link href="/profile">
+                        <UserIcon className="mr-2 h-4 w-4" />
+                        Complete Your Profile
+                    </Link>
+                </Button>
+            )}
         </div>
     );
 }
