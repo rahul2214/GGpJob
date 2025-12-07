@@ -6,7 +6,7 @@ import type { Job, Application } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import JobCard from "../job-card";
 import { Button } from "../ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Star } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Link from "next/link";
@@ -16,6 +16,7 @@ import { ProfileStrength } from "../profile-strength";
 export default function JobSeekerDashboard() {
   const { user } = useUser();
   const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([]);
+  const [referralJobs, setReferralJobs] = useState<Job[]>([]);
   const [userApplications, setUserApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -23,16 +24,21 @@ export default function JobSeekerDashboard() {
     if (user) {
         setLoading(true);
         try {
-            const [jobsRes, appsRes] = await Promise.all([
-                 user.domainId ? fetch(`/api/jobs?domain=${user.domainId}&limit=10`) : Promise.resolve(null),
+            const [jobsRes, referralJobsRes, appsRes] = await Promise.all([
+                 user.domainId ? fetch(`/api/jobs?domain=${user.domainId}&isReferral=false&limit=10`) : Promise.resolve(null),
+                 user.domainId ? fetch(`/api/jobs?domain=${user.domainId}&isReferral=true&limit=10`) : Promise.resolve(null),
                  fetch(`/api/applications?userId=${user.id}`)
             ]);
             
             let jobsData: Job[] = [];
+            let referralJobsData: Job[] = [];
             let appsData: Application[] = [];
 
             if (jobsRes && jobsRes.ok) {
                 jobsData = await jobsRes.json();
+            }
+             if (referralJobsRes && referralJobsRes.ok) {
+                referralJobsData = await referralJobsRes.json();
             }
             
             if (appsRes.ok) {
@@ -44,6 +50,9 @@ export default function JobSeekerDashboard() {
                  const appliedJobIds = new Set(appsData.map(app => app.jobId));
                  const filteredJobs = jobsData.filter(job => !appliedJobIds.has(job.id));
                  setRecommendedJobs(filteredJobs.slice(0,6));
+
+                 const filteredReferrals = referralJobsData.filter(job => !appliedJobIds.has(job.id));
+                 setReferralJobs(filteredReferrals.slice(0, 6));
             }
 
         } catch(error) {
@@ -66,7 +75,7 @@ export default function JobSeekerDashboard() {
   return (
     <div className="space-y-4">
         
-       <div className="p-4 border rounded-lg bg-card">
+       <div className="p-6 border rounded-lg bg-card">
         {user && <ProfileStrength user={user} />}
        </div>
 
@@ -139,6 +148,48 @@ export default function JobSeekerDashboard() {
                 >
                     <CarouselContent className="-ml-1">
                         {recommendedJobs.map((job) => (
+                        <CarouselItem key={job.id} className="basis-3/4 md:basis-1/2 lg:basis-1/3 pl-1">
+                            <div className="p-1 h-full">
+                               <JobCard job={job} isApplied={appliedJobIds.has(job.id)} hideDetails={true} />
+                            </div>
+                        </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                    <CarouselPrevious className="hidden md:flex" />
+                    <CarouselNext className="hidden md:flex" />
+                </Carousel>
+            </CardContent>
+         </Card>
+      )}
+
+      {!loading && referralJobs.length > 0 && (
+         <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle className="flex items-center gap-2">
+                        <Star className="text-yellow-500 fill-yellow-400"/>
+                        Referrals for You
+                    </CardTitle>
+                    
+                </div>
+                 {user?.domainId && (
+                    <Button asChild variant="link">
+                        <Link href={`/jobs?domain=${user.domainId}&isReferral=true`}>
+                            View All
+                        </Link>
+                    </Button>
+                )}
+            </CardHeader>
+            <CardContent>
+                <Carousel
+                    opts={{
+                        align: "start",
+                        loop: true,
+                    }}
+                    className="w-full"
+                >
+                    <CarouselContent className="-ml-1">
+                        {referralJobs.map((job) => (
                         <CarouselItem key={job.id} className="basis-3/4 md:basis-1/2 lg:basis-1/3 pl-1">
                             <div className="p-1 h-full">
                                <JobCard job={job} isApplied={appliedJobIds.has(job.id)} hideDetails={true} />

@@ -57,6 +57,12 @@ export async function GET(request: Request) {
         }
     }
     
+    const domainId = searchParams.get('domain');
+    if (domainId) {
+        query = query.where('domainId', '==', domainId);
+        hasComplexFilters = true;
+    }
+
     // Array-based filters
     const locationsParams = searchParams.getAll('location').filter(l => l && l !== 'all');
     if (locationsParams.length > 0) {
