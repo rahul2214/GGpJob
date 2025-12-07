@@ -130,13 +130,13 @@ function JobDetailsContent() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                             <div className="flex flex-col md:grid md:grid-cols-2 gap-x-4 gap-y-3 mb-6">
                                 {detailItems.map(item => item.value ? (
-                                    <div key={item.label} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                                        <item.icon className="h-5 w-5 mt-1 text-primary"/>
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">{item.label}</p>
-                                            <p className="font-semibold">{item.value}</p>
+                                    <div key={item.label} className="flex items-center gap-3">
+                                        <item.icon className="h-5 w-5 text-primary shrink-0"/>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-sm text-muted-foreground">{item.label}:</span>
+                                            <span className="font-semibold text-sm">{item.value}</span>
                                         </div>
                                     </div>
                                 ) : null)}
