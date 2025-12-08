@@ -6,7 +6,7 @@ import type { Job, Application } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import JobCard from "../job-card";
 import { Button } from "../ui/button";
-import { ArrowRight, Star } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Link from "next/link";
@@ -131,7 +131,7 @@ export default function JobSeekerDashboard() {
                     
                 </div>
                  {user?.domainId && (
-                    <Button asChild variant="link">
+                    <Button asChild variant="link" className="text-[#f72585]">
                         <Link href={`/jobs?domain=${user.domainId}`}>
                             View All
                         </Link>
@@ -172,7 +172,7 @@ export default function JobSeekerDashboard() {
                     
                 </div>
                  {user?.domainId && (
-                    <Button asChild variant="link">
+                    <Button asChild variant="link" className="text-[#f72585]">
                         <Link href={`/jobs?domain=${user.domainId}&isReferral=true`}>
                             View All
                         </Link>
