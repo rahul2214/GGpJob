@@ -6,13 +6,12 @@ import type { Job, Application } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import JobCard from "../job-card";
 import { Button } from "../ui/button";
-import { ArrowRight, Star, Search } from "lucide-react";
+import { ArrowRight, Star } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Link from "next/link";
 import { Skeleton } from "../ui/skeleton";
 import { ProfileStrength } from "../profile-strength";
-import { Separator } from "../ui/separator";
 
 export default function JobSeekerDashboard() {
   const { user } = useUser();
@@ -80,20 +79,19 @@ export default function JobSeekerDashboard() {
         {user && <ProfileStrength user={user} />}
        </div>
 
-        <Link href="/jobs" className="block">
-            <Card className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
-                <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-semibold">Find Your Next Job</h2>
-                        <Search className="h-6 w-6" />
-                    </div>
-                    <Separator className="my-3 bg-primary-foreground/50" />
-                    <p className="text-sm text-primary-foreground/80">
-                        Search by title, company, or keywords to find your perfect match.
-                    </p>
-                </CardContent>
-            </Card>
-        </Link>
+       <Card>
+        <CardHeader>
+          <CardTitle>Find your next job</CardTitle>
+          <CardDescription>Search by title, company, or keywords to find your perfect match.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Button asChild>
+                <Link href="/jobs">
+                    Find a Job <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+            </Button>
+        </CardContent>
+      </Card>
       
       {user && !user.domainId && (
          <Card className="bg-primary-foreground border-primary/20">
