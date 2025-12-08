@@ -35,7 +35,7 @@ export default function JobCard({ job, isApplied = false, hideDetails = false }:
         <CardContent className="flex-grow">
           <div className="flex flex-col space-y-2 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
+              <MapPin className="h-4 w-4 text-[#f72585]" />
               <span>{job.location}</span>
             </div>
             {!hideDetails && (
