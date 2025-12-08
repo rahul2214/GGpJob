@@ -95,15 +95,15 @@ function JobDetailsContent() {
     }
     
     const detailItems = [
-        { icon: MapPin, label: "Location", value: job.location },
-        { icon: Briefcase, label: "Job Type", value: job.type },
-        { icon: BadgeDollarSign, label: "Salary", value: job.salary || 'Not Disclosed' },
-        { icon: Workflow, label: "Domain", value: job.domain },
-        { icon: UserCheck, label: "Role", value: job.role },
-        { icon: Building, label: "Workplace", value: job.workplaceType },
-        { icon: Users, label: "Experience", value: job.experienceLevel },
-        { icon: Calendar, label: "Posted On", value: format(new Date(job.postedAt), "PPP") },
-        { icon: Clock, label: "Vacancies", value: job.vacancies },
+        { icon: MapPin, label: "Location", value: job.location, color: "text-[#f72585]" },
+        { icon: Briefcase, label: "Job Type", value: job.type, color: "text-primary" },
+        { icon: BadgeDollarSign, label: "Salary", value: job.salary || 'Not Disclosed', color: "text-primary" },
+        { icon: Workflow, label: "Domain", value: job.domain, color: "text-primary" },
+        { icon: UserCheck, label: "Role", value: job.role, color: "text-primary" },
+        { icon: Building, label: "Workplace", value: job.workplaceType, color: "text-primary" },
+        { icon: Users, label: "Experience", value: job.experienceLevel, color: "text-primary" },
+        { icon: Calendar, label: "Posted On", value: format(new Date(job.postedAt), "PPP"), color: "text-primary" },
+        { icon: Clock, label: "Vacancies", value: job.vacancies, color: "text-primary" },
     ];
 
     const appliedJobIds = new Set(userApplications.map(app => app.jobId));
@@ -134,7 +134,7 @@ function JobDetailsContent() {
                              <div className="flex flex-col gap-y-3 mb-6">
                                 {detailItems.map(item => item.value ? (
                                     <div key={item.label} className="flex items-center gap-3">
-                                        <item.icon className="h-5 w-5 text-primary shrink-0"/>
+                                        <item.icon className={`h-5 w-5 ${item.color} shrink-0`}/>
                                         <div className="flex items-baseline gap-2">
                                             <span className="text-sm text-muted-foreground">{item.label}:</span>
                                             <span className="font-semibold text-sm">{item.value}</span>
