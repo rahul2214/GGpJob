@@ -95,7 +95,7 @@ function JobDetailsContent() {
     }
     
     const detailItems = [
-        { icon: MapPin, label: "Location", value: job.location, color: "text-[#f72585]" },
+        { icon: MapPin, label: "Location", value: job.location, color: "text-primary" },
         { icon: Briefcase, label: "Job Type", value: job.type, color: "text-primary" },
         { icon: BadgeDollarSign, label: "Salary", value: job.salary || 'Not Disclosed', color: "text-primary" },
         { icon: Workflow, label: "Domain", value: job.domain, color: "text-primary" },
