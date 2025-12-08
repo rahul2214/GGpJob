@@ -131,7 +131,7 @@ export default function JobSeekerDashboard() {
                     
                 </div>
                  {user?.domainId && (
-                    <Button asChild variant="link">
+                    <Button asChild variant="link" className="text-[#f72585]">
                         <Link href={`/jobs?domain=${user.domainId}`}>
                             View All
                         </Link>
@@ -172,7 +172,7 @@ export default function JobSeekerDashboard() {
                     
                 </div>
                  {user?.domainId && (
-                    <Button asChild variant="link">
+                    <Button asChild variant="link" className="text-[#f72585]">
                         <Link href={`/jobs?domain=${user.domainId}&isReferral=true`}>
                             View All
                         </Link>
