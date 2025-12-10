@@ -187,6 +187,12 @@ export default function Header() {
                                         Jobs
                                     </Link>
                                 </SheetClose>
+                                <SheetClose asChild>
+                                    <Link href="/notifications" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                        <Bell className="h-5 w-5" />
+                                        Notifications
+                                    </Link>
+                                </SheetClose>
                                 {user.domainId && (
                                     <SheetClose asChild>
                                        <Link href={`/jobs?domain=${user.domainId}`} className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
@@ -225,12 +231,6 @@ export default function Header() {
                                             <Link href="/applications" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
                                                 <LayoutGrid className="h-5 w-5" />
                                                 My Applications
-                                            </Link>
-                                        </SheetClose>
-                                        <SheetClose asChild>
-                                            <Link href="/notifications" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
-                                                <Bell className="h-5 w-5" />
-                                                Notifications
                                             </Link>
                                         </SheetClose>
                                     </>
