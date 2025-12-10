@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import Link from "next/link";
@@ -383,7 +384,7 @@ export default function Header() {
         <div className="ml-auto flex items-center gap-2">
            {renderMobileRightButton()}
            {isClient && !loading && user ? (
-            <div className="hidden md:flex items-center gap-4">
+            <div className="flex items-center gap-4">
                 {user.role === 'Job Seeker' && (
                     <Button asChild variant="ghost" size="icon">
                         <Link href="/notifications">
@@ -392,50 +393,52 @@ export default function Header() {
                         </Link>
                     </Button>
                 )}
-                <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar>
-                        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                    </Avatar>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                    <Link href="/profile">
-                        <User className="mr-2 h-4 w-4" />
-                        <span>Profile</span>
-                    </Link>
-                    </DropdownMenuItem>
-                    {user.role === 'Job Seeker' && (
-                    <DropdownMenuItem asChild>
-                        <Link href="/applications">
-                        <LayoutGrid className="mr-2 h-4 w-4" />
-                        <span>My Applications</span>
-                        </Link>
-                    </DropdownMenuItem>
-                    )}
-                    {['Job Seeker', 'Recruiter', 'Employee'].includes(user.role) && (
+                 <div className="hidden md:flex">
+                    <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="rounded-full">
+                        <Avatar>
+                            <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                        </Avatar>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                            <Link href="/feedback">
-                                <MessageSquareQuote className="mr-2 h-4 w-4" />
-                                <span>Feedback</span>
+                        <Link href="/profile">
+                            <User className="mr-2 h-4 w-4" />
+                            <span>Profile</span>
+                        </Link>
+                        </DropdownMenuItem>
+                        {user.role === 'Job Seeker' && (
+                        <DropdownMenuItem asChild>
+                            <Link href="/applications">
+                            <LayoutGrid className="mr-2 h-4 w-4" />
+                            <span>My Applications</span>
                             </Link>
                         </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Logout</span>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-                </DropdownMenu>
+                        )}
+                        {['Job Seeker', 'Recruiter', 'Employee'].includes(user.role) && (
+                            <DropdownMenuItem asChild>
+                                <Link href="/feedback">
+                                    <MessageSquareQuote className="mr-2 h-4 w-4" />
+                                    <span>Feedback</span>
+                                </Link>
+                            </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem>
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Settings</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleLogout}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Logout</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
           ) : (
              isClient && !loading && (
