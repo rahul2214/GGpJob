@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import Link from "next/link";
@@ -28,6 +27,7 @@ import {
   Search,
   Star,
   PlusCircle,
+  Bell,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -220,12 +220,20 @@ export default function Header() {
                                     </Link>
                                 </SheetClose>
                                 {user.role === 'Job Seeker' && (
-                                    <SheetClose asChild>
-                                        <Link href="/applications" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
-                                            <LayoutGrid className="h-5 w-5" />
-                                            My Applications
-                                        </Link>
-                                    </SheetClose>
+                                    <>
+                                        <SheetClose asChild>
+                                            <Link href="/applications" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                                <LayoutGrid className="h-5 w-5" />
+                                                My Applications
+                                            </Link>
+                                        </SheetClose>
+                                        <SheetClose asChild>
+                                            <Link href="/notifications" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                                <Bell className="h-5 w-5" />
+                                                Notifications
+                                            </Link>
+                                        </SheetClose>
+                                    </>
                                 )}
                                  {['Job Seeker', 'Recruiter', 'Employee'].includes(user.role) && (
                                     <SheetClose asChild>
@@ -375,7 +383,15 @@ export default function Header() {
         <div className="ml-auto flex items-center gap-2">
            {renderMobileRightButton()}
            {isClient && !loading && user ? (
-            <div className="hidden md:block">
+            <div className="hidden md:flex items-center gap-4">
+                {user.role === 'Job Seeker' && (
+                    <Button asChild variant="ghost" size="icon">
+                        <Link href="/notifications">
+                            <Bell className="h-5 w-5" />
+                             <span className="sr-only">Notifications</span>
+                        </Link>
+                    </Button>
+                )}
                 <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="rounded-full">

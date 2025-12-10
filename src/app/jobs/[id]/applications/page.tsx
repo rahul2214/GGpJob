@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
 import type { Application, Job } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,7 +20,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+const ViewProfileLink = ({ applicationId, applicantId, children }: { applicationId: string, applicantId: string, children: React.ReactNode }) => {
+    const router = useRouter();
+
+    const handleViewProfile = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        try {
+            await fetch(`/api/applications/${applicationId}/view`, { method: 'POST' });
+        } catch (error) {
+            console.error("Failed to mark profile as viewed", error);
+            // We still navigate even if this fails
+        }
+        router.push(`/profile/${applicantId}`);
+    };
+
+    return (
+        <a href={`/profile/${applicantId}`} onClick={handleViewProfile} className="flex items-center w-full">
+            {children}
+        </a>
+    );
+};
 
 
 export default function JobApplicationsPage() {
@@ -31,39 +51,40 @@ export default function JobApplicationsPage() {
     const [applications, setApplications] = useState<Application[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchJobAndApplications = async () => {
-            if (id) {
-                setLoading(true);
-                try {
-                    const [jobRes, appsRes] = await Promise.all([
-                        fetch(`/api/jobs/${id}`),
-                        fetch(`/api/applications?jobId=${id}`)
-                    ]);
+    const fetchJobAndApplications = useCallback(async () => {
+        if (id) {
+            setLoading(true);
+            try {
+                const [jobRes, appsRes] = await Promise.all([
+                    fetch(`/api/jobs/${id}`),
+                    fetch(`/api/applications?jobId=${id}`)
+                ]);
 
-                    if (jobRes.ok) {
-                        const jobData = await jobRes.json();
-                        setJob(jobData);
-                    } else {
-                        console.error("Failed to fetch job details");
-                    }
-                    
-                    if (appsRes.ok) {
-                        const appsData = await appsRes.json();
-                        setApplications(Array.isArray(appsData) ? appsData : []);
-                    } else {
-                         console.error("Failed to fetch applications");
-                    }
-
-                } catch (error) {
-                    console.error("Error fetching data", error);
-                } finally {
-                    setLoading(false);
+                if (jobRes.ok) {
+                    const jobData = await jobRes.json();
+                    setJob(jobData);
+                } else {
+                    console.error("Failed to fetch job details");
                 }
+                
+                if (appsRes.ok) {
+                    const appsData = await appsRes.json();
+                    setApplications(Array.isArray(appsData) ? appsData : []);
+                } else {
+                     console.error("Failed to fetch applications");
+                }
+
+            } catch (error) {
+                console.error("Error fetching data", error);
+            } finally {
+                setLoading(false);
             }
-        };
-        fetchJobAndApplications();
+        }
     }, [id]);
+
+    useEffect(() => {
+        fetchJobAndApplications();
+    }, [fetchJobAndApplications]);
     
      const getStatusBadge = (status: Application['statusName']) => {
         switch (status) {
@@ -77,7 +98,7 @@ export default function JobApplicationsPage() {
         }
     };
     
-    const handleStatusChange = async (applicationId: string, statusId: number, statusName: string) => {
+    const handleStatusChange = async (applicationId: string, statusId: number) => {
         try {
             const response = await fetch(`/api/applications/${applicationId}/status`, {
                 method: 'PUT',
@@ -167,11 +188,11 @@ export default function JobApplicationsPage() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem asChild>
-                                                        <Link href={`/profile/${app.applicantId}`}>
+                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                        <ViewProfileLink applicationId={app.id} applicantId={app.applicantId!}>
                                                             <User className="mr-2 h-4 w-4" />
                                                             View Profile
-                                                        </Link>
+                                                        </ViewProfileLink>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem asChild disabled={!app.applicantResumeUrl}>
                                                         <a href={app.applicantResumeUrl} target="_blank" rel="noopener noreferrer">
@@ -181,11 +202,11 @@ export default function JobApplicationsPage() {
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-                                                    <DropdownMenuItem onClick={() => handleStatusChange(app.id, 4, 'Selected')}>
+                                                    <DropdownMenuItem onClick={() => handleStatusChange(app.id, 4)}>
                                                         <CheckCircle className="mr-2 h-4 w-4 text-green-500"/>
                                                         Mark as Selected
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleStatusChange(app.id, 3, 'Not Suitable')} className="text-destructive">
+                                                    <DropdownMenuItem onClick={() => handleStatusChange(app.id, 3)} className="text-destructive">
                                                         <XCircle className="mr-2 h-4 w-4"/>
                                                         Mark as Not Suitable
                                                     </DropdownMenuItem>
