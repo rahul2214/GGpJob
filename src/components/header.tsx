@@ -385,8 +385,8 @@ export default function Header() {
            {renderMobileRightButton()}
            {isClient && !loading && user ? (
             <div className="flex items-center gap-4">
-                {user.role === 'Job Seeker' && (
-                    <Button asChild variant="ghost" size="icon">
+                {user.role === 'Job Seeker' && pathname === '/' && (
+                    <Button asChild variant="ghost" size="icon" className="md:hidden">
                         <Link href="/notifications">
                             <Bell className="h-5 w-5" />
                              <span className="sr-only">Notifications</span>
@@ -469,3 +469,4 @@ export default function Header() {
     </header>
   );
 }
+
