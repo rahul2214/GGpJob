@@ -100,7 +100,7 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
         <div className="p-4 border rounded-lg bg-card space-y-4">
             <div className="flex items-center justify-between">
                 <p className="font-semibold text-lg">Profile Strength</p>
-                <TrendingUp className="h-5 w-5 text-[#f72585]" />
+                <TrendingUp className="h-5 w-5 text-accent" />
             </div>
             <Separator />
             <div>
