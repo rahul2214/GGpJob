@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { Skeleton } from './ui/skeleton';
 import { TrendingUp, User as UserIcon } from 'lucide-react';
 import { Separator } from './ui/separator';
+import { cn } from '@/lib/utils';
 
 interface ProfileStrengthProps {
     user: User;
@@ -66,11 +67,13 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
         calculateCompletion();
     }, [user]);
 
-    const getStrengthText = (percentage: number) => {
-        if (percentage < 50) return "Beginner";
-        if (percentage < 80) return "Intermediate";
-        return "All-Star";
+    const getStrengthInfo = (percentage: number) => {
+        if (percentage < 50) return { text: "Beginner", color: "bg-red-500" };
+        if (percentage < 80) return { text: "Intermediate", color: "bg-yellow-500" };
+        return { text: "All-Star", color: "bg-green-500" };
     };
+
+    const strengthInfo = getStrengthInfo(completion);
     
     if (loading) {
         return (
@@ -104,9 +107,9 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
                  <p className="text-sm text-muted-foreground mb-4">
                     A complete profile increases your visibility to recruiters.
                 </p>
-                <Progress value={completion} className="w-full h-2 mb-2" />
+                <Progress value={completion} className="w-full h-2 mb-2" indicatorClassName={strengthInfo.color} />
                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>{getStrengthText(completion)}</span>
+                    <span>{strengthInfo.text}</span>
                     <span>{completion}%</span>
                 </div>
             </div>
