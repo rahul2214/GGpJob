@@ -386,12 +386,20 @@ export default function Header() {
            {isClient && !loading && user ? (
             <div className="flex items-center gap-4">
                 {user.role === 'Job Seeker' && pathname === '/' && (
-                    <Button asChild variant="ghost" size="icon" className="md:hidden">
-                        <Link href="/notifications">
-                            <Bell className="h-5 w-5" />
-                             <span className="sr-only">Notifications</span>
-                        </Link>
-                    </Button>
+                    <>
+                        <Button asChild variant="ghost" size="icon" className="md:hidden">
+                            <Link href="/notifications">
+                                <Bell className="h-5 w-5" />
+                                <span className="sr-only">Notifications</span>
+                            </Link>
+                        </Button>
+                        <Button asChild variant="ghost" size="icon" className="hidden md:flex">
+                             <Link href="/notifications">
+                                <Bell className="h-5 w-5" />
+                                <span className="sr-only">Notifications</span>
+                            </Link>
+                        </Button>
+                    </>
                 )}
                  <div className="hidden md:flex">
                     <DropdownMenu>
@@ -469,4 +477,3 @@ export default function Header() {
     </header>
   );
 }
-
