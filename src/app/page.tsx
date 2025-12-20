@@ -407,15 +407,6 @@ export default function Home() {
   const { user, loading } = useUser();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && user) {
-      if (user.role === 'Super Admin' || user.role === 'Admin') {
-        router.push('/admin/dashboard');
-      }
-    }
-  }, [user, loading, router]);
-  
-
   if (loading) {
     return (
       <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
@@ -447,9 +438,10 @@ export default function Home() {
         return <EmployeeDashboard />;
       case "Admin":
       case "Super Admin":
+        router.push('/admin/dashboard');
         return (
              <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-                <p>Loading Admin Dashboard...</p>
+                <p>Redirecting to Admin Dashboard...</p>
              </div>
         )
       default:
