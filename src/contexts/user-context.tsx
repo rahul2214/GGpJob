@@ -36,7 +36,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const createNewUserProfile = async (firebaseUser: FirebaseUser): Promise<User | null> => {
       const { uid, email, displayName, phoneNumber } = firebaseUser;
       
-      const role = email?.endsWith('@gmail.com') || email?.endsWith('@yahoo.com') || email?.endsWith('@outlook.com') ? 'Job Seeker' : 'Recruiter';
+      const role = "Job Seeker";
 
       const profileData = {
         id: uid,
@@ -121,5 +121,3 @@ export function useUser() {
   }
   return context;
 }
-
-    
