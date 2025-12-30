@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
-import { CheckCircle, GraduationCap, LayoutGrid, ThumbsUp, Users, DollarSign, Zap, Rocket, Lightbulb, TrendingUp, Network, UserCheck, Trophy, FileSignature, Globe, UserRound, Apple, BotMessageSquare, GitMerge, Netflix, Code } from 'lucide-react';
+import { CheckCircle, GraduationCap, LayoutGrid, ThumbsUp, Users, DollarSign, Zap, Rocket, Lightbulb, TrendingUp, Network, UserCheck, Trophy, FileSignature, Globe, UserRound, Apple, Bot, GitMerge, Netflix, Code } from 'lucide-react';
 import { AnimatedCounter } from '@/components/animated-counter';
 
 const JobPortalHome = () => {
@@ -213,7 +213,7 @@ const JobPortalHome = () => {
                         <div className="company-card">
                             <div className="hiring-badge">Hiring!</div>
                             <div className="company-logo">
-                                <BotMessageSquare />
+                                <Bot />
                             </div>
                             <div className="company-name">Google</div>
                             <div className="company-jobs">120+ Open Roles</div>
