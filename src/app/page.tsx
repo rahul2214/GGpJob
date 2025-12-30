@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
-import { CheckCircle, GraduationCap, Layers, ThumbsUp } from 'lucide-react';
+import { CheckCircle, GraduationCap, Layers, ThumbsUp, Users, DollarSign, Zap, Rocket, Lightbulb, TrendingUp, Network, UserCheck, Trophy, FileSignature, Globe, UserRound, Apple, BotMessageSquare, GitMerge, Netflix, Code } from 'lucide-react';
 import { AnimatedCounter } from '@/components/animated-counter';
 
 const JobPortalHome = () => {
@@ -99,7 +99,7 @@ const JobPortalHome = () => {
                             <div className="floating-card">
                                 <h3>Senior Developer</h3>
                                 <p>Tech Company • Remote • $90k-$120k</p>
-                                <i className="fas fa-heart" style={{ position: 'absolute', right: '20px', bottom: '20px', color: '#f72585' }}></i>
+                                <ThumbsUp className="h-4 w-4" style={{ position: 'absolute', right: '20px', bottom: '20px', color: '#f72585' }} />
                             </div>
                             <div className="floating-card">
                                 <h3>Marketing Manager</h3>
@@ -123,21 +123,21 @@ const JobPortalHome = () => {
                     <div className="features-grid">
                         <div className="feature-card">
                             <div className="feature-icon">
-                                <i className="fas fa-users"></i>
+                                <Users />
                             </div>
                             <h3>Inclusive Platform</h3>
                             <p>We believe everyone deserves equal opportunities. Our platform is designed to be accessible to job seekers and employers from all backgrounds.</p>
                         </div>
                         <div className="feature-card">
                             <div className="feature-icon">
-                                <i className="fas fa-dollar-sign"></i>
+                                <DollarSign />
                             </div>
                             <h3>Completely Free</h3>
                             <p>Post jobs, apply for positions, and connect with potential employers or employees without any fees. We have removed the financial barriers.</p>
                         </div>
                         <div className="feature-card">
                             <div className="feature-icon">
-                                <i className="fas fa-bolt"></i>
+                                <Zap />
                             </div>
                             <h3>Quick & Easy</h3>
                             <p>Our streamlined process makes job posting and application submission fast and straightforward. Save time with our intuitive interface.</p>
@@ -213,7 +213,7 @@ const JobPortalHome = () => {
                         <div className="company-card">
                             <div className="hiring-badge">Hiring!</div>
                             <div className="company-logo">
-                                <i className="fab fa-google"></i>
+                                <BotMessageSquare />
                             </div>
                             <div className="company-name">Google</div>
                             <div className="company-jobs">120+ Open Roles</div>
@@ -221,7 +221,7 @@ const JobPortalHome = () => {
                         <div className="company-card">
                             <div className="hiring-badge">Hiring!</div>
                             <div className="company-logo">
-                                <i className="fab fa-microsoft"></i>
+                                <Code />
                             </div>
                             <div className="company-name">Microsoft</div>
                             <div className="company-jobs">95+ Open Roles</div>
@@ -229,7 +229,7 @@ const JobPortalHome = () => {
                         <div className="company-card">
                             <div className="hiring-badge">Hiring!</div>
                             <div className="company-logo">
-                                <i className="fab fa-amazon"></i>
+                                <GitMerge />
                             </div>
                             <div className="company-name">Amazon</div>
                             <div className="company-jobs">150+ Open Roles</div>
@@ -237,7 +237,7 @@ const JobPortalHome = () => {
                         <div className="company-card">
                             <div className="hiring-badge">Hiring!</div>
                             <div className="company-logo">
-                                <i className="fab fa-meta"></i>
+                                <ThumbsUp />
                             </div>
                             <div className="company-name">Meta</div>
                             <div className="company-jobs">80+ Open Roles</div>
@@ -245,7 +245,7 @@ const JobPortalHome = () => {
                         <div className="company-card">
                             <div className="hiring-badge">Hiring!</div>
                             <div className="company-logo">
-                                <i className="fab fa-apple"></i>
+                                <Apple />
                             </div>
                             <div className="company-name">Apple</div>
                             <div className="company-jobs">65+ Open Roles</div>
@@ -253,7 +253,7 @@ const JobPortalHome = () => {
                         <div className="company-card">
                             <div className="hiring-badge">Hiring!</div>
                             <div className="company-logo">
-                                <i className="fab fa-netflix"></i>
+                                <Netflix />
                             </div>
                             <div className="company-name">Netflix</div>
                             <div className="company-jobs">45+ Open Roles</div>
@@ -270,34 +270,34 @@ const JobPortalHome = () => {
                             <p>Get an edge in your job search. Employee referrals are one of the most effective ways to land your dream job.</p>
                             <ul className="benefits-list">
                                 <li>
-                                    <i className="fas fa-rocket"></i>
+                                    <Rocket className="h-6 w-6 text-green-500 mr-4" />
                                     <span><strong>Stand Out from the Crowd:</strong> Referred candidates are often fast-tracked through the application process.</span>
                                 </li>
                                 <li>
-                                    <i className="fas fa-lightbulb"></i>
+                                    <Lightbulb className="h-6 w-6 text-yellow-500 mr-4" />
                                     <span><strong>Gain Insider Information:</strong> Connect with employees to learn about company culture and the role.</span>
                                 </li>
                                 <li>
-                                    <i className="fas fa-chart-line"></i>
+                                    <TrendingUp className="h-6 w-6 text-blue-500 mr-4" />
                                     <span><strong>Increase Your Chances:</strong> Studies show referrals have a significantly higher chance of getting hired.</span>
                                 </li>
                             </ul>
                         </div>
                         <div className="benefits-visual">
                             <div className="floating-element">
-                                <div className="element-icon"><i className="fas fa-network-wired"></i></div>
+                                <div className="element-icon"><Network /></div>
                                 <div className="element-text">Stronger Network</div>
                             </div>
                             <div className="floating-element">
-                                <div className="element-icon"><i className="fas fa-user-check"></i></div>
+                                <div className="element-icon"><UserCheck /></div>
                                 <div className="element-text">Priority Review</div>
                             </div>
                             <div className="floating-element">
-                                <div className="element-icon"><i className="fas fa-trophy"></i></div>
+                                <div className="element-icon"><Trophy /></div>
                                 <div className="element-text">Higher Success</div>
                             </div>
                             <div className="floating-element">
-                                <div className="element-icon"><i className="fas fa-file-signature"></i></div>
+                                <div className="element-icon"><FileSignature /></div>
                                 <div className="element-text">Get Hired Faster</div>
                             </div>
                         </div>
@@ -315,7 +315,7 @@ const JobPortalHome = () => {
                     <div className="referrals-grid">
                         <div className="referral-card">
                             <div className="referral-icon">
-                                <i className="fas fa-globe-americas"></i>
+                                <Globe />
                             </div>
                             <h3>Diverse Job Domains</h3>
                             <p>From tech and finance to creative arts, explore opportunities across a wide spectrum of industries. Find your perfect fit in any field.</p>
@@ -333,7 +333,7 @@ const JobPortalHome = () => {
                         
                         <div className="referral-card">
                             <div className="referral-icon">
-                                <i className="fas fa-user-friends"></i>
+                                <UserRound />
                             </div>
                             <h3>Exclusive Referrals</h3>
                             <p>Get a competitive edge with jobs posted by company insiders. Referrals increase your chances of getting hired by up to 15x.</p>
@@ -351,7 +351,7 @@ const JobPortalHome = () => {
                         
                         <div className="referral-card">
                             <div className="referral-icon">
-                                <i className="fas fa-graduation-cap"></i>
+                                <GraduationCap />
                             </div>
                             <h3>Internship Opportunities</h3>
                             <p>Kickstart your career. Find paid internships and entry-level positions at top companies to gain valuable experience.</p>
