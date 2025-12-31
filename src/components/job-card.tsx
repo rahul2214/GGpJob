@@ -1,5 +1,3 @@
-
-
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,11 +39,11 @@ export default function JobCard({ job, isApplied = false, hideDetails = false }:
             {!hideDetails && (
               <>
                 <div className="flex items-center gap-2">
-                  <Briefcase className="h-4 w-4" />
+                  <Briefcase className="h-4 w-4 text-primary" />
                   <span>{job.type}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <BadgeDollarSign className="h-4 w-4" />
+                    <BadgeDollarSign className="h-4 w-4 text-primary" />
                     <span className="font-semibold text-primary/80">{job.salary || 'Not Disclosed'}</span>
                 </div>
               </>
