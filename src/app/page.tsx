@@ -429,13 +429,17 @@ export default function Home() {
        return <JobPortalHome />;
     }
     
+    let dashboardComponent;
     switch(user.role) {
       case "Job Seeker":
-        return <JobSeekerDashboard />;
+        dashboardComponent = <JobSeekerDashboard />;
+        break;
       case "Recruiter":
-        return <RecruiterDashboard />;
+        dashboardComponent = <RecruiterDashboard />;
+        break;
       case "Employee":
-        return <EmployeeDashboard />;
+        dashboardComponent = <EmployeeDashboard />;
+        break;
       case "Admin":
       case "Super Admin":
         router.push('/admin/dashboard');
@@ -448,6 +452,11 @@ export default function Home() {
          router.push('/login');
          return null;
     }
+    return (
+        <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
+            {dashboardComponent}
+        </div>
+    )
   }
 
   return (
