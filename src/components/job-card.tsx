@@ -44,7 +44,7 @@ export default function JobCard({ job, isApplied = false, hideDetails = false }:
                 </div>
                 <div className="flex items-center gap-2">
                     <BadgeDollarSign className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-primary/80">{job.salary || 'Not Disclosed'}</span>
+                    <span className="font-semibold text-foreground">{job.salary || 'Not Disclosed'}</span>
                 </div>
               </>
             )}
