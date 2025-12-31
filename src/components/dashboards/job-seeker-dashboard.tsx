@@ -6,15 +6,18 @@ import type { Job, Application } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import JobCard from "../job-card";
 import { Button } from "../ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Link from "next/link";
 import { Skeleton } from "../ui/skeleton";
 import { ProfileStrength } from "../profile-strength";
+import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
 
 export default function JobSeekerDashboard() {
   const { user } = useUser();
+  const router = useRouter();
   const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([]);
   const [referralJobs, setReferralJobs] = useState<Job[]>([]);
   const [userApplications, setUserApplications] = useState<Application[]>([]);
@@ -70,26 +73,46 @@ export default function JobSeekerDashboard() {
     fetchData();
   }, [fetchData]);
   
-  const appliedJobIds = new Set(userApplications.map(app => app.jobId));
+  const appliedJobIds = new Set(userApplications.map(app => app.id));
+
+  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const searchQuery = formData.get('search') as string;
+    router.push(`/jobs?search=${searchQuery}`);
+  };
+
+  const handleQuickSearch = (term: string) => {
+    router.push(`/jobs?search=${term}`);
+  };
   
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 py-4">
         
        <div className="rounded-lg bg-card">
         {user && <ProfileStrength user={user} />}
        </div>
 
-       <Card>
+       <Card className="border-t-4 border-emerald-500">
         <CardHeader>
-          <CardTitle>Find your next job</CardTitle>
+          <CardTitle>Find Your Next Job</CardTitle>
           <CardDescription>Search by title, company, or keywords to find your perfect match.</CardDescription>
         </CardHeader>
         <CardContent>
-            <Button asChild>
-                <Link href="/jobs">
-                    Find a Job <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-            </Button>
+            <form onSubmit={handleSearch} className="flex items-center gap-2 mb-4">
+              <Input name="search" placeholder="Job title, company, or keyword" className="flex-grow" />
+              <Button type="submit" className="bg-emerald-500 hover:bg-emerald-600">
+                <Search className="mr-2 h-4 w-4" />
+                Find Jobs
+              </Button>
+            </form>
+            <div className="flex flex-wrap gap-2">
+                {['Software Engineer', 'Remote', 'Marketing', 'Finance', 'Design'].map(term => (
+                    <Button key={term} variant="outline" size="sm" className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200" onClick={() => handleQuickSearch(term)}>
+                        {term}
+                    </Button>
+                ))}
+            </div>
         </CardContent>
       </Card>
       
