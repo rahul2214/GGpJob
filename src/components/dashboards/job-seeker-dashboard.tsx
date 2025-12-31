@@ -100,15 +100,16 @@ export default function JobSeekerDashboard() {
         </CardHeader>
         <CardContent>
             <form onSubmit={handleSearch} className="mb-4">
-              <div className="flex w-full items-center space-x-2 rounded-full border bg-background shadow-sm overflow-hidden">
-                  <Search className="ml-4 h-5 w-5 text-muted-foreground" />
+              <div className="flex w-full items-center space-x-2 rounded-full border bg-background shadow-sm overflow-hidden p-1">
+                  <Search className="ml-3 h-5 w-5 text-muted-foreground" />
                   <Input 
                       name="search" 
                       placeholder="Job title, company, or keyword" 
-                      className="flex-grow border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none text-base" 
+                      className="flex-grow border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none text-base bg-transparent" 
                   />
-                  <Button type="submit" className="rounded-full h-full px-6 py-3 text-base bg-emerald-500 hover:bg-emerald-600">
-                    Find Jobs
+                  <Button type="submit" size="icon" className="rounded-full h-10 w-10 bg-emerald-500 hover:bg-emerald-600 shrink-0">
+                    <Search className="h-5 w-5" />
+                    <span className="sr-only">Search</span>
                   </Button>
               </div>
             </form>
