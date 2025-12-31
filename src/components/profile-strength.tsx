@@ -117,7 +117,7 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
     }
 
     return (
-        <Card className="border-none border-t-4 border-blue-500">
+        <Card className="border-none border-t-4 border-blue-500 shadow-md">
             <CardContent className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-lg">Profile Strength</h3>

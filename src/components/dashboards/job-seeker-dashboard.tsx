@@ -93,7 +93,7 @@ export default function JobSeekerDashboard() {
         {user && <ProfileStrength user={user} />}
        </div>
 
-       <Card className="border-none border-t-4 border-emerald-500">
+       <Card className="border-none border-t-4 border-emerald-500 shadow-md">
         <CardHeader>
           <CardTitle>Find Your Next Job</CardTitle>
           <CardDescription>Search by title, company, or keywords to find your perfect match.</CardDescription>
