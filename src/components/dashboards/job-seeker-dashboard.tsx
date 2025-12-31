@@ -87,9 +87,9 @@ export default function JobSeekerDashboard() {
   };
   
   return (
-    <div className="space-y-4 py-4">
+    <div className="space-y-8 py-4">
         
-       <div className="rounded-lg bg-card">
+       <div className="rounded-lg">
         {user && <ProfileStrength user={user} />}
        </div>
 
@@ -99,12 +99,18 @@ export default function JobSeekerDashboard() {
           <CardDescription>Search by title, company, or keywords to find your perfect match.</CardDescription>
         </CardHeader>
         <CardContent>
-            <form onSubmit={handleSearch} className="flex items-center gap-2 mb-4">
-              <Input name="search" placeholder="Job title, company, or keyword" className="flex-grow" />
-              <Button type="submit" className="bg-emerald-500 hover:bg-emerald-600">
-                <Search className="mr-2 h-4 w-4" />
-                Find Jobs
-              </Button>
+            <form onSubmit={handleSearch} className="mb-4">
+              <div className="flex w-full items-center space-x-2 rounded-full border bg-background shadow-sm overflow-hidden">
+                  <Search className="ml-4 h-5 w-5 text-muted-foreground" />
+                  <Input 
+                      name="search" 
+                      placeholder="Job title, company, or keyword" 
+                      className="flex-grow border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none text-base" 
+                  />
+                  <Button type="submit" className="rounded-full h-full px-6 py-3 text-base bg-emerald-500 hover:bg-emerald-600">
+                    Find Jobs
+                  </Button>
+              </div>
             </form>
             <div className="flex flex-wrap gap-2">
                 {['Software Engineer', 'Remote', 'Marketing', 'Finance', 'Design'].map(term => (
