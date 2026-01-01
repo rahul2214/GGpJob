@@ -24,15 +24,18 @@ export async function GET(request: Request) {
     if (searchParams.get('dashboard') === 'true' && searchParams.get('domain')) {
         const domainId = searchParams.get('domain');
 
-        const recommendedQuery = jobsRef.where('domainId', '==', domainId).where('isReferral', '==', false).orderBy('postedAt', 'desc').limit(10);
-        const referralQuery = jobsRef.where('domainId', '==', domainId).where('isReferral', '==', true).orderBy('postedAt', 'desc').limit(10);
+        // Removed .orderBy('postedAt', 'desc') to avoid composite index requirement
+        const recommendedQuery = jobsRef.where('domainId', '==', domainId).where('isReferral', '==', false).limit(10);
+        const referralQuery = jobsRef.where('domainId', '==', domainId).where('isReferral', '==', true).limit(10);
 
         const [recommendedSnap, referralSnap] = await Promise.all([
             recommendedQuery.get(),
             referralQuery.get(),
         ]);
         
-        const processJobs = (snap: adminFirestore.QuerySnapshot) => snap.docs.map(doc => ({ id: doc.id, ...doc.data() as Job }));
+        const processJobs = (snap: adminFirestore.QuerySnapshot) => 
+            snap.docs.map(doc => ({ id: doc.id, ...doc.data() as Job }))
+            .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
 
         return NextResponse.json({
             recommended: processJobs(recommendedSnap),
