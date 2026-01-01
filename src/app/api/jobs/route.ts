@@ -19,12 +19,32 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const jobsRef = db.collection('jobs');
-    let query: adminFirestore.Query = jobsRef;
+    
+    // --- Start Dashboard-specific Logic ---
+    if (searchParams.get('dashboard') === 'true' && searchParams.get('domain')) {
+        const domainId = searchParams.get('domain');
 
-    // --- Start Filtering Logic ---
+        const recommendedQuery = jobsRef.where('domainId', '==', domainId).where('isReferral', '==', false).orderBy('postedAt', 'desc').limit(10);
+        const referralQuery = jobsRef.where('domainId', '==', domainId).where('isReferral', '==', true).orderBy('postedAt', 'desc').limit(10);
+
+        const [recommendedSnap, referralSnap] = await Promise.all([
+            recommendedQuery.get(),
+            referralQuery.get(),
+        ]);
+        
+        const processJobs = (snap: adminFirestore.QuerySnapshot) => snap.docs.map(doc => ({ id: doc.id, ...doc.data() as Job }));
+
+        return NextResponse.json({
+            recommended: processJobs(recommendedSnap),
+            referral: processJobs(referralSnap),
+        });
+    }
+    // --- End Dashboard-specific Logic ---
+    
+    let query: adminFirestore.Query = jobsRef;
     let hasComplexFilters = false;
 
-    // String-based filters
+    // --- Start Filtering Logic ---
     if (searchParams.get('isReferral') !== null) {
       query = query.where('isReferral', '==', searchParams.get('isReferral') === 'true');
     }
@@ -45,7 +65,6 @@ export async function GET(request: Request) {
         hasComplexFilters = true;
     }
 
-    // Date filter
     const postedDays = searchParams.get('posted');
     if (postedDays && postedDays !== 'all') {
         const days = parseInt(postedDays as string, 10);
@@ -63,7 +82,6 @@ export async function GET(request: Request) {
         hasComplexFilters = true;
     }
 
-    // Array-based filters
     const locationsParams = searchParams.getAll('location').filter(l => l && l !== 'all');
     if (locationsParams.length > 0) {
         query = query.where('locationId', 'in', locationsParams);
@@ -79,10 +97,8 @@ export async function GET(request: Request) {
         query = query.where('jobTypeId', 'in', jobTypesParams);
         hasComplexFilters = true;
     }
-    
     // --- End Filtering Logic ---
 
-    // Only apply orderBy at the DB level if there are no complex filters
     if (!searchParams.get('search') && !hasComplexFilters) {
         query = query.orderBy('postedAt', 'desc');
     }
