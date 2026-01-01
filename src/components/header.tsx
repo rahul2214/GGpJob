@@ -202,6 +202,12 @@ export default function Header() {
                                        </Link>
                                     </SheetClose>
                                 )}
+                                <SheetClose asChild>
+                                    <Link href="#" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                        <Award className="h-5 w-5" />
+                                        Training
+                                    </Link>
+                                </SheetClose>
                                </>
                             )}
                              {isClient && !loading && user && (user.role === 'Recruiter' || user.role === 'Employee') && (
@@ -371,6 +377,9 @@ export default function Header() {
                             Recommended Jobs
                         </Link>
                     )}
+                    <Link href="#" className={`transition-colors hover:text-foreground ${pathname === "/training" ? "text-foreground" : "text-foreground/60"}`}>
+                        Training
+                    </Link>
                 </Suspense>
             )}
           </>
