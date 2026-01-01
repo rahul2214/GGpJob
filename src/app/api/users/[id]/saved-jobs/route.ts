@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { db } from '@/firebase/admin-config';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, FieldPath } from 'firebase-admin/firestore';
 import type { Job } from '@/lib/types';
 
 
@@ -16,7 +16,7 @@ async function getJobDetails(jobIds: string[]): Promise<Job[]> {
     }
 
     const jobPromises = chunks.map(chunk => 
-        db.collection('jobs').where(FieldValue.documentId(), 'in', chunk).get()
+        db.collection('jobs').where(FieldPath.documentId(), 'in', chunk).get()
     );
     
     const jobSnapshots = await Promise.all(jobPromises);
