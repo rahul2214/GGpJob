@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { Job, Application } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import JobCard from "../job-card";
@@ -14,16 +14,19 @@ import { Skeleton } from "../ui/skeleton";
 import { ProfileStrength } from "../profile-strength";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import { useDashboardJobs } from "@/hooks/use-jobs";
+import { useDashboardJobs, useSavedJobs } from "@/hooks/use-jobs";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useToast } from "@/hooks/use-toast";
 
 export default function JobSeekerDashboard() {
   const { user } = useUser();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  const { toast } = useToast();
 
   const [userApplications, setUserApplications] = useState<Application[]>([]);
+  const { savedJobs, mutateSavedJobs } = useSavedJobs(user?.id);
 
   const { data: jobData, isLoading, isError } = useDashboardJobs(user?.domainId ? { domain: user.domainId, dashboard: 'true' } : { dashboard: 'true' });
 
@@ -55,9 +58,48 @@ export default function JobSeekerDashboard() {
     router.push(`/jobs?search=${term}`);
   };
 
-  const appliedJobIds = new Set(userApplications.map(app => app.jobId));
-  const recommendedJobs = jobData?.recommended?.filter(job => !appliedJobIds.has(job.id)).slice(0, 6) || [];
-  const referralJobs = jobData?.referral?.filter(job => !appliedJobIds.has(job.id)).slice(0, 6) || [];
+  const handleSaveToggle = async (jobId: string, isCurrentlySaved: boolean) => {
+    if (!user) return;
+
+    const originalSavedJobs = savedJobs ? [...savedJobs] : [];
+
+    // Optimistic UI update
+    const newSavedJobs = isCurrentlySaved
+        ? originalSavedJobs.filter(id => id !== jobId)
+        : [...originalSavedJobs, jobId];
+    mutateSavedJobs(newSavedJobs, false);
+
+    const method = isCurrentlySaved ? 'DELETE' : 'POST';
+    const url = isCurrentlySaved
+        ? `/api/users/${user.id}/saved-jobs?jobId=${jobId}`
+        : `/api/users/${user.id}/saved-jobs`;
+
+    try {
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: isCurrentlySaved ? undefined : JSON.stringify({ jobId }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update saved status');
+        }
+        // Revalidate to get the latest state from the server
+        mutateSavedJobs();
+    } catch (error) {
+        // Revert UI on error
+        mutateSavedJobs(originalSavedJobs, false);
+        console.error("Failed to toggle save status", error);
+        toast({ title: "Error", description: "Could not update saved jobs.", variant: "destructive" });
+    }
+  };
+
+
+  const appliedJobIds = useMemo(() => new Set(userApplications.map(app => app.jobId)), [userApplications]);
+  const savedJobIds = useMemo(() => new Set(savedJobs || []), [savedJobs]);
+
+  const recommendedJobs = useMemo(() => jobData?.recommended?.filter(job => !appliedJobIds.has(job.id)).slice(0, 6) || [], [jobData, appliedJobIds]);
+  const referralJobs = useMemo(() => jobData?.referral?.filter(job => !appliedJobIds.has(job.id)).slice(0, 6) || [], [jobData, appliedJobIds]);
   
   return (
     <div className="space-y-8 py-4">
@@ -155,7 +197,13 @@ export default function JobSeekerDashboard() {
                         {recommendedJobs.map((job) => (
                         <CarouselItem key={job.id} className="pl-1 basis-3/4 md:basis-1/2 lg:basis-1/3">
                             <div className="p-1 h-full">
-                               <JobCard job={job} isApplied={false} hideDetails={true} />
+                               <JobCard 
+                                  job={job} 
+                                  isApplied={appliedJobIds.has(job.id)} 
+                                  isSaved={savedJobIds.has(job.id)}
+                                  onSaveToggle={handleSaveToggle}
+                                  hideDetails={true}
+                                />
                             </div>
                         </CarouselItem>
                         ))}
@@ -196,7 +244,13 @@ export default function JobSeekerDashboard() {
                         {referralJobs.map((job) => (
                         <CarouselItem key={job.id} className="pl-1 basis-3/4 md:basis-1/2 lg:basis-1/3">
                             <div className="p-1 h-full">
-                               <JobCard job={job} isApplied={false} hideDetails={true} />
+                               <JobCard 
+                                  job={job} 
+                                  isApplied={appliedJobIds.has(job.id)}
+                                  isSaved={savedJobIds.has(job.id)}
+                                  onSaveToggle={handleSaveToggle}
+                                  hideDetails={true} 
+                                />
                             </div>
                         </CarouselItem>
                         ))}

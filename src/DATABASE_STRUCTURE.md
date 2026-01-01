@@ -25,6 +25,11 @@ Stores profiles for users with the "Job Seeker" role. The document ID is the use
     -   `projects`: Stores personal or professional projects.
     -   `languages`: Stores languages known by the user.
     -   `skills`: Stores user's skills.
+    -   `saved_jobs`: Stores jobs saved by the user.
+        - Document ID is the `jobId`.
+        - **Fields**:
+            - `jobId`: `string` - ID of the job from the `jobs` collection.
+            - `savedAt`: `timestamp` - When the job was saved.
 
 ### 2. `recruiters`
 

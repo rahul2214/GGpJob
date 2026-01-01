@@ -38,3 +38,26 @@ export function useDashboardJobs(params?: Record<string, any>) {
     isError: error
   }
 }
+
+export function useSavedJobs(userId?: string) {
+    const { data, error, isLoading, mutate } = useSWR<string[]>(
+        userId ? `/api/users/${userId}/saved-jobs` : null, 
+        async (url) => {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Failed to fetch saved jobs');
+            const savedJobsData: { jobId: string }[] = await res.json();
+            return savedJobsData.map(item => item.jobId);
+        },
+        {
+            revalidateOnFocus: false,
+            dedupingInterval: 60000,
+        }
+    );
+
+    return {
+        savedJobs: data,
+        isLoading,
+        isError: error,
+        mutateSavedJobs: mutate,
+    };
+}

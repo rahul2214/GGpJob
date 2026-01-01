@@ -1,21 +1,23 @@
 
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Application } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import JobCard from "@/components/job-card";
 import { JobFilters } from "@/components/job-filters";
 import { useUser } from "@/contexts/user-context";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useJobs } from "@/hooks/use-jobs";
+import { useJobs, useSavedJobs } from "@/hooks/use-jobs";
+import { useToast } from "@/hooks/use-toast";
 
 function JobSearchContent() {
     const searchParams = useSearchParams();
     const { user } = useUser();
     const [userApplications, setUserApplications] = useState<Application[]>([]);
-    const isRecommended = searchParams.has('domain') && searchParams.get('domain') !== 'all';
+    const { savedJobs, mutateSavedJobs } = useSavedJobs(user?.id);
+    const { toast } = useToast();
 
     // Convert searchParams to an object for the useJobs hook
     const params = Object.fromEntries(searchParams.entries());
@@ -37,12 +39,51 @@ function JobSearchContent() {
         };
         fetchApplications();
     }, [user]);
+
+     const handleSaveToggle = async (jobId: string, isCurrentlySaved: boolean) => {
+        if (!user) return;
+
+        const originalSavedJobs = savedJobs ? [...savedJobs] : [];
+
+        // Optimistic UI update
+        const newSavedJobs = isCurrentlySaved
+            ? originalSavedJobs.filter(id => id !== jobId)
+            : [...originalSavedJobs, jobId];
+        mutateSavedJobs(newSavedJobs, false);
+
+        const method = isCurrentlySaved ? 'DELETE' : 'POST';
+        const url = isCurrentlySaved 
+            ? `/api/users/${user.id}/saved-jobs?jobId=${jobId}`
+            : `/api/users/${user.id}/saved-jobs`;
+
+        try {
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: isCurrentlySaved ? undefined : JSON.stringify({ jobId }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update saved status');
+            }
+            // Revalidate to get the latest state from the server
+            mutateSavedJobs();
+        } catch (error) {
+            // Revert UI on error
+            mutateSavedJobs(originalSavedJobs, false);
+            console.error("Failed to toggle save status", error);
+            toast({ title: "Error", description: "Could not update saved jobs.", variant: "destructive" });
+        }
+    };
     
-    const appliedJobIds = new Set(userApplications.map(app => app.jobId));
-    
-    const filteredJobs = user?.role === 'Job Seeker' 
-        ? jobs?.filter(job => !appliedJobIds.has(job.id)) 
-        : jobs;
+    const appliedJobIds = useMemo(() => new Set(userApplications.map(app => app.jobId)), [userApplications]);
+    const savedJobIds = useMemo(() => new Set(savedJobs || []), [savedJobs]);
+
+    const filteredJobs = useMemo(() => {
+        return user?.role === 'Job Seeker' 
+            ? jobs?.filter(job => !appliedJobIds.has(job.id)) 
+            : jobs;
+    }, [jobs, appliedJobIds, user]);
 
 
     const renderJobCards = () => {
@@ -59,10 +100,9 @@ function JobSearchContent() {
                                 <Skeleton className="h-4 w-full" />
                                 <Skeleton className="h-4 w-full" />
                             </CardContent>
-                            <CardFooter className="flex justify-between">
+                             <CardContent className="flex justify-between">
                                 <Skeleton className="h-4 w-1/4" />
-                                <Skeleton className="h-8 w-1/3" />
-                            </CardFooter>
+                            </CardContent>
                         </Card>
                     ))}
                 </div>
@@ -75,7 +115,13 @@ function JobSearchContent() {
             return (
                 <div className="space-y-4">
                     {filteredJobs.map((job) => (
-                        <JobCard key={job.id} job={job} isApplied={appliedJobIds.has(job.id)} />
+                        <JobCard 
+                            key={job.id} 
+                            job={job} 
+                            isApplied={appliedJobIds.has(job.id)}
+                            isSaved={savedJobIds.has(job.id)}
+                            onSaveToggle={handleSaveToggle}
+                        />
                     ))}
                 </div>
             )
@@ -97,7 +143,7 @@ function JobSearchContent() {
                  <Card>
                     <CardHeader>
                         <div>
-                            <CardTitle>{isRecommended ? 'Recommended Jobs' : 'Job Openings'}</CardTitle>
+                            <CardTitle>Job Openings</CardTitle>
                             <CardDescription>
                                 {isLoading ? 'Searching for jobs...' : `Found ${filteredJobs?.length || 0} job openings.`}
                             </CardDescription>
