@@ -43,7 +43,7 @@ export async function GET(request: Request) {
                 return {
                   id: doc.id,
                   ...jobData,
-                  location: location ? `${location.name}, ${location.country}` : 'N/A',
+                  location: location ? location.name : 'N/A',
                 }
             })
             .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
@@ -177,7 +177,7 @@ export async function GET(request: Request) {
       return {
           id: doc.id,
           ...jobData,
-          location: location ? `${location.name}, ${location.country}` : 'N/A',
+          location: location ? location.name : 'N/A',
           domain: domain?.name || 'N/A',
           type: jobType?.name || 'N/A',
           workplaceType: workplaceType?.name || 'N/A',
