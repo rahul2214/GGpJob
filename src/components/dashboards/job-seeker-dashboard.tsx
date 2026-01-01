@@ -20,43 +20,45 @@ export default function JobSeekerDashboard() {
   const router = useRouter();
   const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([]);
   const [referralJobs, setReferralJobs] = useState<Job[]>([]);
-  const [userApplications, setUserApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   
   const fetchData = useCallback(async () => {
-    if (user) {
-        setLoading(true);
-        try {
-            const [jobsRes, appsRes] = await Promise.all([
-                 user.domainId ? fetch(`/api/jobs?domain=${user.domainId}&dashboard=true`) : Promise.resolve(null),
-                 fetch(`/api/applications?userId=${user.id}`)
-            ]);
-            
-            let recommendedData: Job[] = [];
-            let referralData: Job[] = [];
-            let appsData: Application[] = [];
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    
+    setLoading(true);
+    try {
+        const [jobsRes, appsRes] = await Promise.all([
+             user.domainId ? fetch(`/api/jobs?domain=${user.domainId}&dashboard=true`) : Promise.resolve(null),
+             fetch(`/api/applications?userId=${user.id}`)
+        ]);
+        
+        let recommendedData: Job[] = [];
+        let referralData: Job[] = [];
+        let appsData: Application[] = [];
 
-            if (jobsRes && jobsRes.ok) {
-                const { recommended, referral } = await jobsRes.json();
-                recommendedData = recommended || [];
-                referralData = referral || [];
-            }
-            
-            if (appsRes && appsRes.ok) {
-                 appsData = await appsRes.json();
-                 setUserApplications(Array.isArray(appsData) ? appsData : []);
-            }
-            
-            const appliedJobIds = new Set(appsData.map(app => app.jobId));
-            setRecommendedJobs(recommendedData.filter(job => !appliedJobIds.has(job.id)).slice(0, 6));
-            setReferralJobs(referralData.filter(job => !appliedJobIds.has(job.id)).slice(0, 6));
-
-        } catch(error) {
-            console.error("Failed to fetch dashboard data", error);
-        } finally {
-            setLoading(false);
+        if (jobsRes && jobsRes.ok) {
+            const { recommended, referral } = await jobsRes.json();
+            recommendedData = recommended || [];
+            referralData = referral || [];
         }
-    } else {
+        
+        if (appsRes && appsRes.ok) {
+             appsData = await appsRes.json() || [];
+        }
+        
+        const appliedJobIds = new Set(Array.isArray(appsData) ? appsData.map(app => app.jobId) : []);
+        
+        setRecommendedJobs(recommendedData.filter(job => !appliedJobIds.has(job.id)).slice(0, 6));
+        setReferralJobs(referralData.filter(job => !appliedJobIds.has(job.id)).slice(0, 6));
+
+    } catch(error) {
+        console.error("Failed to fetch dashboard data", error);
+        setRecommendedJobs([]);
+        setReferralJobs([]);
+    } finally {
         setLoading(false);
     }
   }, [user]);
@@ -66,8 +68,6 @@ export default function JobSeekerDashboard() {
     fetchData();
   }, [fetchData]);
   
-  const appliedJobIds = new Set(userApplications.map(app => app.jobId));
-
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -172,7 +172,7 @@ export default function JobSeekerDashboard() {
                         {recommendedJobs.map((job) => (
                         <CarouselItem key={job.id} className="pl-1 basis-3/4 md:basis-1/2 lg:basis-1/3">
                             <div className="p-1 h-full">
-                               <JobCard job={job} isApplied={appliedJobIds.has(job.id)} hideDetails={true} />
+                               <JobCard job={job} isApplied={false} hideDetails={true} />
                             </div>
                         </CarouselItem>
                         ))}
@@ -213,7 +213,7 @@ export default function JobSeekerDashboard() {
                         {referralJobs.map((job) => (
                         <CarouselItem key={job.id} className="pl-1 basis-3/4 md:basis-1/2 lg:basis-1/3">
                             <div className="p-1 h-full">
-                               <JobCard job={job} isApplied={appliedJobIds.has(job.id)} hideDetails={true} />
+                               <JobCard job={job} isApplied={false} hideDetails={true} />
                             </div>
                         </CarouselItem>
                         ))}
@@ -227,3 +227,5 @@ export default function JobSeekerDashboard() {
     </div>
   );
 }
+
+    
