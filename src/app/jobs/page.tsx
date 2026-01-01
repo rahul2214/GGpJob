@@ -1,73 +1,52 @@
 
-
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import type { Job, Application } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import type { Application } from "@/lib/types";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import JobCard from "@/components/job-card";
 import { JobFilters } from "@/components/job-filters";
 import { useUser } from "@/contexts/user-context";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useJobs } from "@/hooks/use-jobs";
 
 function JobSearchContent() {
     const searchParams = useSearchParams();
     const { user } = useUser();
-    const [jobs, setJobs] = useState<Job[]>([]);
     const [userApplications, setUserApplications] = useState<Application[]>([]);
-    const [loading, setLoading] = useState(true);
     const isRecommended = searchParams.has('domain') && searchParams.get('domain') !== 'all';
+
+    // Convert searchParams to an object for the useJobs hook
+    const params = Object.fromEntries(searchParams.entries());
+    const { jobs, isLoading, isError } = useJobs(params);
     
-    const fetchJobs = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams(searchParams.toString());
-            const jobsUrl = `/api/jobs?${params.toString()}`;
-            
-            const fetchPromises: [Promise<Response>, Promise<Response> | null] = [
-                fetch(jobsUrl),
-                user ? fetch(`/api/applications?userId=${user.id}`) : null
-            ];
-            
-            const [jobsRes, appsRes] = await Promise.all(fetchPromises);
-
-            let jobsData: Job[] = [];
-            let appsData: Application[] = [];
-
-            if (jobsRes.ok) {
-                jobsData = await jobsRes.json();
-            }
-            
-            if (appsRes && appsRes.ok) {
-                 appsData = await appsRes.json();
-                 setUserApplications(Array.isArray(appsData) ? appsData : []);
-            }
-
-            if (user?.role === 'Job Seeker' && Array.isArray(jobsData) && Array.isArray(appsData)) {
-                const appliedJobIds = new Set(appsData.map(app => app.jobId));
-                const filteredJobs = jobsData.filter(job => !appliedJobIds.has(job.id));
-                setJobs(filteredJobs);
-            } else {
-                 setJobs(Array.isArray(jobsData) ? jobsData : []);
-            }
-
-
-        } catch (error) {
-            console.error("Failed to fetch jobs", error);
-        } finally {
-            setLoading(false);
-        }
-    }, [searchParams, user]);
-
     useEffect(() => {
-        fetchJobs();
-    }, [fetchJobs]);
+        const fetchApplications = async () => {
+            if (user) {
+                try {
+                    const res = await fetch(`/api/applications?userId=${user.id}`);
+                    if (res.ok) {
+                        const appsData = await res.json();
+                        setUserApplications(Array.isArray(appsData) ? appsData : []);
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch applications", error);
+                }
+            }
+        };
+        fetchApplications();
+    }, [user]);
     
     const appliedJobIds = new Set(userApplications.map(app => app.jobId));
+    
+    const filteredJobs = user?.role === 'Job Seeker' 
+        ? jobs?.filter(job => !appliedJobIds.has(job.id)) 
+        : jobs;
+
 
     const renderJobCards = () => {
-        if (loading) {
+        if (isLoading) {
             return (
                 <div className="space-y-4">
                     {[...Array(6)].map((_, i) => (
@@ -89,10 +68,13 @@ function JobSearchContent() {
                 </div>
             )
         }
-        if (jobs.length > 0) {
+        if (isError) {
+            return <p className="text-destructive text-center">Failed to load jobs.</p>
+        }
+        if (filteredJobs && filteredJobs.length > 0) {
             return (
                 <div className="space-y-4">
-                    {jobs.map((job) => (
+                    {filteredJobs.map((job) => (
                         <JobCard key={job.id} job={job} isApplied={appliedJobIds.has(job.id)} />
                     ))}
                 </div>
@@ -117,7 +99,7 @@ function JobSearchContent() {
                         <div>
                             <CardTitle>{isRecommended ? 'Recommended Jobs' : 'Job Openings'}</CardTitle>
                             <CardDescription>
-                                {loading ? 'Searching for jobs...' : `Found ${jobs.length} job openings.`}
+                                {isLoading ? 'Searching for jobs...' : `Found ${filteredJobs?.length || 0} job openings.`}
                             </CardDescription>
                         </div>
                     </CardHeader>
@@ -134,7 +116,7 @@ function JobSearchContent() {
 export default function JobSearchPage() {
     return (
         <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
-            <Suspense fallback={<div>Loading...</div>}>
+            <Suspense fallback={<Skeleton className="h-screen w-full" />}>
                 <JobSearchContent />
             </Suspense>
         </div>

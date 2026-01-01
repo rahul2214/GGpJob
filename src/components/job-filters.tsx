@@ -1,14 +1,13 @@
 
-
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Domain, ExperienceLevel, Location, JobType } from "@/lib/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MultiSelectFilter } from "./multi-select-filter";
 import { X, Calendar, MapPin, Briefcase, ChevronRight, Layers, Award } from "lucide-react";
 import { SheetClose } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -16,6 +15,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "./ui/scroll-area";
+import { Skeleton } from "./ui/skeleton";
+
+const MultiSelectFilter = dynamic(() => import('./multi-select-filter').then(mod => mod.MultiSelectFilter), {
+    loading: () => <Skeleton className="h-10 w-full" />,
+    ssr: false
+});
 
 interface JobFiltersProps {
     isSheet?: boolean;
@@ -23,8 +28,7 @@ interface JobFiltersProps {
 
 type FilterCategory = 'posted' | 'domain' | 'location' | 'experience' | 'jobType';
 
-
-export function JobFilters({ isSheet = false }: JobFiltersProps) {
+function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     
@@ -32,7 +36,6 @@ export function JobFilters({ isSheet = false }: JobFiltersProps) {
     const [domains, setDomains] = useState<Domain[]>([]);
     const [experienceLevels, setExperienceLevels] = useState<ExperienceLevel[]>([]);
     const [jobTypes, setJobTypes] = useState<JobType[]>([]);
-    const [isClient, setIsClient] = useState(false);
     const [activeCategory, setActiveCategory] = useState<FilterCategory>('posted');
     
     const [filters, setFilters] = useState({
@@ -46,7 +49,6 @@ export function JobFilters({ isSheet = false }: JobFiltersProps) {
     const [hasActiveFilters, setHasActiveFilters] = useState(false);
 
      useEffect(() => {
-        setIsClient(true);
         const fetchFilterData = async () => {
             const [locationsRes, domainsRes, experienceLevelsRes, jobTypesRes] = await Promise.all([
                 fetch('/api/locations'),
@@ -258,8 +260,8 @@ export function JobFilters({ isSheet = false }: JobFiltersProps) {
     }
 
     return (
-        <Card className={cn(isClient && "rounded-t-lg")}>
-            {isClient && hasActiveFilters && (
+        <Card>
+            {hasActiveFilters && (
                 <CardHeader className="flex flex-row items-center justify-end pt-4 pb-2 px-4">
                     <Button variant="ghost" size="sm" onClick={clearFilters}>
                         <X className="mr-2 h-4 w-4"/>
@@ -329,4 +331,12 @@ export function JobFilters({ isSheet = false }: JobFiltersProps) {
             </CardContent>
         </Card>
     );
+}
+
+export function JobFilters(props: JobFiltersProps) {
+    return (
+        <Suspense fallback={<Skeleton className="h-[500px] w-full" />}>
+            <JobFiltersContent {...props} />
+        </Suspense>
+    )
 }

@@ -21,11 +21,16 @@ export async function GET(request: Request) {
     const jobsRef = db.collection('jobs');
     
     // --- Start Dashboard-specific Logic ---
-    if (searchParams.get('dashboard') === 'true' && searchParams.get('domain')) {
+    if (searchParams.get('dashboard') === 'true') {
         const domainId = searchParams.get('domain');
 
-        const recommendedQuery = jobsRef.where('domainId', '==', domainId).where('isReferral', '==', false).limit(10);
-        const referralQuery = jobsRef.where('domainId', '==', domainId).where('isReferral', '==', true).limit(10);
+        let recommendedQuery: adminFirestore.Query = jobsRef.where('isReferral', '==', false).limit(10);
+        let referralQuery: adminFirestore.Query = jobsRef.where('isReferral', '==', true).limit(10);
+
+        if (domainId) {
+            recommendedQuery = recommendedQuery.where('domainId', '==', domainId);
+            referralQuery = referralQuery.where('domainId', '==', domainId);
+        }
 
         const [recommendedSnap, referralSnap, locationsSnapshot] = await Promise.all([
             recommendedQuery.get(),
@@ -48,10 +53,13 @@ export async function GET(request: Request) {
             })
             .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             recommended: processJobs(recommendedSnap),
             referral: processJobs(referralSnap),
         });
+
+        response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+        return response;
     }
     // --- End Dashboard-specific Logic ---
     
@@ -214,8 +222,10 @@ export async function GET(request: Request) {
         jobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
     }
 
+    const response = NextResponse.json(jobs);
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    return response;
 
-    return NextResponse.json(jobs);
   } catch (e: any) {
     console.error('[API_JOBS_GET] Error:', e);
     return NextResponse.json({ error: 'Failed to fetch jobs', details: e.message }, { status: 500 });

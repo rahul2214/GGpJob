@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import type { Job, Application } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import JobCard from "../job-card";
 import { Button } from "../ui/button";
-import { ArrowRight, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Link from "next/link";
@@ -14,70 +14,50 @@ import { Skeleton } from "../ui/skeleton";
 import { ProfileStrength } from "../profile-strength";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
+import { useDashboardJobs } from "@/hooks/use-jobs";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export default function JobSeekerDashboard() {
   const { user } = useUser();
   const router = useRouter();
-  const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([]);
-  const [referralJobs, setReferralJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  const fetchData = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-    
-    setLoading(true);
-    try {
-        const [jobsRes, appsRes] = await Promise.all([
-             user.domainId ? fetch(`/api/jobs?domain=${user.domainId}&dashboard=true`) : Promise.resolve(null),
-             fetch(`/api/applications?userId=${user.id}`)
-        ]);
-        
-        let recommendedData: Job[] = [];
-        let referralData: Job[] = [];
-        let appsData: Application[] = [];
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-        if (jobsRes && jobsRes.ok) {
-            const { recommended, referral } = await jobsRes.json();
-            recommendedData = recommended || [];
-            referralData = referral || [];
-        }
-        
-        if (appsRes && appsRes.ok) {
-             appsData = await appsRes.json() || [];
-        }
-        
-        const appliedJobIds = new Set(Array.isArray(appsData) ? appsData.map(app => app.jobId) : []);
-        
-        setRecommendedJobs(recommendedData.filter(job => !appliedJobIds.has(job.id)).slice(0, 6));
-        setReferralJobs(referralData.filter(job => !appliedJobIds.has(job.id)).slice(0, 6));
+  const [userApplications, setUserApplications] = useState<Application[]>([]);
 
-    } catch(error) {
-        console.error("Failed to fetch dashboard data", error);
-        setRecommendedJobs([]);
-        setReferralJobs([]);
-    } finally {
-        setLoading(false);
-    }
-  }, [user]);
-
+  const { data: jobData, isLoading, isError } = useDashboardJobs(user?.domainId ? { domain: user.domainId, dashboard: 'true' } : { dashboard: 'true' });
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-  
+    const fetchApplications = async () => {
+      if (user) {
+        try {
+          const res = await fetch(`/api/applications?userId=${user.id}`);
+          if (res.ok) {
+            const appsData = await res.json();
+            setUserApplications(Array.isArray(appsData) ? appsData : []);
+          }
+        } catch (error) {
+          console.error("Failed to fetch applications", error);
+        }
+      }
+    };
+    fetchApplications();
+  }, [user]);
+
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const searchQuery = formData.get('search') as string;
-    router.push(`/jobs?search=${searchQuery}`);
+    if (debouncedSearchQuery) {
+        router.push(`/jobs?search=${debouncedSearchQuery}`);
+    }
   };
 
   const handleQuickSearch = (term: string) => {
     router.push(`/jobs?search=${term}`);
   };
+
+  const appliedJobIds = new Set(userApplications.map(app => app.jobId));
+  const recommendedJobs = jobData?.recommended?.filter(job => !appliedJobIds.has(job.id)).slice(0, 6) || [];
+  const referralJobs = jobData?.referral?.filter(job => !appliedJobIds.has(job.id)).slice(0, 6) || [];
   
   return (
     <div className="space-y-8 py-4">
@@ -97,7 +77,8 @@ export default function JobSeekerDashboard() {
                   <Input 
                       name="search" 
                       placeholder="Job title, company, or keyword" 
-                      className="flex-grow border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none text-base bg-transparent pl-4" 
+                      className="flex-grow border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none text-base bg-transparent pl-4"
+                      onChange={(e) => setSearchQuery(e.target.value)}
                   />
                   <Button type="submit" size="icon" className="rounded-full h-10 w-10 bg-emerald-500 hover:bg-emerald-600 shrink-0">
                     <Search className="h-5 w-5" />
@@ -129,7 +110,7 @@ export default function JobSeekerDashboard() {
          </Card>
       )}
 
-      {loading && user?.domainId && (
+      {isLoading && user?.domainId && (
         <Card>
           <CardHeader>
              <Skeleton className="h-8 w-1/3" />
@@ -142,8 +123,10 @@ export default function JobSeekerDashboard() {
           </CardContent>
         </Card>
       )}
+      
+      {isError && <p>Failed to load jobs.</p>}
 
-      {!loading && recommendedJobs.length > 0 && (
+      {!isLoading && recommendedJobs.length > 0 && (
          <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -184,7 +167,7 @@ export default function JobSeekerDashboard() {
          </Card>
       )}
 
-      {!loading && referralJobs.length > 0 && (
+      {!isLoading && referralJobs.length > 0 && (
          <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -227,5 +210,3 @@ export default function JobSeekerDashboard() {
     </div>
   );
 }
-
-    
