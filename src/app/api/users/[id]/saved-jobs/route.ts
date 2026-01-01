@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/firebase/admin-config';
 import { FieldValue, FieldPath } from 'firebase-admin/firestore';
-import type { Job } from '@/lib/types';
+import type { Job, Location, JobType } from '@/lib/types';
 
 
 async function getJobDetails(jobIds: string[]): Promise<Job[]> {
@@ -19,16 +19,30 @@ async function getJobDetails(jobIds: string[]): Promise<Job[]> {
         db.collection('jobs').where(FieldPath.documentId(), 'in', chunk).get()
     );
     
-    const jobSnapshots = await Promise.all(jobPromises);
+    const [jobSnapshots, locationsSnapshot, jobTypesSnapshot] = await Promise.all([
+        Promise.all(jobPromises),
+        db.collection('locations').get(),
+        db.collection('job_types').get(),
+    ]);
+
+    const locationMap = new Map(locationsSnapshot.docs.map(doc => [String(doc.data().id), doc.data() as Location]));
+    const jobTypeMap = new Map(jobTypesSnapshot.docs.map(doc => [String(doc.data().id), doc.data() as JobType]));
+
     const jobs: Job[] = [];
     jobSnapshots.forEach(snap => {
         snap.forEach(doc => {
-            jobs.push({ id: doc.id, ...doc.data() } as Job);
+            const jobData = doc.data() as Job;
+            const location = locationMap.get(jobData.locationId);
+            const jobType = jobTypeMap.get(jobData.jobTypeId);
+            jobs.push({ 
+                id: doc.id, 
+                ...jobData,
+                location: location ? location.name : 'N/A',
+                type: jobType ? jobType.name : 'N/A',
+            });
         });
     });
-
-    // We can further enrich job data here if needed (e.g., location names)
-    // For now, we return the core job data.
+    
     return jobs;
 }
 
