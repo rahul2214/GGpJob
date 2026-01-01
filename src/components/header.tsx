@@ -29,6 +29,7 @@ import {
   Star,
   PlusCircle,
   Bell,
+  Bookmark,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -186,6 +187,12 @@ export default function Header() {
                                     <Link href="/jobs" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
                                         <Search className="h-5 w-5" />
                                         Jobs
+                                    </Link>
+                                </SheetClose>
+                                <SheetClose asChild>
+                                    <Link href="/saved-jobs" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                        <Bookmark className="h-5 w-5" />
+                                        Saved Jobs
                                     </Link>
                                 </SheetClose>
                                 <SheetClose asChild>
@@ -372,6 +379,9 @@ export default function Header() {
                     <Link href="/jobs" className={`transition-colors hover:text-foreground ${pathname === "/jobs" ? "text-foreground" : "text-foreground/60"}`}>
                         Jobs
                     </Link>
+                    <Link href="/saved-jobs" className={`transition-colors hover:text-foreground ${pathname === "/saved-jobs" ? "text-foreground" : "text-foreground/60"}`}>
+                        Saved Jobs
+                    </Link>
                     {user.domainId && (
                          <Link href={`/jobs?domain=${user.domainId}`} className={`transition-colors hover:text-foreground ${pathname.startsWith("/jobs?domain") ? "text-foreground" : "text-foreground/60"}`}>
                             Recommended Jobs
@@ -429,12 +439,20 @@ export default function Header() {
                         </Link>
                         </DropdownMenuItem>
                         {user.role === 'Job Seeker' && (
-                        <DropdownMenuItem asChild>
-                            <Link href="/applications">
-                            <LayoutGrid className="mr-2 h-4 w-4" />
-                            <span>My Applications</span>
-                            </Link>
-                        </DropdownMenuItem>
+                        <>
+                            <DropdownMenuItem asChild>
+                                <Link href="/applications">
+                                <LayoutGrid className="mr-2 h-4 w-4" />
+                                <span>My Applications</span>
+                                </Link>
+                            </DropdownMenuItem>
+                             <DropdownMenuItem asChild>
+                                <Link href="/saved-jobs">
+                                <Bookmark className="mr-2 h-4 w-4" />
+                                <span>Saved Jobs</span>
+                                </Link>
+                            </DropdownMenuItem>
+                        </>
                         )}
                         {['Job Seeker', 'Recruiter', 'Employee'].includes(user.role) && (
                             <DropdownMenuItem asChild>

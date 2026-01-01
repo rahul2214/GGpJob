@@ -2,23 +2,53 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Job } from "@/lib/types";
-import { MapPin, Briefcase, Clock, Star, CheckCircle, BadgeDollarSign } from 'lucide-react';
+import { MapPin, Briefcase, Clock, Star, CheckCircle, BadgeDollarSign, Bookmark } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Button } from './ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 interface JobCardProps {
   job: Job;
   isApplied?: boolean;
+  isSaved?: boolean;
   hideDetails?: boolean;
+  onSaveToggle?: (jobId: string, isCurrentlySaved: boolean) => void;
 }
 
-export default function JobCard({ job, isApplied = false, hideDetails = false }: JobCardProps) {
+export default function JobCard({ job, isApplied = false, isSaved = false, hideDetails = false, onSaveToggle }: JobCardProps) {
+  const { toast } = useToast();
+  const [isBookmarked, setIsBookmarked] = useState(isSaved);
+
+  const handleSaveClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSaveToggle?.(job.id, isBookmarked);
+    setIsBookmarked(!isBookmarked);
+    toast({
+      title: !isBookmarked ? "Job Saved" : "Job Unsaved",
+      description: `"${job.title}" has been ${!isBookmarked ? 'added to' : 'removed from'} your saved jobs.`,
+    })
+  }
+
   return (
     <Link href={`/jobs/${job.id}`} className="block hover:shadow-lg transition-shadow duration-300 rounded-lg h-full">
-      <Card className="h-full flex flex-col md:border">
+      <Card className="h-full flex flex-col md:border relative">
+         {onSaveToggle && (
+            <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-primary"
+                onClick={handleSaveClick}
+                aria-label={isBookmarked ? 'Unsave job' : 'Save job'}
+            >
+                <Bookmark className={cn("h-5 w-5", isBookmarked && "fill-primary text-primary")} />
+            </Button>
+         )}
         <CardHeader>
           <div className="flex justify-between items-start">
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 pr-10">
               <CardTitle className="text-lg truncate">{job.title}</CardTitle>
               <CardDescription className="truncate">{job.companyName}</CardDescription>
             </div>
