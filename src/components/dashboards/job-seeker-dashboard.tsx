@@ -32,14 +32,14 @@ export default function JobSeekerDashboard() {
                  fetch(`/api/applications?userId=${user.id}`)
             ]);
             
-            let recommended: Job[] = [];
-            let referrals: Job[] = [];
+            let recommendedData: Job[] = [];
+            let referralData: Job[] = [];
             let appsData: Application[] = [];
 
             if (jobsRes && jobsRes.ok) {
-                const { recommended: recommendedData, referral: referralData } = await jobsRes.json();
-                recommended = recommendedData || [];
-                referrals = referralData || [];
+                const { recommended, referral } = await jobsRes.json();
+                recommendedData = recommended || [];
+                referralData = referral || [];
             }
             
             if (appsRes && appsRes.ok) {
@@ -48,8 +48,8 @@ export default function JobSeekerDashboard() {
             }
             
             const appliedJobIds = new Set(appsData.map(app => app.jobId));
-            setRecommendedJobs(recommended.filter(job => !appliedJobIds.has(job.id)).slice(0, 6));
-            setReferralJobs(referrals.filter(job => !appliedJobIds.has(job.id)).slice(0, 6));
+            setRecommendedJobs(recommendedData.filter(job => !appliedJobIds.has(job.id)).slice(0, 6));
+            setReferralJobs(referralData.filter(job => !appliedJobIds.has(job.id)).slice(0, 6));
 
         } catch(error) {
             console.error("Failed to fetch dashboard data", error);
