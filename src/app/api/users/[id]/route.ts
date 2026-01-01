@@ -35,7 +35,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
                 const locationsSnap = await db.collection('locations').where('id', '==', parseInt(user.locationId)).limit(1).get();
                 if (!locationsSnap.empty) {
                     const locationDoc = locationsSnap.docs[0].data();
-                    user.location = `${locationDoc.name}, ${locationDoc.country}`;
+                    user.location = locationDoc.name;
                 }
             } catch(e) {
                 console.error("Could not fetch location for user", e);
