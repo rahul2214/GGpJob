@@ -27,36 +27,29 @@ export default function JobSeekerDashboard() {
     if (user) {
         setLoading(true);
         try {
-            const [jobsRes, referralJobsRes, appsRes] = await Promise.all([
-                 user.domainId ? fetch(`/api/jobs?domain=${user.domainId}&isReferral=false&limit=10`) : Promise.resolve(null),
-                 user.domainId ? fetch(`/api/jobs?domain=${user.domainId}&isReferral=true&limit=10`) : Promise.resolve(null),
+            const [jobsRes, appsRes] = await Promise.all([
+                 user.domainId ? fetch(`/api/jobs?domain=${user.domainId}&dashboard=true`) : Promise.resolve(null),
                  fetch(`/api/applications?userId=${user.id}`)
             ]);
             
-            let jobsData: Job[] = [];
-            let referralJobsData: Job[] = [];
+            let recommended: Job[] = [];
+            let referrals: Job[] = [];
             let appsData: Application[] = [];
 
             if (jobsRes && jobsRes.ok) {
-                jobsData = await jobsRes.json();
-            }
-             if (referralJobsRes && referralJobsRes.ok) {
-                referralJobsData = await referralJobsRes.json();
+                const { recommended: recommendedData, referral: referralData } = await jobsRes.json();
+                recommended = recommendedData || [];
+                referrals = referralData || [];
             }
             
-            if (appsRes.ok) {
+            if (appsRes && appsRes.ok) {
                  appsData = await appsRes.json();
                  setUserApplications(Array.isArray(appsData) ? appsData : []);
             }
-
-            if (Array.isArray(jobsData) && Array.isArray(appsData)) {
-                 const appliedJobIds = new Set(appsData.map(app => app.jobId));
-                 const filteredJobs = jobsData.filter(job => !appliedJobIds.has(job.id));
-                 setRecommendedJobs(filteredJobs.slice(0,6));
-
-                 const filteredReferrals = referralJobsData.filter(job => !appliedJobIds.has(job.id));
-                 setReferralJobs(filteredReferrals.slice(0, 6));
-            }
+            
+            const appliedJobIds = new Set(appsData.map(app => app.jobId));
+            setRecommendedJobs(recommended.filter(job => !appliedJobIds.has(job.id)).slice(0, 6));
+            setReferralJobs(referrals.filter(job => !appliedJobIds.has(job.id)).slice(0, 6));
 
         } catch(error) {
             console.error("Failed to fetch dashboard data", error);
@@ -73,7 +66,7 @@ export default function JobSeekerDashboard() {
     fetchData();
   }, [fetchData]);
   
-  const appliedJobIds = new Set(userApplications.map(app => app.id));
+  const appliedJobIds = new Set(userApplications.map(app => app.jobId));
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

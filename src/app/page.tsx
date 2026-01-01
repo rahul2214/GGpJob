@@ -98,16 +98,16 @@ const JobPortalHome = () => {
                         <div className="hero-image">
                             <div className="floating-card">
                                 <h3>Senior Developer</h3>
-                                <p>Tech Company • Remote • $90k-$120k</p>
+                                <p>Tech Company • Remote • ₹90k-₹120k</p>
                                 <ThumbsUp className="h-4 w-4" style={{ position: 'absolute', right: '20px', bottom: '20px', color: '#f72585' }} />
                             </div>
                             <div className="floating-card">
                                 <h3>Marketing Manager</h3>
-                                <p>Creative Agency • New York • $75k-$95k</p>
+                                <p>Creative Agency • New York • ₹75k-₹95k</p>
                             </div>
                             <div className="floating-card">
                                 <h3>UX Designer</h3>
-                                <p>Startup • Hybrid • $80k-$110k</p>
+                                <p>Startup • Hybrid • ₹80k-₹110k</p>
                             </div>
                         </div>
                     </div>
