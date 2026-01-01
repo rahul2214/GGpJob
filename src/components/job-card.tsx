@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,17 +36,6 @@ export default function JobCard({ job, isApplied = false, isSaved = false, hideD
   return (
     <Link href={`/jobs/${job.id}`} className="block hover:shadow-lg transition-shadow duration-300 rounded-lg h-full">
       <Card className="h-full flex flex-col md:border relative">
-         {onSaveToggle && (
-            <Button 
-                variant="ghost" 
-                size="icon" 
-                className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-primary"
-                onClick={handleSaveClick}
-                aria-label={isBookmarked ? 'Unsave job' : 'Save job'}
-            >
-                <Bookmark className={cn("h-5 w-5", isBookmarked && "fill-primary text-primary")} />
-            </Button>
-         )}
         <CardHeader>
           <div className="flex justify-between items-start">
             <div className="flex-1 min-w-0 pr-10">
@@ -85,12 +75,25 @@ export default function JobCard({ job, isApplied = false, isSaved = false, hideD
             <Clock className="h-3 w-3" />
             {formatDistanceToNow(new Date(job.postedAt), { addSuffix: true })}
           </div>
-          {isApplied && (
-              <Badge variant="secondary" className="flex items-center gap-1.5 border-green-300 bg-green-50 text-green-800">
-                  <CheckCircle className="h-4 w-4" />
-                  Applied
-              </Badge>
-          )}
+           <div className="flex items-center gap-2">
+            {isApplied && (
+                <Badge variant="secondary" className="flex items-center gap-1.5 border-green-300 bg-green-50 text-green-800">
+                    <CheckCircle className="h-4 w-4" />
+                    Applied
+                </Badge>
+            )}
+             {onSaveToggle && (
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    onClick={handleSaveClick}
+                    aria-label={isBookmarked ? 'Unsave job' : 'Save job'}
+                >
+                    <Bookmark className={cn("h-5 w-5", isBookmarked && "fill-primary text-primary")} />
+                </Button>
+            )}
+          </div>
         </CardFooter>
       </Card>
     </Link>
