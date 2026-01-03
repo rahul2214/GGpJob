@@ -181,7 +181,7 @@ export default function JobSeekerDashboard() {
                 </div>
                  {user?.domainId && (
                     <Button asChild variant="link" className="text-[#f72585]">
-                        <Link href={`/jobs?domain=${user.domainId}`}>
+                        <Link href={{ pathname: '/jobs', query: { domain: user.domainId } }}>
                             View All
                         </Link>
                     </Button>
