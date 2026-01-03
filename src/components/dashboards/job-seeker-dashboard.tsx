@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -70,7 +71,7 @@ export default function JobSeekerDashboard() {
     mutateSavedJobs(newSavedJobs, false);
 
     const method = isCurrentlySaved ? 'DELETE' : 'POST';
-    const url = isCurrentlySaved
+    const url = isCurrentlySaved 
         ? `/api/users/${user.id}/saved-jobs?jobId=${jobId}`
         : `/api/users/${user.id}/saved-jobs`;
 
@@ -152,15 +153,16 @@ export default function JobSeekerDashboard() {
          </Card>
       )}
 
-      {isLoading && user?.domainId && (
+      {isLoading && (
         <Card>
           <CardHeader>
              <Skeleton className="h-8 w-1/3" />
           </CardHeader>
           <CardContent>
             <div className="flex space-x-4">
-                <Skeleton className="h-48 w-3/4" />
-                <Skeleton className="h-48 w-1/4" />
+                <Skeleton className="h-48 w-1/3" />
+                <Skeleton className="h-48 w-1/3" />
+                <Skeleton className="h-48 w-1/3" />
               </div>
           </CardContent>
         </Card>

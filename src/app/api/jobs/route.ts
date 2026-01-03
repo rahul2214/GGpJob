@@ -44,7 +44,7 @@ export async function GET(request: Request) {
         const processJobs = (snap: adminFirestore.QuerySnapshot) => 
             snap.docs.map(doc => {
                 const jobData = doc.data() as Job;
-                const location = locationMap.get(parseInt(jobData.locationId));
+                const location = locationMap.get(String(jobData.locationId));
                 return {
                   id: doc.id,
                   ...jobData,
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
     }
     
     const experienceId = searchParams.get('experience');
-    if (experienceId) {
+    if (experienceId && experienceId !== 'all') {
         query = query.where('experienceLevelId', '==', experienceId);
         hasComplexFilters = true;
     }
@@ -175,11 +175,11 @@ export async function GET(request: Request) {
 
     let jobs = jobsSnapshot.docs.map(doc => {
       const jobData = doc.data() as Job;
-      const location = locationMap.get(parseInt(jobData.locationId));
+      const location = locationMap.get(String(jobData.locationId));
       const domain = domainMap.get(String(jobData.domainId));
-      const jobType = jobTypeMap.get(parseInt(jobData.jobTypeId));
-      const workplaceType = jobData.workplaceTypeId ? workplaceTypeMap.get(parseInt(jobData.workplaceTypeId)) : null;
-      const experienceLevel = jobData.experienceLevelId ? experienceLevelMap.get(parseInt(jobData.experienceLevelId)) : null;
+      const jobType = jobTypeMap.get(String(jobData.jobTypeId));
+      const workplaceType = jobData.workplaceTypeId ? workplaceTypeMap.get(String(jobData.workplaceTypeId)) : null;
+      const experienceLevel = jobData.experienceLevelId ? experienceLevelMap.get(String(jobData.experienceLevelId)) : null;
       const counts = applicationCounts[doc.id] || { total: 0, selected: 0 };
 
       return {
