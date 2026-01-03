@@ -32,23 +32,29 @@ export async function GET(request: Request) {
             referralQuery = referralQuery.where('domainId', '==', domainId);
         }
 
-        const [recommendedSnap, referralSnap, locationsSnapshot] = await Promise.all([
+        const [recommendedSnap, referralSnap, locationsSnapshot, jobTypesSnapshot] = await Promise.all([
             recommendedQuery.get(),
             referralQuery.get(),
-            db.collection('locations').get()
+            db.collection('locations').get(),
+            db.collection('job_types').get()
         ]);
         
         const locations = locationsSnapshot.docs.map(doc => doc.data() as Location);
         const locationMap = createMap(locations, 'id');
 
+        const jobTypes = jobTypesSnapshot.docs.map(doc => doc.data() as JobType);
+        const jobTypeMap = createMap(jobTypes, 'id');
+
         const processJobs = (snap: adminFirestore.QuerySnapshot) => 
             snap.docs.map(doc => {
                 const jobData = doc.data() as Job;
                 const location = locationMap.get(String(jobData.locationId));
+                const jobType = jobTypeMap.get(String(jobData.jobTypeId));
                 return {
                   id: doc.id,
                   ...jobData,
                   location: location ? location.name : 'N/A',
+                  type: jobType ? jobType.name : 'N/A',
                 }
             })
             .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
