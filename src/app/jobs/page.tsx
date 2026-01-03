@@ -23,6 +23,8 @@ function JobSearchContent() {
     const params = Object.fromEntries(searchParams.entries());
     const { jobs, isLoading, isError } = useJobs(params);
     
+    const isRecommended = searchParams.has('domain');
+    
     useEffect(() => {
         const fetchApplications = async () => {
             if (user) {
@@ -143,7 +145,7 @@ function JobSearchContent() {
                  <Card>
                     <CardHeader>
                         <div>
-                            <CardTitle>Job Openings</CardTitle>
+                            <CardTitle>{isRecommended ? 'Recommended Jobs' : 'Job Openings'}</CardTitle>
                             <CardDescription>
                                 {isLoading ? 'Searching for jobs...' : `Found ${filteredJobs?.length || 0} job openings.`}
                             </CardDescription>
