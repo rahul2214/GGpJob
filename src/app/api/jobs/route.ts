@@ -1,5 +1,4 @@
 
-
 import { NextResponse } from 'next/server';
 import { db } from '@/firebase/admin-config';
 import type { Job, Location, Application, Domain, JobType, WorkplaceType, ExperienceLevel } from '@/lib/types';
@@ -247,3 +246,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to create job', details: e.message }, { status: 500 });
   }
 }
+
+    
