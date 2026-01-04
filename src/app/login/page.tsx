@@ -324,7 +324,7 @@ export default function LoginPage() {
             <div className="space-y-4">
                  <Button variant="google" className="w-full" onClick={handleGoogleSignIn}>
                     <GoogleIcon />
-                    Sign in with Google
+                    Google
                 </Button>
             </div>
 
