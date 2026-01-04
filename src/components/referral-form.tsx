@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, ThumbsUp, Save } from "lucide-react";
+import { LoaderCircle, ThumbsUp, Save, PlusCircle, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Domain, JobType, WorkplaceType, ExperienceLevel, Job, Location } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
@@ -39,8 +39,8 @@ const formSchema = z.object({
   phoneNumber: z.string().length(10, "Please enter a valid 10-digit phone number."),
   employeeLinkedIn: z.string().url("Please enter a valid LinkedIn URL.").optional().or(z.literal('')),
   salary: z.string().optional(),
-  requirements: z.string().optional(),
-  benefits: z.string().optional(),
+  requirements: z.array(z.object({ value: z.string().min(1, "Requirement cannot be empty.") })).optional(),
+  benefits: z.array(z.object({ value: z.string().min(1, "Benefit cannot be empty.") })).optional(),
 });
 
 type ReferralFormValues = z.infer<typeof formSchema>;
@@ -108,9 +108,19 @@ export function ReferralForm({ job }: ReferralFormProps) {
       workplaceTypeId: String(job?.workplaceTypeId || ''),
       experienceLevelId: String(job?.experienceLevelId || ''),
       domainId: String(job?.domainId || ''),
-      requirements: job?.requirements?.join('\n') || '',
-      benefits: job?.benefits?.join('\n') || '',
+      requirements: job?.requirements?.map(r => ({ value: r })) || [],
+      benefits: job?.benefits?.map(b => ({ value: b })) || [],
     },
+  });
+
+   const { fields: requirementFields, append: appendRequirement, remove: removeRequirement } = useFieldArray({
+    control: form.control,
+    name: "requirements",
+  });
+
+  const { fields: benefitFields, append: appendBenefit, remove: removeBenefit } = useFieldArray({
+    control: form.control,
+    name: "benefits",
   });
 
   useEffect(() => {
@@ -130,8 +140,8 @@ export function ReferralForm({ job }: ReferralFormProps) {
         workplaceTypeId: String(job.workplaceTypeId || ''),
         experienceLevelId: String(job.experienceLevelId || ''),
         domainId: String(job.domainId || ''),
-        requirements: job.requirements?.join('\n') || '',
-        benefits: job.benefits?.join('\n') || '',
+        requirements: job.requirements?.map(r => ({ value: r })) || [],
+        benefits: job.benefits?.map(b => ({ value: b })) || [],
       });
     }
   }, [job, form]);
@@ -164,8 +174,8 @@ export function ReferralForm({ job }: ReferralFormProps) {
         isReferral: true,
         employeeId: user.id,
         postedAt: job?.postedAt || new Date().toISOString(),
-        requirements: data.requirements?.split('\n').filter(line => line.trim() !== ''),
-        benefits: data.benefits?.split('\n').filter(line => line.trim() !== ''),
+        requirements: data.requirements?.map(r => r.value),
+        benefits: data.benefits?.map(b => b.value),
       };
 
       const response = await fetch(url, {
@@ -275,32 +285,61 @@ export function ReferralForm({ job }: ReferralFormProps) {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="requirements"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Requirements</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="Enter one requirement per line..." className="min-h-[120px]" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="benefits"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Benefits</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="Enter one benefit per line..." className="min-h-[120px]" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div>
+            <FormLabel>Requirements</FormLabel>
+            <div className="space-y-2 mt-2">
+                {requirementFields.map((field, index) => (
+                <FormField
+                    key={field.id}
+                    control={form.control}
+                    name={`requirements.${index}.value`}
+                    render={({ field }) => (
+                    <FormItem className="flex items-center gap-2">
+                        <FormControl>
+                        <Input {...field} placeholder={`Requirement ${index + 1}`} />
+                        </FormControl>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeRequirement(index)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                ))}
+            </div>
+            <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => appendRequirement({ value: "" })}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Requirement
+            </Button>
+          </div>
+
+        <div>
+          <FormLabel>Benefits</FormLabel>
+          <div className="space-y-2 mt-2">
+            {benefitFields.map((field, index) => (
+              <FormField
+                key={field.id}
+                control={form.control}
+                name={`benefits.${index}.value`}
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <Input {...field} placeholder={`Benefit ${index + 1}`} />
+                    </FormControl>
+                    <Button type="button" variant="ghost" size="icon" onClick={() => removeBenefit(index)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ))}
+          </div>
+          <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => appendBenefit({ value: "" })}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Benefit
+          </Button>
+        </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <FormField
               control={form.control}
