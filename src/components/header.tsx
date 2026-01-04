@@ -279,14 +279,14 @@ export default function Header() {
                      {isClient && !loading && !user && (
                       <div className="flex flex-col gap-2">
                          <SheetClose asChild>
-                         <Button asChild>
+                         <Button asChild variant="ghost">
                             <Link href="/login">
                               Login
                             </Link>
                           </Button>
                           </SheetClose>
                            <SheetClose asChild>
-                           <Button asChild variant="outline">
+                           <Button asChild>
                             <Link href="/company/login">
                                 Post Job
                             </Link>
@@ -473,7 +473,7 @@ export default function Header() {
                     Login
                     </Link>
                 </Button>
-                <Button asChild variant="outline">
+                <Button asChild>
                     <Link href="/company/login">
                         Post Job
                     </Link>
