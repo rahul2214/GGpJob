@@ -373,7 +373,7 @@ export default function SignupPage() {
 
           <Button variant="google" className="w-full" onClick={handleGoogleSignUp}>
             <GoogleIcon />
-            Sign up with Google
+            Google
           </Button>
 
           <div className="mt-4 text-center text-sm">
