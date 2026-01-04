@@ -288,7 +288,7 @@ export default function Header() {
                            <SheetClose asChild>
                            <Button asChild>
                             <Link href="/company/login">
-                                Post Job
+                                Post a Job
                             </Link>
                           </Button>
                           </SheetClose>
@@ -470,12 +470,12 @@ export default function Header() {
                 <div className="hidden md:flex items-center gap-2">
                 <Button asChild variant="ghost">
                     <Link href="/login">
-                    Login
+                        Login
                     </Link>
                 </Button>
                 <Button asChild>
                     <Link href="/company/login">
-                        Post Job
+                        Post a Job
                     </Link>
                 </Button>
                 </div>
