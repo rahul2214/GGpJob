@@ -58,6 +58,8 @@ export interface Job {
   vacancies?: number;
   contactEmail?: string;
   contactPhone?: string;
+  requirements?: string[];
+  benefits?: string[];
   // Joined fields
   location?: string;
   type?: string;

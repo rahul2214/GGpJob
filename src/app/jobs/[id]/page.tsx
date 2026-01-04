@@ -6,7 +6,7 @@ import { notFound, useParams, useSearchParams } from 'next/navigation';
 import type { Job, Application } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Briefcase, MapPin, Building, Calendar, Users, FileText, BadgeDollarSign, Workflow, Clock, UserCheck } from 'lucide-react';
+import { Briefcase, MapPin, Building, Calendar, Users, FileText, BadgeDollarSign, Workflow, Clock, UserCheck, Star, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { ApplyButton } from './apply-button';
 import JobCard from '@/components/job-card';
@@ -152,6 +152,34 @@ function JobDetailsContent() {
                                     <p key={index}>{line}</p>
                                 ))}
                             </div>
+
+                             {job.requirements && job.requirements.length > 0 && (
+                                <>
+                                    <h3 className="text-xl font-semibold mb-2 mt-6 flex items-center gap-2">
+                                        <Star className="h-5 w-5"/>
+                                        Requirements
+                                    </h3>
+                                    <ul className="list-disc list-inside prose prose-sm max-w-none text-muted-foreground space-y-1">
+                                        {job.requirements.map((req, index) => (
+                                            <li key={index}>{req}</li>
+                                        ))}
+                                    </ul>
+                                </>
+                            )}
+                            
+                            {job.benefits && job.benefits.length > 0 && (
+                                <>
+                                    <h3 className="text-xl font-semibold mb-2 mt-6 flex items-center gap-2">
+                                        <Sparkles className="h-5 w-5"/>
+                                        Benefits
+                                    </h3>
+                                    <ul className="list-disc list-inside prose prose-sm max-w-none text-muted-foreground space-y-1">
+                                        {job.benefits.map((benefit, index) => (
+                                            <li key={index}>{benefit}</li>
+                                        ))}
+                                    </ul>
+                                </>
+                            )}
                         </CardContent>
                          {!isAdminView && (
                             <CardFooter>
