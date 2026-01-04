@@ -237,6 +237,17 @@ export default function CompanySignupPage() {
               </Button>
             </form>
           </Form>
+           <p className="mt-4 text-center text-xs text-muted-foreground">
+            By creating an account, you agree to our{' '}
+            <Link href="/terms" className="underline hover:text-primary">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" className="underline hover:text-primary">
+              Privacy Policy
+            </Link>
+            .
+          </p>
           <div className="mt-4 text-center text-sm">
             Already have an account?{" "}
             <Link href="/company/login" className="underline">
