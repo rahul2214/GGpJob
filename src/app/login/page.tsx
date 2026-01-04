@@ -200,7 +200,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <CardTitle>Job Seeker Login</CardTitle>
           <CardDescription>
-            Access your account.
+            Welcome back! Please sign in to continue
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -340,5 +340,7 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
 
     
