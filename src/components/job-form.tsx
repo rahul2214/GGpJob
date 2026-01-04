@@ -38,6 +38,8 @@ const formSchema = z.object({
   contactEmail: z.string().email("Please enter a valid email address."),
   contactPhone: z.string().length(10, "Please enter a valid 10-digit phone number."),
   salary: z.string().optional(),
+  requirements: z.string().optional(),
+  benefits: z.string().optional(),
 });
 
 type JobFormValues = z.infer<typeof formSchema>;
@@ -106,6 +108,8 @@ export function JobForm({ job }: JobFormProps) {
       workplaceTypeId: String(job?.workplaceTypeId || ''),
       experienceLevelId: String(job?.experienceLevelId || ''),
       domainId: String(job?.domainId || ''),
+      requirements: job?.requirements?.join('\n') || '',
+      benefits: job?.benefits?.join('\n') || '',
     },
   });
 
@@ -125,6 +129,8 @@ export function JobForm({ job }: JobFormProps) {
         workplaceTypeId: String(job.workplaceTypeId || ''),
         experienceLevelId: String(job.experienceLevelId || ''),
         domainId: String(job.domainId || ''),
+        requirements: job.requirements?.join('\n') || '',
+        benefits: job.benefits?.join('\n') || '',
       });
     }
   }, [job, form]);
@@ -146,6 +152,8 @@ export function JobForm({ job }: JobFormProps) {
         isReferral: false,
         recruiterId: user.id, // Ensure recruiterId is set
         postedAt: job?.postedAt || new Date().toISOString(),
+        requirements: data.requirements?.split('\n').filter(line => line.trim() !== ''),
+        benefits: data.benefits?.split('\n').filter(line => line.trim() !== ''),
       };
 
       const response = await fetch(url, {
@@ -247,6 +255,32 @@ export function JobForm({ job }: JobFormProps) {
               <FormLabel>Job Description</FormLabel>
               <FormControl>
                 <Textarea placeholder="Describe the role and responsibilities..." className="min-h-[120px]" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+         <FormField
+          control={form.control}
+          name="requirements"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Requirements</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Enter one requirement per line..." className="min-h-[120px]" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="benefits"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Benefits</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Enter one benefit per line..." className="min-h-[120px]" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
