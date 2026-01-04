@@ -286,14 +286,6 @@ export default function Header() {
                             </Link>
                           </Button>
                           </SheetClose>
-                          <SheetClose asChild>
-                          <Button asChild variant="secondary">
-                            <Link href="/signup">
-                              <UserPlus className="mr-2 h-4 w-4" />
-                              Sign Up
-                            </Link>
-                          </Button>
-                           </SheetClose>
                            <SheetClose asChild>
                            <Button asChild variant="outline">
                             <Link href="/company/login">
@@ -482,12 +474,6 @@ export default function Header() {
                     <Link href="/login">
                     <LogIn className="mr-2 h-4 w-4" />
                     Login
-                    </Link>
-                </Button>
-                <Button asChild>
-                    <Link href="/signup">
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Sign Up
                     </Link>
                 </Button>
                 <Button asChild variant="outline">
