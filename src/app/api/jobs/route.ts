@@ -89,16 +89,6 @@ export async function GET(request: Request) {
         hasComplexFilters = true;
     }
 
-    const postedDays = searchParams.get('posted');
-    if (postedDays && postedDays !== 'all') {
-        const days = parseInt(postedDays as string, 10);
-        if (!isNaN(days)) {
-            const date = new Date();
-            date.setDate(date.getDate() - days);
-            query = query.where('postedAt', '>=', date.toISOString());
-            hasComplexFilters = true;
-        }
-    }
     
     const domainId = searchParams.get('domain');
     if (domainId) {

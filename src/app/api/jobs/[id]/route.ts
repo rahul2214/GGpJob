@@ -58,7 +58,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
         domain: domainMap.get(String(jobData.domainId))?.name || '',
     };
 
-    return NextResponse.json(job);
+    const response = NextResponse.json(job);
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    return response;
+
   } catch (e: any) {
     console.error('[API_JOB_ID_GET] Error:', e);
     return NextResponse.json({ error: 'Failed to fetch job', details: e.message }, { status: 500 });
