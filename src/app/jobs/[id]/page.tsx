@@ -12,8 +12,10 @@ import { ApplyButton } from './apply-button';
 import JobCard from '@/components/job-card';
 import { ShareButton } from '@/components/share-button';
 import { useUser } from '@/contexts/user-context';
-import { useState, useEffect, Suspense, useCallback } from 'react';
+import { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
 import JobDetailsLoading from './loading';
+import { useSavedJobs } from '@/hooks/use-jobs';
+import { useToast } from '@/hooks/use-toast';
 
 async function getJobData(id: string): Promise<{ job: Job | null; relatedJobs: Job[] }> {
     const jobRes = await fetch(`/api/jobs/${id}`, { cache: 'no-store' });
@@ -37,6 +39,7 @@ async function getJobData(id: string): Promise<{ job: Job | null; relatedJobs: J
 
 function JobDetailsContent() {
     const { user } = useUser();
+    const { toast } = useToast();
     const [job, setJob] = useState<Job | null>(null);
     const [relatedJobs, setRelatedJobs] = useState<Job[]>([]);
     const [userApplications, setUserApplications] = useState<Application[]>([]);
@@ -44,6 +47,7 @@ function JobDetailsContent() {
     const params = useParams();
     const searchParams = useSearchParams();
     const id = params.id as string;
+    const { savedJobs, mutateSavedJobs } = useSavedJobs(user?.id);
 
     const isAdminView = searchParams.get('view') === 'admin';
 
@@ -86,6 +90,42 @@ function JobDetailsContent() {
         }
     }, [id, loadData]);
 
+    const handleSaveToggle = async (jobId: string, isCurrentlySaved: boolean) => {
+        if (!user) return;
+
+        const originalSavedJobs = savedJobs ? [...savedJobs] : [];
+
+        // Optimistic UI update
+        const newSavedJobs = isCurrentlySaved
+            ? originalSavedJobs.filter(id => id !== jobId)
+            : [...originalSavedJobs, jobId];
+        mutateSavedJobs(newSavedJobs, false);
+
+        const method = isCurrentlySaved ? 'DELETE' : 'POST';
+        const url = isCurrentlySaved 
+            ? `/api/users/${user.id}/saved-jobs?jobId=${jobId}`
+            : `/api/users/${user.id}/saved-jobs`;
+
+        try {
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: isCurrentlySaved ? undefined : JSON.stringify({ jobId }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update saved status');
+            }
+            // Revalidate to get the latest state from the server
+            mutateSavedJobs();
+        } catch (error) {
+            // Revert UI on error
+            mutateSavedJobs(originalSavedJobs, false);
+            console.error("Failed to toggle save status", error);
+            toast({ title: "Error", description: "Could not update saved jobs.", variant: "destructive" });
+        }
+    };
+
     if (loading) {
         return <JobDetailsLoading />;
     }
@@ -107,6 +147,8 @@ function JobDetailsContent() {
     ];
 
     const appliedJobIds = new Set(userApplications.map(app => app.jobId));
+    const savedJobIds = useMemo(() => new Set(savedJobs || []), [savedJobs]);
+
 
     const shouldShowCompanyDetails = (user && (user.role === 'Recruiter' || user.role === 'Employee')) || isAdminView;
 
@@ -211,7 +253,13 @@ function JobDetailsContent() {
                             <h3 className="text-xl font-bold mb-4">Related Jobs</h3>
                             <div className="space-y-4">
                                 {relatedJobs.map(relatedJob => (
-                                    <JobCard key={relatedJob.id} job={relatedJob} isApplied={appliedJobIds.has(relatedJob.id)} />
+                                    <JobCard 
+                                        key={relatedJob.id} 
+                                        job={relatedJob} 
+                                        isApplied={appliedJobIds.has(relatedJob.id)} 
+                                        isSaved={savedJobIds.has(relatedJob.id)}
+                                        onSaveToggle={handleSaveToggle}
+                                    />
                                 ))}
                             </div>
                         </div>
