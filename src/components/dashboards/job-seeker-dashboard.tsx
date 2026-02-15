@@ -170,7 +170,7 @@ export default function JobSeekerDashboard() {
       
       {isError && <p>Failed to load jobs.</p>}
 
-      {!isLoading && recommendedJobs.length > 0 && (
+      {!isLoading && user?.domainId && recommendedJobs.length > 0 && (
          <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
