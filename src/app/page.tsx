@@ -410,13 +410,26 @@ export default function Home() {
   if (loading) {
     return (
       <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="space-y-4">
-          <div className="h-[calc(100vh-200px)] flex flex-col items-center justify-center text-center p-4">
-            <Skeleton className="h-12 w-3/4 mb-4" />
-            <Skeleton className="h-6 w-1/2" />
-             <div className="mt-8 flex flex-wrap justify-center gap-4">
-               <Skeleton className="h-12 w-32" />
-               <Skeleton className="h-12 w-32" />
+        <div className="space-y-8">
+          {/* Hero Skeleton */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8 pt-12">
+            <div className="w-full md:w-1/2 space-y-4">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-8 w-3/4" />
+              <Skeleton className="h-12 w-full rounded-full" />
+            </div>
+            <div className="w-full md:w-1/2">
+              <Skeleton className="h-64 w-full rounded-lg" />
+            </div>
+          </div>
+          {/* Features Skeleton */}
+          <div className="space-y-4 pt-12">
+            <Skeleton className="h-10 w-1/3 mx-auto" />
+            <Skeleton className="h-6 w-1/2 mx-auto" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8">
+              <Skeleton className="h-48 w-full rounded-lg" />
+              <Skeleton className="h-48 w-full rounded-lg" />
+              <Skeleton className="h-48 w-full rounded-lg" />
             </div>
           </div>
         </div>
