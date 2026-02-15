@@ -91,7 +91,7 @@ function JobSearchContent() {
     const renderJobCards = () => {
         if (isLoading) {
             return (
-                <div className="space-y-4">
+                <div className="space-y-4" style={{ minHeight: "800px" }}>
                     {[...Array(6)].map((_, i) => (
                         <Card key={i}>
                             <CardHeader>
