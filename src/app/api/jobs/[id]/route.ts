@@ -1,5 +1,4 @@
 
-
 import { NextResponse } from 'next/server';
 import { db } from '@/firebase/admin-config';
 import type { Job } from '@/lib/types';
@@ -7,8 +6,16 @@ import type { Job } from '@/lib/types';
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    const jobDocRef = db.collection('jobs').doc(id);
-    const jobDoc = await jobDocRef.get();
+    
+    // Fetch job and all lookup tables in parallel for performance
+    const [jobDoc, locationsSnap, typesSnap, workplaceTypesSnap, experienceLevelsSnap, domainsSnap] = await Promise.all([
+        db.collection('jobs').doc(id).get(),
+        db.collection('locations').get(),
+        db.collection('job_types').get(),
+        db.collection('workplace_types').get(),
+        db.collection('experience_levels').get(),
+        db.collection('domains').get(),
+    ]);
 
     if (!jobDoc.exists) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
@@ -16,35 +23,39 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     const jobData = jobDoc.data() as Job;
 
-    const locationQuery = jobData.locationId ? db.collection('locations').where('id', '==', parseInt(jobData.locationId)).limit(1).get() : Promise.resolve(null);
-    const typeQuery = jobData.jobTypeId ? db.collection('job_types').where('id', '==', parseInt(jobData.jobTypeId)).limit(1).get() : Promise.resolve(null);
-    const workplaceTypeQuery = jobData.workplaceTypeId ? db.collection('workplace_types').where('id', '==', parseInt(jobData.workplaceTypeId)).limit(1).get() : Promise.resolve(null);
-    const experienceLevelQuery = jobData.experienceLevelId ? db.collection('experience_levels').where('id', '==', parseInt(jobData.experienceLevelId)).limit(1).get() : Promise.resolve(null);
+    // Helper to create a map from a snapshot
+    const createMapFromSnapshot = (snapshot: FirebaseFirestore.QuerySnapshot, keyField = 'id') => {
+        const map = new Map();
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            map.set(String(data[keyField]), data);
+        });
+        return map;
+    };
+    
+    const createDomainMap = (snapshot: FirebaseFirestore.QuerySnapshot) => {
+        const map = new Map();
+        snapshot.forEach(doc => {
+            map.set(doc.id, doc.data());
+        });
+        return map;
+    }
 
-    // Firestore doesn't support joins. We fetch related data manually.
-    // This is not super efficient, and in a production app, this data might be denormalized.
-    const [locationSnap, typeSnap, workplaceTypeSnap, experienceLevelSnap, domain] = await Promise.all([
-        locationQuery,
-        typeQuery,
-        workplaceTypeQuery,
-        experienceLevelQuery,
-        jobData.domainId ? db.collection('domains').doc(String(jobData.domainId)).get() : Promise.resolve(null),
-    ]);
-
-    const location = locationSnap && !locationSnap.empty ? locationSnap.docs[0].data() : null;
-    const type = typeSnap && !typeSnap.empty ? typeSnap.docs[0].data() : null;
-    const workplaceType = workplaceTypeSnap && !workplaceTypeSnap.empty ? workplaceTypeSnap.docs[0].data() : null;
-    const experienceLevel = experienceLevelSnap && !experienceLevelSnap.empty ? experienceLevelSnap.docs[0].data() : null;
-
+    // Create maps for efficient lookups in memory
+    const locationMap = createMapFromSnapshot(locationsSnap);
+    const typeMap = createMapFromSnapshot(typesSnap);
+    const workplaceTypeMap = createMapFromSnapshot(workplaceTypesSnap);
+    const experienceLevelMap = createMapFromSnapshot(experienceLevelsSnap);
+    const domainMap = createDomainMap(domainsSnap);
 
     const job: Job = {
         id: jobDoc.id,
         ...jobData,
-        type: type?.name || '',
-        workplaceType: workplaceType?.name || '',
-        experienceLevel: experienceLevel?.name || '',
-        domain: domain?.data()?.name || '',
-        location: location ? location.name : '',
+        location: locationMap.get(String(jobData.locationId))?.name || '',
+        type: typeMap.get(String(jobData.jobTypeId))?.name || '',
+        workplaceType: workplaceTypeMap.get(String(jobData.workplaceTypeId))?.name || '',
+        experienceLevel: experienceLevelMap.get(String(jobData.experienceLevelId))?.name || '',
+        domain: domainMap.get(String(jobData.domainId))?.name || '',
     };
 
     return NextResponse.json(job);
