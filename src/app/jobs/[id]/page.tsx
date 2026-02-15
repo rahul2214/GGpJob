@@ -51,6 +51,9 @@ function JobDetailsContent() {
 
     const isAdminView = searchParams.get('view') === 'admin';
 
+    const appliedJobIds = useMemo(() => new Set(userApplications.map(app => app.jobId)), [userApplications]);
+    const savedJobIds = useMemo(() => new Set(savedJobs || []), [savedJobs]);
+
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
@@ -70,8 +73,8 @@ function JobDetailsContent() {
             }
 
             if (user?.role === 'Job Seeker' && Array.isArray(relatedJobsData)) {
-                const appliedJobIds = new Set(appsData.map(app => app.jobId));
-                const filteredRelatedJobs = relatedJobsData.filter(j => !appliedJobIds.has(j.id));
+                const currentAppliedJobIds = new Set(appsData.map(app => app.jobId));
+                const filteredRelatedJobs = relatedJobsData.filter(j => !currentAppliedJobIds.has(j.id));
                 setRelatedJobs(filteredRelatedJobs);
             } else {
                 setRelatedJobs(relatedJobsData);
@@ -145,10 +148,6 @@ function JobDetailsContent() {
         { icon: Calendar, label: "Posted On", value: format(new Date(job.postedAt), "PPP"), color: "text-primary" },
         { icon: Clock, label: "Vacancies", value: job.vacancies, color: "text-primary" },
     ];
-
-    const appliedJobIds = new Set(userApplications.map(app => app.jobId));
-    const savedJobIds = useMemo(() => new Set(savedJobs || []), [savedJobs]);
-
 
     const shouldShowCompanyDetails = (user && (user.role === 'Recruiter' || user.role === 'Employee')) || isAdminView;
 
