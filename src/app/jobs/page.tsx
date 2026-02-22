@@ -23,7 +23,8 @@ function JobSearchContent() {
     const params = Object.fromEntries(searchParams.entries());
     const { jobs, isLoading, isError } = useJobs(params);
     
-    const isRecommended = searchParams.has('domain');
+    const isRecommended = searchParams.has('domain') && searchParams.get('isReferral') !== 'true';
+    const isReferral = searchParams.get('isReferral') === 'true';
     
     useEffect(() => {
         const fetchApplications = async () => {
@@ -145,7 +146,9 @@ function JobSearchContent() {
                  <Card>
                     <CardHeader>
                         <div>
-                            <CardTitle>{isRecommended ? 'Recommended Jobs' : 'Job Openings'}</CardTitle>
+                            <CardTitle>
+                                {isReferral ? 'Referral Jobs' : isRecommended ? 'Recommended Jobs' : 'Job Openings'}
+                            </CardTitle>
                             <CardDescription>
                                 {isLoading ? 'Searching for jobs...' : `Found ${filteredJobs?.length || 0} job openings.`}
                             </CardDescription>
