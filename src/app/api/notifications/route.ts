@@ -20,11 +20,10 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // Find applications where the profile has been viewed
+    // Find applications where the status has been updated (not just 'Applied')
     const applicationsRef = db.collection('applications');
-    // Removed .orderBy('viewedAt', 'desc') to prevent missing index error.
-    // Sorting will be handled in the code after fetching.
-    const q = applicationsRef.where('userId', '==', userId).where('statusId', '==', 2);
+    // We look for statuses 2 (Viewed), 3 (Not Suitable), and 4 (Selected)
+    const q = applicationsRef.where('userId', '==', userId).where('statusId', 'in', [2, 3, 4]);
 
     const querySnapshot = await q.get();
 
@@ -34,7 +33,11 @@ export async function GET(request: Request) {
 
     let notifications = await Promise.all(
         querySnapshot.docs.map(async (doc) => {
-            const appData = doc.data() as Application & { viewedAt: adminFirestore.Timestamp };
+            const appData = doc.data() as Application & { 
+                viewedAt?: adminFirestore.Timestamp; 
+                updatedAt?: adminFirestore.Timestamp;
+                appliedAt?: adminFirestore.Timestamp;
+            };
 
             let jobTitle = 'a job';
             if (appData.jobId) {
@@ -44,17 +47,30 @@ export async function GET(request: Request) {
                 }
             }
 
+            // Create a specific message based on status
+            let message = '';
+            switch (appData.statusId) {
+                case 2: message = `Your profile was viewed for the ${jobTitle} position.`; break;
+                case 3: message = `Your application for ${jobTitle} was reviewed. The company decided to move forward with other candidates at this time.`; break;
+                case 4: message = `Congratulations! You have been selected for the ${jobTitle} position.`; break;
+                default: message = `Your application status for ${jobTitle} has been updated.`;
+            }
+
+            // Fallback for timestamp
+            const ts = appData.updatedAt || appData.viewedAt || appData.appliedAt;
+
             return {
                 id: doc.id,
                 jobId: appData.jobId,
                 jobTitle: jobTitle,
+                message: message,
                 statusName: statusMap[appData.statusId],
-                timestamp: appData.viewedAt.toDate().toISOString(),
+                timestamp: ts ? ts.toDate().toISOString() : new Date().toISOString(),
             };
         })
     );
     
-    // Sort notifications by timestamp in descending order here
+    // Sort notifications by timestamp in descending order
     notifications.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     
     return NextResponse.json(notifications);
