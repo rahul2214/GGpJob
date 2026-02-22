@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -7,7 +6,7 @@ import type { Job, Application } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import JobCard from "../job-card";
 import { Button } from "../ui/button";
-import { Search } from "lucide-react";
+import { Search, ArrowRight } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Link from "next/link";
@@ -99,8 +98,8 @@ export default function JobSeekerDashboard() {
   const appliedJobIds = useMemo(() => new Set(userApplications.map(app => app.jobId)), [userApplications]);
   const savedJobIds = useMemo(() => new Set(savedJobs || []), [savedJobs]);
 
-  const recommendedJobs = useMemo(() => jobData?.recommended?.filter(job => !appliedJobIds.has(job.id)).slice(0, 6) || [], [jobData, appliedJobIds]);
-  const referralJobs = useMemo(() => jobData?.referral?.filter(job => !appliedJobIds.has(job.id)).slice(0, 6) || [], [jobData, appliedJobIds]);
+  const recommendedJobs = useMemo(() => jobData?.recommended?.filter(job => !appliedJobIds.has(job.id)).slice(0, 5) || [], [jobData, appliedJobIds]);
+  const referralJobs = useMemo(() => jobData?.referral?.filter(job => !appliedJobIds.has(job.id)).slice(0, 5) || [], [jobData, appliedJobIds]);
   
   return (
     <div className="space-y-8 py-4">
@@ -181,7 +180,7 @@ export default function JobSeekerDashboard() {
                 </div>
                  {user?.domainId && (
                     <Button asChild variant="link" className="text-[#f72585]">
-                        <Link href={{ pathname: '/jobs', query: { domain: user.domainId } }}>
+                        <Link href={`/jobs?domain=${user.domainId}`}>
                             View All
                         </Link>
                     </Button>
@@ -191,7 +190,7 @@ export default function JobSeekerDashboard() {
                 <Carousel
                     opts={{
                         align: "start",
-                        loop: true,
+                        loop: false,
                     }}
                     className="w-full"
                 >
@@ -209,6 +208,20 @@ export default function JobSeekerDashboard() {
                             </div>
                         </CarouselItem>
                         ))}
+                        {recommendedJobs.length === 5 && (
+                            <CarouselItem className="pl-1 basis-3/4 md:basis-1/2 lg:basis-1/3">
+                                <div className="p-1 h-full">
+                                    <Link href={`/jobs?domain=${user.domainId}`} className="block h-full">
+                                        <Card className="h-full flex flex-col items-center justify-center border-dashed border-2 hover:bg-muted/50 transition-colors py-12">
+                                            <div className="bg-primary/10 p-4 rounded-full mb-4">
+                                                <ArrowRight className="h-8 w-8 text-primary" />
+                                            </div>
+                                            <span className="font-bold text-lg">View All Recommended</span>
+                                        </Card>
+                                    </Link>
+                                </div>
+                            </CarouselItem>
+                        )}
                     </CarouselContent>
                     <CarouselPrevious className="hidden md:flex" />
                     <CarouselNext className="hidden md:flex" />
@@ -238,7 +251,7 @@ export default function JobSeekerDashboard() {
                 <Carousel
                     opts={{
                         align: "start",
-                        loop: true,
+                        loop: false,
                     }}
                     className="w-full"
                 >
@@ -256,6 +269,20 @@ export default function JobSeekerDashboard() {
                             </div>
                         </CarouselItem>
                         ))}
+                        {referralJobs.length === 5 && (
+                            <CarouselItem className="pl-1 basis-3/4 md:basis-1/2 lg:basis-1/3">
+                                <div className="p-1 h-full">
+                                    <Link href={user?.domainId ? `/jobs?domain=${user.domainId}&isReferral=true` : `/jobs?isReferral=true`} className="block h-full">
+                                        <Card className="h-full flex flex-col items-center justify-center border-dashed border-2 hover:bg-muted/50 transition-colors py-12">
+                                            <div className="bg-green-100 p-4 rounded-full mb-4">
+                                                <ArrowRight className="h-8 w-8 text-green-600" />
+                                            </div>
+                                            <span className="font-bold text-lg">View All Referrals</span>
+                                        </Card>
+                                    </Link>
+                                </div>
+                            </CarouselItem>
+                        )}
                     </CarouselContent>
                     <CarouselPrevious className="hidden md:flex" />
                     <CarouselNext className="hidden md:flex" />
