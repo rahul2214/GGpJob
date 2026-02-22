@@ -13,7 +13,28 @@ export async function GET(request: Request) {
         let userDoc = await db.collection('users').doc(uid).get();
 
         if (userDoc.exists) {
-            return NextResponse.json({ id: userDoc.id, ...userDoc.data() });
+            const userData = userDoc.data() as User;
+            
+            // Efficiently check for subcollections presence to calculate profile strength on server
+            const [eduSnap, empSnap, skillSnap, projSnap, langSnap] = await Promise.all([
+                db.collection('users').doc(uid).collection('education').limit(1).get(),
+                db.collection('users').doc(uid).collection('employment').limit(1).get(),
+                db.collection('users').doc(uid).collection('skills').limit(1).get(),
+                db.collection('users').doc(uid).collection('projects').limit(1).get(),
+                db.collection('users').doc(uid).collection('languages').limit(1).get(),
+            ]);
+
+            return NextResponse.json({ 
+                id: userDoc.id, 
+                ...userData,
+                profileStats: {
+                    hasEducation: !eduSnap.empty,
+                    hasEmployment: !empSnap.empty,
+                    hasSkills: !skillSnap.empty,
+                    hasProjects: !projSnap.empty,
+                    hasLanguages: !langSnap.empty
+                }
+            });
         } 
         
         userDoc = await db.collection('recruiters').doc(uid).get();
