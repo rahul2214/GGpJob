@@ -1,6 +1,10 @@
 
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
+import { 
+  initializeFirestore, 
+  persistentLocalCache, 
+  persistentMultipleTabManager 
+} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -14,23 +18,16 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const db = getFirestore(firebaseApp);
-const storage = getStorage(firebaseApp);
 
-if (typeof window !== 'undefined') {
-  enableIndexedDbPersistence(db)
-    .catch((err) => {
-      if (err.code == 'failed-precondition') {
-        // Multiple tabs open, persistence can only be enabled
-        // in one tab at a time.
-        // This is a common scenario, so we'll just log a warning.
-        console.warn('Firestore persistence failed: multiple tabs open.');
-      } else if (err.code == 'unimplemented') {
-        // The current browser does not support all of the
-        // features required to enable persistence.
-        console.warn('Firestore persistence not available in this browser.');
-      }
-    });
-}
+// Modern way to enable persistent cache in Firestore v11+
+// This resolves the deprecation warning for enableIndexedDbPersistence()
+// It also handles multi-tab synchronization automatically via the MultipleTabManager.
+const db = initializeFirestore(firebaseApp, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
+});
+
+const storage = getStorage(firebaseApp);
 
 export { firebaseApp, db, storage };
