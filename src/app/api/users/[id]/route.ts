@@ -1,5 +1,4 @@
 
-
 import { NextResponse } from 'next/server';
 import { db } from '@/firebase/admin-config';
 import { User } from '@/lib/types';
@@ -15,6 +14,24 @@ async function getUserDocRef(id: string): Promise<FirebaseFirestore.DocumentRefe
     if (recruiterDoc.exists) return recruiterDocRef;
     
     return null;
+}
+
+async function getUserStats(id: string) {
+    const [eduSnap, empSnap, skillSnap, projSnap, langSnap] = await Promise.all([
+        db.collection('users').doc(id).collection('education').limit(1).get(),
+        db.collection('users').doc(id).collection('employment').limit(1).get(),
+        db.collection('users').doc(id).collection('skills').limit(1).get(),
+        db.collection('users').doc(id).collection('projects').limit(1).get(),
+        db.collection('users').doc(id).collection('languages').limit(1).get(),
+    ]);
+    
+    return {
+        hasEducation: !eduSnap.empty,
+        hasEmployment: !empSnap.empty,
+        hasSkills: !skillSnap.empty,
+        hasProjects: !projSnap.empty,
+        hasLanguages: !langSnap.empty
+    };
 }
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
@@ -40,6 +57,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
             } catch(e) {
                 console.error("Could not fetch location for user", e);
             }
+        }
+
+        if (user.role === 'Job Seeker') {
+            user.profileStats = await getUserStats(id);
         }
         
         return NextResponse.json(user);
@@ -79,8 +100,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         await userDocRef.update(dataToUpdate);
 
         const updatedUserDoc = await userDocRef.get();
-        const updatedUser = { id: updatedUserDoc.id, ...updatedUserDoc.data() };
+        const updatedUser = { id: updatedUserDoc.id, ...updatedUserDoc.data() } as User;
 
+        if (updatedUser.role === 'Job Seeker') {
+            updatedUser.profileStats = await getUserStats(id);
+        }
 
         return NextResponse.json(updatedUser, { status: 200 });
 

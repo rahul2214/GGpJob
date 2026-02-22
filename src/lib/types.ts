@@ -1,5 +1,4 @@
 
-
 export type Role = "Job Seeker" | "Recruiter" | "Employee" | "Admin" | "Super Admin";
 
 export interface User {
@@ -15,6 +14,14 @@ export interface User {
   linkedinUrl?: string;
   // Joined fields
   location?: string;
+  // Profile completion stats
+  profileStats?: {
+    hasEducation: boolean;
+    hasEmployment: boolean;
+    hasSkills: boolean;
+    hasProjects: boolean;
+    hasLanguages: boolean;
+  };
 }
 
 export interface JobType {

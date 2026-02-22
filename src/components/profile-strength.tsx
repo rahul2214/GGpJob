@@ -1,11 +1,10 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
-import type { User, Education, Employment, Project, Language, Skill } from '@/lib/types';
+import { useMemo } from 'react';
+import type { User } from '@/lib/types';
 import { Progress } from '@/components/ui/progress';
-import { Skeleton } from './ui/skeleton';
-import { Lightbulb, TrendingUp, User as UserIcon } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from './ui/card';
@@ -15,58 +14,37 @@ interface ProfileStrengthProps {
 }
 
 export function ProfileStrength({ user }: ProfileStrengthProps) {
-    const [completion, setCompletion] = useState(0);
-    const [loading, setLoading] = useState(true);
-    const [missingSections, setMissingSections] = useState<string[]>([]);
+    const { completion, missingSections } = useMemo(() => {
+        let score = 0;
+        const totalPoints = 11;
+        const missing: string[] = [];
 
-    useEffect(() => {
-        const calculateCompletion = async () => {
-            if (!user) return;
-            setLoading(true);
+        // 1. Basic info from user object
+        if (user.name) score++;
+        if (user.email) score++;
+        if (user.phone) score++;
+        if (user.headline) score++; else missing.push('headline');
+        if (user.locationId) score++; else missing.push('location');
+        if (user.domainId) score++; else missing.push('domain');
+        
+        // 2. Resume
+        if (user.resumeUrl) score++; else missing.push('resume');
 
-            let score = 0;
-            const totalPoints = 11;
-            const missing: string[] = [];
+        // 3. Stats from profileStats (calculated on server)
+        if (user.profileStats) {
+            if (user.profileStats.hasEducation) score++; else missing.push('education');
+            if (user.profileStats.hasEmployment) score++; else missing.push('work experience');
+            if (user.profileStats.hasProjects) score++;
+            if (user.profileStats.hasSkills) score++; else missing.push('skills');
+        } else {
+            // Fallback for missing stats (shouldn't happen with updated API)
+            missing.push('profile details');
+        }
 
-            // 1. Basic info from user object
-            if (user.name) score++;
-            if (user.email) score++;
-            if (user.phone) score++;
-            if (user.headline) score++; else missing.push('headline');
-            if (user.locationId) score++; else missing.push('location');
-            if (user.domainId) score++; else missing.push('domain');
-            
-            // 2. Resume
-            if (user.resumeUrl) score++; else missing.push('resume');
-
-            // 3. Subcollections
-            try {
-                const res = await fetch(`/api/users/${user.id}/profile`);
-                if(res.ok) {
-                    const profileData: {
-                        education: Education[],
-                        employment: Employment[],
-                        projects: Project[],
-                        languages: Language[],
-                        skills: Skill[],
-                    } = await res.json();
-                    
-                    if (profileData.education?.length > 0) score++; else missing.push('education');
-                    if (profileData.employment?.length > 0) score++; else missing.push('work experience');
-                    if (profileData.projects?.length > 0) score++;
-                    if (profileData.skills?.length > 0) score++; else missing.push('skills');
-                }
-
-            } catch (error) {
-                console.error("Failed to fetch profile details for strength calculation", error);
-            }
-
-            setCompletion(Math.round((score / totalPoints) * 100));
-            setMissingSections(missing);
-            setLoading(false);
+        return {
+            completion: Math.round((score / totalPoints) * 100),
+            missingSections: missing
         };
-
-        calculateCompletion();
     }, [user]);
 
     const getStrengthInfo = (percentage: number) => {
@@ -80,7 +58,7 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
     const getTipMessage = () => {
         if (completion >= 100) return 'Your profile is complete and looking great!';
 
-        const nextLevel = completion < 80 ? 85 : 100;
+        const nextLevel = completion < 85 ? 85 : 100;
         let suggestions: string[] = [];
 
         if (missingSections.includes('skills')) suggestions.push('skills');
@@ -94,26 +72,6 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
         }
         
         return `Add more details to your profile to reach ${nextLevel}% completion.`
-    }
-
-    if (loading) {
-        return (
-             <Card>
-                <CardContent className="p-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <Skeleton className="h-6 w-32" />
-                        <Skeleton className="h-6 w-24 rounded-full" />
-                    </div>
-                    <Skeleton className="h-4 w-3/4" />
-                    <div className="flex justify-between items-end">
-                       <Skeleton className="h-8 w-16" />
-                       <Skeleton className="h-4 w-20" />
-                    </div>
-                    <Skeleton className="h-3 w-full" />
-                    <Skeleton className="h-12 w-full rounded-lg" />
-                </CardContent>
-            </Card>
-        )
     }
 
     return (
