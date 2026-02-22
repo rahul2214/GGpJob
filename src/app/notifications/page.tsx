@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bell, Briefcase, Eye } from "lucide-react";
+import { Bell, Briefcase, Eye, CheckCircle, XCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
@@ -15,6 +15,7 @@ interface Notification {
     id: string;
     jobTitle: string;
     jobId: string;
+    message: string;
     statusName: string;
     timestamp: string;
 }
@@ -47,6 +48,10 @@ export default function NotificationsPage() {
         switch (status) {
             case 'Profile Viewed':
                 return <Eye className="h-5 w-5 text-blue-500" />;
+            case 'Selected':
+                return <CheckCircle className="h-5 w-5 text-green-500" />;
+            case 'Not Suitable':
+                return <XCircle className="h-5 w-5 text-destructive" />;
             default:
                 return <Briefcase className="h-5 w-5 text-gray-500" />;
         }
@@ -97,10 +102,10 @@ export default function NotificationsPage() {
                                             {renderIcon(notif.statusName)}
                                         </div>
                                         <div className="flex-1">
-                                            <p className="font-medium">
-                                                Your profile was viewed for the <span className="text-primary">{notif.jobTitle}</span> position.
+                                            <p className="font-medium text-sm sm:text-base">
+                                                {notif.message}
                                             </p>
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-xs text-muted-foreground mt-1">
                                                 {formatDistanceToNow(new Date(notif.timestamp), { addSuffix: true })}
                                             </p>
                                         </div>
@@ -113,7 +118,7 @@ export default function NotificationsPage() {
                              <Bell className="mx-auto h-12 w-12 text-muted-foreground" />
                             <h3 className="mt-4 text-lg font-medium">No notifications yet</h3>
                             <p className="mt-1 text-sm text-muted-foreground">
-                                We'll let you know when there's something new.
+                                We'll let you know when your application status changes.
                             </p>
                             <Button asChild className="mt-6">
                                 <Link href="/jobs">

@@ -17,6 +17,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     await applicationRef.update({ 
       statusId: 2,
       viewedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     return NextResponse.json({ success: true, message: 'Application status updated to "Profile Viewed"' }, { status: 200 });

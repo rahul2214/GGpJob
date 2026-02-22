@@ -1,6 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { db } from '@/firebase/admin-config';
+import { FieldValue } from 'firebase-admin/firestore';
 
 const statusMap: { [key: number]: string } = {
     1: 'Applied',
@@ -26,7 +27,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         return NextResponse.json({ error: 'Application not found' }, { status: 404 });
     }
     
-    await applicationRef.update({ statusId });
+    await applicationRef.update({ 
+      statusId,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
 
     // Fetch the updated application along with the status name
     const updatedDoc = await applicationRef.get();
