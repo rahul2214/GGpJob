@@ -62,6 +62,7 @@ export interface Job {
   recruiterId?: string; // Changed to string for Firestore UID
   employeeId?: string; // Changed to string for Firestore UID
   employeeLinkedIn?: string;
+  jobLink?: string; // Added jobLink field
   vacancies?: number;
   contactEmail?: string;
   contactPhone?: string;

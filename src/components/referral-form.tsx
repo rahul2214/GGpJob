@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -19,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, ThumbsUp, Save, PlusCircle, Trash2 } from "lucide-react";
+import { LoaderCircle, ThumbsUp, Save, PlusCircle, Trash2, Link as LinkIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Domain, JobType, WorkplaceType, ExperienceLevel, Job, Location } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
@@ -38,6 +37,7 @@ const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
   phoneNumber: z.string().length(10, "Please enter a valid 10-digit phone number."),
   employeeLinkedIn: z.string().url("Please enter a valid LinkedIn URL.").optional().or(z.literal('')),
+  jobLink: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   salary: z.string().optional(),
   requirements: z.array(z.object({ value: z.string().min(1, "Requirement cannot be empty.") })).optional(),
   benefits: z.array(z.object({ value: z.string().min(1, "Benefit cannot be empty.") })).optional(),
@@ -103,6 +103,7 @@ export function ReferralForm({ job }: ReferralFormProps) {
       email: job?.contactEmail || "",
       phoneNumber: job?.contactPhone || "",
       employeeLinkedIn: job?.employeeLinkedIn || "",
+      jobLink: job?.jobLink || "",
       salary: job?.salary || "",
       jobTypeId: String(job?.jobTypeId || ''),
       workplaceTypeId: String(job?.workplaceTypeId || ''),
@@ -135,6 +136,7 @@ export function ReferralForm({ job }: ReferralFormProps) {
         email: job.contactEmail || "",
         phoneNumber: job.contactPhone || "",
         employeeLinkedIn: job.employeeLinkedIn || "",
+        jobLink: job.jobLink || "",
         salary: job.salary || "",
         jobTypeId: String(job.jobTypeId || ''),
         workplaceTypeId: String(job.workplaceTypeId || ''),
@@ -170,6 +172,7 @@ export function ReferralForm({ job }: ReferralFormProps) {
         contactEmail: data.email,
         contactPhone: data.phoneNumber,
         employeeLinkedIn: data.employeeLinkedIn,
+        jobLink: data.jobLink,
         salary: data.salary,
         isReferral: true,
         employeeId: user.id,
@@ -452,6 +455,22 @@ export function ReferralForm({ job }: ReferralFormProps) {
               )}
             />
           </div>
+          <FormField
+            control={form.control}
+            name="jobLink"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>External Job Link (Optional)</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <LinkIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="https://company.com/careers/job-id" className="pl-8" {...field} />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
                 control={form.control}
