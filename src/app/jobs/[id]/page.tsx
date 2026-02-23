@@ -1,4 +1,3 @@
-
 "use client";
 
 import { notFound, useParams, useSearchParams } from 'next/navigation';
@@ -19,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 async function getJobData(id: string): Promise<{ job: Job | null; relatedJobs: Job[] }> {
-    const jobRes = await fetch(`/api/jobs/${id}`, { cache: 'no-store' });
+    const jobRes = await fetch(`/api/jobs/${id}?fresh=true`, { cache: 'no-store' });
     if (!jobRes.ok) {
         if (jobRes.status === 404) return { job: null, relatedJobs: [] };
         throw new Error('Failed to fetch job data');
@@ -225,13 +224,14 @@ function JobDetailsContent() {
                         </CardContent>
                          {!isAdminView && (
                             <CardFooter className="flex flex-col gap-4">
-                                <ApplyButton job={job} />
-                                {job.jobLink && (
-                                    <Button asChild variant="outline" className="w-full">
+                                {job.jobLink ? (
+                                    <Button asChild variant="default" size="lg" className="w-full">
                                         <Link href={job.jobLink} target="_blank" rel="noopener noreferrer">
                                             Apply on Official Website <ExternalLink className="ml-2 h-4 w-4" />
                                         </Link>
                                     </Button>
+                                ) : (
+                                    <ApplyButton job={job} />
                                 )}
                             </CardFooter>
                         )}
