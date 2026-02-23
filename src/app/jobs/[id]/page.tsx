@@ -1,12 +1,11 @@
 
-
 "use client";
 
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import type { Job, Application } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Briefcase, MapPin, Building, Calendar, Users, FileText, BadgeDollarSign, Workflow, Clock, UserCheck, Star, Sparkles } from 'lucide-react';
+import { Briefcase, MapPin, Building, Calendar, Users, FileText, BadgeDollarSign, Workflow, Clock, UserCheck, Star, Sparkles, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { ApplyButton } from './apply-button';
 import JobCard from '@/components/job-card';
@@ -16,6 +15,8 @@ import { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
 import JobDetailsLoading from './loading';
 import { useSavedJobs } from '@/hooks/use-jobs';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 async function getJobData(id: string): Promise<{ job: Job | null; relatedJobs: Job[] }> {
     const jobRes = await fetch(`/api/jobs/${id}`, { cache: 'no-store' });
@@ -223,8 +224,15 @@ function JobDetailsContent() {
                             )}
                         </CardContent>
                          {!isAdminView && (
-                            <CardFooter>
+                            <CardFooter className="flex flex-col gap-4">
                                 <ApplyButton job={job} />
+                                {job.jobLink && (
+                                    <Button asChild variant="outline" className="w-full">
+                                        <Link href={job.jobLink} target="_blank" rel="noopener noreferrer">
+                                            Apply on Official Website <ExternalLink className="ml-2 h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                )}
                             </CardFooter>
                         )}
                     </Card>
@@ -235,14 +243,25 @@ function JobDetailsContent() {
                             <CardHeader>
                                 <CardTitle>About {job.companyName}</CardTitle>
                             </CardHeader>
-                            <CardContent>
-                            <p className="text-sm text-muted-foreground">
-                                Contact for more info: <span className="font-semibold text-foreground">{job.contactEmail}</span>
-                            </p>
-                                {job.contactPhone && (
+                            <CardContent className="space-y-4">
+                                <div>
                                     <p className="text-sm text-muted-foreground">
-                                        Phone: <span className="font-semibold text-foreground">{job.contactPhone}</span>
+                                        Contact for more info: <span className="font-semibold text-foreground">{job.contactEmail}</span>
                                     </p>
+                                    {job.contactPhone && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Phone: <span className="font-semibold text-foreground">{job.contactPhone}</span>
+                                        </p>
+                                    )}
+                                </div>
+                                {job.jobLink && (
+                                    <div className="pt-2">
+                                        <Button asChild variant="secondary" size="sm" className="w-full">
+                                            <Link href={job.jobLink} target="_blank" rel="noopener noreferrer">
+                                                Job Website <ExternalLink className="ml-2 h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    </div>
                                 )}
                             </CardContent>
                         </Card>

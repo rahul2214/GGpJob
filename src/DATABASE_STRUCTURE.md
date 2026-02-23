@@ -1,3 +1,4 @@
+
 # Database Structure (Firestore)
 
 This document outlines the structure of the Firestore database for the Veltria Job Portal.
@@ -60,6 +61,7 @@ Stores all job postings, both direct and referral.
     -   `contactEmail`: `string`
     -   `contactPhone`: `string`
     -   `employeeLinkedIn`: `string` (optional)
+    -   `jobLink`: `string` (optional) - Link to the official job posting.
 
 ### 4. `applications`
 
