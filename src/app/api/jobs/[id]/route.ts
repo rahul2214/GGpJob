@@ -7,6 +7,7 @@ import type { firestore as adminFirestore } from 'firebase-admin';
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
+    const { searchParams } = new URL(request.url);
     
     const jobDoc = await db.collection('jobs').doc(id).get();
 
@@ -58,7 +59,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
     };
 
     const response = NextResponse.json(job);
-    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    
+    // Don't cache if we're in admin or edit mode
+    if (searchParams.get('fresh') !== 'true') {
+        response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    }
+    
     return response;
 
   } catch (e: any) {

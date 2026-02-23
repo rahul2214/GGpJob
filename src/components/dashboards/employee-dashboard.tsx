@@ -43,7 +43,8 @@ export default function EmployeeDashboard() {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/jobs?isReferral=true&employeeId=${user.id}`);
+      // Ensure we bypass cache for the management dashboard
+      const res = await fetch(`/api/jobs?isReferral=true&employeeId=${user.id}&fresh=true`, { cache: 'no-store' });
       const data = await res.json();
       setReferralJobs(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -61,8 +62,13 @@ export default function EmployeeDashboard() {
 
   const handleDeleteJob = async () => {
     if (!jobToDelete) return;
+    
+    const idToDelete = jobToDelete.id;
+    // Optimistic UI update
+    setReferralJobs(prev => prev.filter(job => job.id !== idToDelete));
+    
     try {
-      const response = await fetch(`/api/jobs/${jobToDelete.id}`, {
+      const response = await fetch(`/api/jobs/${idToDelete}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -71,7 +77,8 @@ export default function EmployeeDashboard() {
       toast({ title: 'Success', description: 'Job deleted successfully.' });
       await fetchJobs();
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to delete job.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to delete job. Reverting list.', variant: 'destructive' });
+      await fetchJobs();
       console.error(error);
     } finally {
       setJobToDelete(null);
@@ -79,7 +86,7 @@ export default function EmployeeDashboard() {
   };
 
 
-  if (loading) {
+  if (loading && referralJobs.length === 0) {
     return (
        <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -204,6 +211,9 @@ export default function EmployeeDashboard() {
             ))}
           </TableBody>
         </Table>
+        {!loading && referralJobs.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">You haven't posted any referral jobs yet.</p>
+        )}
       </CardContent>
     </Card>
     </>

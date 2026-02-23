@@ -43,7 +43,8 @@ export default function RecruiterDashboard() {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/jobs?recruiterId=${user.id}&isReferral=false`);
+      // Use cache: 'no-store' to ensure recruiters always see their latest job list
+      const res = await fetch(`/api/jobs?recruiterId=${user.id}&isReferral=false&fresh=true`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if(Array.isArray(data)) {
@@ -73,17 +74,25 @@ export default function RecruiterDashboard() {
   
   const handleDeleteJob = async () => {
     if (!jobToDelete) return;
+    
+    const idToDelete = jobToDelete.id;
+    // Optimistic UI update: remove from local state immediately
+    setPostedJobs(prev => prev.filter(job => job.id !== idToDelete));
+    
     try {
-      const response = await fetch(`/api/jobs/${jobToDelete.id}`, {
+      const response = await fetch(`/api/jobs/${idToDelete}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
         throw new Error('Failed to delete job');
       }
       toast({ title: 'Success', description: 'Job deleted successfully.' });
+      // Re-fetch to confirm sync with server
       await fetchJobs();
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to delete job.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to delete job. Reverting list.', variant: 'destructive' });
+      // Revert UI on failure
+      await fetchJobs();
       console.error(error);
     } finally {
       setJobToDelete(null);
@@ -91,7 +100,7 @@ export default function RecruiterDashboard() {
   };
 
 
-  if (loading) {
+  if (loading && postedJobs.length === 0) {
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -220,6 +229,9 @@ export default function RecruiterDashboard() {
               ))}
             </TableBody>
           </Table>
+          {!loading && postedJobs.length === 0 && (
+            <p className="text-center text-muted-foreground py-8">You haven't posted any jobs yet.</p>
+          )}
         </CardContent>
       </Card>
     </>
