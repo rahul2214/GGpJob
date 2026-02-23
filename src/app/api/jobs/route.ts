@@ -193,7 +193,13 @@ export async function GET(request: Request) {
     }
 
     const response = NextResponse.json(jobs);
-    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    
+    // Do not cache owner-specific or admin queries to ensure recruiters/employees see accurate real-time data
+    const isManagementQuery = searchParams.get('recruiterId') || searchParams.get('employeeId') || searchParams.get('admin') === 'true';
+    if (!isManagementQuery) {
+        response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    }
+    
     return response;
 
   } catch (e: any) {
@@ -220,5 +226,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to create job', details: e.message }, { status: 500 });
   }
 }
-
-    

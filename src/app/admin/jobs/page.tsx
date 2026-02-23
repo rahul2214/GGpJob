@@ -41,7 +41,8 @@ export default function ManageJobsPage() {
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/jobs');
+      // Add admin=true to bypass caching
+      const res = await fetch('/api/jobs?admin=true&fresh=true', { cache: 'no-store' });
       const data = await res.json();
       setJobs(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -65,8 +66,13 @@ export default function ManageJobsPage() {
 
   const handleDeleteJob = async () => {
     if (!jobToDelete) return;
+    
+    const idToDelete = jobToDelete.id;
+    // Optimistic UI update
+    setJobs(prev => prev.filter(job => job.id !== idToDelete));
+    
     try {
-      const response = await fetch(`/api/jobs/${jobToDelete.id}`, {
+      const response = await fetch(`/api/jobs/${idToDelete}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -75,7 +81,8 @@ export default function ManageJobsPage() {
       toast({ title: 'Success', description: 'Job deleted successfully.' });
       await fetchJobs();
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to delete job.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to delete job. Reverting list.', variant: 'destructive' });
+      await fetchJobs();
       console.error(error);
     } finally {
       setJobToDelete(null);
@@ -83,7 +90,7 @@ export default function ManageJobsPage() {
   };
 
   const renderContent = () => {
-    if (loading) {
+    if (loading && jobs.length === 0) {
       return (
         <Table>
           <TableHeader>
@@ -210,6 +217,9 @@ export default function ManageJobsPage() {
         </CardHeader>
         <CardContent>
           {renderContent()}
+          {!loading && filteredJobs.length === 0 && (
+            <p className="text-center text-muted-foreground py-8">No jobs found matching your criteria.</p>
+          )}
         </CardContent>
       </Card>
     </>
