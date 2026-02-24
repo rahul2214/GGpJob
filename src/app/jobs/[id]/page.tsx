@@ -1,6 +1,6 @@
 "use client";
 
-import { notFound, useParams, useSearchParams } from 'next/navigation';
+import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
 import type { Job, Application } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +40,7 @@ async function getJobData(id: string): Promise<{ job: Job | null; relatedJobs: J
 function JobDetailsContent() {
     const { user } = useUser();
     const { toast } = useToast();
+    const router = useRouter();
     const [job, setJob] = useState<Job | null>(null);
     const [relatedJobs, setRelatedJobs] = useState<Job[]>([]);
     const [userApplications, setUserApplications] = useState<Application[]>([]);
@@ -126,6 +127,18 @@ function JobDetailsContent() {
             mutateSavedJobs(originalSavedJobs, false);
             console.error("Failed to toggle save status", error);
             toast({ title: "Error", description: "Could not update saved jobs.", variant: "destructive" });
+        }
+    };
+
+    const handleExternalApply = (e: React.MouseEvent) => {
+        if (!user) {
+            e.preventDefault();
+            toast({
+                title: "Authentication Required",
+                description: "Please log in to access the job application link.",
+                variant: "destructive",
+            });
+            router.push('/login');
         }
     };
 
@@ -225,10 +238,16 @@ function JobDetailsContent() {
                          {!isAdminView && (
                             <CardFooter className="flex flex-col gap-4">
                                 {job.jobLink ? (
-                                    <Button asChild variant="default" size="lg" className="w-full">
-                                        <Link href={job.jobLink} target="_blank" rel="noopener noreferrer">
-                                            Apply on Official Website <ExternalLink className="ml-2 h-4 w-4" />
-                                        </Link>
+                                    <Button asChild={!!user} variant="default" size="lg" className="w-full" onClick={handleExternalApply}>
+                                        {user ? (
+                                            <Link href={job.jobLink} target="_blank" rel="noopener noreferrer">
+                                                Apply on Official Website <ExternalLink className="ml-2 h-4 w-4" />
+                                            </Link>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                Apply on Official Website <ExternalLink className="ml-2 h-4 w-4" />
+                                            </div>
+                                        )}
                                     </Button>
                                 ) : (
                                     <ApplyButton job={job} />
@@ -256,10 +275,16 @@ function JobDetailsContent() {
                                 </div>
                                 {job.jobLink && (
                                     <div className="pt-2">
-                                        <Button asChild variant="secondary" size="sm" className="w-full">
-                                            <Link href={job.jobLink} target="_blank" rel="noopener noreferrer">
-                                                Job Website <ExternalLink className="ml-2 h-4 w-4" />
-                                            </Link>
+                                        <Button asChild={!!user} variant="secondary" size="sm" className="w-full" onClick={handleExternalApply}>
+                                            {user ? (
+                                                <Link href={job.jobLink} target="_blank" rel="noopener noreferrer">
+                                                    Job Website <ExternalLink className="ml-2 h-4 w-4" />
+                                                </Link>
+                                            ) : (
+                                                <div className="flex items-center gap-2">
+                                                    Job Website <ExternalLink className="ml-2 h-4 w-4" />
+                                                </div>
+                                            )}
                                         </Button>
                                     </div>
                                 )}
