@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
@@ -37,6 +37,7 @@ import {
 import { firebaseApp } from "@/firebase/config";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Domain } from "@/lib/types";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Google Icon Component
 const GoogleIcon = () => (
@@ -98,6 +99,7 @@ export default function SignupPage() {
   const router = useRouter();
   const { user, loading } = useUser();
   const [domains, setDomains] = useState<Domain[]>([]);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDomains = async () => {
@@ -134,6 +136,7 @@ export default function SignupPage() {
   const { isSubmitting } = form.formState;
 
   const onSubmit = async (data: SignupFormValues) => {
+    setEmailError(null);
     try {
       const auth = getAuth(firebaseApp);
       const userCredential = await createUserWithEmailAndPassword(
@@ -145,7 +148,6 @@ export default function SignupPage() {
       const firebaseUser = userCredential.user;
 
       // 1. Trigger verification email immediately after creation
-      // Adding actionCodeSettings can help with delivery and correct redirects
       const actionCodeSettings = {
         url: window.location.origin + "/login",
         handleCodeInApp: true,
@@ -154,9 +156,8 @@ export default function SignupPage() {
       try {
         await sendEmailVerification(firebaseUser, actionCodeSettings);
       } catch (emailError: any) {
-        console.error("Verification email failed to send:", emailError);
-        // We continue with profile creation even if email fails, 
-        // as the user can resend it from the login page.
+        console.error("Verification email trigger failed:", emailError);
+        setEmailError("We created your account, but failed to send the verification email. You can try resending it from the login page.");
       }
       
       // 2. Create profile in Firestore
@@ -180,7 +181,7 @@ export default function SignupPage() {
         throw new Error(errorData.error || "Failed to create user profile.");
       }
       
-      // 3. Sign out to force the user to verify their email before fully accessing the app
+      // 3. Sign out to force verification
       await auth.signOut();
 
       toast({
@@ -246,6 +247,13 @@ export default function SignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {emailError && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Email Warning</AlertTitle>
+              <AlertDescription>{emailError}</AlertDescription>
+            </Alert>
+          )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, AlertCircle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -33,9 +33,10 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { firebaseApp } from "@/firebase/config";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const formSchema = z
   .object({
@@ -56,6 +57,7 @@ export default function CompanySignupPage() {
   const { toast } = useToast();
   const router = useRouter();
   const { user, loading } = useUser();
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && user) {
@@ -76,6 +78,7 @@ export default function CompanySignupPage() {
   const { isSubmitting } = form.formState;
 
   const onSubmit = async (data: SignupFormValues) => {
+    setEmailError(null);
     try {
       const auth = getAuth(firebaseApp);
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
@@ -91,7 +94,8 @@ export default function CompanySignupPage() {
       try {
         await sendEmailVerification(firebaseUser, actionCodeSettings);
       } catch (emailError: any) {
-        console.error("Company verification email failed to send:", emailError);
+        console.error("Company verification email failed to trigger:", emailError);
+        setEmailError("Your account was created, but we couldn't send the verification email. Please try resending it from the login page.");
       }
 
       // 2. Create user profile in Firestore
@@ -160,6 +164,13 @@ export default function CompanySignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {emailError && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Email Warning</AlertTitle>
+              <AlertDescription>{emailError}</AlertDescription>
+            </Alert>
+          )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
