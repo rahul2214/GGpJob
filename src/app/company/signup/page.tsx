@@ -55,7 +55,7 @@ type SignupFormValues = z.infer<typeof formSchema>;
 export default function CompanySignupPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { user, loading, login } = useUser();
+  const { user, loading } = useUser();
 
   useEffect(() => {
     if (!loading && user) {
@@ -82,9 +82,19 @@ export default function CompanySignupPage() {
       
       const firebaseUser = userCredential.user;
 
-      // Send verification email
-      await sendEmailVerification(firebaseUser);
+      // 1. Send verification email immediately
+      const actionCodeSettings = {
+        url: window.location.origin + "/company/login",
+        handleCodeInApp: true,
+      };
 
+      try {
+        await sendEmailVerification(firebaseUser, actionCodeSettings);
+      } catch (emailError: any) {
+        console.error("Company verification email failed to send:", emailError);
+      }
+
+      // 2. Create user profile in Firestore
       const profileData = {
         id: firebaseUser.uid,
         name: data.name,
@@ -103,7 +113,7 @@ export default function CompanySignupPage() {
         throw new Error(errorData.error || "Failed to create user profile.");
       }
       
-      // Sign the user out immediately so they have to verify their email
+      // 3. Sign out immediately
       await auth.signOut();
 
       toast({

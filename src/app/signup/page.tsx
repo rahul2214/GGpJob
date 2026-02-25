@@ -69,14 +69,12 @@ const GoogleIcon = () => (
       4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12
       12-12c3.059 0 5.842 1.154 7.961
       3.039l5.657-5.657C34.046 6.053 29.268
-      4 24 4C12.955 4 4 12.955 4
-      24s8.955 20 20 20s20-8.955
+      4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955
       20-20c0-1.341-.138-2.65-.389-3.917z"
     />
   </svg>
 );
 
-// ✅ Validation Schema
 const formSchema = z
   .object({
     name: z.string().min(2, "Full name must be at least 2 characters."),
@@ -135,7 +133,6 @@ export default function SignupPage() {
 
   const { isSubmitting } = form.formState;
 
-  // ✅ Email/Password Signup
   const onSubmit = async (data: SignupFormValues) => {
     try {
       const auth = getAuth(firebaseApp);
@@ -146,8 +143,23 @@ export default function SignupPage() {
       );
 
       const firebaseUser = userCredential.user;
+
+      // 1. Trigger verification email immediately after creation
+      // Adding actionCodeSettings can help with delivery and correct redirects
+      const actionCodeSettings = {
+        url: window.location.origin + "/login",
+        handleCodeInApp: true,
+      };
       
-      // Create profile in Firestore
+      try {
+        await sendEmailVerification(firebaseUser, actionCodeSettings);
+      } catch (emailError: any) {
+        console.error("Verification email failed to send:", emailError);
+        // We continue with profile creation even if email fails, 
+        // as the user can resend it from the login page.
+      }
+      
+      // 2. Create profile in Firestore
       const profileData = {
         id: firebaseUser.uid,
         name: data.name,
@@ -167,10 +179,8 @@ export default function SignupPage() {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to create user profile.");
       }
-
-      await sendEmailVerification(firebaseUser);
       
-      // We sign out here to force the user to log in and verify their email
+      // 3. Sign out to force the user to verify their email before fully accessing the app
       await auth.signOut();
 
       toast({
@@ -204,13 +214,11 @@ export default function SignupPage() {
     }
   };
 
-  // ✅ Google Signup
   const handleGoogleSignUp = async () => {
     const auth = getAuth(firebaseApp);
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      // The onAuthStateChanged listener will handle profile creation and redirect
     } catch (error: any) {
        if (error.code === 'auth/popup-closed-by-user') {
         return;
@@ -271,7 +279,6 @@ export default function SignupPage() {
                 )}
               />
 
-              {/* ✅ Only +91 Phone Number Input */}
               <FormField
                 control={form.control}
                 name="phone"
