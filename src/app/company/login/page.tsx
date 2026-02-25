@@ -53,6 +53,7 @@ export default function CompanyLoginPage() {
   const router = useRouter();
   const { user, loading } = useUser();
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -72,23 +73,38 @@ export default function CompanyLoginPage() {
   const { isSubmitting } = form.formState;
 
   const handleResendVerification = async (email: string) => {
+    setIsResending(true);
     try {
         const auth = getAuth(firebaseApp);
-        // To resend, we need to sign the user in temporarily and then sign them out.
-        // This is a common pattern for this flow.
         const { password } = form.getValues();
+        
         if (!password) {
-            toast({ title: 'Password Required', description: 'Please enter your password to resend verification.', variant: 'destructive' });
+            toast({ title: 'Password Required', description: 'Please enter your password in the login form to resend the verification email.', variant: 'destructive' });
             return;
         }
+
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        if (userCredential.user && !userCredential.user.emailVerified) {
-            await sendEmailVerification(userCredential.user);
-            toast({ title: 'Verification Email Sent', description: 'A new verification email has been sent to your address.' });
+        const firebaseUser = userCredential.user;
+
+        if (firebaseUser && !firebaseUser.emailVerified) {
+            const actionCodeSettings = {
+                url: window.location.origin + "/company/login",
+                handleCodeInApp: true,
+            };
+            await sendEmailVerification(firebaseUser, actionCodeSettings);
+            toast({ title: 'Verification Email Sent', description: 'A new verification link has been sent. Please check your inbox and spam folder.' });
+        } else if (firebaseUser?.emailVerified) {
+            toast({ title: 'Already Verified', description: 'Your email is already verified. You can log in normally.' });
         }
-        await auth.signOut(); // Sign out immediately
+        
+        await auth.signOut();
     } catch (error: any) {
-        toast({ title: 'Error', description: 'Failed to resend verification email. Please check your credentials.', variant: 'destructive' });
+        console.error("Company resend error:", error);
+        let msg = "Failed to resend verification. Please check your credentials.";
+        if (error.code === 'auth/too-many-requests') msg = "Too many attempts. Please try again later.";
+        toast({ title: 'Error', description: msg, variant: 'destructive' });
+    } finally {
+        setIsResending(false);
     }
   };
 
@@ -102,9 +118,14 @@ export default function CompanyLoginPage() {
         await auth.signOut();
         toast({
           title: "Email Not Verified",
-          description: "Please verify your email address before logging in. Check your inbox for the verification link.",
+          description: "Please verify your email address before logging in. Check your inbox for the link.",
           variant: "destructive",
-           action: <Button variant="secondary" size="sm" onClick={() => handleResendVerification(data.email)}>Resend Email</Button>
+          duration: 10000,
+          action: (
+            <Button variant="outline" size="sm" onClick={() => handleResendVerification(data.email)} disabled={isResending}>
+                {isResending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : "Resend Email"}
+            </Button>
+          )
         });
         return;
       }
@@ -228,8 +249,6 @@ export default function CompanyLoginPage() {
                                 <AlertDialogAction onClick={async (e) => {
                                     e.preventDefault();
                                     const success = await handlePasswordReset();
-                                    // This is a bit of a hack to keep the dialog open on failure.
-                                    // A more robust solution might use a custom Dialog component.
                                     if(success) {
                                       const cancel = document.querySelector('[data-radix-collection-item][aria-label="Cancel"]');
                                       if(cancel instanceof HTMLElement) cancel.click();
