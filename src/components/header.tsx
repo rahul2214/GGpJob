@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import Link from "next/link";
@@ -50,6 +49,7 @@ import { ShareButton } from "./share-button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import HeaderSearch from "./header-search";
 import { ScrollArea } from "./ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 export default function Header() {
   const { user, logout } = useUser();
@@ -333,7 +333,7 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-2 sm:px-6">
+    <header className={cn("sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-2 sm:px-6", isJobDetailsPage && "hidden md:flex")}>
        <div className="flex items-center gap-2">
         {renderMobileLeftButton()}
         <Link href="/" className="hidden md:flex items-center gap-2 font-bold whitespace-nowrap">
