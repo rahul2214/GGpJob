@@ -162,15 +162,16 @@ function JobDetailsContent() {
         notFound();
     }
     
+    // Specifically ordered for the mobile summary grid
     const detailItems = [
         { icon: MapPin, label: "Location", value: job.location, color: "text-primary" },
         { icon: Briefcase, label: "Job Type", value: job.type, color: "text-primary" },
         { icon: BadgeDollarSign, label: "Salary", value: job.salary || 'Not Disclosed', color: "text-primary" },
+        { icon: Clock, label: "Vacancies", value: job.vacancies, color: "text-primary" },
         { icon: Workflow, label: "Domain", value: job.domain, color: "text-primary" },
         { icon: UserCheck, label: "Role", value: job.role, color: "text-primary" },
         { icon: Building, label: "Workplace", value: job.workplaceType, color: "text-primary" },
         { icon: Users, label: "Experience", value: job.experienceLevel, color: "text-primary" },
-        { icon: Clock, label: "Vacancies", value: job.vacancies, color: "text-primary" },
     ];
 
     const hasBenefits = job.benefits && job.benefits.length > 0;
@@ -230,8 +231,22 @@ function JobDetailsContent() {
                             </TabsList>
 
                             <TabsContent value="details" className="space-y-6">
-                                {/* Full Job Description */}
-                                <div className="bg-white rounded-xl border p-6 space-y-6">
+                                {/* Job Details Card */}
+                                <div className="bg-white rounded-xl border p-6 space-y-8">
+                                    {/* Summary Grid for Mobile/Desktop */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4 pb-8 border-b">
+                                        {detailItems.slice(0, 4).map(item => item.value ? (
+                                            <div key={item.label} className="flex flex-col gap-1.5">
+                                                <div className="flex items-center gap-2 text-muted-foreground">
+                                                    <item.icon className="h-4 w-4 shrink-0 text-primary" />
+                                                    <span className="text-xs font-medium uppercase tracking-wider">{item.label}</span>
+                                                </div>
+                                                <span className="text-sm font-bold truncate">{item.value}</span>
+                                            </div>
+                                        ) : null)}
+                                    </div>
+
+                                    {/* Full Job Description */}
                                     <div>
                                         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                                             <Info className="h-5 w-5 text-primary" />
@@ -244,8 +259,9 @@ function JobDetailsContent() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 pt-4 border-t">
-                                        {detailItems.map(item => item.value ? (
+                                    {/* Additional Secondary Details */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 pt-6 border-t">
+                                        {detailItems.slice(4).map(item => item.value ? (
                                             <div key={item.label} className="flex items-center gap-3">
                                                 <div className="p-2 bg-gray-50 rounded-lg">
                                                     <item.icon className="h-5 w-5 text-primary"/>
