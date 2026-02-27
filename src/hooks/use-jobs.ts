@@ -61,3 +61,21 @@ export function useSavedJobs(userId?: string) {
         mutateSavedJobs: mutate,
     };
 }
+
+export function useNotifications(userId?: string) {
+    const { data, error, isLoading, mutate } = useSWR<any[]>(
+        userId ? `/api/notifications?userId=${userId}` : null,
+        fetcher,
+        {
+            refreshInterval: 30000, // Refresh every 30 seconds
+            revalidateOnFocus: true,
+        }
+    );
+
+    return {
+        notifications: data,
+        isLoading,
+        isError: error,
+        mutateNotifications: mutate,
+    };
+}

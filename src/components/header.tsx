@@ -50,14 +50,17 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import HeaderSearch from "./header-search";
 import { ScrollArea } from "./ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useNotifications } from "@/hooks/use-jobs";
 
 export default function Header() {
-  const { user, logout } = useUser();
+  const { user, logout, loading: userLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
-  const { loading } = useUser();
   const isMobile = useIsMobile();
+
+  const { notifications } = useNotifications(user?.id);
+  const notificationCount = Array.isArray(notifications) ? notifications.length : 0;
 
   useEffect(() => {
     setIsClient(true);
@@ -160,7 +163,7 @@ export default function Header() {
                <ScrollArea className="flex-1">
                 <div className="p-6 pt-0">
                     <nav className="grid gap-3 text-lg font-medium mt-6">
-                        {isClient && !loading && user && (user.role === 'Admin' || user.role === 'Super Admin') ? (
+                        {isClient && !userLoading && user && (user.role === 'Admin' || user.role === 'Super Admin') ? (
                            <>
                             {adminNavItems.map(item => (
                                <SheetClose asChild key={item.href}>
@@ -173,7 +176,7 @@ export default function Header() {
                            </>
                         ) : (
                           <>
-                            {isClient && !loading && user && (
+                            {isClient && !userLoading && user && (
                               <SheetClose asChild>
                                   <Link href="/" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
                                       <LayoutGrid className="h-5 w-5" />
@@ -181,7 +184,7 @@ export default function Header() {
                                   </Link>
                               </SheetClose>
                             )}
-                             {isClient && !loading && user?.role === 'Job Seeker' && (
+                             {isClient && !userLoading && user?.role === 'Job Seeker' && (
                                <>
                                 <SheetClose asChild>
                                     <Link href="/jobs" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
@@ -197,7 +200,14 @@ export default function Header() {
                                 </SheetClose>
                                 <SheetClose asChild>
                                     <Link href="/notifications" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
-                                        <Bell className="h-5 w-5" />
+                                        <div className="relative">
+                                          <Bell className="h-5 w-5" />
+                                          {notificationCount > 0 && (
+                                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                                              {notificationCount > 9 ? '9+' : notificationCount}
+                                            </span>
+                                          )}
+                                        </div>
                                         Notifications
                                     </Link>
                                 </SheetClose>
@@ -217,7 +227,7 @@ export default function Header() {
                                 </SheetClose>
                                </>
                             )}
-                             {isClient && !loading && user && (user.role === 'Recruiter' || user.role === 'Employee') && (
+                             {isClient && !userLoading && user && (user.role === 'Recruiter' || user.role === 'Employee') && (
                                  <SheetClose asChild>
                                     <Link href={user.role === 'Recruiter' ? '/jobs/post' : '/referrals/post'} className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
                                         <PlusCircle className="h-5 w-5" />
@@ -228,7 +238,7 @@ export default function Header() {
                           </>
                         )}
                     </nav>
-                    {isClient && !loading && user && (
+                    {isClient && !userLoading && user && (
                         <>
                             <Separator className="my-4" />
                             <nav className="grid gap-3 text-lg font-medium">
@@ -270,13 +280,13 @@ export default function Header() {
                 </ScrollArea>
 
                 <div className="mt-auto p-6 border-t">
-                     {isClient && !loading && user && (
+                     {isClient && !userLoading && user && (
                         <Button variant="ghost" onClick={handleLogout} className="w-full justify-start text-lg text-muted-foreground">
                             <LogOut className="mr-3 h-5 w-5" />
                             Logout
                         </Button>
                      )}
-                     {isClient && !loading && !user && (
+                     {isClient && !userLoading && !user && (
                       <div className="flex flex-col gap-2">
                          <SheetClose asChild>
                          <Button asChild variant="ghost">
@@ -309,7 +319,7 @@ export default function Header() {
             </div>
         );
     }
-     if (isClient && !loading && isJobSearchPage) {
+     if (isClient && !userLoading && isJobSearchPage) {
         return (
             <div className="md:hidden">
               <Sheet>
@@ -349,7 +359,7 @@ export default function Header() {
 
 
       <nav className="ml-6 hidden md:flex items-center gap-6 text-sm font-medium">
-        {isClient && !loading && user && (user.role === 'Admin' || user.role === 'Super Admin') ? (
+        {isClient && !userLoading && user && (user.role === 'Admin' || user.role === 'Super Admin') ? (
           <>
             {adminNavItems.map(item => (
               <Link key={item.href} href={item.href} className={`transition-colors hover:text-foreground ${pathname === item.href ? "text-foreground" : "text-foreground/60"}`}>
@@ -359,12 +369,12 @@ export default function Header() {
           </>
         ) : (
           <>
-            {isClient && !loading && user && (
+            {isClient && !userLoading && user && (
               <Link href="/" className={`transition-colors hover:text-foreground ${pathname === "/" ? "text-foreground" : "text-foreground/60"}`}>
                 Dashboard
               </Link>
             )}
-            {isClient && !loading && user?.role === 'Job Seeker' && (
+            {isClient && !userLoading && user?.role === 'Job Seeker' && (
                 <Suspense>
                     <Link href="/jobs" className={`transition-colors hover:text-foreground ${pathname === "/jobs" ? "text-foreground" : "text-foreground/60"}`}>
                         Jobs
@@ -392,19 +402,33 @@ export default function Header() {
         </Suspense>
         <div className="ml-auto flex items-center gap-2">
            {renderMobileRightButton()}
-           {isClient && !loading && user ? (
+           {isClient && !userLoading && user ? (
             <div className="flex items-center gap-4">
                 {user.role === 'Job Seeker' && pathname === '/' && (
                     <>
                         <Button asChild variant="ghost" size="icon" className="md:hidden">
                             <Link href="/notifications">
-                                <Bell className="h-5 w-5" />
+                                <div className="relative">
+                                  <Bell className="h-5 w-5" />
+                                  {notificationCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                                      {notificationCount > 9 ? '9+' : notificationCount}
+                                    </span>
+                                  )}
+                                </div>
                                 <span className="sr-only">Notifications</span>
                             </Link>
                         </Button>
                         <Button asChild variant="ghost" size="icon" className="hidden md:flex">
                              <Link href="/notifications">
-                                <Bell className="h-5 w-5" />
+                                <div className="relative">
+                                  <Bell className="h-5 w-5" />
+                                  {notificationCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                                      {notificationCount > 9 ? '9+' : notificationCount}
+                                    </span>
+                                  )}
+                                </div>
                                 <span className="sr-only">Notifications</span>
                             </Link>
                         </Button>
@@ -466,7 +490,7 @@ export default function Header() {
                 </div>
             </div>
           ) : (
-             isClient && !loading && (
+             isClient && !userLoading && (
                 <div className="hidden md:flex items-center gap-2">
                 <Button asChild variant="ghost">
                     <Link href="/login">
