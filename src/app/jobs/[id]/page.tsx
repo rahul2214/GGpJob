@@ -178,15 +178,44 @@ function JobDetailsContent() {
         }
     };
 
-    const handleExternalApply = (e: React.MouseEvent) => {
+    const handleExternalApply = async (e: React.MouseEvent, url: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+
         if (!user) {
-            e.preventDefault();
             toast({
                 title: "Authentication Required",
-                description: "Please log in to access the job application link.",
+                description: "Please log in to apply for jobs.",
                 variant: "destructive",
             });
             router.push('/login');
+            return;
+        }
+
+        // If user is already an applicant, just open the link
+        if (appliedJobIds.has(id) || user.role !== 'Job Seeker') {
+            window.open(url, '_blank', 'noopener,noreferrer');
+            return;
+        }
+
+        try {
+            // Track application by creating a record in the applications collection
+            // This increments the application count calculated by the API
+            const response = await fetch('/api/applications', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jobId: id, userId: user.id }),
+            });
+
+            if (response.ok || response.status === 409) {
+                // Application recorded successfully or already exists
+                loadData(); // Refresh to update count in UI
+            }
+        } catch (error) {
+            console.error("External application tracking failed", error);
+        } finally {
+            // Always open the link for the user
+            window.open(url, '_blank', 'noopener,noreferrer');
         }
     };
 
@@ -295,12 +324,11 @@ function JobDetailsContent() {
                                     </Button>
                                     <div className="min-w-[120px]">
                                         {job.jobLink ? (
-                                            <Button asChild={!!user} className="w-full bg-[#2e5bff] hover:bg-blue-700 text-white rounded-full font-bold h-11 text-base px-10" onClick={handleExternalApply}>
-                                                {user ? (
-                                                    <Link href={job.jobLink} target="_blank">Apply</Link>
-                                                ) : (
-                                                    <span>Apply</span>
-                                                )}
+                                            <Button 
+                                                className="w-full bg-[#2e5bff] hover:bg-blue-700 text-white rounded-full font-bold h-11 text-base px-10" 
+                                                onClick={(e) => handleExternalApply(e, job.jobLink!)}
+                                            >
+                                                Apply
                                             </Button>
                                         ) : (
                                             <ApplyButton job={job} variant="desktop" />
@@ -445,12 +473,12 @@ function JobDetailsContent() {
 
                                     <div className="pt-8 md:hidden">
                                         {job.jobLink ? (
-                                            <Button asChild={!!user} size="lg" className="w-full bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full" onClick={handleExternalApply}>
-                                                {user ? (
-                                                    <Link href={job.jobLink} target="_blank">Apply on Website</Link>
-                                                ) : (
-                                                    <span>Apply on Website</span>
-                                                )}
+                                            <Button 
+                                                size="lg" 
+                                                className="w-full bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full" 
+                                                onClick={(e) => handleExternalApply(e, job.jobLink!)}
+                                            >
+                                                Apply on Website
                                             </Button>
                                         ) : (
                                             <ApplyButton job={job} />
@@ -522,12 +550,12 @@ function JobDetailsContent() {
                 )}
                 <div className={cn("w-full", showSimilarJobs ? "flex-[2.5]" : "flex-1")}>
                     {job.jobLink ? (
-                        <Button asChild={!!user} size="lg" className="w-full bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full" onClick={handleExternalApply}>
-                            {user ? (
-                                <Link href={job.jobLink} target="_blank">Apply on Website</Link>
-                            ) : (
-                                <span>Apply on Website</span>
-                            )}
+                        <Button 
+                            size="lg" 
+                            className="w-full bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full" 
+                            onClick={(e) => handleExternalApply(e, job.jobLink!)}
+                        >
+                            Apply on Website
                         </Button>
                     ) : (
                         <ApplyButton job={job} />
