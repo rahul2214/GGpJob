@@ -1,3 +1,4 @@
+
 "use client";
 
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
@@ -7,7 +8,8 @@ import {
     Briefcase, MapPin, Building, Calendar, Users, 
     BadgeDollarSign, Clock, UserCheck, 
     ChevronRight, Info, Award, LayoutList, CheckCircle2,
-    Layers, User as UserIcon, ArrowLeft, Bookmark
+    Layers, User as UserIcon, ArrowLeft, Bookmark,
+    ChevronDown
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ApplyButton } from './apply-button';
@@ -23,6 +25,7 @@ import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 
 async function getJobData(id: string): Promise<{ job: Job | null; relatedJobs: Job[] }> {
     const jobRes = await fetch(`/api/jobs/${id}?fresh=true`, { cache: 'no-store' });
@@ -208,6 +211,7 @@ function JobDetailsContent() {
 
     return (
        <div className="min-h-screen bg-[#f5f7fb] pb-24 md:pb-8">
+            {/* Mobile Header */}
             <div className="md:hidden sticky top-0 z-50 bg-white border-b px-4 py-3 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
@@ -225,7 +229,89 @@ function JobDetailsContent() {
             <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
-                        <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
+                        
+                        {/* Desktop Header */}
+                        <div className="hidden md:block bg-white rounded-2xl shadow-sm border p-8 mb-6">
+                            <div className="flex justify-between items-start mb-6">
+                                <div className="space-y-4">
+                                    <div>
+                                        <h1 className="text-2xl font-bold text-gray-900">{job.title}</h1>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-gray-600 font-medium">{job.companyName}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-4 text-gray-500">
+                                            <div className="flex items-center gap-1.5">
+                                                <Briefcase className="h-4 w-4" />
+                                                <span className="text-sm">{job.experienceLevel}</span>
+                                            </div>
+                                            <div className="w-px h-4 bg-gray-200" />
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="font-bold text-gray-800">₹ {job.salary || 'Not Disclosed'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-gray-500">
+                                            <MapPin className="h-4 w-4" />
+                                            <span className="text-sm">{job.location}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex flex-col items-end gap-4">
+                                    <div className="w-20 h-20 bg-black rounded-xl flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
+                                        {job.companyName.charAt(0).toUpperCase()}
+                                    </div>
+                                    <button className="text-blue-600 font-bold text-sm hover:underline">
+                                        Send me jobs like this
+                                    </button>
+                                </div>
+                            </div>
+
+                            <Separator className="mb-6" />
+
+                            <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-4 text-sm text-gray-500">
+                                    <div>
+                                        <span className="text-gray-400">Posted:</span> <span className="font-semibold text-gray-700">{formatDistanceToNow(new Date(job.postedAt), { addSuffix: true })}</span>
+                                    </div>
+                                    <div className="w-px h-4 bg-gray-200" />
+                                    <div>
+                                        <span className="text-gray-400">Applicants:</span> <span className="font-semibold text-gray-700">{job.applicantCount || 0}</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-3">
+                                    <Button 
+                                        variant="outline" 
+                                        className={cn(
+                                            "rounded-full px-10 h-11 border-blue-600 text-blue-600 hover:bg-blue-50 font-bold text-base transition-colors",
+                                            isCurrentlySaved && "bg-blue-50"
+                                        )}
+                                        onClick={handleSaveToggle}
+                                    >
+                                        {isCurrentlySaved ? 'Saved' : 'Save'}
+                                    </Button>
+                                    <div className="min-w-[120px]">
+                                        {job.jobLink ? (
+                                            <Button asChild={!!user} className="w-full bg-[#2e5bff] hover:bg-blue-700 text-white rounded-full font-bold h-11 text-base px-10" onClick={handleExternalApply}>
+                                                {user ? (
+                                                    <Link href={job.jobLink} target="_blank">Apply</Link>
+                                                ) : (
+                                                    <span>Apply</span>
+                                                )}
+                                            </Button>
+                                        ) : (
+                                            <ApplyButton job={job} variant="desktop" />
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Mobile Info Summary */}
+                        <div className="md:hidden bg-white rounded-xl shadow-sm border p-6 mb-6">
                             <div className="flex flex-col gap-4">
                                 <div className="bg-black text-white w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold">
                                     {job.companyName.charAt(0).toUpperCase()}
@@ -251,9 +337,9 @@ function JobDetailsContent() {
 
                         <Tabs defaultValue="details" className="w-full">
                             <TabsList className="w-full justify-start bg-transparent border-b rounded-none h-auto p-0 mb-6 gap-6 md:gap-8">
-                                <TabsTrigger value="details" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold">Job details</TabsTrigger>
+                                <TabsTrigger value="details" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold text-base">Job details</TabsTrigger>
                                 {hasBenefits && (
-                                    <TabsTrigger value="benefits" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold">Benefits</TabsTrigger>
+                                    <TabsTrigger value="benefits" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold text-base">Benefits</TabsTrigger>
                                 )}
                             </TabsList>
 
@@ -423,6 +509,7 @@ function JobDetailsContent() {
                 </div>
             </div>
 
+            {/* Sticky Mobile Footer */}
             <div className={cn(
                 "md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-4 flex items-center gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-all duration-500 ease-in-out transform",
                 isFooterHidden ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
