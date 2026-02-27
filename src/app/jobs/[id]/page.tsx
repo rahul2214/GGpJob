@@ -239,27 +239,6 @@ function JobDetailsContent() {
                             </TabsList>
 
                             <TabsContent value="details" className="space-y-6">
-                                {/* Job Highlights Card */}
-                                <Card className="border-none shadow-sm bg-[#f8f9ff]">
-                                    <CardHeader className="pb-3">
-                                        <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                            <Sparkles className="h-5 w-5 text-primary" />
-                                            Job highlights
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4 text-gray-700">
-                                        {job.requirements && job.requirements.length > 0 ? (
-                                            <ul className="list-disc list-inside space-y-2">
-                                                {job.requirements.slice(0, 3).map((req, i) => (
-                                                    <li key={i} className="text-sm leading-relaxed">{req}</li>
-                                                ))}
-                                            </ul>
-                                        ) : (
-                                            <p className="text-sm leading-relaxed">{job.description.split('\\n')[0]}</p>
-                                        )}
-                                    </CardContent>
-                                </Card>
-
                                 {/* Full Job Description */}
                                 <div className="bg-white rounded-xl border p-6 space-y-6">
                                     <div>
