@@ -2,14 +2,12 @@
 
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
 import type { Job, Application } from "@/lib/types";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
-    Briefcase, MapPin, Building, Calendar, Users, FileText, 
-    BadgeDollarSign, Workflow, Clock, UserCheck, 
-    Sparkles, ExternalLink, ArrowLeft, Bookmark, Share2, 
+    Briefcase, MapPin, Building, Calendar, Users, 
+    BadgeDollarSign, Clock, UserCheck, 
     ChevronRight, Info, Award, LayoutList, CheckCircle2,
-    Layers, User as UserIcon
+    Layers, User as UserIcon, ArrowLeft, Bookmark
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ApplyButton } from './apply-button';
@@ -24,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 
 async function getJobData(id: string): Promise<{ job: Job | null; relatedJobs: Job[] }> {
     const jobRes = await fetch(`/api/jobs/${id}?fresh=true`, { cache: 'no-store' });
@@ -58,7 +57,6 @@ function JobDetailsContent() {
     const id = params.id as string;
     const { savedJobs, mutateSavedJobs } = useSavedJobs(user?.id);
     
-    // Logic to hide footer when inline button is visible
     const [isInlineApplyVisible, setIsInlineApplyVisible] = useState(false);
     const inlineApplyRef = useRef<HTMLDivElement>(null);
 
@@ -107,7 +105,6 @@ function JobDetailsContent() {
         }
     }, [id, loadData]);
 
-    // Intersection Observer to detect inline button visibility
     useEffect(() => {
         if (!inlineApplyRef.current) return;
 
@@ -186,7 +183,6 @@ function JobDetailsContent() {
 
     return (
        <div className="min-h-screen bg-[#f5f7fb] pb-24 md:pb-8">
-            {/* Mobile-Only Header */}
             <div className="md:hidden sticky top-0 z-50 bg-white border-b px-4 py-3 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
@@ -204,7 +200,6 @@ function JobDetailsContent() {
             <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
-                        {/* Job Branding Header */}
                         <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
                             <div className="flex flex-col gap-4">
                                 <div className="bg-black text-white w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold">
@@ -229,7 +224,6 @@ function JobDetailsContent() {
                             </div>
                         </div>
 
-                        {/* Tabs Navigation */}
                         <Tabs defaultValue="details" className="w-full">
                             <TabsList className="w-full justify-start bg-transparent border-b rounded-none h-auto p-0 mb-6 gap-6 md:gap-8">
                                 <TabsTrigger value="details" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold">Job details</TabsTrigger>
@@ -239,10 +233,7 @@ function JobDetailsContent() {
                             </TabsList>
 
                             <TabsContent value="details" className="space-y-6">
-                                {/* Job Details Card */}
                                 <div className="bg-white rounded-xl border p-6 space-y-8">
-                                    
-                                    {/* Detailed Info List */}
                                     <div className="space-y-4 mb-8">
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
                                             <MapPin className="h-5 w-5 text-blue-500 shrink-0" />
@@ -282,20 +273,18 @@ function JobDetailsContent() {
                                         </div>
                                     </div>
 
-                                    {/* Full Job Description */}
                                     <div>
                                         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                                             <Info className="h-5 w-5 text-primary" />
                                             Full Job Description
                                         </h3>
                                         <div className="prose prose-sm max-w-none text-gray-600 space-y-4">
-                                            {job.description.split('\\n').map((line, index) => (
+                                            {job.description.split('\n').map((line, index) => (
                                                 <p key={index}>{line}</p>
                                             ))}
                                         </div>
                                     </div>
 
-                                    {/* Inline Apply Button (Mobile View - After Description) */}
                                     <div ref={inlineApplyRef} className="pt-8 md:hidden">
                                         {job.jobLink ? (
                                             <Button asChild={!!user} size="lg" className="w-full bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full" onClick={handleExternalApply}>
@@ -362,7 +351,6 @@ function JobDetailsContent() {
                 </div>
             </div>
 
-            {/* Mobile-Only Sticky Footer - Hidden when inline apply is visible */}
             <div className={cn(
                 "md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-4 flex items-center gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-all duration-300",
                 isInlineApplyVisible && "translate-y-full opacity-0 pointer-events-none"
