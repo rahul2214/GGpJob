@@ -74,6 +74,7 @@ export default function Header() {
   }, []);
 
   const isJobSearchPage = pathname === '/jobs';
+  const isNotificationsPage = pathname === '/notifications';
   const isJobDetailsPage = /^\/jobs\/[^/]+$/.test(pathname) && !pathname.includes('/applications');
   const isProfileSectionEditPage = /^\/profile\/(education|employment|projects|languages|skills)\/(add|edit\/[^/]+)$/.test(pathname);
   const isJobApplicationsPage = /^\/jobs\/[^/]+\/applications$/.test(pathname);
@@ -121,6 +122,7 @@ export default function Header() {
   }
   
   const getMobileHeaderTitle = () => {
+    if (isNotificationsPage) return 'Notifications';
     if (isProfileSectionEditPage) return getProfileSectionTitle();
     if (isAdminAddPage) {
       if (pathname.includes('/users')) return 'Create New Admin';
@@ -138,7 +140,11 @@ export default function Header() {
     const isRecruiterOrEmployee = user?.role === 'Recruiter' || user?.role === 'Employee';
     const showRecruiterBack = isRecruiterOrEmployee && (isJobApplicationsPage || isPublicProfilePage);
 
-    const showBackButton = (isJobDetailsPage && user?.role === 'Job Seeker') || isProfileSectionEditPage || showRecruiterBack || (isMobile && (isAdminAddPage || isAdminEditPage));
+    const showBackButton = (isJobDetailsPage && user?.role === 'Job Seeker') || 
+                          isProfileSectionEditPage || 
+                          showRecruiterBack || 
+                          (isMobile && (isAdminAddPage || isAdminEditPage)) ||
+                          isNotificationsPage;
 
     if (isClient && showBackButton) {
       return (
@@ -357,7 +363,7 @@ export default function Header() {
             <BriefcaseBusiness className="h-6 w-6 text-primary" />
             <span className="text-xl">Job Portal</span>
         </Link>
-        {isClient && (isProfileSectionEditPage || (isMobile && (isAdminAddPage || isAdminEditPage))) && (
+        {isClient && (isNotificationsPage || isProfileSectionEditPage || (isMobile && (isAdminAddPage || isAdminEditPage))) && (
           <div className="md:hidden text-lg font-semibold whitespace-nowrap">
             {getMobileHeaderTitle()}
           </div>

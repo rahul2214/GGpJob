@@ -81,7 +81,7 @@ export default function NotificationsPage() {
         return (
             <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
                 <Card>
-                    <CardHeader>
+                    <CardHeader className="hidden md:block">
                         <CardTitle className="flex items-center gap-2">
                            <Skeleton className="h-8 w-8 rounded-full" />
                            <Skeleton className="h-7 w-48" />
@@ -106,13 +106,13 @@ export default function NotificationsPage() {
     return (
          <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
             <Card>
-                <CardHeader>
+                <CardHeader className="hidden md:block">
                     <CardTitle className="flex items-center gap-2">
                         <Bell className="h-6 w-6"/>
                         Notifications
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6 md:pt-0">
                     {notifications && notifications.length > 0 ? (
                         <div className="space-y-2">
                             {notifications.map((notif: Notification) => (
