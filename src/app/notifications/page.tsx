@@ -10,6 +10,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useNotifications } from "@/hooks/use-jobs";
 
 interface Notification {
     id: string;
@@ -21,28 +22,47 @@ interface Notification {
 }
 
 export default function NotificationsPage() {
-    const { user, loading: userLoading } = useUser();
+    const { user, setUser, loading: userLoading } = useUser();
     const router = useRouter();
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { notifications, isLoading: notificationsLoading } = useNotifications(user?.id);
 
     useEffect(() => {
         if (!userLoading && !user) {
             router.push('/login');
-        } else if (user) {
-            setLoading(true);
-            fetch(`/api/notifications?userId=${user.id}`)
-                .then(res => res.json())
-                .then(data => {
-                    setNotifications(Array.isArray(data) ? data : []);
-                    setLoading(false);
-                })
-                .catch(err => {
-                    console.error("Failed to fetch notifications", err);
-                    setLoading(false);
-                });
         }
     }, [user, userLoading, router]);
+
+    // Mark notifications as read when the component mounts and notifications are loaded
+    useEffect(() => {
+        if (user && notifications && notifications.length > 0) {
+            const latestTimestamp = notifications[0].timestamp; // Notifications are sorted desc
+            
+            // Only update if the latest notification is newer than what we last recorded
+            if (!user.notificationLastViewedAt || new Date(latestTimestamp).getTime() > new Date(user.notificationLastViewedAt).getTime()) {
+                const updateNotificationViewed = async () => {
+                    try {
+                        const response = await fetch(`/api/users/${user.id}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                ...user,
+                                notificationLastViewedAt: latestTimestamp,
+                            }),
+                        });
+                        
+                        if (response.ok) {
+                            const updatedUser = await response.json();
+                            setUser(updatedUser);
+                        }
+                    } catch (error) {
+                        console.error("Failed to update notification view status", error);
+                    }
+                };
+                
+                updateNotificationViewed();
+            }
+        }
+    }, [user, notifications, setUser]);
 
     const renderIcon = (status: string) => {
         switch (status) {
@@ -57,7 +77,7 @@ export default function NotificationsPage() {
         }
     };
     
-    if (loading || userLoading) {
+    if (notificationsLoading || userLoading) {
         return (
             <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
                 <Card>
@@ -93,9 +113,9 @@ export default function NotificationsPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {notifications.length > 0 ? (
+                    {notifications && notifications.length > 0 ? (
                         <div className="space-y-2">
-                            {notifications.map(notif => (
+                            {notifications.map((notif: Notification) => (
                                 <Link key={notif.id} href={`/jobs/${notif.jobId}`} className="block">
                                     <div className="flex items-start space-x-4 p-4 rounded-lg hover:bg-muted/50 border-b">
                                         <div className="bg-muted p-2 rounded-full mt-1">
