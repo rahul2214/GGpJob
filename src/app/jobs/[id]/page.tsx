@@ -111,12 +111,11 @@ function JobDetailsContent() {
 
         const observer = new IntersectionObserver(
             ([entry]) => {
-                // When sentinel is in view, hide the fixed footer
                 setIsInlineApplyVisible(entry.isIntersecting);
             },
             { 
                 threshold: 0,
-                rootMargin: '0px 0px -10% 0px' // Trigger slightly before it hits the very bottom
+                rootMargin: '0px 0px -10% 0px'
             }
         );
 
@@ -176,6 +175,13 @@ function JobDetailsContent() {
         }
     };
 
+    const scrollToSimilarJobs = () => {
+        const element = document.getElementById('similar-jobs-section');
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
     if (loading) {
         return <JobDetailsLoading />;
     }
@@ -185,6 +191,7 @@ function JobDetailsContent() {
     }
     
     const hasBenefits = job.benefits && job.benefits.length > 0;
+    const showSimilarJobs = relatedJobs.length > 0 && !isAdminView;
 
     return (
        <div className="min-h-screen bg-[#f5f7fb] pb-24 md:pb-8">
@@ -290,7 +297,6 @@ function JobDetailsContent() {
                                         </div>
                                     </div>
 
-                                    {/* Sentinel div to track scroll position for the fixed footer visibility */}
                                     <div ref={footerSentinelRef} className="h-1 w-full" />
 
                                     <div className="pt-8 md:hidden">
@@ -336,8 +342,8 @@ function JobDetailsContent() {
                     </div>
 
                     <div className="lg:col-span-1 space-y-6">
-                        {relatedJobs.length > 0 && !isAdminView && (
-                            <div>
+                        {showSimilarJobs && (
+                            <div id="similar-jobs-section">
                                 <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                                     <LayoutList className="h-5 w-5" />
                                     Similar Jobs
@@ -359,28 +365,29 @@ function JobDetailsContent() {
                 </div>
             </div>
 
-            {/* Mobile sticky footer - slides away when inline apply button is visible */}
             <div className={cn(
                 "md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-4 flex items-center gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-all duration-500 ease-in-out transform",
                 isInlineApplyVisible ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
             )}>
-                <Button variant="ghost" size="lg" className="flex-1 flex flex-col items-center gap-1 h-auto py-2 text-primary font-bold" onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}>
-                    <Briefcase className="h-5 w-5" />
-                    <span className="text-[10px] uppercase tracking-wider">Similar jobs</span>
-                </Button>
-                {job.jobLink ? (
-                    <Button asChild={!!user} size="lg" className="flex-[2.5] bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full" onClick={handleExternalApply}>
-                        {user ? (
-                            <Link href={job.jobLink} target="_blank">Apply on Website</Link>
-                        ) : (
-                            <span>Apply on Website</span>
-                        )}
+                {showSimilarJobs && (
+                    <Button variant="ghost" size="lg" className="flex-1 flex flex-col items-center gap-1 h-auto py-2 text-primary font-bold" onClick={scrollToSimilarJobs}>
+                        <Briefcase className="h-5 w-5" />
+                        <span className="text-[10px] uppercase tracking-wider">Similar jobs</span>
                     </Button>
-                ) : (
-                    <div className="flex-[2.5]">
-                        <ApplyButton job={job} />
-                    </div>
                 )}
+                <div className={cn("w-full", showSimilarJobs ? "flex-[2.5]" : "flex-1")}>
+                    {job.jobLink ? (
+                        <Button asChild={!!user} size="lg" className="w-full bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full" onClick={handleExternalApply}>
+                            {user ? (
+                                <Link href={job.jobLink} target="_blank">Apply on Website</Link>
+                            ) : (
+                                <span>Apply on Website</span>
+                            )}
+                        </Button>
+                    ) : (
+                        <ApplyButton job={job} />
+                    )}
+                </div>
             </div>
        </div>
     );
