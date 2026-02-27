@@ -8,7 +8,7 @@ import {
     Briefcase, MapPin, Building, Calendar, Users, FileText, 
     BadgeDollarSign, Workflow, Clock, UserCheck, 
     Sparkles, ExternalLink, ArrowLeft, Bookmark, Share2, 
-    ChevronRight, Info, Award, LayoutList
+    ChevronRight, Info, Award, LayoutList, CheckCircle2
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ApplyButton } from './apply-button';
@@ -59,7 +59,6 @@ function JobDetailsContent() {
 
     const isAdminView = searchParams.get('view') === 'admin';
 
-    // Move hooks to top to avoid violation of rules of hooks
     const appliedJobIds = useMemo(() => new Set(userApplications.map(app => app.jobId)), [userApplications]);
     const savedJobIds = useMemo(() => new Set(savedJobs || []), [savedJobs]);
     const isCurrentlySaved = savedJobIds.has(id);
@@ -113,7 +112,6 @@ function JobDetailsContent() {
         const wasSaved = isCurrentlySaved;
         const originalSavedJobs = savedJobs ? [...savedJobs] : [];
 
-        // Optimistic UI update
         const newSavedJobs = wasSaved
             ? originalSavedJobs.filter(id => id !== jobId)
             : [...originalSavedJobs, jobId];
@@ -175,7 +173,7 @@ function JobDetailsContent() {
         { icon: Clock, label: "Vacancies", value: job.vacancies, color: "text-primary" },
     ];
 
-    const shouldShowCompanyDetails = (user && (user.role === 'Recruiter' || user.role === 'Employee')) || isAdminView;
+    const hasBenefits = job.benefits && job.benefits.length > 0;
 
     return (
        <div className="min-h-screen bg-[#f5f7fb] pb-24 md:pb-8">
@@ -226,8 +224,9 @@ function JobDetailsContent() {
                         <Tabs defaultValue="details" className="w-full">
                             <TabsList className="w-full justify-start bg-transparent border-b rounded-none h-auto p-0 mb-6 gap-6 md:gap-8">
                                 <TabsTrigger value="details" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold">Job details</TabsTrigger>
-                                <TabsTrigger value="company" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold">About company</TabsTrigger>
-                                <TabsTrigger value="benefits" className="hidden sm:inline-flex rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold">Benefits</TabsTrigger>
+                                {hasBenefits && (
+                                    <TabsTrigger value="benefits" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold">Benefits</TabsTrigger>
+                                )}
                             </TabsList>
 
                             <TabsContent value="details" className="space-y-6">
@@ -261,21 +260,29 @@ function JobDetailsContent() {
                                 </div>
                             </TabsContent>
 
-                            <TabsContent value="company">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>About {job.companyName}</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4 text-gray-600">
-                                        <p>Learn more about working at {job.companyName}. We are looking for talented individuals to join our team in {job.location}.</p>
-                                        <div className="pt-4 border-t space-y-2">
-                                            <p className="text-sm font-medium">Contact Information:</p>
-                                            <p className="text-sm">Email: {job.contactEmail}</p>
-                                            {job.contactPhone && <p className="text-sm">Phone: {job.contactPhone}</p>}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </TabsContent>
+                            {hasBenefits && (
+                                <TabsContent value="benefits">
+                                    <Card className="rounded-xl border shadow-sm">
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <Award className="h-5 w-5 text-primary" />
+                                                Perks & Benefits
+                                            </CardTitle>
+                                            <CardDescription>What you can expect when joining our team.</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {job.benefits?.map((benefit, index) => (
+                                                    <div key={index} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                                                        <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                                                        <span className="text-sm font-medium">{benefit}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </TabsContent>
+                            )}
                         </Tabs>
                     </div>
 
