@@ -58,7 +58,7 @@ function JobDetailsContent() {
     const { savedJobs, mutateSavedJobs } = useSavedJobs(user?.id);
     
     const [isInlineApplyVisible, setIsInlineApplyVisible] = useState(false);
-    const inlineApplyRef = useRef<HTMLDivElement>(null);
+    const footerSentinelRef = useRef<HTMLDivElement>(null);
 
     const isAdminView = searchParams.get('view') === 'admin';
 
@@ -106,16 +106,21 @@ function JobDetailsContent() {
     }, [id, loadData]);
 
     useEffect(() => {
-        if (!inlineApplyRef.current) return;
+        const sentinel = footerSentinelRef.current;
+        if (!sentinel) return;
 
         const observer = new IntersectionObserver(
             ([entry]) => {
+                // When sentinel is in view, hide the fixed footer
                 setIsInlineApplyVisible(entry.isIntersecting);
             },
-            { threshold: 0.1 }
+            { 
+                threshold: 0,
+                rootMargin: '0px 0px -10% 0px' // Trigger slightly before it hits the very bottom
+            }
         );
 
-        observer.observe(inlineApplyRef.current);
+        observer.observe(sentinel);
         return () => observer.disconnect();
     }, [loading, job]);
 
@@ -285,7 +290,10 @@ function JobDetailsContent() {
                                         </div>
                                     </div>
 
-                                    <div ref={inlineApplyRef} className="pt-8 md:hidden">
+                                    {/* Sentinel div to track scroll position for the fixed footer visibility */}
+                                    <div ref={footerSentinelRef} className="h-1 w-full" />
+
+                                    <div className="pt-8 md:hidden">
                                         {job.jobLink ? (
                                             <Button asChild={!!user} size="lg" className="w-full bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full" onClick={handleExternalApply}>
                                                 {user ? (
@@ -351,11 +359,12 @@ function JobDetailsContent() {
                 </div>
             </div>
 
+            {/* Mobile sticky footer - slides away when inline apply button is visible */}
             <div className={cn(
-                "md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-4 flex items-center gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-all duration-300",
-                isInlineApplyVisible && "translate-y-full opacity-0 pointer-events-none"
+                "md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-4 flex items-center gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-all duration-500 ease-in-out transform",
+                isInlineApplyVisible ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
             )}>
-                <Button variant="ghost" size="lg" className="flex-1 flex flex-col items-center gap-1 h-auto py-2 text-primary font-bold">
+                <Button variant="ghost" size="lg" className="flex-1 flex flex-col items-center gap-1 h-auto py-2 text-primary font-bold" onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}>
                     <Briefcase className="h-5 w-5" />
                     <span className="text-[10px] uppercase tracking-wider">Similar jobs</span>
                 </Button>
