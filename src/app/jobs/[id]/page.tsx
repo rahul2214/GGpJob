@@ -1,4 +1,3 @@
-
 "use client";
 
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { 
     Briefcase, MapPin, Building, Calendar, Users, FileText, 
-    BadgeDollarSign, Workflow, Clock, UserCheck, Star, 
+    BadgeDollarSign, Workflow, Clock, UserCheck, 
     Sparkles, ExternalLink, ArrowLeft, Bookmark, Share2, 
     ChevronRight, Info, Award, LayoutList
 } from 'lucide-react';
@@ -209,13 +208,6 @@ function JobDetailsContent() {
                                     <div className="flex items-center gap-1 text-primary font-medium">
                                         {job.companyName}
                                         <ChevronRight className="h-4 w-4" />
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <div className="flex items-center text-yellow-500">
-                                            <Star className="h-4 w-4 fill-current" />
-                                            <span className="ml-1 font-bold text-gray-700">3.8</span>
-                                        </div>
-                                        <span className="text-primary hover:underline cursor-pointer">(523 Reviews)</span>
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-500 pt-2">
