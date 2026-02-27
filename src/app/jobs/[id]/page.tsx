@@ -162,16 +162,16 @@ function JobDetailsContent() {
         notFound();
     }
     
-    // Specifically ordered for the mobile summary grid
+    // Ordered for the vertical info list
     const detailItems = [
-        { icon: MapPin, label: "Location", value: job.location, color: "text-primary" },
-        { icon: Briefcase, label: "Job Type", value: job.type, color: "text-primary" },
-        { icon: BadgeDollarSign, label: "Salary", value: job.salary || 'Not Disclosed', color: "text-primary" },
-        { icon: Clock, label: "Vacancies", value: job.vacancies, color: "text-primary" },
-        { icon: Workflow, label: "Domain", value: job.domain, color: "text-primary" },
-        { icon: UserCheck, label: "Role", value: job.role, color: "text-primary" },
-        { icon: Building, label: "Workplace", value: job.workplaceType, color: "text-primary" },
-        { icon: Users, label: "Experience", value: job.experienceLevel, color: "text-primary" },
+        { icon: MapPin, label: "Location", value: job.location },
+        { icon: Briefcase, label: "Job Type", value: job.type },
+        { icon: BadgeDollarSign, label: "Salary", value: job.salary || 'Not Disclosed' },
+        { icon: Clock, label: "Vacancies", value: job.vacancies },
+        { icon: Workflow, label: "Domain", value: job.domain },
+        { icon: UserCheck, label: "Role", value: job.role },
+        { icon: Building, label: "Workplace", value: job.workplaceType },
+        { icon: Users, label: "Experience", value: job.experienceLevel },
     ];
 
     const hasBenefits = job.benefits && job.benefits.length > 0;
@@ -233,15 +233,18 @@ function JobDetailsContent() {
                             <TabsContent value="details" className="space-y-6">
                                 {/* Job Details Card */}
                                 <div className="bg-white rounded-xl border p-6 space-y-8">
-                                    {/* Summary Grid for Mobile/Desktop */}
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4 pb-8 border-b">
-                                        {detailItems.slice(0, 4).map(item => item.value ? (
-                                            <div key={item.label} className="flex flex-col gap-1.5">
-                                                <div className="flex items-center gap-2 text-muted-foreground">
-                                                    <item.icon className="h-4 w-4 shrink-0 text-primary" />
-                                                    <span className="text-xs font-medium uppercase tracking-wider">{item.label}</span>
+                                    
+                                    {/* Key Details Vertical List (as per user image request) */}
+                                    <div className="space-y-6 pb-8 border-b">
+                                        {detailItems.map((item) => item.value ? (
+                                            <div key={item.label} className="flex items-center gap-4">
+                                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-primary shrink-0">
+                                                    <item.icon className="h-6 w-6" />
                                                 </div>
-                                                <span className="text-sm font-bold truncate">{item.value}</span>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-sm text-gray-400 font-medium">{item.label}</span>
+                                                    <span className="text-base font-bold text-gray-900 truncate">{item.value}</span>
+                                                </div>
                                             </div>
                                         ) : null)}
                                     </div>
@@ -257,21 +260,6 @@ function JobDetailsContent() {
                                                 <p key={index}>{line}</p>
                                             ))}
                                         </div>
-                                    </div>
-
-                                    {/* Additional Secondary Details */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 pt-6 border-t">
-                                        {detailItems.slice(4).map(item => item.value ? (
-                                            <div key={item.label} className="flex items-center gap-3">
-                                                <div className="p-2 bg-gray-50 rounded-lg">
-                                                    <item.icon className="h-5 w-5 text-primary"/>
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-400 font-medium">{item.label}</p>
-                                                    <p className="text-sm font-semibold">{item.value}</p>
-                                                </div>
-                                            </div>
-                                        ) : null)}
                                     </div>
                                 </div>
                             </TabsContent>
