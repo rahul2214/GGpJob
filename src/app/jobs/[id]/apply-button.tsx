@@ -8,12 +8,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { CheckCircle, LoaderCircle, Ban } from 'lucide-react';
 import { Application, Job } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 interface ApplyButtonProps {
     job: Job;
+    variant?: 'default' | 'desktop';
 }
 
-export function ApplyButton({ job }: ApplyButtonProps) {
+export function ApplyButton({ job, variant = 'default' }: ApplyButtonProps) {
     const { user } = useUser();
     const { toast } = useToast();
     const router = useRouter();
@@ -100,7 +102,7 @@ export function ApplyButton({ job }: ApplyButtonProps) {
     
     if (loadingState) {
         return (
-             <Button disabled className="w-full" size="lg">
+             <Button disabled className={cn("w-full rounded-full", variant === 'desktop' && "h-11 font-bold text-base px-10")} size={variant === 'desktop' ? 'default' : 'lg'}>
                 <LoaderCircle className="animate-spin mr-2" />
                 Loading...
             </Button>
@@ -109,9 +111,9 @@ export function ApplyButton({ job }: ApplyButtonProps) {
 
     if (isJobOwner) {
         return (
-            <Button disabled className="w-full" size="lg">
-                <Ban className="mr-2" />
-                You cannot apply to your own job post
+            <Button disabled className={cn("w-full rounded-full", variant === 'desktop' && "h-11 font-bold text-base px-10")} size={variant === 'desktop' ? 'default' : 'lg'}>
+                <Ban className="mr-2 h-4 w-4" />
+                {variant === 'desktop' ? 'Owner' : 'Cannot apply to own post'}
             </Button>
         );
     }
@@ -120,12 +122,15 @@ export function ApplyButton({ job }: ApplyButtonProps) {
         <Button 
             onClick={handleApply} 
             disabled={isLoading || isApplied} 
-            className="w-full"
-            size="lg"
+            className={cn(
+                "w-full rounded-full bg-[#2e5bff] hover:bg-blue-700 text-white font-bold",
+                variant === 'desktop' && "h-11 text-base px-10"
+            )}
+            size={variant === 'desktop' ? 'default' : 'lg'}
         >
-            {isLoading && <LoaderCircle className="animate-spin mr-2" />}
-            {isApplied && <CheckCircle className="mr-2" />}
-            {isApplied ? 'Applied' : 'Apply Now'}
+            {isLoading && <LoaderCircle className="animate-spin mr-2 h-4 w-4" />}
+            {isApplied && <CheckCircle className="mr-2 h-4 w-4" />}
+            {isApplied ? 'Applied' : 'Apply'}
         </Button>
     );
 }
