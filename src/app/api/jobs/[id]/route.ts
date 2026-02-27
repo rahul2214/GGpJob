@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     const jobData = jobDoc.data() as Job;
 
-    // Efficiently fetch only the specific lookup documents needed.
+    // Efficiently fetch only the specific lookup documents needed and the applicant count
     const lookupPromises = [];
 
     if (jobData.locationId) {
@@ -46,7 +46,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
         lookupPromises.push(Promise.resolve(null));
     }
     
-    const [locationSnap, typeSnap, workplaceTypeSnap, experienceLevelSnap, domainDoc] = await Promise.all(lookupPromises);
+    // Add applicant count promise
+    const applicantsPromise = db.collection('applications').where('jobId', '==', id).count().get();
+
+    const [locationSnap, typeSnap, workplaceTypeSnap, experienceLevelSnap, domainDoc, applicantsSnap] = await Promise.all([...lookupPromises, applicantsPromise]);
 
     const job: Job = {
         id: jobDoc.id,
@@ -56,6 +59,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         workplaceType: (workplaceTypeSnap && !workplaceTypeSnap.empty) ? workplaceTypeSnap.docs[0].data().name : '',
         experienceLevel: (experienceLevelSnap && !experienceLevelSnap.empty) ? experienceLevelSnap.docs[0].data().name : '',
         domain: (domainDoc && domainDoc.exists) ? (domainDoc as adminFirestore.DocumentSnapshot).data()?.name : '',
+        applicantCount: applicantsSnap.data().count,
     };
 
     const response = NextResponse.json(job);
@@ -101,7 +105,6 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         const { id } = params;
         
         // Before deleting the job, we might need to delete related applications.
-        // For simplicity now, we just delete the job. A production app would handle this more robustly.
         const applicationsSnapshot = await db.collection('applications').where('jobId', '==', id).get();
         const batch = db.batch();
         applicationsSnapshot.docs.forEach(doc => {
