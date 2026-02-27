@@ -192,13 +192,6 @@ function JobDetailsContent() {
                         <Bookmark className={cn("h-6 w-6", isCurrentlySaved && "fill-primary text-primary")} />
                     </Button>
                     <ShareButton jobId={job.id} jobTitle={job.title} />
-                    <Button asChild={!!user} size="sm" className="bg-[#ff5a5f] hover:bg-[#e04a4e] text-white font-bold ml-2 rounded-full px-4" onClick={handleExternalApply}>
-                        {job.jobLink ? (
-                            <Link href={job.jobLink} target="_blank">Apply</Link>
-                        ) : (
-                            <span>Apply</span>
-                        )}
-                    </Button>
                 </div>
             </div>
 
