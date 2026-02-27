@@ -9,14 +9,14 @@ import {
     BadgeDollarSign, Workflow, Clock, UserCheck, 
     Sparkles, ExternalLink, ArrowLeft, Bookmark, Share2, 
     ChevronRight, Info, Award, LayoutList, CheckCircle2,
-    Layers, User
+    Layers, User as UserIcon
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ApplyButton } from './apply-button';
 import JobCard from '@/components/job-card';
 import { ShareButton } from '@/components/share-button';
 import { useUser } from '@/contexts/user-context';
-import { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
+import { useState, useEffect, Suspense, useCallback, useMemo, useRef } from 'react';
 import JobDetailsLoading from './loading';
 import { useSavedJobs } from '@/hooks/use-jobs';
 import { useToast } from '@/hooks/use-toast';
@@ -57,6 +57,10 @@ function JobDetailsContent() {
     const searchParams = useSearchParams();
     const id = params.id as string;
     const { savedJobs, mutateSavedJobs } = useSavedJobs(user?.id);
+    
+    // Logic to hide footer when inline button is visible
+    const [isInlineApplyVisible, setIsInlineApplyVisible] = useState(false);
+    const inlineApplyRef = useRef<HTMLDivElement>(null);
 
     const isAdminView = searchParams.get('view') === 'admin';
 
@@ -102,6 +106,21 @@ function JobDetailsContent() {
             loadData();
         }
     }, [id, loadData]);
+
+    // Intersection Observer to detect inline button visibility
+    useEffect(() => {
+        if (!inlineApplyRef.current) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setIsInlineApplyVisible(entry.isIntersecting);
+            },
+            { threshold: 0.1 }
+        );
+
+        observer.observe(inlineApplyRef.current);
+        return () => observer.disconnect();
+    }, [loading, job]);
 
     const handleSaveToggle = async () => {
         if (!user) {
@@ -223,7 +242,7 @@ function JobDetailsContent() {
                                 {/* Job Details Card */}
                                 <div className="bg-white rounded-xl border p-6 space-y-8">
                                     
-                                    {/* Detailed Info List (Matches User Image Request) */}
+                                    {/* Detailed Info List */}
                                     <div className="space-y-4 mb-8">
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
                                             <MapPin className="h-5 w-5 text-blue-500 shrink-0" />
@@ -242,7 +261,7 @@ function JobDetailsContent() {
                                             <span className="text-muted-foreground">Domain: <span className="text-foreground font-bold ml-1">{job.domain}</span></span>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <User className="h-5 w-5 text-blue-500 shrink-0" />
+                                            <UserIcon className="h-5 w-5 text-blue-500 shrink-0" />
                                             <span className="text-muted-foreground">Role: <span className="text-foreground font-bold ml-1">{job.role}</span></span>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
@@ -274,6 +293,21 @@ function JobDetailsContent() {
                                                 <p key={index}>{line}</p>
                                             ))}
                                         </div>
+                                    </div>
+
+                                    {/* Inline Apply Button (Mobile View - After Description) */}
+                                    <div ref={inlineApplyRef} className="pt-8 md:hidden">
+                                        {job.jobLink ? (
+                                            <Button asChild={!!user} size="lg" className="w-full bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full" onClick={handleExternalApply}>
+                                                {user ? (
+                                                    <Link href={job.jobLink} target="_blank">Apply on Website</Link>
+                                                ) : (
+                                                    <span>Apply on Website</span>
+                                                )}
+                                            </Button>
+                                        ) : (
+                                            <ApplyButton job={job} />
+                                        )}
                                     </div>
                                 </div>
                             </TabsContent>
@@ -328,8 +362,11 @@ function JobDetailsContent() {
                 </div>
             </div>
 
-            {/* Mobile-Only Sticky Footer */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-4 flex items-center gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            {/* Mobile-Only Sticky Footer - Hidden when inline apply is visible */}
+            <div className={cn(
+                "md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-4 flex items-center gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-all duration-300",
+                isInlineApplyVisible && "translate-y-full opacity-0 pointer-events-none"
+            )}>
                 <Button variant="ghost" size="lg" className="flex-1 flex flex-col items-center gap-1 h-auto py-2 text-primary font-bold">
                     <Briefcase className="h-5 w-5" />
                     <span className="text-[10px] uppercase tracking-wider">Similar jobs</span>
