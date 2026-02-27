@@ -57,8 +57,11 @@ function JobDetailsContent() {
     const id = params.id as string;
     const { savedJobs, mutateSavedJobs } = useSavedJobs(user?.id);
     
-    const [isInlineApplyVisible, setIsInlineApplyVisible] = useState(false);
+    // Visibility tracking for footer
+    const [isApplyAreaVisible, setIsApplyAreaVisible] = useState(false);
+    const [isSimilarJobsVisible, setIsSimilarJobsVisible] = useState(false);
     const footerSentinelRef = useRef<HTMLDivElement>(null);
+    const similarJobsSectionRef = useRef<HTMLDivElement>(null);
 
     const isAdminView = searchParams.get('view') === 'admin';
 
@@ -107,11 +110,18 @@ function JobDetailsContent() {
 
     useEffect(() => {
         const sentinel = footerSentinelRef.current;
-        if (!sentinel) return;
+        const similarSection = similarJobsSectionRef.current;
+        if (!sentinel && !similarSection) return;
 
         const observer = new IntersectionObserver(
-            ([entry]) => {
-                setIsInlineApplyVisible(entry.isIntersecting);
+            (entries) => {
+                entries.forEach(entry => {
+                    if (entry.target === sentinel) {
+                        setIsApplyAreaVisible(entry.isIntersecting);
+                    } else if (entry.target === similarSection) {
+                        setIsSimilarJobsVisible(entry.isIntersecting);
+                    }
+                });
             },
             { 
                 threshold: 0,
@@ -119,7 +129,9 @@ function JobDetailsContent() {
             }
         );
 
-        observer.observe(sentinel);
+        if (sentinel) observer.observe(sentinel);
+        if (similarSection) observer.observe(similarSection);
+        
         return () => observer.disconnect();
     }, [loading, job]);
 
@@ -192,6 +204,7 @@ function JobDetailsContent() {
     
     const hasBenefits = job.benefits && job.benefits.length > 0;
     const showSimilarJobs = relatedJobs.length > 0 && !isAdminView;
+    const isFooterHidden = isApplyAreaVisible || isSimilarJobsVisible;
 
     return (
        <div className="min-h-screen bg-[#f5f7fb] pb-24 md:pb-8">
@@ -343,7 +356,7 @@ function JobDetailsContent() {
 
                     <div className="lg:col-span-1 space-y-6">
                         {showSimilarJobs && (
-                            <div id="similar-jobs-section">
+                            <div id="similar-jobs-section" ref={similarJobsSectionRef}>
                                 <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                                     <LayoutList className="h-5 w-5" />
                                     Similar Jobs
@@ -367,7 +380,7 @@ function JobDetailsContent() {
 
             <div className={cn(
                 "md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-4 flex items-center gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-all duration-500 ease-in-out transform",
-                isInlineApplyVisible ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
+                isFooterHidden ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
             )}>
                 {showSimilarJobs && (
                     <Button variant="ghost" size="lg" className="flex-1 flex flex-col items-center gap-1 h-auto py-2 text-primary font-bold" onClick={scrollToSimilarJobs}>
