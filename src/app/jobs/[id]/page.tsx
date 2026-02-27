@@ -8,7 +8,8 @@ import {
     Briefcase, MapPin, Building, Calendar, Users, FileText, 
     BadgeDollarSign, Workflow, Clock, UserCheck, 
     Sparkles, ExternalLink, ArrowLeft, Bookmark, Share2, 
-    ChevronRight, Info, Award, LayoutList, CheckCircle2
+    ChevronRight, Info, Award, LayoutList, CheckCircle2,
+    Layers, User
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ApplyButton } from './apply-button';
@@ -222,35 +223,43 @@ function JobDetailsContent() {
                                 {/* Job Details Card */}
                                 <div className="bg-white rounded-xl border p-6 space-y-8">
                                     
-                                    {/* Quick Info Grid */}
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                                        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                                            <MapPin className="h-5 w-5 text-primary mt-1 shrink-0" />
-                                            <div>
-                                                <p className="text-[10px] uppercase text-muted-foreground font-bold">Location</p>
-                                                <p className="text-sm font-bold">{job.location}</p>
-                                            </div>
+                                    {/* Detailed Info List (Matches User Image Request) */}
+                                    <div className="space-y-4 mb-8">
+                                        <div className="flex items-center gap-3 text-sm sm:text-base">
+                                            <MapPin className="h-5 w-5 text-blue-500 shrink-0" />
+                                            <span className="text-muted-foreground">Location: <span className="text-foreground font-bold ml-1">{job.location}</span></span>
                                         </div>
-                                        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                                            <Briefcase className="h-5 w-5 text-primary mt-1 shrink-0" />
-                                            <div>
-                                                <p className="text-[10px] uppercase text-muted-foreground font-bold">Type</p>
-                                                <p className="text-sm font-bold">{job.type}</p>
-                                            </div>
+                                        <div className="flex items-center gap-3 text-sm sm:text-base">
+                                            <Briefcase className="h-5 w-5 text-blue-500 shrink-0" />
+                                            <span className="text-muted-foreground">Job Type: <span className="text-foreground font-bold ml-1">{job.type}</span></span>
                                         </div>
-                                        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                                            <BadgeDollarSign className="h-5 w-5 text-primary mt-1 shrink-0" />
-                                            <div>
-                                                <p className="text-[10px] uppercase text-muted-foreground font-bold">Salary</p>
-                                                <p className="text-sm font-bold">{job.salary || 'Not Disclosed'}</p>
-                                            </div>
+                                        <div className="flex items-center gap-3 text-sm sm:text-base">
+                                            <BadgeDollarSign className="h-5 w-5 text-blue-500 shrink-0" />
+                                            <span className="text-muted-foreground">Salary: <span className="text-foreground font-bold ml-1">{job.salary || 'Not Disclosed'}</span></span>
                                         </div>
-                                        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                                            <Clock className="h-5 w-5 text-primary mt-1 shrink-0" />
-                                            <div>
-                                                <p className="text-[10px] uppercase text-muted-foreground font-bold">Vacancies</p>
-                                                <p className="text-sm font-bold">{job.vacancies || 1}</p>
-                                            </div>
+                                        <div className="flex items-center gap-3 text-sm sm:text-base">
+                                            <Layers className="h-5 w-5 text-blue-500 shrink-0" />
+                                            <span className="text-muted-foreground">Domain: <span className="text-foreground font-bold ml-1">{job.domain}</span></span>
+                                        </div>
+                                        <div className="flex items-center gap-3 text-sm sm:text-base">
+                                            <User className="h-5 w-5 text-blue-500 shrink-0" />
+                                            <span className="text-muted-foreground">Role: <span className="text-foreground font-bold ml-1">{job.role}</span></span>
+                                        </div>
+                                        <div className="flex items-center gap-3 text-sm sm:text-base">
+                                            <Building className="h-5 w-5 text-blue-500 shrink-0" />
+                                            <span className="text-muted-foreground">Workplace: <span className="text-foreground font-bold ml-1">{job.workplaceType}</span></span>
+                                        </div>
+                                        <div className="flex items-center gap-3 text-sm sm:text-base">
+                                            <UserCheck className="h-5 w-5 text-blue-500 shrink-0" />
+                                            <span className="text-muted-foreground">Experience: <span className="text-foreground font-bold ml-1">{job.experienceLevel}</span></span>
+                                        </div>
+                                        <div className="flex items-center gap-3 text-sm sm:text-base">
+                                            <Calendar className="h-5 w-5 text-blue-500 shrink-0" />
+                                            <span className="text-muted-foreground">Posted On: <span className="text-foreground font-bold ml-1">{format(new Date(job.postedAt), "MMMM do, yyyy")}</span></span>
+                                        </div>
+                                        <div className="flex items-center gap-3 text-sm sm:text-base">
+                                            <Clock className="h-5 w-5 text-blue-500 shrink-0" />
+                                            <span className="text-muted-foreground">Vacancies: <span className="text-foreground font-bold ml-1">{job.vacancies || 1}</span></span>
                                         </div>
                                     </div>
 
