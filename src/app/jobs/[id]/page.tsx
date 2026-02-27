@@ -1,11 +1,17 @@
+
 "use client";
 
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
 import type { Job, Application } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Briefcase, MapPin, Building, Calendar, Users, FileText, BadgeDollarSign, Workflow, Clock, UserCheck, Star, Sparkles, ExternalLink } from 'lucide-react';
-import { format } from 'date-fns';
+import { 
+    Briefcase, MapPin, Building, Calendar, Users, FileText, 
+    BadgeDollarSign, Workflow, Clock, UserCheck, Star, 
+    Sparkles, ExternalLink, ArrowLeft, Bookmark, Share2, 
+    ChevronRight, Info, Award, LayoutList
+} from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 import { ApplyButton } from './apply-button';
 import JobCard from '@/components/job-card';
 import { ShareButton } from '@/components/share-button';
@@ -16,6 +22,8 @@ import { useSavedJobs } from '@/hooks/use-jobs';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from '@/lib/utils';
 
 async function getJobData(id: string): Promise<{ job: Job | null; relatedJobs: Job[] }> {
     const jobRes = await fetch(`/api/jobs/${id}?fresh=true`, { cache: 'no-store' });
@@ -52,8 +60,10 @@ function JobDetailsContent() {
 
     const isAdminView = searchParams.get('view') === 'admin';
 
+    // Move hooks to top to avoid violation of rules of hooks
     const appliedJobIds = useMemo(() => new Set(userApplications.map(app => app.jobId)), [userApplications]);
     const savedJobIds = useMemo(() => new Set(savedJobs || []), [savedJobs]);
+    const isCurrentlySaved = savedJobIds.has(id);
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -94,19 +104,24 @@ function JobDetailsContent() {
         }
     }, [id, loadData]);
 
-    const handleSaveToggle = async (jobId: string, isCurrentlySaved: boolean) => {
-        if (!user) return;
+    const handleSaveToggle = async () => {
+        if (!user) {
+            router.push('/login');
+            return;
+        }
 
+        const jobId = id;
+        const wasSaved = isCurrentlySaved;
         const originalSavedJobs = savedJobs ? [...savedJobs] : [];
 
         // Optimistic UI update
-        const newSavedJobs = isCurrentlySaved
+        const newSavedJobs = wasSaved
             ? originalSavedJobs.filter(id => id !== jobId)
             : [...originalSavedJobs, jobId];
         mutateSavedJobs(newSavedJobs, false);
 
-        const method = isCurrentlySaved ? 'DELETE' : 'POST';
-        const url = isCurrentlySaved 
+        const method = wasSaved ? 'DELETE' : 'POST';
+        const url = wasSaved 
             ? `/api/users/${user.id}/saved-jobs?jobId=${jobId}`
             : `/api/users/${user.id}/saved-jobs`;
 
@@ -114,18 +129,18 @@ function JobDetailsContent() {
             const response = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: isCurrentlySaved ? undefined : JSON.stringify({ jobId }),
+                body: wasSaved ? undefined : JSON.stringify({ jobId }),
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to update saved status');
-            }
-            // Revalidate to get the latest state from the server
+            if (!response.ok) throw new Error('Failed');
+            
+            toast({
+                title: !wasSaved ? "Job Saved" : "Job Unsaved",
+                description: `"${job?.title}" has been ${!wasSaved ? 'added to' : 'removed from'} your saved jobs.`,
+            });
             mutateSavedJobs();
         } catch (error) {
-            // Revert UI on error
             mutateSavedJobs(originalSavedJobs, false);
-            console.error("Failed to toggle save status", error);
             toast({ title: "Error", description: "Could not update saved jobs.", variant: "destructive" });
         }
     };
@@ -158,156 +173,191 @@ function JobDetailsContent() {
         { icon: UserCheck, label: "Role", value: job.role, color: "text-primary" },
         { icon: Building, label: "Workplace", value: job.workplaceType, color: "text-primary" },
         { icon: Users, label: "Experience", value: job.experienceLevel, color: "text-primary" },
-        { icon: Calendar, label: "Posted On", value: format(new Date(job.postedAt), "PPP"), color: "text-primary" },
         { icon: Clock, label: "Vacancies", value: job.vacancies, color: "text-primary" },
     ];
 
     const shouldShowCompanyDetails = (user && (user.role === 'Recruiter' || user.role === 'Employee')) || isAdminView;
 
-
     return (
-       <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
-                    <Card>
-                        <CardHeader>
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <CardTitle className="text-3xl font-bold">{job.title}</CardTitle>
-                                    <CardDescription className="text-xl text-muted-foreground">{job.companyName}</CardDescription>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                     {job.isReferral && <Badge variant="secondary">Referral</Badge>}
-                                     <div className="hidden md:block">
-                                        <ShareButton jobId={job.id} jobTitle={job.title} />
-                                     </div>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                             <div className="flex flex-col gap-y-3 mb-6">
-                                {detailItems.map(item => item.value ? (
-                                    <div key={item.label} className="flex items-center gap-3">
-                                        <item.icon className={`h-5 w-5 ${item.color} shrink-0`}/>
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-sm text-muted-foreground">{item.label}:</span>
-                                            <span className="font-semibold text-sm">{item.value}</span>
-                                        </div>
-                                    </div>
-                                ) : null)}
-                            </div>
-                            
-                            <h3 className="text-xl font-semibold mb-2 mt-6 flex items-center gap-2">
-                                <FileText className="h-5 w-5"/>
-                                Job Description
-                            </h3>
-                            <div className="prose prose-sm max-w-none text-muted-foreground">
-                                {job.description.split('\\n').map((line, index) => (
-                                    <p key={index}>{line}</p>
-                                ))}
-                            </div>
-
-                             {job.requirements && job.requirements.length > 0 && (
-                                <>
-                                    <h3 className="text-xl font-semibold mb-2 mt-6 flex items-center gap-2">
-                                        <Star className="h-5 w-5"/>
-                                        Requirements
-                                    </h3>
-                                    <ul className="list-disc list-inside prose prose-sm max-w-none text-muted-foreground space-y-1">
-                                        {job.requirements.map((req, index) => (
-                                            <li key={index}>{req}</li>
-                                        ))}
-                                    </ul>
-                                </>
-                            )}
-                            
-                            {job.benefits && job.benefits.length > 0 && (
-                                <>
-                                    <h3 className="text-xl font-semibold mb-2 mt-6 flex items-center gap-2">
-                                        <Sparkles className="h-5 w-5"/>
-                                        Benefits
-                                    </h3>
-                                    <ul className="list-disc list-inside prose prose-sm max-w-none text-muted-foreground space-y-1">
-                                        {job.benefits.map((benefit, index) => (
-                                            <li key={index}>{benefit}</li>
-                                        ))}
-                                    </ul>
-                                </>
-                            )}
-                        </CardContent>
-                         {!isAdminView && (
-                            <CardFooter className="flex flex-col gap-4">
-                                {job.jobLink ? (
-                                    <Button asChild={!!user} variant="default" size="lg" className="w-full" onClick={handleExternalApply}>
-                                        {user ? (
-                                            <Link href={job.jobLink} target="_blank" rel="noopener noreferrer">
-                                                Apply on Official Website <ExternalLink className="ml-2 h-4 w-4" />
-                                            </Link>
-                                        ) : (
-                                            <div className="flex items-center gap-2">
-                                                Apply on Official Website <ExternalLink className="ml-2 h-4 w-4" />
-                                            </div>
-                                        )}
-                                    </Button>
-                                ) : (
-                                    <ApplyButton job={job} />
-                                )}
-                            </CardFooter>
-                        )}
-                    </Card>
+       <div className="min-h-screen bg-[#f5f7fb] pb-24 md:pb-8">
+            {/* Mobile-Only Header */}
+            <div className="md:hidden sticky top-0 z-50 bg-white border-b px-4 py-3 flex items-center justify-between shadow-sm">
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+                        <ArrowLeft className="h-6 w-6" />
+                    </Button>
                 </div>
-                <div className="lg:col-span-1 space-y-6">
-                     {shouldShowCompanyDetails && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>About {job.companyName}</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">
-                                        Contact for more info: <span className="font-semibold text-foreground">{job.contactEmail}</span>
-                                    </p>
-                                    {job.contactPhone && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Phone: <span className="font-semibold text-foreground">{job.contactPhone}</span>
-                                        </p>
-                                    )}
+                <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" onClick={handleSaveToggle} className="rounded-full">
+                        <Bookmark className={cn("h-6 w-6", isCurrentlySaved && "fill-primary text-primary")} />
+                    </Button>
+                    <ShareButton jobId={job.id} jobTitle={job.title} />
+                    <Button asChild={!!user} size="sm" className="bg-[#ff5a5f] hover:bg-[#e04a4e] text-white font-bold ml-2 rounded-full px-4" onClick={handleExternalApply}>
+                        {job.jobLink ? (
+                            <Link href={job.jobLink} target="_blank">Apply</Link>
+                        ) : (
+                            <span>Apply</span>
+                        )}
+                    </Button>
+                </div>
+            </div>
+
+            <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2">
+                        {/* Job Branding Header */}
+                        <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
+                            <div className="flex flex-col gap-4">
+                                <div className="bg-black text-white w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold">
+                                    {job.companyName.charAt(0).toUpperCase()}
                                 </div>
-                                {job.jobLink && (
-                                    <div className="pt-2">
-                                        <Button asChild={!!user} variant="secondary" size="sm" className="w-full" onClick={handleExternalApply}>
-                                            {user ? (
-                                                <Link href={job.jobLink} target="_blank" rel="noopener noreferrer">
-                                                    Job Website <ExternalLink className="ml-2 h-4 w-4" />
-                                                </Link>
-                                            ) : (
-                                                <div className="flex items-center gap-2">
-                                                    Job Website <ExternalLink className="ml-2 h-4 w-4" />
-                                                </div>
-                                            )}
-                                        </Button>
+                                <div className="space-y-1">
+                                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{job.title}</h1>
+                                    <div className="flex items-center gap-1 text-primary font-medium">
+                                        {job.companyName}
+                                        <ChevronRight className="h-4 w-4" />
                                     </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                     )}
-                    {relatedJobs.length > 0 && !isAdminView && (
-                        <div>
-                            <h3 className="text-xl font-bold mb-4">Related Jobs</h3>
-                            <div className="space-y-4">
-                                {relatedJobs.map(relatedJob => (
-                                    <JobCard 
-                                        key={relatedJob.id} 
-                                        job={relatedJob} 
-                                        isApplied={appliedJobIds.has(relatedJob.id)} 
-                                        isSaved={savedJobIds.has(relatedJob.id)}
-                                        onSaveToggle={handleSaveToggle}
-                                    />
-                                ))}
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <div className="flex items-center text-yellow-500">
+                                            <Star className="h-4 w-4 fill-current" />
+                                            <span className="ml-1 font-bold text-gray-700">3.8</span>
+                                        </div>
+                                        <span className="text-primary hover:underline cursor-pointer">(523 Reviews)</span>
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-500 pt-2">
+                                    <div className="flex items-center gap-1.5">
+                                        <Users className="h-4 w-4" />
+                                        {job.applicantCount || 0}+ applicants
+                                    </div>
+                                    <div className="flex items-center gap-1.5 ml-auto md:ml-0">
+                                        Posted {formatDistanceToNow(new Date(job.postedAt), { addSuffix: true })}
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    )}
+
+                        {/* Tabs Navigation */}
+                        <Tabs defaultValue="details" className="w-full">
+                            <TabsList className="w-full justify-start bg-transparent border-b rounded-none h-auto p-0 mb-6 gap-6 md:gap-8">
+                                <TabsTrigger value="details" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold">Job details</TabsTrigger>
+                                <TabsTrigger value="company" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold">About company</TabsTrigger>
+                                <TabsTrigger value="benefits" className="hidden sm:inline-flex rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold">Benefits</TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="details" className="space-y-6">
+                                {/* Job Highlights Card */}
+                                <Card className="border-none shadow-sm bg-[#f8f9ff]">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                            <Sparkles className="h-5 w-5 text-primary" />
+                                            Job highlights
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4 text-gray-700">
+                                        {job.requirements && job.requirements.length > 0 ? (
+                                            <ul className="list-disc list-inside space-y-2">
+                                                {job.requirements.slice(0, 3).map((req, i) => (
+                                                    <li key={i} className="text-sm leading-relaxed">{req}</li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="text-sm leading-relaxed">{job.description.split('\\n')[0]}</p>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
+                                {/* Full Job Description */}
+                                <div className="bg-white rounded-xl border p-6 space-y-6">
+                                    <div>
+                                        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                            <Info className="h-5 w-5 text-primary" />
+                                            Full Job Description
+                                        </h3>
+                                        <div className="prose prose-sm max-w-none text-gray-600 space-y-4">
+                                            {job.description.split('\\n').map((line, index) => (
+                                                <p key={index}>{line}</p>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 pt-4 border-t">
+                                        {detailItems.map(item => item.value ? (
+                                            <div key={item.label} className="flex items-center gap-3">
+                                                <div className="p-2 bg-gray-50 rounded-lg">
+                                                    <item.icon className="h-5 w-5 text-primary"/>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-400 font-medium">{item.label}</p>
+                                                    <p className="text-sm font-semibold">{item.value}</p>
+                                                </div>
+                                            </div>
+                                        ) : null)}
+                                    </div>
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="company">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>About {job.companyName}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4 text-gray-600">
+                                        <p>Learn more about working at {job.companyName}. We are looking for talented individuals to join our team in {job.location}.</p>
+                                        <div className="pt-4 border-t space-y-2">
+                                            <p className="text-sm font-medium">Contact Information:</p>
+                                            <p className="text-sm">Email: {job.contactEmail}</p>
+                                            {job.contactPhone && <p className="text-sm">Phone: {job.contactPhone}</p>}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+                        </Tabs>
+                    </div>
+
+                    <div className="lg:col-span-1 space-y-6">
+                        {relatedJobs.length > 0 && !isAdminView && (
+                            <div>
+                                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                    <LayoutList className="h-5 w-5" />
+                                    Similar Jobs
+                                </h3>
+                                <div className="space-y-4">
+                                    {relatedJobs.map(relatedJob => (
+                                        <JobCard 
+                                            key={relatedJob.id} 
+                                            job={relatedJob} 
+                                            isApplied={appliedJobIds.has(relatedJob.id)} 
+                                            isSaved={savedJobIds.has(relatedJob.id)}
+                                            onSaveToggle={handleSaveToggle}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
+            </div>
+
+            {/* Mobile-Only Sticky Footer */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-4 flex items-center gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <Button variant="ghost" size="lg" className="flex-1 flex flex-col items-center gap-1 h-auto py-2 text-primary font-bold">
+                    <Briefcase className="h-5 w-5" />
+                    <span className="text-[10px] uppercase tracking-wider">Similar jobs</span>
+                </Button>
+                {job.jobLink ? (
+                    <Button asChild={!!user} size="lg" className="flex-[2.5] bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full" onClick={handleExternalApply}>
+                        {user ? (
+                            <Link href={job.jobLink} target="_blank">Apply on Website</Link>
+                        ) : (
+                            <span>Apply on Website</span>
+                        )}
+                    </Button>
+                ) : (
+                    <div className="flex-[2.5]">
+                        <ApplyButton job={job} />
+                    </div>
+                )}
             </div>
        </div>
     );
