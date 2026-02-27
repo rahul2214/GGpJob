@@ -162,18 +162,6 @@ function JobDetailsContent() {
         notFound();
     }
     
-    // Ordered for the vertical info list
-    const detailItems = [
-        { icon: MapPin, label: "Location", value: job.location },
-        { icon: Briefcase, label: "Job Type", value: job.type },
-        { icon: BadgeDollarSign, label: "Salary", value: job.salary || 'Not Disclosed' },
-        { icon: Clock, label: "Vacancies", value: job.vacancies },
-        { icon: Workflow, label: "Domain", value: job.domain },
-        { icon: UserCheck, label: "Role", value: job.role },
-        { icon: Building, label: "Workplace", value: job.workplaceType },
-        { icon: Users, label: "Experience", value: job.experienceLevel },
-    ];
-
     const hasBenefits = job.benefits && job.benefits.length > 0;
 
     return (
@@ -234,19 +222,36 @@ function JobDetailsContent() {
                                 {/* Job Details Card */}
                                 <div className="bg-white rounded-xl border p-6 space-y-8">
                                     
-                                    {/* Key Details Vertical List (as per user image request) */}
-                                    <div className="space-y-6 pb-8 border-b">
-                                        {detailItems.map((item) => item.value ? (
-                                            <div key={item.label} className="flex items-center gap-4">
-                                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-primary shrink-0">
-                                                    <item.icon className="h-6 w-6" />
-                                                </div>
-                                                <div className="flex flex-col min-w-0">
-                                                    <span className="text-sm text-gray-400 font-medium">{item.label}</span>
-                                                    <span className="text-base font-bold text-gray-900 truncate">{item.value}</span>
-                                                </div>
+                                    {/* Quick Info Grid */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                                            <MapPin className="h-5 w-5 text-primary mt-1 shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] uppercase text-muted-foreground font-bold">Location</p>
+                                                <p className="text-sm font-bold">{job.location}</p>
                                             </div>
-                                        ) : null)}
+                                        </div>
+                                        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                                            <Briefcase className="h-5 w-5 text-primary mt-1 shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] uppercase text-muted-foreground font-bold">Type</p>
+                                                <p className="text-sm font-bold">{job.type}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                                            <BadgeDollarSign className="h-5 w-5 text-primary mt-1 shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] uppercase text-muted-foreground font-bold">Salary</p>
+                                                <p className="text-sm font-bold">{job.salary || 'Not Disclosed'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                                            <Clock className="h-5 w-5 text-primary mt-1 shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] uppercase text-muted-foreground font-bold">Vacancies</p>
+                                                <p className="text-sm font-bold">{job.vacancies || 1}</p>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* Full Job Description */}
