@@ -200,7 +200,6 @@ function JobDetailsContent() {
 
         try {
             // Track application by creating a record in the applications collection
-            // This increments the application count calculated by the API
             const response = await fetch('/api/applications', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
