@@ -165,8 +165,8 @@ function JobDetailsContent() {
             if (!response.ok) throw new Error('Failed');
             
             toast({
-                title: !wasSaved ? "Job Saved" : "Job Unsaved",
-                description: `"${job?.title}" has been ${!wasSaved ? 'added to' : 'removed from'} your saved jobs.`,
+                title: wasSaved ? "Job Unsaved" : "Job Saved",
+                description: `"${job?.title}" has been ${wasSaved ? 'removed from' : 'added to'} your saved jobs.`,
             });
             mutateSavedJobs();
         } catch (error) {
@@ -261,47 +261,92 @@ function JobDetailsContent() {
                                 <div className="bg-white rounded-xl border p-6 space-y-8">
                                     <div className="space-y-4 mb-8">
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <MapPin className="h-5 w-5 text-blue-500 shrink-0" />
-                                            <span className="text-muted-foreground">Location: <span className="text-foreground font-bold ml-1">{job.location}</span></span>
+                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                                <MapPin className="h-5 w-5 text-blue-500" />
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-muted-foreground">Location</div>
+                                                <div className="font-bold">{job.location}</div>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <Briefcase className="h-5 w-5 text-blue-500 shrink-0" />
-                                            <span className="text-muted-foreground">Job Type: <span className="text-foreground font-bold ml-1">{job.type}</span></span>
+                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                                <Briefcase className="h-5 w-5 text-blue-500" />
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-muted-foreground">Job Type</div>
+                                                <div className="font-bold">{job.type}</div>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <BadgeDollarSign className="h-5 w-5 text-blue-500 shrink-0" />
-                                            <span className="text-muted-foreground">Salary: <span className="text-foreground font-bold ml-1">{job.salary || 'Not Disclosed'}</span></span>
+                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                                <BadgeDollarSign className="h-5 w-5 text-blue-500" />
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-muted-foreground">Salary</div>
+                                                <div className="font-bold">{job.salary || 'Not Disclosed'}</div>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <Layers className="h-5 w-5 text-blue-500 shrink-0" />
-                                            <span className="text-muted-foreground">Domain: <span className="text-foreground font-bold ml-1">{job.domain}</span></span>
+                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                                <Layers className="h-5 w-5 text-blue-500" />
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-muted-foreground">Domain</div>
+                                                <div className="font-bold">{job.domain}</div>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <UserIcon className="h-5 w-5 text-blue-500 shrink-0" />
-                                            <span className="text-muted-foreground">Role: <span className="text-foreground font-bold ml-1">{job.role}</span></span>
+                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                                <UserIcon className="h-5 w-5 text-blue-500" />
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-muted-foreground">Role</div>
+                                                <div className="font-bold">{job.role}</div>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <Building className="h-5 w-5 text-blue-500 shrink-0" />
-                                            <span className="text-muted-foreground">Workplace: <span className="text-foreground font-bold ml-1">{job.workplaceType}</span></span>
+                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                                <Building className="h-5 w-5 text-blue-500" />
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-muted-foreground">Workplace</div>
+                                                <div className="font-bold">{job.workplaceType}</div>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <UserCheck className="h-5 w-5 text-blue-500 shrink-0" />
-                                            <span className="text-muted-foreground">Experience: <span className="text-foreground font-bold ml-1">{job.experienceLevel}</span></span>
+                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                                <UserCheck className="h-5 w-5 text-blue-500" />
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-muted-foreground">Experience</div>
+                                                <div className="font-bold">{job.experienceLevel}</div>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <Calendar className="h-5 w-5 text-blue-500 shrink-0" />
-                                            <span className="text-muted-foreground">Posted On: <span className="text-foreground font-bold ml-1">{format(new Date(job.postedAt), "MMMM do, yyyy")}</span></span>
+                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                                <Calendar className="h-5 w-5 text-blue-500" />
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-muted-foreground">Posted On</div>
+                                                <div className="font-bold">{format(new Date(job.postedAt), "MMMM do, yyyy")}</div>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <Clock className="h-5 w-5 text-blue-500 shrink-0" />
-                                            <span className="text-muted-foreground">Vacancies: <span className="text-foreground font-bold ml-1">{job.vacancies || 1}</span></span>
+                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                                <Clock className="h-5 w-5 text-blue-500" />
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-muted-foreground">Vacancies</div>
+                                                <div className="font-bold">{job.vacancies || 1}</div>
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div>
                                         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                                             <Info className="h-5 w-5 text-primary" />
-                                            Full Job Description
+                                            Job Description
                                         </h3>
                                         <div className="prose prose-sm max-w-none text-gray-600 space-y-4">
                                             {job.description.split('\n').map((line, index) => (
