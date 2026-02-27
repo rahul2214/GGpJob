@@ -44,7 +44,7 @@ import { useUser } from "@/contexts/user-context";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "./ui/separator";
 import { JobFilters } from "./job-filters";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useMemo } from "react";
 import { ShareButton } from "./share-button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import HeaderSearch from "./header-search";
@@ -60,7 +60,14 @@ export default function Header() {
   const isMobile = useIsMobile();
 
   const { notifications } = useNotifications(user?.id);
-  const notificationCount = Array.isArray(notifications) ? notifications.length : 0;
+  
+  const notificationCount = useMemo(() => {
+    if (!notifications || !user) return 0;
+    if (!user.notificationLastViewedAt) return notifications.length;
+    
+    const lastViewedTime = new Date(user.notificationLastViewedAt).getTime();
+    return notifications.filter(n => new Date(n.timestamp).getTime() > lastViewedTime).length;
+  }, [notifications, user]);
 
   useEffect(() => {
     setIsClient(true);

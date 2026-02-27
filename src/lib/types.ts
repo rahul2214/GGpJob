@@ -12,6 +12,7 @@ export interface User {
   domainId?: string;
   resumeUrl?: string;
   linkedinUrl?: string;
+  notificationLastViewedAt?: string;
   // Joined fields
   location?: string;
   // Profile completion stats
