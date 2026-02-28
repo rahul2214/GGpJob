@@ -52,7 +52,7 @@ function JobDetailsContent() {
     const { toast } = useToast();
     const router = useRouter();
     const [job, setJob] = useState<Job | null>(null);
-    const [relatedJobs, setRelatedJobs] = useState<Job[]>([]);
+    const [allRelatedJobs, setAllRelatedJobs] = useState<Job[]>([]);
     const [userApplications, setUserApplications] = useState<Application[]>([]);
     const [loading, setLoading] = useState(true);
     const params = useParams();
@@ -72,44 +72,50 @@ function JobDetailsContent() {
     const savedJobIds = useMemo(() => new Set(savedJobs || []), [savedJobs]);
     const isCurrentlySaved = savedJobIds.has(id);
 
-    const loadData = useCallback(async () => {
+    // Filter related jobs: remove those the user has already applied to
+    const relatedJobs = useMemo(() => {
+        if (user?.role === 'Job Seeker' && allRelatedJobs.length > 0) {
+            return allRelatedJobs.filter(j => !appliedJobIds.has(j.id));
+        }
+        return allRelatedJobs;
+    }, [allRelatedJobs, appliedJobIds, user]);
+
+    // Primary fetch for job details (runs once per ID)
+    const fetchJobInfo = useCallback(async () => {
+        if (!id) return;
         setLoading(true);
         try {
-            const [jobAndRelatedData, appsRes] = await Promise.all([
-                getJobData(id),
-                user ? fetch(`/api/applications?userId=${user.id}`) : Promise.resolve(null)
-            ]);
-
-            const { job: jobData, relatedJobs: relatedJobsData } = jobAndRelatedData;
-            
-            setJob(jobData);
-            
-            let appsData: Application[] = [];
-            if (appsRes && appsRes.ok) {
-                appsData = await appsRes.json();
-                setUserApplications(Array.isArray(appsData) ? appsData : []);
-            }
-
-            if (user?.role === 'Job Seeker' && Array.isArray(relatedJobsData)) {
-                const currentAppliedJobIds = new Set(appsData.map(app => app.jobId));
-                const filteredRelatedJobs = relatedJobsData.filter(j => !currentAppliedJobIds.has(j.id));
-                setRelatedJobs(filteredRelatedJobs);
-            } else {
-                setRelatedJobs(relatedJobsData);
-            }
-
+            const data = await getJobData(id);
+            setJob(data.job);
+            setAllRelatedJobs(data.relatedJobs);
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
         }
-    }, [id, user]);
+    }, [id]);
 
     useEffect(() => {
-        if (id) {
-            loadData();
+        fetchJobInfo();
+    }, [fetchJobInfo]);
+
+    // Secondary fetch for user applications (runs when user session is available)
+    useEffect(() => {
+        if (user && id) {
+            const fetchApplications = async () => {
+                try {
+                    const res = await fetch(`/api/applications?userId=${user.id}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        setUserApplications(Array.isArray(data) ? data : []);
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch applications", error);
+                }
+            };
+            fetchApplications();
         }
-    }, [id, loadData]);
+    }, [user, id]);
 
     useEffect(() => {
         const sentinel = footerSentinelRef.current;
@@ -192,14 +198,12 @@ function JobDetailsContent() {
             return;
         }
 
-        // If user is already an applicant, just open the link
         if (appliedJobIds.has(id) || user.role !== 'Job Seeker') {
             window.open(url, '_blank', 'noopener,noreferrer');
             return;
         }
 
         try {
-            // Track application by creating a record in the applications collection
             const response = await fetch('/api/applications', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -207,13 +211,18 @@ function JobDetailsContent() {
             });
 
             if (response.ok || response.status === 409) {
-                // Application recorded successfully or already exists
-                loadData(); // Refresh to update count in UI
+                // Refresh only the applicant count and apps list locally
+                const res = await fetch(`/api/applications?userId=${user.id}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setUserApplications(Array.isArray(data) ? data : []);
+                }
+                // Refresh job info to update applicant count
+                fetchJobInfo();
             }
         } catch (error) {
             console.error("External application tracking failed", error);
         } finally {
-            // Always open the link for the user
             window.open(url, '_blank', 'noopener,noreferrer');
         }
     };
