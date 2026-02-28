@@ -295,8 +295,8 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
             <CardContent className="space-y-6 p-6">
                 {/* Date Posted */}
                 <div className="space-y-3">
-                    <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                        <Calendar className="h-4 w-4" /> Date Posted
+                    <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                        Date Posted
                     </Label>
                     <Select value={filters.posted} onValueChange={(value) => handleFilterChange('posted', value)}>
                         <SelectTrigger className="w-full bg-muted/20">
@@ -313,8 +313,8 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
                 {/* Domains */}
                 {!hideDomain && domainOptions.length > 0 && (
                     <div className="space-y-3">
-                        <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                            <Layers className="h-4 w-4" /> Domains
+                        <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                            Domains
                         </Label>
                         <MultiSelectFilter
                             title="Domains"
@@ -328,8 +328,8 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
                 {/* Locations */}
                 {locationOptions.length > 0 && (
                     <div className="space-y-3">
-                        <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                            <MapPin className="h-4 w-4" /> Locations
+                        <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                            Locations
                         </Label>
                         <MultiSelectFilter
                             title="Locations"
@@ -342,8 +342,8 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
 
                 {/* Experience Level */}
                 <div className="space-y-3">
-                    <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                        <Award className="h-4 w-4" /> Experience
+                    <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                        Experience
                     </Label>
                     <Select value={filters.experience} onValueChange={(value) => handleFilterChange('experience', value)}>
                         <SelectTrigger className="w-full bg-muted/20">
@@ -361,8 +361,8 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
                 {/* Employment Types */}
                 {jobTypeOptions.length > 0 && (
                     <div className="space-y-3">
-                        <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                            <Briefcase className="h-4 w-4" /> Employment
+                        <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                            Employment
                         </Label>
                         <MultiSelectFilter
                             title="Employment"
