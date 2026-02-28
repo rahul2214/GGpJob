@@ -22,9 +22,10 @@ export async function GET(request: Request) {
     // --- Start Dashboard-specific Logic ---
     if (searchParams.get('dashboard') === 'true') {
         const domainId = searchParams.get('domain');
+        const postedDays = searchParams.get('posted');
 
-        let recommendedQuery: adminFirestore.Query = jobsRef.where('isReferral', '==', false).limit(10);
-        let referralQuery: adminFirestore.Query = jobsRef.where('isReferral', '==', true).limit(10);
+        let recommendedQuery: adminFirestore.Query = jobsRef.where('isReferral', '==', false).limit(50);
+        let referralQuery: adminFirestore.Query = jobsRef.where('isReferral', '==', true).limit(50);
 
         if (domainId) {
             recommendedQuery = recommendedQuery.where('domainId', '==', domainId);
@@ -41,8 +42,8 @@ export async function GET(request: Request) {
         const locationMap = createMap(locationsSnapshot.docs.map(doc => doc.data()), 'id');
         const jobTypeMap = createMap(jobTypesSnapshot.docs.map(doc => doc.data()), 'id');
 
-        const processJobs = (snap: adminFirestore.QuerySnapshot) => 
-            snap.docs.map(doc => {
+        const processJobs = (snap: adminFirestore.QuerySnapshot) => {
+            let jobs = snap.docs.map(doc => {
                 const jobData = doc.data() as Job;
                 const location = locationMap.get(jobData.locationId);
                 const jobType = jobTypeMap.get(jobData.jobTypeId);
@@ -52,8 +53,24 @@ export async function GET(request: Request) {
                   location: location ? location.name : 'N/A',
                   type: jobType ? jobType.name : 'N/A',
                 }
-            })
-            .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
+            });
+
+            // Filter by date posted in JS to avoid index requirements
+            if (postedDays && postedDays !== 'all') {
+                const days = parseInt(postedDays, 10);
+                const dateLimit = new Date();
+                dateLimit.setDate(dateLimit.getDate() - days);
+                const limitIso = dateLimit.toISOString();
+                jobs = jobs.filter(job => {
+                    const postedDate = job.postedAt instanceof Date ? job.postedAt.toISOString() : String(job.postedAt);
+                    return postedDate >= limitIso;
+                });
+            }
+
+            return jobs
+                .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime())
+                .slice(0, 10); // Return top 10 after sorting
+        }
 
         const response = NextResponse.json({
             recommended: processJobs(recommendedSnap),
@@ -107,23 +124,20 @@ export async function GET(request: Request) {
         hasComplexFilters = true;
     }
 
-    // Filter by date posted
-    const postedDays = searchParams.get('posted');
-    if (postedDays && postedDays !== 'all') {
-        const days = parseInt(postedDays, 10);
-        const dateLimit = new Date();
-        dateLimit.setDate(dateLimit.getDate() - days);
-        query = query.where('postedAt', '>=', dateLimit.toISOString());
-        hasComplexFilters = true;
-    }
+    // Note: We moved "posted" filtering to the JavaScript section to avoid 
+    // requiring complex composite indexes in Firestore for combined range/equality filters.
     // --- End Filtering Logic ---
 
-    // Apply ordering if no complex filters that prevent it or no search
+    // Apply ordering only if no complex filters are present
+    // Combined with hasComplexFilters = true, this prevents ordering issues in Firestore
     if (!searchParams.get('search') && !hasComplexFilters) {
         query = query.orderBy('postedAt', 'desc');
     }
     
-    if (searchParams.get('limit')) {
+    // Fetch a larger set when filtered to ensure we have enough data to sort in JS
+    if (hasComplexFilters || searchParams.get('search')) {
+        query = query.limit(500);
+    } else if (searchParams.get('limit')) {
         query = query.limit(parseInt(searchParams.get('limit') as string, 10));
     }
 
@@ -187,6 +201,19 @@ export async function GET(request: Request) {
       }
     });
 
+    // Handle date filtering in JS to avoid composite index requirements
+    const postedDays = searchParams.get('posted');
+    if (postedDays && postedDays !== 'all') {
+        const days = parseInt(postedDays, 10);
+        const dateLimit = new Date();
+        dateLimit.setDate(dateLimit.getDate() - days);
+        const limitIso = dateLimit.toISOString();
+        jobs = jobs.filter(job => {
+            const postedDate = job.postedAt instanceof Date ? job.postedAt.toISOString() : String(job.postedAt);
+            return postedDate >= limitIso;
+        });
+    }
+
     // Handle case-insensitive search after fetching
     if (searchParams.get('search')) {
         const searchTerm = searchParams.get('search')!.toLowerCase();
@@ -195,6 +222,12 @@ export async function GET(request: Request) {
     
     // Final client-side sort to ensure consistency
     jobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
+
+    // Apply manual limit if sorting/filtering in memory was needed
+    if (searchParams.get('limit')) {
+        const manualLimit = parseInt(searchParams.get('limit') as string, 10);
+        jobs = jobs.slice(0, manualLimit);
+    }
 
     const response = NextResponse.json(jobs);
     
