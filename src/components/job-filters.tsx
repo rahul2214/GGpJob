@@ -101,8 +101,10 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
         const currentSearch = searchParams.get('search');
         if (currentSearch) params.set('search', currentSearch);
         if (isReferral) params.set('isReferral', 'true');
+        
         const currentDomain = searchParams.get('domain');
-        if (isRecommended && currentDomain) params.set('domain', currentDomain);
+        // If domain was hidden (part of page context like Recommended/Referral), preserve it
+        if (hideDomain && currentDomain) params.set('domain', currentDomain);
 
         Object.keys(filters).forEach(key => {
             const filterKey = key as keyof typeof filters;
@@ -129,7 +131,9 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
         
         if (currentSearch) newParams.set('search', currentSearch);
         if (isReferral) newParams.set('isReferral', 'true');
-        if (isRecommended && currentDomain) newParams.set('domain', currentDomain);
+        
+        // If domain was hidden (part of page context), preserve it during clear
+        if (hideDomain && currentDomain) newParams.set('domain', currentDomain);
         
         router.push(`/jobs?${newParams.toString()}`);
     }
