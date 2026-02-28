@@ -291,9 +291,6 @@ function JobDetailsContent() {
                                     <div className="w-20 h-20 bg-black rounded-xl flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
                                         {job.companyName.charAt(0).toUpperCase()}
                                     </div>
-                                    <button className="text-blue-600 font-bold text-sm hover:underline">
-                                        Send me jobs like this
-                                    </button>
                                 </div>
                             </div>
 
