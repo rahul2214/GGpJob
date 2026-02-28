@@ -38,6 +38,11 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
     const [jobTypes, setJobTypes] = useState<JobType[]>([]);
     const [activeCategory, setActiveCategory] = useState<FilterCategory>('posted');
     
+    // Determine if we should hide the domain filter based on the current context
+    const isRecommended = searchParams.has('domain') && searchParams.get('isReferral') !== 'true';
+    const isReferral = searchParams.get('isReferral') === 'true';
+    const hideDomain = isRecommended || isReferral;
+
     const [filters, setFilters] = useState({
         posted: searchParams.get('posted') || 'all',
         location: searchParams.getAll('location') || [],
@@ -87,6 +92,13 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
         });
     }, [searchParams]);
 
+    // If we transition to a page where domain is hidden, reset active category if it was 'domain'
+    useEffect(() => {
+        if (hideDomain && activeCategory === 'domain') {
+            setActiveCategory('posted');
+        }
+    }, [hideDomain, activeCategory]);
+
     const handleFilterChange = (filterName: string, value: string | string[]) => {
         setFilters(prev => ({ ...prev, [filterName]: value }));
     };
@@ -98,9 +110,19 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
         const currentSearch = searchParams.get('search');
         if (currentSearch) params.set('search', currentSearch);
 
+        // Preserve referral status
+        if (isReferral) params.set('isReferral', 'true');
+        
+        // Preserve domain if we are in recommended mode (the ID passed via URL)
+        const currentDomain = searchParams.get('domain');
+        if (isRecommended && currentDomain) params.set('domain', currentDomain);
+
         Object.keys(filters).forEach(key => {
             const filterKey = key as keyof typeof filters;
             const value = filters[filterKey];
+
+            // Don't re-apply domain from local filters if we are hiding it (prevents URL doubling)
+            if (hideDomain && filterKey === 'domain') return;
 
             if (Array.isArray(value)) {
                 if (value.length > 0) {
@@ -116,10 +138,13 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
 
     const clearFilters = () => {
         const currentSearch = searchParams.get('search');
+        const currentDomain = searchParams.get('domain');
         const newParams = new URLSearchParams();
-        if (currentSearch) {
-            newParams.set('search', currentSearch);
-        }
+        
+        if (currentSearch) newParams.set('search', currentSearch);
+        if (isReferral) newParams.set('isReferral', 'true');
+        if (isRecommended && currentDomain) newParams.set('domain', currentDomain);
+        
         router.push(`/jobs?${newParams.toString()}`);
     }
 
@@ -142,7 +167,7 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
         { id: 'location', label: 'Locations', icon: MapPin },
         { id: 'experience', label: 'Experience', icon: Award },
         { id: 'jobType', label: 'Employment', icon: Briefcase },
-    ];
+    ].filter(cat => !(hideDomain && cat.id === 'domain'));
     
     if (isSheet) {
         return (
@@ -177,7 +202,7 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
                                     ))}
                                 </RadioGroup>
                             )}
-                            {activeCategory === 'domain' && (
+                            {activeCategory === 'domain' && !hideDomain && (
                                 <div className="space-y-4">
                                     {domainOptions.map(option => (
                                         <div key={option.value} className="flex items-center space-x-2">
@@ -287,15 +312,19 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
                         </SelectContent>
                     </Select>
                 </div>
-                <div>
-                    <label className="text-sm font-medium">Domains</label>
-                    <MultiSelectFilter
-                        title="Domains"
-                        options={domainOptions}
-                        selectedValues={filters.domain}
-                        onChange={(selected) => handleFilterChange('domain', selected)}
-                    />
-                </div>
+                
+                {!hideDomain && (
+                    <div>
+                        <label className="text-sm font-medium">Domains</label>
+                        <MultiSelectFilter
+                            title="Domains"
+                            options={domainOptions}
+                            selectedValues={filters.domain}
+                            onChange={(selected) => handleFilterChange('domain', selected)}
+                        />
+                    </div>
+                )}
+
                 <div>
                     <label className="text-sm font-medium">Locations</label>
                     <MultiSelectFilter
