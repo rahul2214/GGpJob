@@ -2,7 +2,7 @@
 "use client"
 
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   BriefcaseBusiness,
   Settings,
@@ -57,6 +57,7 @@ export default function Header() {
   const { user, logout, loading: userLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isClient, setIsClient] = useState(false);
   const isMobile = useIsMobile();
 
@@ -82,7 +83,16 @@ export default function Header() {
   const isPublicProfilePage = /^\/profile\/[^/]+$/.test(pathname);
   const isAdminAddPage = /^\/admin\/(users|domains|locations)\/add$/.test(pathname);
   const isAdminEditPage = /^\/admin\/(domains|locations)\/edit\/[^/]+$/.test(pathname);
+
+  // Link active states
+  const isReferralActive = isJobSearchPage && searchParams.get('isReferral') === 'true';
+  const isRecommendedActive = isJobSearchPage && searchParams.get('domain') === user?.domainId && searchParams.get('isReferral') !== 'true';
+  const isJobsActive = isJobSearchPage && !searchParams.get('isReferral') && !searchParams.get('domain');
   
+  // Link Hrefs
+  const referralJobsHref = user?.domainId ? `/jobs?isReferral=true&domain=${user.domainId}` : '/jobs?isReferral=true';
+  const recommendedJobsHref = user?.domainId ? `/jobs?domain=${user.domainId}` : '/jobs';
+
   const getProfileSectionTitle = () => {
     if (!isProfileSectionEditPage) return '';
     const parts = pathname.split('/');
@@ -201,25 +211,25 @@ export default function Header() {
                              {isClient && !userLoading && user?.role === 'Job Seeker' && (
                                <>
                                 <SheetClose asChild>
-                                    <Link href="/jobs" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                    <Link href="/jobs" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", isJobsActive && "text-foreground font-bold")}>
                                         <Search className="h-5 w-5" />
                                         Jobs
                                     </Link>
                                 </SheetClose>
                                 <SheetClose asChild>
-                                    <Link href="/jobs?isReferral=true" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                    <Link href={referralJobsHref} className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", isReferralActive && "text-foreground font-bold")}>
                                         <ThumbsUp className="h-5 w-5" />
                                         Referral Jobs
                                     </Link>
                                 </SheetClose>
                                 <SheetClose asChild>
-                                    <Link href="/saved-jobs" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                    <Link href="/saved-jobs" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/saved-jobs' && "text-foreground font-bold")}>
                                         <Bookmark className="h-5 w-5" />
                                         Saved Jobs
                                     </Link>
                                 </SheetClose>
                                 <SheetClose asChild>
-                                    <Link href="/notifications" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                    <Link href="/notifications" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", isNotificationsPage && "text-foreground font-bold")}>
                                         <div className="relative">
                                           <Bell className="h-5 w-5" />
                                           {notificationCount > 0 && (
@@ -233,7 +243,7 @@ export default function Header() {
                                 </SheetClose>
                                 {user.domainId && (
                                     <SheetClose asChild>
-                                       <Link href={`/jobs?domain=${user.domainId}`} className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                       <Link href={recommendedJobsHref} className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", isRecommendedActive && "text-foreground font-bold")}>
                                             <Star className="h-5 w-5" />
                                             Recommended Jobs
                                        </Link>
@@ -264,7 +274,7 @@ export default function Header() {
                             <nav className="grid gap-3 text-lg font-medium">
                                <div className="text-sm font-semibold text-muted-foreground px-1">My Account</div>
                                 <SheetClose asChild>
-                                    <Link href="/profile" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                    <Link href="/profile" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/profile' && "text-foreground font-bold")}>
                                         <User className="h-5 w-5" />
                                         Profile
                                     </Link>
@@ -272,7 +282,7 @@ export default function Header() {
                                 {user.role === 'Job Seeker' && (
                                     <>
                                         <SheetClose asChild>
-                                            <Link href="/applications" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                            <Link href="/applications" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/applications' && "text-foreground font-bold")}>
                                                 <LayoutGrid className="h-5 w-5" />
                                                 My Applications
                                             </Link>
@@ -281,7 +291,7 @@ export default function Header() {
                                 )}
                                  {['Job Seeker', 'Recruiter', 'Employee'].includes(user.role) && (
                                     <SheetClose asChild>
-                                        <Link href="/feedback" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                        <Link href="/feedback" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/feedback' && "text-foreground font-bold")}>
                                             <MessageSquareQuote className="h-5 w-5" />
                                             Feedback
                                         </Link>
@@ -396,17 +406,17 @@ export default function Header() {
             )}
             {isClient && !userLoading && user?.role === 'Job Seeker' && (
                 <Suspense>
-                    <Link href="/jobs" className={`transition-colors hover:text-foreground ${pathname === "/jobs" ? "text-foreground" : "text-foreground/60"}`}>
+                    <Link href="/jobs" className={`transition-colors hover:text-foreground ${isJobsActive ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
                         Jobs
                     </Link>
-                    <Link href="/jobs?isReferral=true" className={`transition-colors hover:text-foreground ${pathname === "/jobs?isReferral=true" ? "text-foreground" : "text-foreground/60"}`}>
+                    <Link href={referralJobsHref} className={`transition-colors hover:text-foreground ${isReferralActive ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
                         Referral Jobs
                     </Link>
-                    <Link href="/saved-jobs" className={`transition-colors hover:text-foreground ${pathname === "/saved-jobs" ? "text-foreground" : "text-foreground/60"}`}>
+                    <Link href="/saved-jobs" className={`transition-colors hover:text-foreground ${pathname === "/saved-jobs" ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
                         Saved Jobs
                     </Link>
                     {user.domainId && (
-                         <Link href={`/jobs?domain=${user.domainId}`} className={`transition-colors hover:text-foreground ${pathname.startsWith("/jobs?domain") ? "text-foreground" : "text-foreground/60"}`}>
+                         <Link href={recommendedJobsHref} className={`transition-colors hover:text-foreground ${isRecommendedActive ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
                             Recommended Jobs
                         </Link>
                     )}
