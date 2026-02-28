@@ -29,6 +29,7 @@ import {
   PlusCircle,
   Bell,
   Bookmark,
+  ThumbsUp,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -203,6 +204,12 @@ export default function Header() {
                                     <Link href="/jobs" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
                                         <Search className="h-5 w-5" />
                                         Jobs
+                                    </Link>
+                                </SheetClose>
+                                <SheetClose asChild>
+                                    <Link href="/jobs?isReferral=true" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                        <ThumbsUp className="h-5 w-5" />
+                                        Referral Jobs
                                     </Link>
                                 </SheetClose>
                                 <SheetClose asChild>
@@ -391,6 +398,9 @@ export default function Header() {
                 <Suspense>
                     <Link href="/jobs" className={`transition-colors hover:text-foreground ${pathname === "/jobs" ? "text-foreground" : "text-foreground/60"}`}>
                         Jobs
+                    </Link>
+                    <Link href="/jobs?isReferral=true" className={`transition-colors hover:text-foreground ${pathname === "/jobs?isReferral=true" ? "text-foreground" : "text-foreground/60"}`}>
+                        Referral Jobs
                     </Link>
                     <Link href="/saved-jobs" className={`transition-colors hover:text-foreground ${pathname === "/saved-jobs" ? "text-foreground" : "text-foreground/60"}`}>
                         Saved Jobs
