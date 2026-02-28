@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { db } from '@/firebase/admin-config';
-import type { Job, Location, Application, Domain, JobType, WorkplaceType, ExperienceLevel } from '@/lib/types';
+import type { Job, Application } from '@/lib/types';
 import type { firestore as adminFirestore } from 'firebase-admin';
 
 // Helper function to create a map from an array of documents
@@ -75,12 +75,12 @@ export async function GET(request: Request) {
     const recruiterId = searchParams.get('recruiterId');
     if (recruiterId) {
       query = query.where('recruiterId', '==', recruiterId);
-      hasComplexFilters = true; // Sorting will be done client-side for this specific query to avoid index issues
+      hasComplexFilters = true; 
     }
     const employeeId = searchParams.get('employeeId');
     if (employeeId) {
       query = query.where('employeeId', '==', employeeId);
-      hasComplexFilters = true; // Sorting will be done client-side to avoid index issues
+      hasComplexFilters = true;
     }
     
     const experienceId = searchParams.get('experience');
@@ -89,30 +89,36 @@ export async function GET(request: Request) {
         hasComplexFilters = true;
     }
 
-    
-    const domainId = searchParams.get('domain');
-    if (domainId) {
-        query = query.where('domainId', '==', domainId);
-        hasComplexFilters = true;
-    }
-
     const locationsParams = searchParams.getAll('location').filter(l => l && l !== 'all');
     if (locationsParams.length > 0) {
         query = query.where('locationId', 'in', locationsParams);
         hasComplexFilters = true;
     } 
+
     const domainsParams = searchParams.getAll('domain').filter(d => d && d !== 'all');
     if (domainsParams.length > 0) {
         query = query.where('domainId', 'in', domainsParams);
         hasComplexFilters = true;
     }
+
     const jobTypesParams = searchParams.getAll('jobType').filter(jt => jt && jt !== 'all');
     if (jobTypesParams.length > 0) {
         query = query.where('jobTypeId', 'in', jobTypesParams);
         hasComplexFilters = true;
     }
+
+    // Filter by date posted
+    const postedDays = searchParams.get('posted');
+    if (postedDays && postedDays !== 'all') {
+        const days = parseInt(postedDays, 10);
+        const dateLimit = new Date();
+        dateLimit.setDate(dateLimit.getDate() - days);
+        query = query.where('postedAt', '>=', dateLimit.toISOString());
+        hasComplexFilters = true;
+    }
     // --- End Filtering Logic ---
 
+    // Apply ordering if no complex filters that prevent it or no search
     if (!searchParams.get('search') && !hasComplexFilters) {
         query = query.orderBy('postedAt', 'desc');
     }
@@ -187,10 +193,8 @@ export async function GET(request: Request) {
         jobs = jobs.filter(job => job.title.toLowerCase().includes(searchTerm));
     }
     
-    // If we have filters that prevented DB sorting, sort client-side
-    if (hasComplexFilters || searchParams.get('search')) {
-        jobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
-    }
+    // Final client-side sort to ensure consistency
+    jobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
 
     const response = NextResponse.json(jobs);
     

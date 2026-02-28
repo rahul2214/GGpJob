@@ -92,11 +92,14 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
     };
     
     const applyFilters = () => {
-        const params = new URLSearchParams(searchParams);
+        const params = new URLSearchParams();
         
+        // Preserve search term
+        const currentSearch = searchParams.get('search');
+        if (currentSearch) params.set('search', currentSearch);
+
         Object.keys(filters).forEach(key => {
             const filterKey = key as keyof typeof filters;
-            params.delete(filterKey); // Clear existing params for this key
             const value = filters[filterKey];
 
             if (Array.isArray(value)) {
@@ -107,7 +110,6 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
                 params.set(filterKey, value);
             }
         });
-
 
         router.push(`/jobs?${params.toString()}`);
     }
