@@ -3,7 +3,7 @@
 
 import { createContext, useState, useContext, useEffect, ReactNode, useCallback } from 'react';
 import type { User } from '@/lib/types';
-import { getAuth, onAuthStateChanged, User as FirebaseUser, isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
+import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { firebaseApp } from '@/firebase/config';
 
 interface UserContextType {
@@ -12,6 +12,7 @@ interface UserContextType {
   loading: boolean;
   logout: () => Promise<void>;
   fetchUserProfile: (uid: string) => Promise<User | null>;
+  createNewUserProfile: (firebaseUser: FirebaseUser) => Promise<User | null>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -76,19 +77,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setLoading(true);
       if (firebaseUser) {
+        // Only consider email verified users
         if (firebaseUser.emailVerified) {
-            let userProfile = await fetchUserProfile(firebaseUser.uid);
-            // If user exists in Auth but not in DB (e.g., first Google sign-in)
-            if (!userProfile) {
-                userProfile = await createNewUserProfile(firebaseUser);
-            }
+            const userProfile = await fetchUserProfile(firebaseUser.uid);
+            // We no longer auto-create profiles here to avoid race conditions 
+            // during standard signup. Profile creation is now handled explicitly 
+            // by signup pages or social login handlers.
             setUserState(userProfile);
         } else {
-            // User exists but email is not verified
             setUserState(null);
         }
       } else {
-        // User is signed out
         setUserState(null);
       }
       setLoading(false);
@@ -108,7 +107,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }
   
   return (
-    <UserContext.Provider value={{ user, setUser, loading, logout, fetchUserProfile }}>
+    <UserContext.Provider value={{ user, setUser, loading, logout, fetchUserProfile, createNewUserProfile }}>
       {children}
     </UserContext.Provider>
   );
