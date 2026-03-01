@@ -5,13 +5,14 @@ import { User } from '@/lib/types';
 
 
 async function getUserDocRef(id: string): Promise<FirebaseFirestore.DocumentReference | null> {
-    const userDocRef = db.collection('users').doc(id);
-    const userDoc = await userDocRef.get();
-    if (userDoc.exists) return userDocRef;
-
+    // Prioritize recruiters/employees to ensure management roles take precedence
     const recruiterDocRef = db.collection('recruiters').doc(id);
     const recruiterDoc = await recruiterDocRef.get();
     if (recruiterDoc.exists) return recruiterDocRef;
+
+    const userDocRef = db.collection('users').doc(id);
+    const userDoc = await userDocRef.get();
+    if (userDoc.exists) return userDocRef;
     
     return null;
 }

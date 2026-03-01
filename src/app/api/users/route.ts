@@ -10,7 +10,15 @@ export async function GET(request: Request) {
     const uid = searchParams.get('uid');
 
     if (uid) {
-        let userDoc = await db.collection('users').doc(uid).get();
+        // Priority check: Look in recruiters first to ensure management roles take precedence
+        let userDoc = await db.collection('recruiters').doc(uid).get();
+        
+        if (userDoc.exists) {
+            return NextResponse.json({ id: userDoc.id, ...userDoc.data() });
+        }
+
+        // Second check: Look in users for Job Seekers
+        userDoc = await db.collection('users').doc(uid).get();
 
         if (userDoc.exists) {
             const userData = userDoc.data() as User;
@@ -37,11 +45,6 @@ export async function GET(request: Request) {
             });
         } 
         
-        userDoc = await db.collection('recruiters').doc(uid).get();
-        if (userDoc.exists) {
-            return NextResponse.json({ id: userDoc.id, ...userDoc.data() });
-        }
-
         return NextResponse.json({ error: 'User profile not found in database.' }, { status: 404 });
     }
 
