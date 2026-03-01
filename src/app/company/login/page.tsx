@@ -57,7 +57,13 @@ export default function CompanyLoginPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.push('/');
+      if (user.role === 'Job Seeker') {
+          // If already logged in as a job seeker, we shouldn't automatically redirect
+          // to the dashboard from this page without warning, but for consistency:
+          router.push('/');
+      } else {
+          router.push('/');
+      }
     }
   }, [user, loading, router]);
 
@@ -128,6 +134,31 @@ export default function CompanyLoginPage() {
           )
         });
         return;
+      }
+
+      // Explicitly check if the user exists in the recruiters collection
+      const res = await fetch(`/api/users?uid=${firebaseUser.uid}`);
+      if (res.ok) {
+          const profile = await res.json();
+          // If the profile returned is a Job Seeker, it means no Recruiter/Employee profile exists for this UID
+          if (profile.role === 'Job Seeker') {
+              await auth.signOut();
+              toast({
+                  title: "Access Denied",
+                  description: "This account is registered as a Job Seeker. Please use the candidate login page.",
+                  variant: "destructive",
+              });
+              return;
+          }
+      } else {
+          // Profile not found at all
+          await auth.signOut();
+          toast({
+              title: "Access Denied",
+              description: "Company profile not found. Please contact support or sign up as a company user.",
+              variant: "destructive",
+          });
+          return;
       }
       
       router.push("/");

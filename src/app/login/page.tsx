@@ -139,6 +139,22 @@ export default function LoginPage() {
         });
         return;
       }
+
+      // Check role for job seeker login
+      const res = await fetch(`/api/users?uid=${firebaseUser.uid}`);
+      if (res.ok) {
+          const profile = await res.json();
+          if (profile.role !== 'Job Seeker') {
+              await auth.signOut();
+              toast({
+                  title: "Access Denied",
+                  description: "This account is registered as a Company user. Please use the company login page.",
+                  variant: "destructive",
+              });
+              return;
+          }
+      }
+
     } catch (error: any) {
       let errorMessage = "An unexpected error occurred.";
       if (error.code) {
@@ -174,6 +190,16 @@ export default function LoginPage() {
       }
       
       if (profile) {
+          // Ensure it's a job seeker profile
+          if (profile.role !== 'Job Seeker') {
+              await auth.signOut();
+              toast({
+                  title: "Access Denied",
+                  description: "This account is registered as a Company user. Google Sign-In is only available for job seekers.",
+                  variant: "destructive",
+              });
+              return;
+          }
           setUser(profile);
           router.push("/");
       } else {

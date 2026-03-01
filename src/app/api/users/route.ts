@@ -12,37 +12,41 @@ export async function GET(request: Request) {
     if (uid) {
         // Priority check: Look in recruiters first to ensure management roles take precedence
         let userDoc = await db.collection('recruiters').doc(uid).get();
-        
+        let userData: any = null;
+
         if (userDoc.exists) {
-            return NextResponse.json({ id: userDoc.id, ...userDoc.data() });
+            userData = userDoc.data();
+        } else {
+            // Second check: Look in users for Job Seekers
+            userDoc = await db.collection('users').doc(uid).get();
+            if (userDoc.exists) {
+                userData = userDoc.data();
+            }
         }
 
-        // Second check: Look in users for Job Seekers
-        userDoc = await db.collection('users').doc(uid).get();
-
-        if (userDoc.exists) {
-            const userData = userDoc.data() as User;
+        if (userData) {
+            const user = { id: userDoc.id, ...userData } as User;
             
-            // Efficiently check for subcollections presence to calculate profile strength on server
-            const [eduSnap, empSnap, skillSnap, projSnap, langSnap] = await Promise.all([
-                db.collection('users').doc(uid).collection('education').limit(1).get(),
-                db.collection('users').doc(uid).collection('employment').limit(1).get(),
-                db.collection('users').doc(uid).collection('skills').limit(1).get(),
-                db.collection('users').doc(uid).collection('projects').limit(1).get(),
-                db.collection('users').doc(uid).collection('languages').limit(1).get(),
-            ]);
+            // Efficiently check for subcollections presence to calculate profile strength on server (Job Seekers only)
+            if (user.role === 'Job Seeker') {
+                const [eduSnap, empSnap, skillSnap, projSnap, langSnap] = await Promise.all([
+                    db.collection('users').doc(uid).collection('education').limit(1).get(),
+                    db.collection('users').doc(uid).collection('employment').limit(1).get(),
+                    db.collection('users').doc(uid).collection('skills').limit(1).get(),
+                    db.collection('users').doc(uid).collection('projects').limit(1).get(),
+                    db.collection('users').doc(uid).collection('languages').limit(1).get(),
+                ]);
 
-            return NextResponse.json({ 
-                id: userDoc.id, 
-                ...userData,
-                profileStats: {
+                user.profileStats = {
                     hasEducation: !eduSnap.empty,
                     hasEmployment: !empSnap.empty,
                     hasSkills: !skillSnap.empty,
                     hasProjects: !projSnap.empty,
                     hasLanguages: !langSnap.empty
-                }
-            });
+                };
+            }
+
+            return NextResponse.json(user);
         } 
         
         return NextResponse.json({ error: 'User profile not found in database.' }, { status: 404 });
