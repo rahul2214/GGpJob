@@ -60,7 +60,7 @@ const GoogleIcon = () => (
 export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { user, loading } = useUser();
+  const { user, loading, fetchUserProfile, createNewUserProfile, setUser } = useUser();
   const [showPassword, setShowPassword] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -164,7 +164,21 @@ export default function LoginPage() {
     const auth = getAuth(firebaseApp);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      const userCredential = await signInWithPopup(auth, provider);
+      const firebaseUser = userCredential.user;
+      
+      // Check if profile exists, if not, create it (Social Login is only for Job Seekers)
+      let profile = await fetchUserProfile(firebaseUser.uid);
+      if (!profile) {
+          profile = await createNewUserProfile(firebaseUser);
+      }
+      
+      if (profile) {
+          setUser(profile);
+          router.push("/");
+      } else {
+          toast({ title: "Error", description: "Failed to load user profile.", variant: "destructive" });
+      }
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
         return;

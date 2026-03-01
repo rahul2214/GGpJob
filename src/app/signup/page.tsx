@@ -97,7 +97,7 @@ type SignupFormValues = z.infer<typeof formSchema>;
 export default function SignupPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { user, loading } = useUser();
+  const { user, loading, fetchUserProfile, createNewUserProfile, setUser } = useUser();
   const [domains, setDomains] = useState<Domain[]>([]);
   const [emailError, setEmailError] = useState<string | null>(null);
 
@@ -219,7 +219,21 @@ export default function SignupPage() {
     const auth = getAuth(firebaseApp);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      const userCredential = await signInWithPopup(auth, provider);
+      const firebaseUser = userCredential.user;
+      
+      // Check and sync profile
+      let profile = await fetchUserProfile(firebaseUser.uid);
+      if (!profile) {
+          profile = await createNewUserProfile(firebaseUser);
+      }
+      
+      if (profile) {
+          setUser(profile);
+          router.push("/");
+      } else {
+          toast({ title: "Error", description: "Failed to initialize user profile.", variant: "destructive" });
+      }
     } catch (error: any) {
        if (error.code === 'auth/popup-closed-by-user') {
         return;
