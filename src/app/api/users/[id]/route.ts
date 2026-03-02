@@ -5,11 +5,17 @@ import { User } from '@/lib/types';
 
 
 async function getUserDocRef(id: string): Promise<FirebaseFirestore.DocumentReference | null> {
-    // Prioritize recruiters/employees to ensure management roles take precedence
+    // 1. Prioritize Admins
+    const adminDocRef = db.collection('admins').doc(id);
+    const adminDoc = await adminDocRef.get();
+    if (adminDoc.exists) return adminDocRef;
+
+    // 2. Prioritize recruiters/employees
     const recruiterDocRef = db.collection('recruiters').doc(id);
     const recruiterDoc = await recruiterDocRef.get();
     if (recruiterDoc.exists) return recruiterDocRef;
 
+    // 3. Look in users for Job Seekers
     const userDocRef = db.collection('users').doc(id);
     const userDoc = await userDocRef.get();
     if (userDoc.exists) return userDocRef;

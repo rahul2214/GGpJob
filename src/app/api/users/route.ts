@@ -10,24 +10,29 @@ export async function GET(request: Request) {
     const uid = searchParams.get('uid');
 
     if (uid) {
-        // Priority check: Look in recruiters first to ensure management roles take precedence
-        let userDoc = await db.collection('recruiters').doc(uid).get();
+        // 1. Check admins first
+        let userDoc = await db.collection('admins').doc(uid).get();
         let userData: any = null;
 
         if (userDoc.exists) {
             userData = userDoc.data();
         } else {
-            // Second check: Look in users for Job Seekers
-            userDoc = await db.collection('users').doc(uid).get();
+            // 2. Check recruiters
+            userDoc = await db.collection('recruiters').doc(uid).get();
             if (userDoc.exists) {
                 userData = userDoc.data();
+            } else {
+                // 3. Check job seekers
+                userDoc = await db.collection('users').doc(uid).get();
+                if (userDoc.exists) {
+                    userData = userDoc.data();
+                }
             }
         }
 
         if (userData) {
             const user = { id: userDoc.id, ...userData } as User;
             
-            // Efficiently check for subcollections presence to calculate profile strength on server (Job Seekers only)
             if (user.role === 'Job Seeker') {
                 const [eduSnap, empSnap, skillSnap, projSnap, langSnap] = await Promise.all([
                     db.collection('users').doc(uid).collection('education').limit(1).get(),
@@ -52,14 +57,18 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'User profile not found in database.' }, { status: 404 });
     }
 
-    // This part of the function gets all users and is typically for admin purposes.
-    const usersSnapshot = await db.collection('users').get();
-    const recruitersSnapshot = await db.collection('recruiters').get();
+    // Admin view: get all users across all collections
+    const [usersSnap, recruitersSnap, adminsSnap] = await Promise.all([
+        db.collection('users').get(),
+        db.collection('recruiters').get(),
+        db.collection('admins').get()
+    ]);
     
-    const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const recruiters = recruitersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const users = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const recruiters = recruitersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const admins = adminsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    return NextResponse.json([...users, ...recruiters]);
+    return NextResponse.json([...users, ...recruiters, ...admins]);
   } catch (e: any) {
     console.error("[API_USERS_GET] Error:", e.message);
     return NextResponse.json({ error: 'Failed to fetch users', details: e.message }, { status: 500 });
@@ -86,7 +95,13 @@ export async function POST(request: Request) {
         locationId: null,
     };
     
-    const collectionName = role === 'Job Seeker' ? 'users' : 'recruiters';
+    let collectionName = 'users';
+    if (role === 'Admin' || role === 'Super Admin') {
+        collectionName = 'admins';
+    } else if (role === 'Recruiter' || role === 'Employee') {
+        collectionName = 'recruiters';
+    }
+
     await db.collection(collectionName).doc(id).set(dataToSave);
     
     return NextResponse.json({ id, ...dataToSave }, { status: 201 });

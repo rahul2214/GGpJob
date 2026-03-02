@@ -140,15 +140,23 @@ export default function LoginPage() {
         return;
       }
 
-      // Check role for job seeker login
+      // Explicitly check role - exclude Admins and Company users from this login
       const res = await fetch(`/api/users?uid=${firebaseUser.uid}`);
       if (res.ok) {
           const profile = await res.json();
           if (profile.role !== 'Job Seeker') {
               await auth.signOut();
+              let portalName = "Company Login";
+              let portalUrl = "/company/login";
+              
+              if (profile.role === 'Admin' || profile.role === 'Super Admin') {
+                  portalName = "Admin Login";
+                  portalUrl = "/admin/login";
+              }
+
               toast({
                   title: "Access Denied",
-                  description: "This account is registered as a Company user. Please use the company login page.",
+                  description: `This account is registered as a ${profile.role}. Please use the ${portalName} page.`,
                   variant: "destructive",
               });
               return;
@@ -195,7 +203,7 @@ export default function LoginPage() {
               await auth.signOut();
               toast({
                   title: "Access Denied",
-                  description: "This account is registered as a Company user. Google Sign-In is only available for job seekers.",
+                  description: "This account is already registered with a management role. Google Sign-In is only available for job seekers.",
                   variant: "destructive",
               });
               return;
