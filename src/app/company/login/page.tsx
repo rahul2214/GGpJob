@@ -57,13 +57,7 @@ export default function CompanyLoginPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      if (user.role === 'Job Seeker') {
-          // If already logged in as a job seeker, we shouldn't automatically redirect
-          // to the dashboard from this page without warning, but for consistency:
-          router.push('/');
-      } else {
-          router.push('/');
-      }
+      router.push('/');
     }
   }, [user, loading, router]);
 
@@ -136,26 +130,32 @@ export default function CompanyLoginPage() {
         return;
       }
 
-      // Explicitly check if the user exists in the recruiters collection
+      // Explicitly check role isolation
       const res = await fetch(`/api/users?uid=${firebaseUser.uid}`);
       if (res.ok) {
           const profile = await res.json();
-          // If the profile returned is a Job Seeker, it means no Recruiter/Employee profile exists for this UID
-          if (profile.role === 'Job Seeker') {
+          if (profile.role !== 'Recruiter' && profile.role !== 'Employee') {
               await auth.signOut();
+              let portalName = "Job Seeker Login";
+              let portalUrl = "/login";
+              
+              if (profile.role === 'Admin' || profile.role === 'Super Admin') {
+                  portalName = "Admin Login";
+                  portalUrl = "/admin/login";
+              }
+
               toast({
                   title: "Access Denied",
-                  description: "This account is registered as a Job Seeker. Please use the candidate login page.",
+                  description: `This account is registered as a ${profile.role}. Please use the ${portalName} portal.`,
                   variant: "destructive",
               });
               return;
           }
       } else {
-          // Profile not found at all
           await auth.signOut();
           toast({
               title: "Access Denied",
-              description: "Company profile not found. Please contact support or sign up as a company user.",
+              description: "Company profile not found.",
               variant: "destructive",
           });
           return;
@@ -163,18 +163,7 @@ export default function CompanyLoginPage() {
       
       router.push("/");
     } catch (error: any) {
-      let errorMessage = "An unexpected error occurred.";
-      if (error.code) {
-        switch (error.code) {
-          case 'auth/user-not-found':
-          case 'auth/wrong-password':
-          case 'auth/invalid-credential':
-            errorMessage = 'Invalid email or password.';
-            break;
-          default:
-            errorMessage = error.message;
-        }
-      }
+      let errorMessage = "Invalid email or password.";
       toast({
         title: "Login Failed",
         description: errorMessage,

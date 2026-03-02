@@ -21,7 +21,7 @@ export async function POST(request: Request) {
         // 2. Set custom claim for Admin role
         await auth.setCustomUserClaims(userRecord.uid, { role: 'Admin' });
 
-        // 3. Create user profile in Firestore
+        // 3. Create user profile in Firestore (Dedicated admins collection)
         const userProfile: Omit<User, 'id'> = {
             name,
             email,
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
             headline: 'Administrator',
         };
 
-        await db.collection('recruiters').doc(userRecord.uid).set(userProfile);
+        await db.collection('admins').doc(userRecord.uid).set(userProfile);
 
         return NextResponse.json({ uid: userRecord.uid, ...userProfile }, { status: 201 });
 
