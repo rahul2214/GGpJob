@@ -242,6 +242,7 @@ function JobDetailsContent() {
     }
     
     const hasBenefits = job.benefits && job.benefits.length > 0;
+    const hasRequirements = job.requirements && job.requirements.length > 0;
     const showSimilarJobs = relatedJobs.length > 0 && !isAdminView;
     const isFooterHidden = isApplyAreaVisible || isSimilarJobsVisible;
 
@@ -463,6 +464,23 @@ function JobDetailsContent() {
                                             ))}
                                         </div>
                                     </div>
+
+                                    {hasRequirements && (
+                                        <div className="mt-8">
+                                            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                                <LayoutList className="h-5 w-5 text-primary" />
+                                                Requirements
+                                            </h3>
+                                            <ul className="space-y-3">
+                                                {job.requirements?.map((req, index) => (
+                                                    <li key={index} className="flex items-start gap-3 text-sm text-gray-600">
+                                                        <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                                                        <span>{req}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
 
                                     <div ref={footerSentinelRef} className="h-1 w-full" />
 
