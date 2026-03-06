@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { db } from '@/firebase/admin-config';
-import type { Job, Domain } from '@/lib/types';
+import type { Job } from '@/lib/types';
 import type { firestore as adminFirestore } from 'firebase-admin';
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
@@ -34,11 +34,6 @@ export async function GET(request: Request, { params }: { params: { id: string }
     } else {
         lookupPromises.push(Promise.resolve(null));
     }
-    if (jobData.experienceLevelId) {
-        lookupPromises.push(db.collection('experience_levels').where('id', '==', parseInt(jobData.experienceLevelId)).limit(1).get());
-    } else {
-        lookupPromises.push(Promise.resolve(null));
-    }
     if (jobData.domainId) {
         lookupPromises.push(db.collection('domains').doc(jobData.domainId).get());
     } else {
@@ -47,13 +42,15 @@ export async function GET(request: Request, { params }: { params: { id: string }
     
     const applicantsPromise = db.collection('applications').where('jobId', '==', id).count().get();
 
-    const [locationSnaps, typeSnap, workplaceTypeSnap, experienceLevelSnap, domainDoc, applicantsSnap] = await Promise.all([
+    const [locationSnaps, typeSnap, workplaceTypeSnap, domainDoc, applicantsSnap] = await Promise.all([
         Promise.all(locationsPromises),
         ...lookupPromises,
         applicantsPromise
     ]);
 
     const locNames = locationSnaps.map(snap => (snap && !snap.empty) ? snap.docs[0].data().name : '').filter(Boolean);
+    const minExp = jobData.minExperience ?? 0;
+    const maxExp = jobData.maxExperience ?? 0;
 
     const job: Job = {
         id: jobDoc.id,
@@ -62,7 +59,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         locations: locNames,
         type: (typeSnap && !typeSnap.empty) ? typeSnap.docs[0].data().name : '',
         workplaceType: (workplaceTypeSnap && !workplaceTypeSnap.empty) ? workplaceTypeSnap.docs[0].data().name : '',
-        experienceLevel: (experienceLevelSnap && !experienceLevelSnap.empty) ? experienceLevelSnap.docs[0].data().name : '',
+        experienceLevel: minExp === maxExp ? `${minExp} Years` : `${minExp} - ${maxExp} Years`,
         domain: (domainDoc && domainDoc.exists) ? (domainDoc as adminFirestore.DocumentSnapshot).data()?.name : '',
         applicantCount: applicantsSnap.data().count,
     };

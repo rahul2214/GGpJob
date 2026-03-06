@@ -48,12 +48,15 @@ export async function GET(request: Request) {
                 const locIds = jobData.locationIds || (jobData.locationId ? [jobData.locationId] : []);
                 const locNames = locIds.map(id => locationMap.get(String(id))?.name).filter(Boolean);
                 const jobType = jobTypeMap.get(jobData.jobTypeId);
+                const minExp = jobData.minExperience ?? 0;
+                const maxExp = jobData.maxExperience ?? 0;
                 return {
                   id: doc.id,
                   ...jobData,
                   location: locNames.join(', ') || 'N/A',
                   locations: locNames,
                   type: jobType ? jobType.name : 'N/A',
+                  experienceLevel: minExp === maxExp ? `${minExp} Years` : `${minExp} - ${maxExp} Years`,
                 }
             });
 
@@ -102,11 +105,7 @@ export async function GET(request: Request) {
       hasComplexFilters = true;
     }
     
-    const experienceId = searchParams.get('experience');
-    if (experienceId && experienceId !== 'all') {
-        query = query.where('experienceLevelId', '==', experienceId);
-        hasComplexFilters = true;
-    }
+    // Note: Experience filtering now happens in JS below
 
     const locationsParams = searchParams.getAll('location').filter(l => l && l !== 'all');
     if (locationsParams.length > 0) {
@@ -147,7 +146,6 @@ export async function GET(request: Request) {
         domainsSnapshot,
         jobTypesSnapshot,
         workplaceTypesSnapshot,
-        experienceLevelsSnapshot,
     ] = await Promise.all([
         query.get(),
         db.collection('applications').get(),
@@ -155,7 +153,6 @@ export async function GET(request: Request) {
         db.collection('domains').get(),
         db.collection('job_types').get(),
         db.collection('workplace_types').get(),
-        db.collection('experience_levels').get(),
     ]);
 
     const applications = applicationsSnapshot.docs.map(doc => doc.data() as Application);
@@ -164,7 +161,6 @@ export async function GET(request: Request) {
     const domainMap = createMap(domainsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     const jobTypeMap = createMap(jobTypesSnapshot.docs.map(doc => doc.data()), 'id');
     const workplaceTypeMap = createMap(workplaceTypesSnapshot.docs.map(doc => doc.data()), 'id');
-    const experienceLevelMap = createMap(experienceLevelsSnapshot.docs.map(doc => doc.data()), 'id');
 
     const applicationCounts = applications.reduce((acc, app) => {
         if (!acc[app.jobId]) {
@@ -185,8 +181,9 @@ export async function GET(request: Request) {
       const domain = domainMap.get(jobData.domainId);
       const jobType = jobTypeMap.get(jobData.jobTypeId);
       const workplaceType = jobData.workplaceTypeId ? workplaceTypeMap.get(jobData.workplaceTypeId) : null;
-      const experienceLevel = jobData.experienceLevelId ? experienceLevelMap.get(jobData.experienceLevelId) : null;
       const counts = applicationCounts[doc.id] || { total: 0, selected: 0 };
+      const minExp = jobData.minExperience ?? 0;
+      const maxExp = jobData.maxExperience ?? 0;
 
       return {
           id: doc.id,
@@ -196,7 +193,7 @@ export async function GET(request: Request) {
           domain: domain?.name || 'N/A',
           type: jobType?.name || 'N/A',
           workplaceType: workplaceType?.name || 'N/A',
-          experienceLevel: experienceLevel?.name || 'N/A',
+          experienceLevel: minExp === maxExp ? `${minExp} Years` : `${minExp} - ${maxExp} Years`,
           applicantCount: counts.total,
           selectedApplicantCount: counts.selected,
       }
@@ -212,6 +209,17 @@ export async function GET(request: Request) {
         jobs = jobs.filter(job => {
             const postedDate = job.postedAt instanceof Date ? job.postedAt.toISOString() : String(job.postedAt);
             return postedDate >= limitIso;
+        });
+    }
+
+    // Handle experience filtering in JS
+    const userExperience = searchParams.get('experience');
+    if (userExperience && userExperience !== 'all') {
+        const exp = parseInt(userExperience, 10);
+        jobs = jobs.filter(job => {
+            const min = job.minExperience ?? 0;
+            const max = job.maxExperience ?? 99;
+            return exp >= min && exp <= max;
         });
     }
 
