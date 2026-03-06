@@ -3,11 +3,11 @@
 
 import { useState, useEffect, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
-import type { Domain, ExperienceLevel, Location, JobType } from "@/lib/types";
+import type { Domain, Location, JobType } from "@/lib/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Calendar, MapPin, Briefcase, ChevronRight, Layers, Award, Search as SearchIcon } from "lucide-react";
+import { ChevronRight, Calendar, MapPin, Briefcase, Layers, Award } from "lucide-react";
 import { SheetClose } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -15,8 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "./ui/scroll-area";
 import { Skeleton } from "./ui/skeleton";
-import { Input } from "./ui/input";
 import { MultiSelectFilter } from "./multi-select-filter";
+import { Slider } from "./ui/slider";
 
 interface JobFiltersProps {
     isSheet?: boolean;
@@ -30,11 +30,9 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
     
     const [locations, setLocations] = useState<Location[]>([]);
     const [domains, setDomains] = useState<Domain[]>([]);
-    const [experienceLevels, setExperienceLevels] = useState<ExperienceLevel[]>([]);
     const [jobTypes, setJobTypes] = useState<JobType[]>([]);
     const [activeCategory, setActiveCategory] = useState<FilterCategory>('posted');
     
-    // Determine if we should hide the domain filter based on the current context
     const isRecommended = searchParams.has('domain') && searchParams.get('isReferral') !== 'true';
     const isReferral = searchParams.get('isReferral') === 'true';
     const hideDomain = isRecommended || isReferral;
@@ -51,15 +49,13 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
 
      useEffect(() => {
         const fetchFilterData = async () => {
-            const [locationsRes, domainsRes, experienceLevelsRes, jobTypesRes] = await Promise.all([
+            const [locationsRes, domainsRes, jobTypesRes] = await Promise.all([
                 fetch('/api/locations'),
                 fetch('/api/domains'),
-                fetch('/api/experience-levels'),
                 fetch('/api/job-types'),
             ]);
             setLocations(await locationsRes.json());
             setDomains(await domainsRes.json());
-            setExperienceLevels(await experienceLevelsRes.json());
             setJobTypes(await jobTypesRes.json());
         }
         fetchFilterData();
@@ -100,7 +96,6 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
         if (isReferral) params.set('isReferral', 'true');
         
         const currentDomain = searchParams.get('domain');
-        // If domain was hidden (part of page context like Recommended/Referral), preserve it
         if (hideDomain && currentDomain) params.set('domain', currentDomain);
 
         Object.keys(filters).forEach(key => {
@@ -128,8 +123,6 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
         
         if (currentSearch) newParams.set('search', currentSearch);
         if (isReferral) newParams.set('isReferral', 'true');
-        
-        // If domain was hidden (part of page context), preserve it during clear
         if (hideDomain && currentDomain) newParams.set('domain', currentDomain);
         
         router.push(`/jobs?${newParams.toString()}`);
@@ -146,8 +139,6 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
     const jobTypeOptions = useMemo(() => 
         jobTypes.map(jt => ({ value: String(jt.id), label: jt.name })), 
     [jobTypes]);
-
-    const experienceLevelOptions = Array.isArray(experienceLevels) ? experienceLevels.map(el => ({ value: String(el.id), label: el.name })) : [];
 
     const postedOptions = [
         { value: "all", label: "All Dates" },
@@ -179,7 +170,7 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
                                     activeCategory === cat.id && "bg-background"
                                 )}
                             >
-                                <span className="flex items-center">
+                                <span className="flex items-center text-xs">
                                    {cat.label}
                                 </span>
                                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -237,18 +228,16 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
                                 </div>
                             )}
                             {activeCategory === 'experience' && (
-                                <RadioGroup value={filters.experience} onValueChange={(value) => handleFilterChange('experience', value)} className="space-y-4">
-                                    <div className="flex items-center space-x-3">
-                                        <RadioGroupItem value="all" id="exp-all" />
-                                        <Label htmlFor="exp-all" className="text-base font-normal">All Levels</Label>
-                                    </div>
-                                    {experienceLevelOptions.map(level => (
-                                        <div key={level.value} className="flex items-center space-x-3">
-                                            <RadioGroupItem value={level.value} id={`exp-${level.value}`} />
-                                            <Label htmlFor={`exp-${level.value}`} className="text-base font-normal">{level.label}</Label>
-                                        </div>
-                                    ))}
-                                </RadioGroup>
+                                <div className="space-y-6 pt-2">
+                                    <Label className="text-base">Years of Experience: {filters.experience === 'all' ? '0' : filters.experience}</Label>
+                                    <Slider
+                                        defaultValue={[filters.experience === 'all' ? 0 : parseInt(filters.experience, 10)]}
+                                        max={30}
+                                        step={1}
+                                        onValueChange={(val) => handleFilterChange('experience', String(val[0]))}
+                                    />
+                                    <p className="text-xs text-muted-foreground">Showing jobs that match your experience level.</p>
+                                </div>
                             )}
                              {activeCategory === 'jobType' && (
                                  <div className="space-y-4">
@@ -341,21 +330,17 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
                 )}
 
                 {/* Experience Level */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                     <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                        Experience
+                        My Experience: {filters.experience === 'all' ? 'Any' : `${filters.experience} Yrs`}
                     </Label>
-                    <Select value={filters.experience} onValueChange={(value) => handleFilterChange('experience', value)}>
-                        <SelectTrigger className="w-full bg-muted/20">
-                            <SelectValue placeholder="Any experience" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Levels</SelectItem>
-                            {experienceLevelOptions.map(level => (
-                                <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <Slider
+                        defaultValue={[filters.experience === 'all' ? 0 : parseInt(filters.experience, 10)]}
+                        max={30}
+                        step={1}
+                        onValueChange={(val) => handleFilterChange('experience', String(val[0]))}
+                        className="py-2"
+                    />
                 </div>
 
                 {/* Employment Types */}

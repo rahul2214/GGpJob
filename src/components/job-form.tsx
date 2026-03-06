@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle, Briefcase, Save, PlusCircle, Trash2, Link as LinkIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Domain, JobType, WorkplaceType, ExperienceLevel, Job, Location } from "@/lib/types";
+import type { Domain, JobType, WorkplaceType, Job, Location } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
 import { MultiSelectFilter } from "./multi-select-filter";
 
@@ -30,7 +30,8 @@ const formSchema = z.object({
   locationIds: z.array(z.string()).min(1, "At least one location is required."),
   role: z.string().min(2, "Role must be at least 2 characters long."),
   jobDescription: z.string().min(50, "Job description must be at least 50 characters long."),
-  experienceLevelId: z.string().min(1, "Please select an experience level."),
+  minExperience: z.coerce.number().min(0, "Min experience must be 0 or more."),
+  maxExperience: z.coerce.number().min(0, "Max experience must be 0 or more."),
   jobTypeId: z.string().min(1, "Please select a job type."),
   workplaceTypeId: z.string().min(1, "Please select a workplace type."),
   domainId: z.string().min(1, "Please select a domain."),
@@ -41,6 +42,9 @@ const formSchema = z.object({
   jobLink: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   requirements: z.array(z.object({ value: z.string().min(1, "Requirement cannot be empty.") })).optional(),
   benefits: z.array(z.object({ value: z.string().min(1, "Benefit cannot be empty.") })).optional(),
+}).refine(data => data.maxExperience >= data.minExperience, {
+    message: "Max experience cannot be less than min experience",
+    path: ["maxExperience"]
 });
 
 type JobFormValues = z.infer<typeof formSchema>;
@@ -57,17 +61,15 @@ export function JobForm({ job }: JobFormProps) {
   const [domains, setDomains] = useState<Domain[]>([]);
   const [jobTypes, setJobTypes] = useState<JobType[]>([]);
   const [workplaceTypes, setWorkplaceTypes] = useState<WorkplaceType[]>([]);
-  const [experienceLevels, setExperienceLevels] = useState<ExperienceLevel[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
 
   useEffect(() => {
     const fetchSelectData = async () => {
         try {
-            const [domainsRes, jobTypesRes, workplaceTypesRes, experienceLevelsRes, locationsRes] = await Promise.all([
+            const [domainsRes, jobTypesRes, workplaceTypesRes, locationsRes] = await Promise.all([
                 fetch('/api/domains'),
                 fetch('/api/job-types'),
                 fetch('/api/workplace-types'),
-                fetch('/api/experience-levels'),
                 fetch('/api/locations')
             ]);
             
@@ -79,7 +81,6 @@ export function JobForm({ job }: JobFormProps) {
             }
             setJobTypes(fetchedJobTypes);
             setWorkplaceTypes(await workplaceTypesRes.json());
-            setExperienceLevels(await experienceLevelsRes.json());
             setLocations(await locationsRes.json());
         } catch (error) {
             console.error("Failed to fetch form select data", error);
@@ -106,9 +107,10 @@ export function JobForm({ job }: JobFormProps) {
       contactPhone: job?.contactPhone || "",
       salary: job?.salary || "",
       jobLink: job?.jobLink || "",
+      minExperience: job?.minExperience ?? 0,
+      maxExperience: job?.maxExperience ?? 0,
       jobTypeId: String(job?.jobTypeId || ''),
       workplaceTypeId: String(job?.workplaceTypeId || ''),
-      experienceLevelId: String(job?.experienceLevelId || ''),
       domainId: String(job?.domainId || ''),
       requirements: job?.requirements?.map(r => ({ value: r })) || [],
       benefits: job?.benefits?.map(b => ({ value: b })) || [],
@@ -138,9 +140,10 @@ export function JobForm({ job }: JobFormProps) {
         contactPhone: job.contactPhone || "",
         salary: job.salary || "",
         jobLink: job.jobLink || "",
+        minExperience: job.minExperience ?? 0,
+        maxExperience: job.maxExperience ?? 0,
         jobTypeId: String(job.jobTypeId || ''),
         workplaceTypeId: String(job.workplaceTypeId || ''),
-        experienceLevelId: String(job.experienceLevelId || ''),
         domainId: String(job.domainId || ''),
         requirements: job.requirements?.map(r => ({ value: r })) || [],
         benefits: job.benefits?.map(b => ({ value: b })) || [],
@@ -375,24 +378,32 @@ export function JobForm({ job }: JobFormProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="experienceLevelId"
+            name="minExperience"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Experience Level</FormLabel>
-                <Select onValueChange={field.onChange} value={String(field.value || '')}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select experience level" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Array.isArray(experienceLevels) && experienceLevels.map(el => <SelectItem key={el.id} value={String(el.id)}>{el.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <FormLabel>Min Experience (Years)</FormLabel>
+                <FormControl>
+                  <Input type="number" min="0" {...field} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+           <FormField
+            control={form.control}
+            name="maxExperience"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Max Experience (Years)</FormLabel>
+                <FormControl>
+                  <Input type="number" min="0" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
            <FormField
             control={form.control}
             name="domainId"
@@ -413,8 +424,6 @@ export function JobForm({ job }: JobFormProps) {
               </FormItem>
             )}
           />
-        </div>
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="vacancies"
@@ -428,6 +437,8 @@ export function JobForm({ job }: JobFormProps) {
               </FormItem>
             )}
           />
+        </div>
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
            <FormField
             control={form.control}
             name="salary"
@@ -441,23 +452,23 @@ export function JobForm({ job }: JobFormProps) {
               </FormItem>
             )}
           />
+          <FormField
+            control={form.control}
+            name="jobLink"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>External Job Link (Optional)</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <LinkIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="https://company.com/careers/job-id" className="pl-8" {...field} />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-        <FormField
-          control={form.control}
-          name="jobLink"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>External Job Link (Optional)</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <LinkIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="https://company.com/careers/job-id" className="pl-8" {...field} />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
               control={form.control}

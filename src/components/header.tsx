@@ -125,7 +125,6 @@ export default function Header() {
     { href: "/admin/locations", label: "Manage Locations", icon: MapPin },
     { href: "/admin/employment-types", label: "Employment Types", icon: Network },
     { href: "/admin/workplace-types", label: "Workplace Types", icon: Building },
-    { href: "/admin/experience-levels", label: "Experience Levels", icon: Award },
   ];
 
   if (user?.role === 'Super Admin') {

@@ -35,11 +35,6 @@ export interface WorkplaceType {
     name: "On-site" | "Hybrid" | "Remote";
 }
 
-export interface ExperienceLevel {
-    id: number;
-    name: "Entry Level" | "Mid Level" | "Senior Level";
-}
-
 export interface Location {
     id: number; 
     name: string;
@@ -57,7 +52,8 @@ export interface Job {
   salary?: string;
   description: string;
   postedAt: Date | string;
-  experienceLevelId?: string;
+  minExperience?: number; // New field
+  maxExperience?: number; // New field
   domainId?: string;
   role?: string;
   isReferral?: boolean;
@@ -75,7 +71,7 @@ export interface Job {
   locations?: string[]; // Array of location names
   type?: string;
   workplaceType?: string;
-  experienceLevel?: string;
+  experienceLevel?: string; // Formatted display string
   domain?: string;
   applicantCount?: number;
   selectedApplicantCount?: number;
