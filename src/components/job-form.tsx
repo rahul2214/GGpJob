@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,11 +22,12 @@ import { LoaderCircle, Briefcase, Save, PlusCircle, Trash2, Link as LinkIcon } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Domain, JobType, WorkplaceType, ExperienceLevel, Job, Location } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
+import { MultiSelectFilter } from "./multi-select-filter";
 
 const formSchema = z.object({
   jobTitle: z.string().min(5, "Job title must be at least 5 characters long."),
   companyName: z.string().min(2, "Company name must be at least 2 characters long."),
-  locationId: z.string().min(1, "Job location is required."),
+  locationIds: z.array(z.string()).min(1, "At least one location is required."),
   role: z.string().min(2, "Role must be at least 2 characters long."),
   jobDescription: z.string().min(50, "Job description must be at least 50 characters long."),
   experienceLevelId: z.string().min(1, "Please select an experience level."),
@@ -97,7 +98,7 @@ export function JobForm({ job }: JobFormProps) {
     defaultValues: {
       jobTitle: job?.title || "",
       companyName: job?.companyName || "",
-      locationId: String(job?.locationId || ''),
+      locationIds: job?.locationIds || (job?.locationId ? [String(job.locationId)] : []),
       role: job?.role || "",
       jobDescription: job?.description || "",
       vacancies: job?.vacancies || 1,
@@ -129,7 +130,7 @@ export function JobForm({ job }: JobFormProps) {
       form.reset({
         jobTitle: job.title || "",
         companyName: job.companyName || "",
-        locationId: String(job.locationId || ''),
+        locationIds: job.locationIds || (job.locationId ? [String(job.locationId)] : []),
         role: job.role || "",
         jobDescription: job.description || "",
         vacancies: job.vacancies || 1,
@@ -147,6 +148,10 @@ export function JobForm({ job }: JobFormProps) {
     }
   }, [job, form]);
 
+  const locationOptions = useMemo(() => 
+    locations.map(loc => ({ value: String(loc.id), label: `${loc.name}, ${loc.country}` })), 
+  [locations]);
+
   const onSubmit = async (data: JobFormValues) => {
     if (!user) {
         toast({ title: "Authentication Error", description: "You must be logged in to post a job.", variant: "destructive" });
@@ -162,7 +167,7 @@ export function JobForm({ job }: JobFormProps) {
         title: data.jobTitle,
         description: data.jobDescription,
         isReferral: false,
-        recruiterId: user.id, // Ensure recruiterId is set
+        recruiterId: user.id,
         postedAt: job?.postedAt || new Date().toISOString(),
         requirements: data.requirements?.map(r => r.value),
         benefits: data.benefits?.map(b => b.value),
@@ -228,20 +233,18 @@ export function JobForm({ job }: JobFormProps) {
         />
          <FormField
             control={form.control}
-            name="locationId"
+            name="locationIds"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Job Location</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ''}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select job location" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Array.isArray(locations) && locations.map(loc => <SelectItem key={loc.id} value={String(loc.id)}>{loc.name}, {loc.country}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <FormLabel>Job Locations (Multiple Selection Allowed)</FormLabel>
+                <FormControl>
+                    <MultiSelectFilter
+                        title="Locations"
+                        options={locationOptions}
+                        selectedValues={field.value}
+                        onChange={field.onChange}
+                    />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

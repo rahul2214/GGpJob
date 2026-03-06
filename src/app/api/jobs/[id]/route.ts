@@ -16,15 +16,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 
     const jobData = jobDoc.data() as Job;
+    const locIds = jobData.locationIds || (jobData.locationId ? [jobData.locationId] : []);
 
-    // Efficiently fetch only the specific lookup documents needed and the applicant count
+    // Fetch locations
+    const locationsPromises = locIds.map(locId => 
+        db.collection('locations').where('id', '==', parseInt(locId)).limit(1).get()
+    );
+
     const lookupPromises = [];
-
-    if (jobData.locationId) {
-        lookupPromises.push(db.collection('locations').where('id', '==', parseInt(jobData.locationId)).limit(1).get());
-    } else {
-        lookupPromises.push(Promise.resolve(null));
-    }
     if (jobData.jobTypeId) {
         lookupPromises.push(db.collection('job_types').where('id', '==', parseInt(jobData.jobTypeId)).limit(1).get());
     } else {
@@ -46,15 +45,21 @@ export async function GET(request: Request, { params }: { params: { id: string }
         lookupPromises.push(Promise.resolve(null));
     }
     
-    // Add applicant count promise
     const applicantsPromise = db.collection('applications').where('jobId', '==', id).count().get();
 
-    const [locationSnap, typeSnap, workplaceTypeSnap, experienceLevelSnap, domainDoc, applicantsSnap] = await Promise.all([...lookupPromises, applicantsPromise]);
+    const [locationSnaps, typeSnap, workplaceTypeSnap, experienceLevelSnap, domainDoc, applicantsSnap] = await Promise.all([
+        Promise.all(locationsPromises),
+        ...lookupPromises,
+        applicantsPromise
+    ]);
+
+    const locNames = locationSnaps.map(snap => (snap && !snap.empty) ? snap.docs[0].data().name : '').filter(Boolean);
 
     const job: Job = {
         id: jobDoc.id,
         ...jobData,
-        location: (locationSnap && !locationSnap.empty) ? locationSnap.docs[0].data().name : '',
+        location: locNames.join(', ') || 'N/A',
+        locations: locNames,
         type: (typeSnap && !typeSnap.empty) ? typeSnap.docs[0].data().name : '',
         workplaceType: (workplaceTypeSnap && !workplaceTypeSnap.empty) ? workplaceTypeSnap.docs[0].data().name : '',
         experienceLevel: (experienceLevelSnap && !experienceLevelSnap.empty) ? experienceLevelSnap.docs[0].data().name : '',
@@ -64,7 +69,6 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     const response = NextResponse.json(job);
     
-    // Don't cache if we're in admin or edit mode
     if (searchParams.get('fresh') !== 'true') {
         response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
     }
@@ -82,6 +86,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         const { id } = params;
         const updatedJobData = await request.json();
         const jobDocRef = db.collection('jobs').doc(id);
+
+        // Ensure compatibility
+        if (updatedJobData.locationIds && updatedJobData.locationIds.length > 0) {
+            updatedJobData.locationId = updatedJobData.locationIds[0];
+        }
 
         // Ensure we don't try to overwrite the id
         delete updatedJobData.id;
@@ -104,7 +113,6 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     try {
         const { id } = params;
         
-        // Before deleting the job, we might need to delete related applications.
         const applicationsSnapshot = await db.collection('applications').where('jobId', '==', id).get();
         const batch = db.batch();
         applicationsSnapshot.docs.forEach(doc => {
