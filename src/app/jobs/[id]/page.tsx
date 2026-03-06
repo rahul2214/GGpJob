@@ -1,4 +1,3 @@
-
 "use client";
 
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
@@ -24,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
 async function getJobData(id: string): Promise<{ job: Job | null; relatedJobs: Job[] }> {
