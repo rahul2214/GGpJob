@@ -474,7 +474,7 @@ function JobDetailsContent() {
                                             <ul className="space-y-3">
                                                 {job.requirements?.map((req, index) => (
                                                     <li key={index} className="flex items-start gap-3 text-sm text-gray-600">
-                                                        <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                                                        <div className="h-1.5 w-1.5 rounded-full bg-gray-400 shrink-0 mt-2" />
                                                         <span>{req}</span>
                                                     </li>
                                                 ))}
