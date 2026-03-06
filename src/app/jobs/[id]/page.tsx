@@ -448,7 +448,7 @@ function JobDetailsContent() {
                                             </div>
                                             <div>
                                                 <div className="text-xs text-muted-foreground">Vacancies</div>
-                                                <div className="font-bold">{job.vacancies || 1}</div>
+                                                <div className="font-bold">{job.vacancies || 'Not Disclosed'}</div>
                                             </div>
                                         </div>
                                     </div>
