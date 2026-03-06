@@ -34,7 +34,7 @@ const formSchema = z.object({
   jobTypeId: z.string().min(1, "Please select a job type."),
   workplaceTypeId: z.string().min(1, "Please select a workplace type."),
   domainId: z.string().min(1, "Please select a domain."),
-  vacancies: z.coerce.number().min(1, "There must be at least one vacancy."),
+  vacancies: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().min(1, "Vacancies must be at least 1.").optional()),
   email: z.string().email("Please enter a valid email address."),
   phoneNumber: z.string().length(10, "Please enter a valid 10-digit phone number."),
   employeeLinkedIn: z.string().url("Please enter a valid LinkedIn URL.").optional().or(z.literal('')),
@@ -100,7 +100,7 @@ export function ReferralForm({ job }: ReferralFormProps) {
       locationIds: job?.locationIds || (job?.locationId ? [String(job.locationId)] : []),
       role: job?.role || "",
       jobDescription: job?.description || "",
-      vacancies: job?.vacancies || 1,
+      vacancies: job?.vacancies ?? undefined,
       email: job?.contactEmail || "",
       phoneNumber: job?.contactPhone || "",
       employeeLinkedIn: job?.employeeLinkedIn || "",
@@ -133,7 +133,7 @@ export function ReferralForm({ job }: ReferralFormProps) {
         locationIds: job.locationIds || (job.locationId ? [String(job.locationId)] : []),
         role: job.role || "",
         jobDescription: job.description || "",
-        vacancies: job.vacancies || 1,
+        vacancies: job.vacancies ?? undefined,
         email: job.contactEmail || "",
         phoneNumber: job.contactPhone || "",
         employeeLinkedIn: job.employeeLinkedIn || "",
@@ -438,7 +438,7 @@ export function ReferralForm({ job }: ReferralFormProps) {
                 <FormItem>
                   <FormLabel>Number of Vacancies</FormLabel>
                   <FormControl>
-                    <Input type="number" min="1" {...field} />
+                    <Input type="number" min="1" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
