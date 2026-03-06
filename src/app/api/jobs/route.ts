@@ -45,12 +45,14 @@ export async function GET(request: Request) {
         const processJobs = (snap: adminFirestore.QuerySnapshot) => {
             let jobs = snap.docs.map(doc => {
                 const jobData = doc.data() as Job;
-                const location = locationMap.get(jobData.locationId);
+                const locIds = jobData.locationIds || (jobData.locationId ? [jobData.locationId] : []);
+                const locNames = locIds.map(id => locationMap.get(String(id))?.name).filter(Boolean);
                 const jobType = jobTypeMap.get(jobData.jobTypeId);
                 return {
                   id: doc.id,
                   ...jobData,
-                  location: location ? location.name : 'N/A',
+                  location: locNames.join(', ') || 'N/A',
+                  locations: locNames,
                   type: jobType ? jobType.name : 'N/A',
                 }
             });
@@ -108,7 +110,8 @@ export async function GET(request: Request) {
 
     const locationsParams = searchParams.getAll('location').filter(l => l && l !== 'all');
     if (locationsParams.length > 0) {
-        query = query.where('locationId', 'in', locationsParams);
+        // Use array-contains-any for locationIds filter
+        query = query.where('locationIds', 'array-contains-any', locationsParams);
         hasComplexFilters = true;
     } 
 
@@ -124,17 +127,13 @@ export async function GET(request: Request) {
         hasComplexFilters = true;
     }
 
-    // Note: We moved "posted" filtering to the JavaScript section to avoid 
-    // requiring complex composite indexes in Firestore for combined range/equality filters.
     // --- End Filtering Logic ---
 
     // Apply ordering only if no complex filters are present
-    // Combined with hasComplexFilters = true, this prevents ordering issues in Firestore
     if (!searchParams.get('search') && !hasComplexFilters) {
         query = query.orderBy('postedAt', 'desc');
     }
     
-    // Fetch a larger set when filtered to ensure we have enough data to sort in JS
     if (hasComplexFilters || searchParams.get('search')) {
         query = query.limit(500);
     } else if (searchParams.get('limit')) {
@@ -181,7 +180,8 @@ export async function GET(request: Request) {
 
     let jobs = jobsSnapshot.docs.map(doc => {
       const jobData = doc.data() as Job;
-      const location = locationMap.get(jobData.locationId);
+      const locIds = jobData.locationIds || (jobData.locationId ? [jobData.locationId] : []);
+      const locNames = locIds.map(id => locationMap.get(String(id))?.name).filter(Boolean);
       const domain = domainMap.get(jobData.domainId);
       const jobType = jobTypeMap.get(jobData.jobTypeId);
       const workplaceType = jobData.workplaceTypeId ? workplaceTypeMap.get(jobData.workplaceTypeId) : null;
@@ -191,7 +191,8 @@ export async function GET(request: Request) {
       return {
           id: doc.id,
           ...jobData,
-          location: location ? location.name : 'N/A',
+          location: locNames.join(', ') || 'N/A',
+          locations: locNames,
           domain: domain?.name || 'N/A',
           type: jobType?.name || 'N/A',
           workplaceType: workplaceType?.name || 'N/A',
@@ -201,7 +202,7 @@ export async function GET(request: Request) {
       }
     });
 
-    // Handle date filtering in JS to avoid composite index requirements
+    // Handle date filtering in JS
     const postedDays = searchParams.get('posted');
     if (postedDays && postedDays !== 'all') {
         const days = parseInt(postedDays, 10);
@@ -214,16 +215,13 @@ export async function GET(request: Request) {
         });
     }
 
-    // Handle case-insensitive search after fetching
     if (searchParams.get('search')) {
         const searchTerm = searchParams.get('search')!.toLowerCase();
         jobs = jobs.filter(job => job.title.toLowerCase().includes(searchTerm));
     }
     
-    // Final client-side sort to ensure consistency
     jobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
 
-    // Apply manual limit if sorting/filtering in memory was needed
     if (searchParams.get('limit')) {
         const manualLimit = parseInt(searchParams.get('limit') as string, 10);
         jobs = jobs.slice(0, manualLimit);
@@ -231,7 +229,6 @@ export async function GET(request: Request) {
 
     const response = NextResponse.json(jobs);
     
-    // Do not cache owner-specific or admin queries to ensure recruiters/employees see accurate real-time data
     const isManagementQuery = searchParams.get('recruiterId') || searchParams.get('employeeId') || searchParams.get('admin') === 'true';
     if (!isManagementQuery) {
         response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
@@ -251,6 +248,8 @@ export async function POST(request: Request) {
 
     const jobToCreate: Partial<Job> = {
         ...newJobData,
+        // For compatibility, set first location as locationId
+        locationId: (newJobData.locationIds && newJobData.locationIds.length > 0) ? newJobData.locationIds[0] : (newJobData.locationId || ''),
         postedAt: newJobData.postedAt || new Date().toISOString(),
     };
     

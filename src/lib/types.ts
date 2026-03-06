@@ -50,7 +50,8 @@ export interface Job {
   id:string;
   title: string;
   companyName: string;
-  locationId: string;
+  locationId?: string; // Legacy single field
+  locationIds: string[]; // Support for multiple locations
   jobTypeId: string;
   workplaceTypeId?: string;
   salary?: string;
@@ -70,7 +71,8 @@ export interface Job {
   requirements?: string[];
   benefits?: string[];
   // Joined fields
-  location?: string;
+  location?: string; // Comma separated list for display
+  locations?: string[]; // Array of location names
   type?: string;
   workplaceType?: string;
   experienceLevel?: string;
