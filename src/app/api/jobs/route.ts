@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import { db } from '@/firebase/admin-config';
 import type { Job, Application } from '@/lib/types';
@@ -49,7 +48,7 @@ export async function GET(request: Request) {
                 const locNames = locIds.map(id => locationMap.get(String(id))?.name).filter(Boolean);
                 const jobType = jobTypeMap.get(jobData.jobTypeId);
                 const minExp = jobData.minExperience ?? 0;
-                const maxExp = jobData.maxExperience ?? 0;
+                const maxExp = jobData.maxExperience ?? minExp;
                 return {
                   id: doc.id,
                   ...jobData,
@@ -105,8 +104,6 @@ export async function GET(request: Request) {
       hasComplexFilters = true;
     }
     
-    // Note: Experience filtering now happens in JS below
-
     const locationsParams = searchParams.getAll('location').filter(l => l && l !== 'all');
     if (locationsParams.length > 0) {
         // Use array-contains-any for locationIds filter
@@ -183,7 +180,7 @@ export async function GET(request: Request) {
       const workplaceType = jobData.workplaceTypeId ? workplaceTypeMap.get(jobData.workplaceTypeId) : null;
       const counts = applicationCounts[doc.id] || { total: 0, selected: 0 };
       const minExp = jobData.minExperience ?? 0;
-      const maxExp = jobData.maxExperience ?? 0;
+      const maxExp = jobData.maxExperience ?? minExp;
 
       return {
           id: doc.id,
@@ -212,14 +209,17 @@ export async function GET(request: Request) {
         });
     }
 
-    // Handle experience filtering in JS
-    const userExperience = searchParams.get('experience');
-    if (userExperience && userExperience !== 'all') {
-        const exp = parseInt(userExperience, 10);
+    // Handle experience range filtering in JS
+    const minExpFilter = searchParams.get('minExp');
+    const maxExpFilter = searchParams.get('maxExp');
+    if (minExpFilter || maxExpFilter) {
+        const fMin = minExpFilter ? parseInt(minExpFilter, 10) : 0;
+        const fMax = maxExpFilter ? parseInt(maxExpFilter, 10) : 99;
         jobs = jobs.filter(job => {
-            const min = job.minExperience ?? 0;
-            const max = job.maxExperience ?? 99;
-            return exp >= min && exp <= max;
+            const jMin = job.minExperience ?? 0;
+            const jMax = job.maxExperience ?? 99;
+            // Overlap check: job range overlaps with filter range
+            return (jMin <= fMax) && (jMax >= fMin);
         });
     }
 
