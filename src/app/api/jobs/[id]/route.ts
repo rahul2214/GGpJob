@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import { db } from '@/firebase/admin-config';
 import type { Job } from '@/lib/types';
@@ -50,7 +49,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     const locNames = locationSnaps.map(snap => (snap && !snap.empty) ? snap.docs[0].data().name : '').filter(Boolean);
     const minExp = jobData.minExperience ?? 0;
-    const maxExp = jobData.maxExperience ?? 0;
+    const maxExp = jobData.maxExperience ?? minExp;
 
     const job: Job = {
         id: jobDoc.id,

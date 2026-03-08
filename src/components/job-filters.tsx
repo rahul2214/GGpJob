@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, Suspense, useMemo } from "react";
@@ -40,7 +39,10 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
     const [filters, setFilters] = useState({
         posted: searchParams.get('posted') || 'all',
         location: searchParams.getAll('location') || [],
-        experience: searchParams.get('experience') || 'all',
+        expRange: [
+            searchParams.get('minExp') ? parseInt(searchParams.get('minExp')!, 10) : 0,
+            searchParams.get('maxExp') ? parseInt(searchParams.get('maxExp')!, 10) : 30
+        ] as number[],
         domain: searchParams.getAll('domain') || [],
         jobType: searchParams.getAll('jobType') || [],
     });
@@ -63,11 +65,11 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
 
     useEffect(() => {
         const checkActiveFilters = () => {
-            for (const key in filters) {
-                const value = filters[key as keyof typeof filters];
-                if (Array.isArray(value) && value.length > 0) return true;
-                if (typeof value === 'string' && value && value !== 'all') return true;
-            }
+            if (filters.posted !== 'all') return true;
+            if (filters.location.length > 0) return true;
+            if (filters.expRange[0] !== 0 || filters.expRange[1] !== 30) return true;
+            if (filters.domain.length > 0) return true;
+            if (filters.jobType.length > 0) return true;
             return false;
         };
         setHasActiveFilters(checkActiveFilters());
@@ -78,13 +80,16 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
         setFilters({
             posted: searchParams.get('posted') || 'all',
             location: searchParams.getAll('location') || [],
-            experience: searchParams.get('experience') || 'all',
+            expRange: [
+                searchParams.get('minExp') ? parseInt(searchParams.get('minExp')!, 10) : 0,
+                searchParams.get('maxExp') ? parseInt(searchParams.get('maxExp')!, 10) : 30
+            ],
             domain: searchParams.getAll('domain') || [],
             jobType: searchParams.getAll('jobType') || [],
         });
     }, [searchParams]);
 
-    const handleFilterChange = (filterName: string, value: string | string[]) => {
+    const handleFilterChange = (filterName: string, value: any) => {
         setFilters(prev => ({ ...prev, [filterName]: value }));
     };
     
@@ -103,6 +108,13 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
             const value = filters[filterKey];
 
             if (hideDomain && filterKey === 'domain') return;
+
+            if (filterKey === 'expRange') {
+                const [min, max] = value as number[];
+                if (min > 0) params.set('minExp', String(min));
+                if (max < 30) params.set('maxExp', String(max));
+                return;
+            }
 
             if (Array.isArray(value)) {
                 if (value.length > 0) {
@@ -229,14 +241,15 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
                             )}
                             {activeCategory === 'experience' && (
                                 <div className="space-y-6 pt-2">
-                                    <Label className="text-base">Years of Experience: {filters.experience === 'all' ? '0' : filters.experience}</Label>
+                                    <Label className="text-base">Experience: {filters.expRange[0]} - {filters.expRange[1]} Yrs</Label>
                                     <Slider
-                                        defaultValue={[filters.experience === 'all' ? 0 : parseInt(filters.experience, 10)]}
+                                        value={filters.expRange}
+                                        min={0}
                                         max={30}
                                         step={1}
-                                        onValueChange={(val) => handleFilterChange('experience', String(val[0]))}
+                                        onValueChange={(val) => handleFilterChange('expRange', val)}
                                     />
-                                    <p className="text-xs text-muted-foreground">Showing jobs that match your experience level.</p>
+                                    <p className="text-xs text-muted-foreground">Showing jobs that match this experience range.</p>
                                 </div>
                             )}
                              {activeCategory === 'jobType' && (
@@ -332,13 +345,14 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
                 {/* Experience Level */}
                 <div className="space-y-4">
                     <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                        My Experience: {filters.experience === 'all' ? 'Any' : `${filters.experience} Yrs`}
+                        Experience: {filters.expRange[0]} - {filters.expRange[1]} Yrs
                     </Label>
                     <Slider
-                        defaultValue={[filters.experience === 'all' ? 0 : parseInt(filters.experience, 10)]}
+                        value={filters.expRange}
+                        min={0}
                         max={30}
                         step={1}
-                        onValueChange={(val) => handleFilterChange('experience', String(val[0]))}
+                        onValueChange={(val) => handleFilterChange('expRange', val)}
                         className="py-2"
                     />
                 </div>
