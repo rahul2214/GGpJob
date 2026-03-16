@@ -23,7 +23,7 @@ async function getUserDocRef(id: string): Promise<FirebaseFirestore.DocumentRefe
     return null;
 }
 
-async function getUserStats(id: string) {
+async function getUserStats(id: string, userData: any) {
     const [eduSnap, empSnap, skillSnap, projSnap, langSnap] = await Promise.all([
         db.collection('users').doc(id).collection('education').limit(1).get(),
         db.collection('users').doc(id).collection('employment').limit(1).get(),
@@ -37,7 +37,8 @@ async function getUserStats(id: string) {
         hasEmployment: !empSnap.empty,
         hasSkills: !skillSnap.empty,
         hasProjects: !projSnap.empty,
-        hasLanguages: !langSnap.empty
+        hasLanguages: !langSnap.empty,
+        hasSummary: !!userData.summary
     };
 }
 
@@ -51,7 +52,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
         }
         
         const userDoc = await userDocRef.get();
-        const user = { id: userDoc.id, ...userDoc.data() } as User;
+        const userData = userDoc.data();
+        const user = { id: userDoc.id, ...userData } as User;
 
         // Fetch location if locationId exists
         if (user.locationId) {
@@ -67,7 +69,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         }
 
         if (user.role === 'Job Seeker') {
-            user.profileStats = await getUserStats(id);
+            user.profileStats = await getUserStats(id, userData);
         }
         
         return NextResponse.json(user);
@@ -83,7 +85,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     try {
         const { id } = params;
         const body = await request.json();
-        const { name, email, phone, headline, locationId, domainId, linkedinUrl, notificationLastViewedAt } = body;
+        const { name, email, phone, headline, summary, locationId, domainId, linkedinUrl, notificationLastViewedAt } = body;
         
         if (!name || !email || !phone) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -100,6 +102,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             email,
             phone,
             headline: headline || '',
+            summary: summary || '',
             locationId: locationId || null,
             domainId: domainId || null,
             linkedinUrl: linkedinUrl || '',
@@ -109,10 +112,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         await userDocRef.update(dataToUpdate);
 
         const updatedUserDoc = await userDocRef.get();
-        const updatedUser = { id: updatedUserDoc.id, ...updatedUserDoc.data() } as User;
+        const updatedUserData = updatedUserDoc.data();
+        const updatedUser = { id: updatedUserDoc.id, ...updatedUserData } as User;
 
         if (updatedUser.role === 'Job Seeker') {
-            updatedUser.profileStats = await getUserStats(id);
+            updatedUser.profileStats = await getUserStats(id, updatedUserData);
         }
 
         return NextResponse.json(updatedUser, { status: 200 });

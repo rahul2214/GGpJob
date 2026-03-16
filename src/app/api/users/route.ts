@@ -47,7 +47,8 @@ export async function GET(request: Request) {
                     hasEmployment: !empSnap.empty,
                     hasSkills: !skillSnap.empty,
                     hasProjects: !projSnap.empty,
-                    hasLanguages: !langSnap.empty
+                    hasLanguages: !langSnap.empty,
+                    hasSummary: !!userData.summary
                 };
             }
 
@@ -90,6 +91,7 @@ export async function POST(request: Request) {
         role,
         phone: phone || '',
         headline: '',
+        summary: '',
         resumeUrl: '',
         domainId: domainId || null,
         locationId: null,

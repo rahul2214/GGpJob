@@ -16,7 +16,7 @@ interface ProfileStrengthProps {
 export function ProfileStrength({ user }: ProfileStrengthProps) {
     const { completion, missingSections } = useMemo(() => {
         let score = 0;
-        const totalPoints = 11;
+        const totalPoints = 12; // Increased for summary
         const missing: string[] = [];
 
         // 1. Basic info from user object
@@ -24,6 +24,7 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
         if (user.email) score++;
         if (user.phone) score++;
         if (user.headline) score++; else missing.push('headline');
+        if (user.summary) score++; else missing.push('summary');
         if (user.locationId) score++; else missing.push('location');
         if (user.domainId) score++; else missing.push('domain');
         
@@ -37,7 +38,6 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
             if (user.profileStats.hasProjects) score++;
             if (user.profileStats.hasSkills) score++; else missing.push('skills');
         } else {
-            // Fallback for missing stats (shouldn't happen with updated API)
             missing.push('profile details');
         }
 
@@ -62,6 +62,7 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
         let suggestions: string[] = [];
 
         if (missingSections.includes('skills')) suggestions.push('skills');
+        if (missingSections.includes('summary')) suggestions.push('summary');
         if (missingSections.includes('education')) suggestions.push('education');
         if (missingSections.includes('work experience')) suggestions.push('work experience');
         if (missingSections.includes('headline')) suggestions.push('headline');
