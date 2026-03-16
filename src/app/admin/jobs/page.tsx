@@ -163,7 +163,7 @@ export default function ManageJobsPage() {
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                       <Share2 className="mr-2 h-4 w-4" />
-                      <ShareButton jobId={job.id} jobTitle={job.title} />
+                      <ShareButton jobId={job.id} jobTitle={job.title} companyName={job.companyName} />
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setJobToDelete(job)} className="text-destructive">
                       <Trash2 className="mr-2 h-4 w-4" />

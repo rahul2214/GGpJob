@@ -192,7 +192,7 @@ export default function EmployeeDashboard() {
                       </DropdownMenuItem>
                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                             <Share2 className="mr-2 h-4 w-4" />
-                           <ShareButton jobId={job.id} jobTitle={job.title} />
+                           <ShareButton jobId={job.id} jobTitle={job.title} companyName={job.companyName} />
                        </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                          <Link href={`/referrals/edit/${job.id}`}>

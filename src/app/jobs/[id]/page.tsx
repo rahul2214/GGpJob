@@ -1,3 +1,4 @@
+
 "use client";
 
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
@@ -259,7 +260,7 @@ function JobDetailsContent() {
                     <Button variant="ghost" size="icon" onClick={handleSaveToggle} className="rounded-full">
                         <Bookmark className={cn("h-6 w-6", isCurrentlySaved && "fill-primary text-primary")} />
                     </Button>
-                    <ShareButton jobId={job.id} jobTitle={job.title} />
+                    <ShareButton jobId={job.id} jobTitle={job.title} companyName={job.companyName} />
                 </div>
             </div>
 
