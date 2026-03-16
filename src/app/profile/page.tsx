@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useUser } from "@/contexts/user-context";
@@ -10,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { ProfileSections } from "@/components/profile-sections";
 import { ResumeForm } from "@/components/resume-form";
+import { SummaryForm } from "@/components/summary-form";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfilePage() {
@@ -74,7 +74,7 @@ export default function ProfilePage() {
                     <CardHeader>
                         <CardTitle>My Profile</CardTitle>
                         <CardDescription>
-                            Update your personal information here.
+                            Update your personal and professional identity information.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -85,17 +85,31 @@ export default function ProfilePage() {
                 {user.role === 'Job Seeker' && (
                     <>
                         <Separator />
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Professional Summary</CardTitle>
+                                <CardDescription>
+                                    Highlight your career path and key achievements (max 1000 words).
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <SummaryForm user={user} />
+                            </CardContent>
+                        </Card>
+                        
+                        <Separator />
                          <Card>
                             <CardHeader>
                                 <CardTitle>My Resume</CardTitle>
                                 <CardDescription>
-                                    Provide a link to your resume.
+                                    Provide a link to your resume for recruiters to download.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <ResumeForm user={user} />
                             </CardContent>
                         </Card>
+                        
                         <Separator />
                         <ProfileSections userId={user.id} isEditable={true} />
                     </>
@@ -104,9 +118,9 @@ export default function ProfilePage() {
                 <Separator />
                 <Card>
                     <CardHeader>
-                        <CardTitle>Change Password</CardTitle>
+                        <CardTitle>Account Security</CardTitle>
                         <CardDescription>
-                            Update your password here. Make sure it's a strong one.
+                            Keep your account safe by updating your password regularly.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

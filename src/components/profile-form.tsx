@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -12,31 +11,20 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle } from "lucide-react";
 import { User, Location, Domain } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
-
-const countWords = (str: string) => {
-  return str.trim().split(/\s+/).filter(Boolean).length;
-};
 
 const formSchema = z.object({
   name: z.string().min(2, "Full name must be at least 2 characters."),
   email: z.string().email("Please enter a valid email address."),
   phone: z.string().length(10, "Please enter a valid 10-digit phone number."),
   headline: z.string().optional(),
-  summary: z.string().optional().refine(val => {
-    if (!val) return true;
-    return countWords(val) <= 1000;
-  }, "Summary cannot exceed 1000 words."),
   locationId: z.string().optional(),
   domainId: z.string().optional(),
   linkedinUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
@@ -77,17 +65,13 @@ export function ProfileForm({ user }: ProfileFormProps) {
       email: user.email,
       phone: user.phone,
       headline: user.headline || "",
-      summary: user.summary || "",
       locationId: String(user.locationId || ''),
       domainId: String(user.domainId || ''),
       linkedinUrl: user.linkedinUrl || "",
     },
   });
   
-  const { reset, watch } = form;
-  const summaryValue = watch("summary") || "";
-  const wordCount = countWords(summaryValue);
-
+  const { reset } = form;
   const { isSubmitting } = form.formState;
 
   useEffect(() => {
@@ -96,7 +80,6 @@ export function ProfileForm({ user }: ProfileFormProps) {
       email: user.email,
       phone: user.phone,
       headline: user.headline || "",
-      summary: user.summary || "",
       locationId: String(user.locationId || ''),
       domainId: String(user.domainId || ''),
       linkedinUrl: user.linkedinUrl || "",
@@ -109,7 +92,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
       const response = await fetch(`/api/users/${user.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...user, ...data }),
       });
 
       if (!response.ok) {
@@ -118,12 +101,11 @@ export function ProfileForm({ user }: ProfileFormProps) {
       }
       
       const updatedUser = await response.json();
-      
       setUser({ ...user, ...updatedUser });
 
       toast({
         title: "Profile Updated!",
-        description: "Your profile information has been successfully updated.",
+        description: "Your basic profile information has been successfully updated.",
       });
       
     } catch (error: any) {
@@ -191,37 +173,6 @@ export function ProfileForm({ user }: ProfileFormProps) {
           )}
         />
         
-        {user.role === 'Job Seeker' && (
-            <FormField
-              control={form.control}
-              name="summary"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Professional Summary</FormLabel>
-                  <FormControl>
-                    <div className="space-y-1">
-                      <Textarea 
-                        placeholder="Write a brief professional summary about yourself (max 1000 words)..." 
-                        className="min-h-[200px] resize-y"
-                        {...field} 
-                      />
-                      <div className={cn(
-                        "text-[10px] text-right font-medium",
-                        wordCount > 1000 ? "text-destructive" : "text-muted-foreground"
-                      )}>
-                        {wordCount} / 1000 words
-                      </div>
-                    </div>
-                  </FormControl>
-                  <FormDescription>
-                    Briefly describe your career goals, key achievements, and what makes you unique.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-        )}
-
          <FormField
           control={form.control}
           name="locationId"
