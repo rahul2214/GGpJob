@@ -12,6 +12,7 @@ import { ProfileSections } from "@/components/profile-sections";
 import { ResumeForm } from "@/components/resume-form";
 import { SummaryForm } from "@/components/summary-form";
 import { PersonalDetailsForm } from "@/components/personal-details-form";
+import { DiversityInclusionForm } from "@/components/diversity-inclusion-form";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfilePage() {
@@ -96,6 +97,19 @@ export default function ProfilePage() {
                             </CardHeader>
                             <CardContent>
                                 <PersonalDetailsForm user={user} />
+                            </CardContent>
+                        </Card>
+
+                        <Separator />
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Diversity and Inclusion</CardTitle>
+                                <CardDescription>
+                                    Help us build a more diverse and inclusive workplace.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <DiversityInclusionForm user={user} />
                             </CardContent>
                         </Card>
 

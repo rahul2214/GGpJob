@@ -19,6 +19,10 @@ export interface User {
   maritalStatus?: string;
   dateOfBirth?: string;
   category?: string;
+  // Diversity and Inclusion
+  disabilityStatus?: string;
+  militaryExperience?: string;
+  careerBreak?: string;
   // Joined fields
   location?: string;
   // Profile completion stats
