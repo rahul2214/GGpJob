@@ -9,9 +9,10 @@ import { useEffect, useState, useCallback } from "react";
 import { ProfileSections } from "@/components/profile-sections";
 import type { User as UserType } from "@/lib/types";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AtSign, Phone, MapPin, Linkedin, FileText } from "lucide-react";
+import { AtSign, Phone, MapPin, Linkedin, FileText, User as UserIcon, Calendar, Baby, Layers } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import { format } from "date-fns";
 
 export default function PublicProfilePage() {
     const { user: currentUser, loading: currentUserLoading } = useUser();
@@ -98,6 +99,8 @@ export default function PublicProfilePage() {
         return <div className="container mx-auto p-4">User not found.</div>;
     }
 
+    const hasPersonalDetails = profileUser.gender || profileUser.maritalStatus || profileUser.dateOfBirth || profileUser.category;
+
     return (
         <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto space-y-8">
@@ -144,6 +147,45 @@ export default function PublicProfilePage() {
 
                 {profileUser.role === 'Job Seeker' && (
                     <>
+                        {hasPersonalDetails && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-xl flex items-center gap-2">
+                                        <UserIcon className="h-5 w-5 text-primary" />
+                                        Personal Details
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4">
+                                        {profileUser.gender && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="font-semibold w-24">Gender:</span>
+                                                <span className="text-muted-foreground">{profileUser.gender}</span>
+                                            </div>
+                                        )}
+                                        {profileUser.maritalStatus && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="font-semibold w-24">Marital Status:</span>
+                                                <span className="text-muted-foreground">{profileUser.maritalStatus}</span>
+                                            </div>
+                                        )}
+                                        {profileUser.dateOfBirth && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="font-semibold w-24">Date of Birth:</span>
+                                                <span className="text-muted-foreground">{format(new Date(profileUser.dateOfBirth), "PPP")}</span>
+                                            </div>
+                                        )}
+                                        {profileUser.category && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="font-semibold w-24">Category:</span>
+                                                <span className="text-muted-foreground">{profileUser.category}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
                         {profileUser.summary && (
                             <Card>
                                 <CardHeader>

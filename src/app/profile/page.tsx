@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useUser } from "@/contexts/user-context";
@@ -10,6 +11,7 @@ import { useEffect } from "react";
 import { ProfileSections } from "@/components/profile-sections";
 import { ResumeForm } from "@/components/resume-form";
 import { SummaryForm } from "@/components/summary-form";
+import { PersonalDetailsForm } from "@/components/personal-details-form";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfilePage() {
@@ -84,6 +86,19 @@ export default function ProfilePage() {
 
                 {user.role === 'Job Seeker' && (
                     <>
+                        <Separator />
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Personal Details</CardTitle>
+                                <CardDescription>
+                                    Provide information about your background.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <PersonalDetailsForm user={user} />
+                            </CardContent>
+                        </Card>
+
                         <Separator />
                         <Card>
                             <CardHeader>
