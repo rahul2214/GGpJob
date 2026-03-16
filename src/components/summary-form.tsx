@@ -11,7 +11,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -119,7 +118,7 @@ export function SummaryForm({ user }: SummaryFormProps) {
               <FormMessage />
             </FormItem>
           )}
-        </Form>
+        />
         <div className="flex justify-end pt-2">
           <Button type="submit" disabled={isSubmitting || wordCount > 1000}>
             {isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
