@@ -148,6 +148,26 @@ export default function PublicProfilePage() {
 
                 {profileUser.role === 'Job Seeker' && (
                     <>
+                        {profileUser.summary && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-xl flex items-center gap-2">
+                                        <FileText className="h-5 w-5 text-primary" />
+                                        Professional Summary
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                                        {profileUser.summary}
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        )}
+                        <Separator />
+                        <ProfileSections userId={profileUser.id} isEditable={isOwnProfile} />
+                        
+                        {(hasPersonalDetails || hasDiversityDetails) && <Separator />}
+
                         {hasPersonalDetails && (
                             <Card>
                                 <CardHeader>
@@ -219,24 +239,6 @@ export default function PublicProfilePage() {
                                 </CardContent>
                             </Card>
                         )}
-
-                        {profileUser.summary && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-xl flex items-center gap-2">
-                                        <FileText className="h-5 w-5 text-primary" />
-                                        Professional Summary
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                                        {profileUser.summary}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        )}
-                        <Separator />
-                        <ProfileSections userId={profileUser.id} isEditable={isOwnProfile} />
                     </>
                 )}
             </div>
