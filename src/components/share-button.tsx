@@ -8,9 +8,10 @@ import { Share2 } from "lucide-react";
 interface ShareButtonProps {
     jobId: string;
     jobTitle: string;
+    companyName?: string;
 }
 
-export function ShareButton({ jobId, jobTitle }: ShareButtonProps) {
+export function ShareButton({ jobId, jobTitle, companyName }: ShareButtonProps) {
     const { toast } = useToast();
 
     const copyToClipboard = async (url: string) => {
@@ -34,9 +35,10 @@ export function ShareButton({ jobId, jobTitle }: ShareButtonProps) {
         e.stopPropagation();
         e.preventDefault();
         const jobUrl = `${window.location.origin}/jobs/${jobId}`;
+        const companyText = companyName ? ` at ${companyName}` : '';
         const shareData = {
-            title: `Job Opening: ${jobTitle}`,
-            text: `Check out this job: ${jobTitle}`,
+            title: `Job Opening: ${jobTitle}${companyText}`,
+            text: `Check out this job: ${jobTitle}${companyText}`,
             url: jobUrl,
         };
 
