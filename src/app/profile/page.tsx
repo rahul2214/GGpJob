@@ -90,32 +90,6 @@ export default function ProfilePage() {
                         <Separator />
                         <Card>
                             <CardHeader>
-                                <CardTitle>Personal Details</CardTitle>
-                                <CardDescription>
-                                    Provide information about your background.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <PersonalDetailsForm user={user} />
-                            </CardContent>
-                        </Card>
-
-                        <Separator />
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Diversity and Inclusion</CardTitle>
-                                <CardDescription>
-                                    Help us build a more diverse and inclusive workplace.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <DiversityInclusionForm user={user} />
-                            </CardContent>
-                        </Card>
-
-                        <Separator />
-                        <Card>
-                            <CardHeader>
                                 <CardTitle>Professional Summary</CardTitle>
                                 <CardDescription>
                                     Highlight your career path and key achievements (max 1000 words).
@@ -141,6 +115,32 @@ export default function ProfilePage() {
                         
                         <Separator />
                         <ProfileSections userId={user.id} isEditable={true} />
+
+                        <Separator />
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Personal Details</CardTitle>
+                                <CardDescription>
+                                    Provide information about your background.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <PersonalDetailsForm user={user} />
+                            </CardContent>
+                        </Card>
+
+                        <Separator />
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Diversity and Inclusion</CardTitle>
+                                <CardDescription>
+                                    Help us build a more diverse and inclusive workplace.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <DiversityInclusionForm user={user} />
+                            </CardContent>
+                        </Card>
                     </>
                 )}
 

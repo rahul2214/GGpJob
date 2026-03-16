@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { useState, useEffect, useCallback } from 'react';
@@ -150,42 +149,6 @@ export function ProfileSections({ userId, isEditable = false }: ProfileSectionsP
     return (
        <>
          <Accordion type="multiple" className="w-full space-y-6" defaultValue={['item-1', 'item-2', 'item-3', 'item-4', 'item-5']}>
-                 {/* Skills Section */}
-                <AccordionItem value="item-5">
-                     <Card>
-                        <AccordionTrigger className="p-6">
-                             <div className="flex items-center gap-4">
-                                <Wrench className="h-6 w-6 text-primary" />
-                                <CardTitle className="text-xl">Skills</CardTitle>
-                            </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="p-6 pt-0">
-                            <div className="flex flex-wrap gap-2">
-                                {data.skills.map(item => (
-                                    <div key={item.id} className="relative group">
-                                         <Badge variant="secondary" className="text-sm py-1 pr-8">
-                                            {item.name}
-                                        </Badge>
-                                        {isEditable && (
-                                            <div className="absolute -top-2 -right-2 flex opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenForm('skills', item)}><Edit className="h-3 w-3" /></Button>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDelete('skills', item.id)}><Trash2 className="h-3 w-3" /></Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                                {data.skills.length === 0 && !isEditable && (
-                                    <p className="text-sm text-muted-foreground">No skills listed.</p>
-                                )}
-                            </div>
-                             {isEditable && (
-                                <Button variant="outline" className="mt-4" onClick={() => handleOpenForm('skills')}>
-                                    <PlusCircle className="mr-2" /> Add Skill
-                                </Button>
-                             )}
-                        </AccordionContent>
-                    </Card>
-                </AccordionItem>
                 {/* Employment Section */}
                 <AccordionItem value="item-1">
                      <Card>
@@ -254,6 +217,74 @@ export function ProfileSections({ userId, isEditable = false }: ProfileSectionsP
                         </AccordionContent>
                     </Card>
                 </AccordionItem>
+                {/* Skills Section */}
+                <AccordionItem value="item-5">
+                     <Card>
+                        <AccordionTrigger className="p-6">
+                             <div className="flex items-center gap-4">
+                                <Wrench className="h-6 w-6 text-primary" />
+                                <CardTitle className="text-xl">Skills</CardTitle>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="p-6 pt-0">
+                            <div className="flex flex-wrap gap-2">
+                                {data.skills.map(item => (
+                                    <div key={item.id} className="relative group">
+                                         <Badge variant="secondary" className="text-sm py-1 pr-8">
+                                            {item.name}
+                                        </Badge>
+                                        {isEditable && (
+                                            <div className="absolute -top-2 -right-2 flex opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenForm('skills', item)}><Edit className="h-3 w-3" /></Button>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDelete('skills', item.id)}><Trash2 className="h-3 w-3" /></Button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                                {data.skills.length === 0 && !isEditable && (
+                                    <p className="text-sm text-muted-foreground">No skills listed.</p>
+                                )}
+                            </div>
+                             {isEditable && (
+                                <Button variant="outline" className="mt-4" onClick={() => handleOpenForm('skills')}>
+                                    <PlusCircle className="mr-2" /> Add Skill
+                                </Button>
+                             )}
+                        </AccordionContent>
+                    </Card>
+                </AccordionItem>
+                 {/* Languages Section */}
+                <AccordionItem value="item-4">
+                     <Card>
+                        <AccordionTrigger className="p-6">
+                             <div className="flex items-center gap-4">
+                                <Languages className="h-6 w-6 text-primary" />
+                                <CardTitle className="text-xl">Languages</CardTitle>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="p-6 pt-0">
+                           <div className="space-y-4">
+                                {data.languages.map(item => (
+                                    <div key={item.id} className="p-4 border rounded-lg relative group">
+                                        {isEditable && (
+                                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenForm('languages', item)}><Edit className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete('languages', item.id)}><Trash2 className="h-4 w-4" /></Button>
+                                            </div>
+                                        )}
+                                        <h3 className="font-semibold">{item.language}</h3>
+                                        <p className="text-sm text-muted-foreground">{item.proficiency}</p>
+                                    </div>
+                                ))}
+                           </div>
+                           {isEditable && (
+                            <Button variant="outline" className="mt-4" onClick={() => handleOpenForm('languages')}>
+                                <PlusCircle className="mr-2" /> Add Language
+                            </Button>
+                           )}
+                        </AccordionContent>
+                    </Card>
+                </AccordionItem>
                  {/* Projects Section */}
                 <AccordionItem value="item-3">
                      <Card>
@@ -287,38 +318,6 @@ export function ProfileSections({ userId, isEditable = false }: ProfileSectionsP
                                     <PlusCircle className="mr-2" /> Add Project
                                 </Button>
                             )}
-                        </AccordionContent>
-                    </Card>
-                </AccordionItem>
-                 {/* Languages Section */}
-                <AccordionItem value="item-4">
-                     <Card>
-                        <AccordionTrigger className="p-6">
-                             <div className="flex items-center gap-4">
-                                <Languages className="h-6 w-6 text-primary" />
-                                <CardTitle className="text-xl">Languages</CardTitle>
-                            </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="p-6 pt-0">
-                           <div className="space-y-4">
-                                {data.languages.map(item => (
-                                    <div key={item.id} className="p-4 border rounded-lg relative group">
-                                        {isEditable && (
-                                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenForm('languages', item)}><Edit className="h-4 w-4" /></Button>
-                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete('languages', item.id)}><Trash2 className="h-4 w-4" /></Button>
-                                            </div>
-                                        )}
-                                        <h3 className="font-semibold">{item.language}</h3>
-                                        <p className="text-sm text-muted-foreground">{item.proficiency}</p>
-                                    </div>
-                                ))}
-                           </div>
-                           {isEditable && (
-                            <Button variant="outline" className="mt-4" onClick={() => handleOpenForm('languages')}>
-                                <PlusCircle className="mr-2" /> Add Language
-                            </Button>
-                           )}
                         </AccordionContent>
                     </Card>
                 </AccordionItem>
