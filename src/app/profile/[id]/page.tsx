@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { useUser } from "@/contexts/user-context";
@@ -10,7 +9,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ProfileSections } from "@/components/profile-sections";
 import type { User as UserType } from "@/lib/types";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AtSign, Phone, MapPin, Linkedin } from "lucide-react";
+import { AtSign, Phone, MapPin, Linkedin, FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 
@@ -145,6 +144,21 @@ export default function PublicProfilePage() {
 
                 {profileUser.role === 'Job Seeker' && (
                     <>
+                        {profileUser.summary && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-xl flex items-center gap-2">
+                                        <FileText className="h-5 w-5 text-primary" />
+                                        Professional Summary
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                                        {profileUser.summary}
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        )}
                         <Separator />
                         <ProfileSections userId={profileUser.id} isEditable={isOwnProfile} />
                     </>

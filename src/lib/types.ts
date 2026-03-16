@@ -8,6 +8,7 @@ export interface User {
   phone?: string;
   role: Role;
   headline?: string;
+  summary?: string;
   locationId?: string;
   domainId?: string;
   resumeUrl?: string;
@@ -22,6 +23,7 @@ export interface User {
     hasSkills: boolean;
     hasProjects: boolean;
     hasLanguages: boolean;
+    hasSummary: boolean;
   };
 }
 
