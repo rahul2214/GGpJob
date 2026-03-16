@@ -98,7 +98,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             gender,
             maritalStatus,
             dateOfBirth,
-            category
+            category,
+            disabilityStatus,
+            militaryExperience,
+            careerBreak
         } = body;
         
         if (!name || !email || !phone) {
@@ -125,6 +128,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             maritalStatus: maritalStatus || null,
             dateOfBirth: dateOfBirth || null,
             category: category || null,
+            disabilityStatus: disabilityStatus || null,
+            militaryExperience: militaryExperience || null,
+            careerBreak: careerBreak || null,
         };
 
         await userDocRef.update(dataToUpdate);

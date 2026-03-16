@@ -9,7 +9,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ProfileSections } from "@/components/profile-sections";
 import type { User as UserType } from "@/lib/types";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AtSign, Phone, MapPin, Linkedin, FileText, User as UserIcon, Calendar, Baby, Layers } from "lucide-react";
+import { AtSign, Phone, MapPin, Linkedin, FileText, User as UserIcon, Calendar, HeartHandshake } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -100,6 +100,7 @@ export default function PublicProfilePage() {
     }
 
     const hasPersonalDetails = profileUser.gender || profileUser.maritalStatus || profileUser.dateOfBirth || profileUser.category;
+    const hasDiversityDetails = profileUser.disabilityStatus || profileUser.militaryExperience || profileUser.careerBreak;
 
     return (
         <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
@@ -179,6 +180,39 @@ export default function PublicProfilePage() {
                                             <div className="flex items-center gap-2 text-sm">
                                                 <span className="font-semibold w-24">Category:</span>
                                                 <span className="text-muted-foreground">{profileUser.category}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {hasDiversityDetails && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-xl flex items-center gap-2">
+                                        <HeartHandshake className="h-5 w-5 text-primary" />
+                                        Diversity and Inclusion
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4">
+                                        {profileUser.disabilityStatus && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="font-semibold w-32">Disability:</span>
+                                                <span className="text-muted-foreground">{profileUser.disabilityStatus}</span>
+                                            </div>
+                                        )}
+                                        {profileUser.militaryExperience && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="font-semibold w-32">Military Service:</span>
+                                                <span className="text-muted-foreground">{profileUser.militaryExperience}</span>
+                                            </div>
+                                        )}
+                                        {profileUser.careerBreak && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="font-semibold w-32">Career Break:</span>
+                                                <span className="text-muted-foreground">{profileUser.careerBreak}</span>
                                             </div>
                                         )}
                                     </div>
