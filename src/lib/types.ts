@@ -14,6 +14,11 @@ export interface User {
   resumeUrl?: string;
   linkedinUrl?: string;
   notificationLastViewedAt?: string;
+  // Personal Details
+  gender?: string;
+  maritalStatus?: string;
+  dateOfBirth?: string;
+  category?: string;
   // Joined fields
   location?: string;
   // Profile completion stats

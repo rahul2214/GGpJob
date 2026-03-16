@@ -85,7 +85,21 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     try {
         const { id } = params;
         const body = await request.json();
-        const { name, email, phone, headline, summary, locationId, domainId, linkedinUrl, notificationLastViewedAt } = body;
+        const { 
+            name, 
+            email, 
+            phone, 
+            headline, 
+            summary, 
+            locationId, 
+            domainId, 
+            linkedinUrl, 
+            notificationLastViewedAt,
+            gender,
+            maritalStatus,
+            dateOfBirth,
+            category
+        } = body;
         
         if (!name || !email || !phone) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -107,6 +121,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             domainId: domainId || null,
             linkedinUrl: linkedinUrl || '',
             notificationLastViewedAt: notificationLastViewedAt || null,
+            gender: gender || null,
+            maritalStatus: maritalStatus || null,
+            dateOfBirth: dateOfBirth || null,
+            category: category || null,
         };
 
         await userDocRef.update(dataToUpdate);
