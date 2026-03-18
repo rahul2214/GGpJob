@@ -30,6 +30,7 @@ import {
   Bell,
   Bookmark,
   ThumbsUp,
+  ClipboardList,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -165,14 +166,15 @@ export default function Header() {
       );
     }
     return (
-        <Sheet>
-            <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="shrink-0 md:hidden p-0">
-                    <Menu className="h-10 w-10" />
-                    <span className="sr-only">Toggle navigation menu</span>
-                </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col p-0">
+        <div className="flex items-center gap-1">
+            <Sheet>
+                <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon" className="shrink-0 md:hidden p-0">
+                        <Menu className="h-10 w-10" />
+                        <span className="sr-only">Toggle navigation menu</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="flex flex-col p-0">
                  <SheetHeader className="p-4">
                     <SheetTitle asChild>
                         <SheetClose asChild>
@@ -336,6 +338,12 @@ export default function Header() {
                 </div>
             </SheetContent>
         </Sheet>
+        {isClient && !userLoading && user?.role === 'Job Seeker' && pathname === '/applications' && (
+            <div className="shrink-0 md:hidden ml-1 font-bold text-2xl text-slate-800">
+                My Applications
+            </div>
+        )}
+        </div>
     );
   }
 
