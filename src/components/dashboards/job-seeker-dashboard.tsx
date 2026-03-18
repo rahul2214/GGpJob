@@ -147,28 +147,7 @@ export default function JobSeekerDashboard() {
         </div>
       </motion.div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
-          <motion.div key={stat.label} custom={i} initial="hidden" animate="visible" variants={fadeUp}>
-            <Link href={stat.href}>
-              <div className="group relative bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 p-5 cursor-pointer overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-5 transition-opacity duration-300" />
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-slate-500 text-xs font-medium mb-1">{stat.label}</p>
-                    <p className="text-3xl font-extrabold text-slate-800">{stat.value}</p>
-                  </div>
-                  <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
-                    <stat.icon className={`w-5 h-5 ${stat.text}`} />
-                  </div>
-                </div>
-                <div className={`mt-3 h-1 rounded-full bg-gradient-to-r ${stat.color} opacity-70`} />
-              </div>
-            </Link>
-          </motion.div>
-        ))}
-      </div>
+
 
       {/* Profile Strength */}
       <motion.div custom={4} initial="hidden" animate="visible" variants={fadeUp}>
