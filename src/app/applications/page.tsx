@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import type { Application } from "@/lib/types";
+import { useApplications } from "@/hooks/use-jobs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,32 +39,12 @@ const fadeUp = {
 export default function ApplicationsPage() {
   const { user, loading: userLoading } = useUser();
   const router = useRouter();
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!userLoading && !user) router.push("/login");
   }, [user, userLoading, router]);
 
-  useEffect(() => {
-    const fetchApplications = async () => {
-      if (user) {
-        try {
-          setLoading(true);
-          const res = await fetch(`/api/applications?userId=${user.id}`);
-          if (res.ok) {
-            const data = await res.json();
-            setApplications(Array.isArray(data) ? data : []);
-          }
-        } catch (error) {
-          console.error("Error fetching applications", error);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    if (user) fetchApplications();
-  }, [user]);
+  const { applications, isLoading: loading } = useApplications(user ? { userId: user.id } : undefined);
 
   return (
     <div className="min-h-screen bg-slate-50">

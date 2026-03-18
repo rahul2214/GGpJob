@@ -12,7 +12,7 @@ import { Skeleton } from "../ui/skeleton";
 import { ProfileStrength } from "../profile-strength";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import { useDashboardJobs, useSavedJobs } from "@/hooks/use-jobs";
+import { useDashboardJobs, useSavedJobs, useApplications } from "@/hooks/use-jobs";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
@@ -20,7 +20,7 @@ import { Card, CardContent } from "../ui/card";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
-  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.5, ease: "easeOut" } }),
+  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.5 } }),
 };
 
 const quickSearchTerms = ["Software Engineer", "Remote", "Marketing", "Finance", "Design", "Data Science"];
@@ -32,29 +32,12 @@ export default function JobSeekerDashboard() {
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const { toast } = useToast();
 
-  const [userApplications, setUserApplications] = useState<Application[]>([]);
+  const { applications: userApplications } = useApplications(user ? { userId: user.id } : undefined);
   const { savedJobs, mutateSavedJobs } = useSavedJobs(user?.id);
 
   const { data: jobData, isLoading, isError } = useDashboardJobs(
     user?.domainId ? { domain: user.domainId, dashboard: "true" } : { dashboard: "true" }
   );
-
-  useEffect(() => {
-    const fetchApplications = async () => {
-      if (user) {
-        try {
-          const res = await fetch(`/api/applications?userId=${user.id}`);
-          if (res.ok) {
-            const appsData = await res.json();
-            setUserApplications(Array.isArray(appsData) ? appsData : []);
-          }
-        } catch (error) {
-          console.error("Failed to fetch applications", error);
-        }
-      }
-    };
-    fetchApplications();
-  }, [user]);
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
