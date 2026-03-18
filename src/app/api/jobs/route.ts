@@ -12,6 +12,18 @@ const createMap = (docs: any[], key = 'id') => {
     return map;
 };
 
+import { apiCache } from '@/lib/cache';
+
+async function getCachedCollection(collectionName: string) {
+    const cached = apiCache.get<any[]>(collectionName);
+    if (cached) return cached;
+    
+    const snapshot = await db.collection(collectionName).get();
+    const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    apiCache.set(collectionName, data, 5 * 60 * 1000); // 5 minutes cache
+    return data;
+}
+
 
 export async function GET(request: Request) {
   try {
@@ -31,15 +43,15 @@ export async function GET(request: Request) {
             referralQuery = referralQuery.where('domainId', '==', domainId);
         }
 
-        const [recommendedSnap, referralSnap, locationsSnapshot, jobTypesSnapshot] = await Promise.all([
+        const [recommendedSnap, referralSnap, locationsData, jobTypesData] = await Promise.all([
             recommendedQuery.get(),
             referralQuery.get(),
-            db.collection('locations').get(),
-            db.collection('job_types').get()
+            getCachedCollection('locations'),
+            getCachedCollection('job_types')
         ]);
         
-        const locationMap = createMap(locationsSnapshot.docs.map(doc => doc.data()), 'id');
-        const jobTypeMap = createMap(jobTypesSnapshot.docs.map(doc => doc.data()), 'id');
+        const locationMap = createMap(locationsData, 'id');
+        const jobTypeMap = createMap(jobTypesData, 'id');
 
         const processJobs = (snap: adminFirestore.QuerySnapshot) => {
             let jobs = snap.docs.map(doc => {
@@ -50,8 +62,8 @@ export async function GET(request: Request) {
                 const minExp = jobData.minExperience ?? 0;
                 const maxExp = jobData.maxExperience ?? minExp;
                 return {
-                  id: doc.id,
                   ...jobData,
+                  id: doc.id,
                   location: locNames.join(', ') || 'N/A',
                   locations: locNames,
                   type: jobType ? jobType.name : 'N/A',
@@ -136,28 +148,38 @@ export async function GET(request: Request) {
         query = query.limit(parseInt(searchParams.get('limit') as string, 10));
     }
 
-    const [
-        jobsSnapshot, 
-        applicationsSnapshot,
-        locationsSnapshot,
-        domainsSnapshot,
-        jobTypesSnapshot,
-        workplaceTypesSnapshot,
-    ] = await Promise.all([
-        query.get(),
-        db.collection('applications').get(),
-        db.collection('locations').get(),
-        db.collection('domains').get(),
-        db.collection('job_types').get(),
-        db.collection('workplace_types').get(),
-    ]);
+    const jobsSnapshot = await query.get();
 
-    const applications = applicationsSnapshot.docs.map(doc => doc.data() as Application);
+    // Batch chunk fetch applications to prevent full collection scan
+    let applications: Application[] = [];
+    if (!jobsSnapshot.empty) {
+        const jobIds = jobsSnapshot.docs.map(doc => doc.id);
+        const chunkSize = 30; // Firestore 'in' query limit
+        const appPromises = [];
+        for (let i = 0; i < jobIds.length; i += chunkSize) {
+            const chunk = jobIds.slice(i, i + chunkSize);
+            appPromises.push(db.collection('applications').where('jobId', 'in', chunk).get());
+        }
+        const appSnapshots = await Promise.all(appPromises);
+        applications = appSnapshots.flatMap(snap => snap.docs.map(doc => doc.data() as Application));
+    }
+
+    const [
+        locationsData,
+        domainsData,
+        jobTypesData,
+        workplaceTypesData,
+    ] = await Promise.all([
+        getCachedCollection('locations'),
+        getCachedCollection('domains'),
+        getCachedCollection('job_types'),
+        getCachedCollection('workplace_types'),
+    ]);
     
-    const locationMap = createMap(locationsSnapshot.docs.map(doc => doc.data()), 'id');
-    const domainMap = createMap(domainsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    const jobTypeMap = createMap(jobTypesSnapshot.docs.map(doc => doc.data()), 'id');
-    const workplaceTypeMap = createMap(workplaceTypesSnapshot.docs.map(doc => doc.data()), 'id');
+    const locationMap = createMap(locationsData, 'id');
+    const domainMap = createMap(domainsData, 'id');
+    const jobTypeMap = createMap(jobTypesData, 'id');
+    const workplaceTypeMap = createMap(workplaceTypesData, 'id');
 
     const applicationCounts = applications.reduce((acc, app) => {
         if (!acc[app.jobId]) {
@@ -183,8 +205,8 @@ export async function GET(request: Request) {
       const maxExp = jobData.maxExperience ?? minExp;
 
       return {
-          id: doc.id,
           ...jobData,
+          id: doc.id,
           location: locNames.join(', ') || 'N/A',
           locations: locNames,
           domain: domain?.name || 'N/A',

@@ -62,6 +62,25 @@ export function useSavedJobs(userId?: string) {
     };
 }
 
+export function useApplications(params?: Record<string, any>) {
+  const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
+  const { data, error, isLoading, mutate } = useSWR<any[]>(
+      `/api/applications${queryString}`, 
+      fetcher,
+      {
+          revalidateOnFocus: false,
+          dedupingInterval: 60000,
+      }
+  );
+
+  return {
+      applications: data || [],
+      isLoading,
+      isError: error,
+      mutateApplications: mutate,
+  };
+}
+
 export function useNotifications(userId?: string) {
     const { data, error, isLoading, mutate } = useSWR<any[]>(
         userId ? `/api/notifications?userId=${userId}` : null,

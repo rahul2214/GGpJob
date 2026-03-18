@@ -31,40 +31,51 @@ export async function GET(request: Request) {
 
     const querySnapshot = await q.get();
 
-    const applications = await Promise.all(
-      querySnapshot.docs.map(async (doc) => {
-        const appData = doc.data() as Application;
+    const appDocs = querySnapshot.docs.map(doc => ({ ...(doc.data() as Application), id: doc.id }));
+    
+    // 1. Gather distinct user and job IDs
+    const uniqueUserIds = [...new Set(appDocs.map(app => app.userId).filter(Boolean))];
+    const uniqueJobIds = [...new Set(appDocs.map(app => app.jobId).filter(Boolean))];
 
-        // Fetch user data
-        let applicant: User | null = null;
-        let skills = '';
-        if (appData.userId) {
-          const userDoc = await db.collection('users').doc(appData.userId).get();
-          if (userDoc.exists) {
-            applicant = { id: userDoc.id, ...userDoc.data() } as User;
-            // Fetch skills subcollection
-            const skillsSnapshot = await db.collection('users').doc(appData.userId).collection('skills').get();
-            if (!skillsSnapshot.empty) {
-                const skillNames = skillsSnapshot.docs.map(skillDoc => (skillDoc.data() as Skill).name);
-                skills = skillNames.join(', ');
-            }
-          }
-        }
-        
-        // Fetch job data
-        let job: Job | null = null;
-        if (appData.jobId) {
-            const jobDoc = await db.collection('jobs').doc(appData.jobId).get();
-            if(jobDoc.exists) {
-                job = { id: jobDoc.id, ...jobDoc.data() } as Job;
-            }
-        }
+    // 2. Fetch Users and Jobs in bulk (eliminates N roundtrips)
+    const usersMap = new Map<string, User>();
+    const jobsMap = new Map<string, Job>();
+    
+    if (uniqueUserIds.length > 0) {
+        const userRefs = uniqueUserIds.map(id => db.collection('users').doc(id as string));
+        const userDocs = await db.getAll(...userRefs);
+        userDocs.forEach(doc => {
+            if (doc.exists) usersMap.set(doc.id, { id: doc.id, ...doc.data() } as User);
+        });
+    }
 
-        // Use the map to get the status name
+    if (uniqueJobIds.length > 0) {
+        const jobRefs = uniqueJobIds.map(id => db.collection('jobs').doc(id as string));
+        const jobDocs = await db.getAll(...jobRefs);
+        jobDocs.forEach(doc => {
+            if (doc.exists) jobsMap.set(doc.id, { id: doc.id, ...doc.data() } as Job);
+        });
+    }
+
+    // 3. Fetch Skills in bulk for unique users
+    const skillsPromises = uniqueUserIds.map(async (userId) => {
+        const skillsSnap = await db.collection('users').doc(userId as string).collection('skills').get();
+        if (!skillsSnap.empty) {
+            return { userId, skills: skillsSnap.docs.map(doc => (doc.data() as Skill).name).join(', ') };
+        }
+        return { userId, skills: '' };
+    });
+    const skillsResults = await Promise.all(skillsPromises);
+    const skillsMap = new Map(skillsResults.map(s => [s.userId, s.skills]));
+
+    // 4. Construct final payload
+    const applications = appDocs.map(appData => {
+        const applicant = appData.userId ? usersMap.get(appData.userId) : null;
+        const job = appData.jobId ? jobsMap.get(appData.jobId) : null;
+        const skills = appData.userId ? skillsMap.get(appData.userId) || '' : '';
         const statusName = statusMap[appData.statusId] || 'Applied';
         
         return {
-          id: doc.id,
           ...appData,
           appliedAt: (appData.appliedAt as any).toDate ? (appData.appliedAt as any).toDate().toISOString() : new Date(appData.appliedAt).toISOString(),
           applicantName: applicant?.name,
@@ -77,8 +88,7 @@ export async function GET(request: Request) {
           companyName: job?.companyName,
           statusName,
         };
-      })
-    );
+    });
 
     return NextResponse.json(applications);
 
