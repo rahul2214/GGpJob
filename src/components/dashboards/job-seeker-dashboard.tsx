@@ -242,7 +242,7 @@ export default function JobSeekerDashboard() {
                 {recommendedJobs.map((job) => (
                   <CarouselItem key={job.id} className="pl-2 basis-[85%] sm:basis-1/2 lg:basis-1/3">
                     <div className="p-1 h-full">
-                      <JobCard job={job} isApplied={appliedJobIds.has(job.id)} isSaved={savedJobIds.has(job.id)} onSaveToggle={handleSaveToggle} hideDetails={true} />
+                      <JobCard job={job} isApplied={appliedJobIds.has(job.id)} isSaved={savedJobIds.has(job.id)} onSaveToggle={handleSaveToggle} hideDetails={false} />
                     </div>
                   </CarouselItem>
                 ))}
@@ -288,7 +288,7 @@ export default function JobSeekerDashboard() {
                 {referralJobs.map((job) => (
                   <CarouselItem key={job.id} className="pl-2 basis-[85%] sm:basis-1/2 lg:basis-1/3">
                     <div className="p-1 h-full">
-                      <JobCard job={job} isApplied={appliedJobIds.has(job.id)} isSaved={savedJobIds.has(job.id)} onSaveToggle={handleSaveToggle} hideDetails={true} />
+                      <JobCard job={job} isApplied={appliedJobIds.has(job.id)} isSaved={savedJobIds.has(job.id)} onSaveToggle={handleSaveToggle} hideDetails={false} />
                     </div>
                   </CarouselItem>
                 ))}

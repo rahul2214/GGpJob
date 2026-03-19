@@ -200,7 +200,7 @@ const JobPortalHome = () => {
                                             </div>
                                             <div className="flex flex-wrap gap-1.5 mb-4">
                                                 {job.location && <span className="flex items-center gap-1 text-[11px] text-slate-600 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100"><MapPin className="w-2.5 h-2.5" />{job.location}</span>}
-                                                {job.type && job.type !== 'N/A' && <span className="flex items-center gap-1 text-[11px] text-slate-600 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100"><Briefcase className="w-2.5 h-2.5" />{job.type}</span>}
+                                                {job.type && <span className="flex items-center gap-1 text-[11px] text-slate-600 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100"><Briefcase className="w-2.5 h-2.5" />{job.type}</span>}
                                                 {job.experienceLevel && job.experienceLevel !== '0 Years' && <span className="flex items-center gap-1 text-[11px] text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100"><Star className="w-2.5 h-2.5" />{job.experienceLevel}</span>}
                                             </div>
                                             <div className="flex items-center justify-between pt-3 border-t border-slate-100">
@@ -236,7 +236,7 @@ const JobPortalHome = () => {
                                         </div>
                                         <div className="flex flex-wrap gap-2 mb-5 flex-1">
                                             {job.location && <span className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 font-medium"><MapPin className="w-3 h-3 text-slate-400" />{job.location}</span>}
-                                            {job.type && job.type !== 'N/A' && <span className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 font-medium"><Briefcase className="w-3 h-3 text-slate-400" />{job.type}</span>}
+                                            {job.type && <span className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 font-medium"><Briefcase className="w-3 h-3 text-slate-400" />{job.type}</span>}
                                             {job.experienceLevel && job.experienceLevel !== '0 Years' && <span className="flex items-center gap-1.5 text-xs text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100 font-semibold"><Star className="w-3 h-3 text-indigo-400" />{job.experienceLevel}</span>}
                                         </div>
                                         <div className="flex items-center justify-between pt-5 border-t border-slate-100">
