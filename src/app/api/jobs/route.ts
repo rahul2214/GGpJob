@@ -19,7 +19,14 @@ async function getCachedCollection(collectionName: string) {
     if (cached) return cached;
     
     const snapshot = await db.collection(collectionName).get();
-    const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    const data = snapshot.docs.map(doc => {
+        const docData = doc.data();
+        return {
+            ...docData,
+            _docId: doc.id,
+            id: docData.id !== undefined ? docData.id : doc.id
+        };
+    });
     apiCache.set(collectionName, data, 5 * 60 * 1000); // 5 minutes cache
     return data;
 }
@@ -57,16 +64,19 @@ export async function GET(request: Request) {
             let jobs = snap.docs.map(doc => {
                 const jobData = doc.data() as Job;
                 const locIds = jobData.locationIds || (jobData.locationId ? [jobData.locationId] : []);
-                const locNames = locIds.map(id => locationMap.get(String(id))?.name).filter(Boolean);
+                const locNames = locIds.map(id => {
+                    const stringId = typeof id === 'object' && (id as any)?.id ? (id as any).id : String(id);
+                    return locationMap.get(stringId)?.name;
+                }).filter(Boolean);
                 const jobType = jobTypeMap.get(jobData.jobTypeId);
                 const minExp = jobData.minExperience ?? 0;
                 const maxExp = jobData.maxExperience ?? minExp;
                 return {
                   ...jobData,
                   id: doc.id,
-                  location: locNames.join(', ') || 'N/A',
+                  location: locNames.length > 0 ? locNames.join(', ') : (jobData.location || 'N/A'),
                   locations: locNames,
-                  type: jobType ? jobType.name : 'N/A',
+                  type: jobType ? jobType.name : (jobData.type || 'N/A'),
                   experienceLevel: minExp === maxExp ? `${minExp} Years` : `${minExp} - ${maxExp} Years`,
                 }
             });
@@ -196,7 +206,10 @@ export async function GET(request: Request) {
     let jobs = jobsSnapshot.docs.map(doc => {
       const jobData = doc.data() as Job;
       const locIds = jobData.locationIds || (jobData.locationId ? [jobData.locationId] : []);
-      const locNames = locIds.map(id => locationMap.get(String(id))?.name).filter(Boolean);
+      const locNames = locIds.map(id => {
+          const stringId = typeof id === 'object' && (id as any)?.id ? (id as any).id : String(id);
+          return locationMap.get(stringId)?.name;
+      }).filter(Boolean);
       const domain = domainMap.get(jobData.domainId);
       const jobType = jobTypeMap.get(jobData.jobTypeId);
       const workplaceType = jobData.workplaceTypeId ? workplaceTypeMap.get(jobData.workplaceTypeId) : null;
@@ -207,10 +220,10 @@ export async function GET(request: Request) {
       return {
           ...jobData,
           id: doc.id,
-          location: locNames.join(', ') || 'N/A',
+          location: locNames.length > 0 ? locNames.join(', ') : (jobData.location || 'N/A'),
           locations: locNames,
           domain: domain?.name || 'N/A',
-          type: jobType?.name || 'N/A',
+          type: jobType?.name || (jobData.type as any) || 'N/A',
           workplaceType: workplaceType?.name || 'N/A',
           experienceLevel: minExp === maxExp ? `${minExp} Years` : `${minExp} - ${maxExp} Years`,
           applicantCount: counts.total,
