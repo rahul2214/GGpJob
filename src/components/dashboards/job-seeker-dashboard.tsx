@@ -23,7 +23,7 @@ const fadeUp = {
   visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.5 } }),
 };
 
-const quickSearchTerms = ["Software Engineer", "Remote", "Marketing", "Finance", "Design", "Data Science"];
+// Removed quickSearchTerms as the search section is removed from the dashboard
 
 export default function JobSeekerDashboard() {
   const { user } = useUser();
@@ -40,12 +40,7 @@ export default function JobSeekerDashboard() {
     user?.domainId ? { domain: user.domainId, dashboard: "true" } : { dashboard: "true" }
   );
 
-  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (debouncedSearchQuery) router.push(`/jobs?search=${debouncedSearchQuery}`);
-  };
-
-  const handleQuickSearch = (term: string) => router.push(`/jobs?search=${term}`);
+  // Search functions removed to declutter dashboard as per user request
 
   const handleAutoApply = async () => {
     if (!user) return;
@@ -167,50 +162,7 @@ export default function JobSeekerDashboard() {
         </div>
       </motion.div>
 
-      {/* Search Section */}
-      <motion.div custom={5} initial="hidden" animate="visible" variants={fadeUp}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 md:p-8 shadow-lg"
-      >
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl" />
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="w-5 h-5 text-indigo-400" />
-            <h2 className="text-white font-bold text-lg">Find Your Next Opportunity</h2>
-          </div>
-          <p className="text-slate-400 text-sm mb-5">Search by title, company, skills, or location</p>
-
-          <form onSubmit={handleSearch} className="mb-4">
-            <div className="flex items-center bg-white rounded-xl overflow-hidden shadow-md">
-              <div className="pl-4 text-slate-400">
-                <Search className="w-5 h-5" />
-              </div>
-              <Input
-                name="search"
-                placeholder="e.g. React Developer, Google, Remote..."
-                className="flex-grow border-0 focus-visible:ring-0 shadow-none text-slate-800 text-base bg-transparent pl-3 h-12"
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <Button type="submit" className="m-1 h-10 px-5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-none">
-                Search
-              </Button>
-            </div>
-          </form>
-
-          <div className="flex flex-wrap gap-2">
-            {quickSearchTerms.map((term) => (
-              <motion.button
-                key={term}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleQuickSearch(term)}
-                className="bg-white/10 hover:bg-white/20 border border-white/15 text-slate-300 hover:text-white text-xs font-medium px-3 py-1.5 rounded-full transition-all"
-              >
-                {term}
-              </motion.button>
-            ))}
-          </div>
-        </div>
-      </motion.div>
+      {/* Search Section Removed */}
 
       {/* Domain prompt */}
       {user && !user.domainId && (
@@ -259,7 +211,7 @@ export default function JobSeekerDashboard() {
               <p className="text-slate-400 text-xs">Curated based on your domain and profile</p>
             </div>
             {user?.domainId && (
-              <Link href={`/jobs?domain=${user.domainId}`} className="flex items-center gap-1 text-indigo-600 hover:text-indigo-700 text-sm font-semibold transition-colors">
+              <Link href="/jobs?view=recommended" className="flex items-center gap-1 text-indigo-600 hover:text-indigo-700 text-sm font-semibold transition-colors">
                 View All <ArrowRight className="w-4 h-4" />
               </Link>
             )}
@@ -277,7 +229,7 @@ export default function JobSeekerDashboard() {
                 {recommendedJobs.length === 5 && (
                   <CarouselItem className="pl-2 basis-[85%] sm:basis-1/2 lg:basis-1/3">
                     <div className="p-1 h-full">
-                      <Link href={`/jobs?domain=${user?.domainId}`} className="block h-full">
+                      <Link href="/jobs?view=recommended" className="block h-full">
                         <div className="h-full min-h-[180px] flex flex-col items-center justify-center border-2 border-dashed border-indigo-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50/50 transition-all group py-10">
                           <div className="w-12 h-12 bg-indigo-100 group-hover:bg-indigo-200 rounded-full flex items-center justify-center mb-3 transition-colors">
                             <ArrowRight className="w-6 h-6 text-indigo-600" />
@@ -305,7 +257,7 @@ export default function JobSeekerDashboard() {
               <p className="text-slate-400 text-xs">Get hired 5x faster through employee referrals</p>
             </div>
             {user?.domainId && (
-              <Link href={`/jobs?domain=${user.domainId}&isReferral=true`} className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700 text-sm font-semibold transition-colors">
+              <Link href="/jobs?isReferral=true" className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700 text-sm font-semibold transition-colors">
                 View All <ArrowRight className="w-4 h-4" />
               </Link>
             )}
@@ -323,7 +275,7 @@ export default function JobSeekerDashboard() {
                 {referralJobs.length === 5 && (
                   <CarouselItem className="pl-2 basis-[85%] sm:basis-1/2 lg:basis-1/3">
                     <div className="p-1 h-full">
-                      <Link href={user?.domainId ? `/jobs?domain=${user.domainId}&isReferral=true` : `/jobs?isReferral=true`} className="block h-full">
+                      <Link href="/jobs?isReferral=true" className="block h-full">
                         <div className="h-full min-h-[180px] flex flex-col items-center justify-center border-2 border-dashed border-emerald-200 rounded-xl hover:border-emerald-400 hover:bg-emerald-50/50 transition-all group py-10">
                           <div className="w-12 h-12 bg-emerald-100 group-hover:bg-emerald-200 rounded-full flex items-center justify-center mb-3 transition-colors">
                             <ArrowRight className="w-6 h-6 text-emerald-600" />
