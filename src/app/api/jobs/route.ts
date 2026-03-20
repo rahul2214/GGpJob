@@ -112,9 +112,30 @@ export async function GET(request: Request) {
     let hasComplexFilters = false;
 
     // --- Start Filtering Logic ---
+    const isRecommended = searchParams.get('view') === 'recommended';
+    const userId = searchParams.get('userId');
+
     if (searchParams.get('isReferral') !== null) {
       query = query.where('isReferral', '==', searchParams.get('isReferral') === 'true');
+      hasComplexFilters = true;
     }
+
+    // Handle Recommended View (Filter by User's Domain)
+    if (isRecommended && userId) {
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                if (userData?.domainId) {
+                    query = query.where('domainId', '==', userData.domainId);
+                    hasComplexFilters = true;
+                }
+            }
+        } catch (error) {
+            console.error('[API_JOBS_GET] Recommended filter error:', error);
+        }
+    }
+
     const recruiterId = searchParams.get('recruiterId');
     if (recruiterId) {
       query = query.where('recruiterId', '==', recruiterId);
@@ -134,7 +155,8 @@ export async function GET(request: Request) {
     } 
 
     const domainsParams = searchParams.getAll('domain').filter(d => d && d !== 'all');
-    if (domainsParams.length > 0) {
+    // For recommended view, we DON'T override with manual domain if one is already set by recommendation
+    if (domainsParams.length > 0 && !isRecommended) {
         query = query.where('domainId', 'in', domainsParams);
         hasComplexFilters = true;
     }

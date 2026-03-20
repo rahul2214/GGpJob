@@ -56,8 +56,11 @@ function JobSearchContent() {
         p[key] = value;
       }
     });
+    if (user?.id) {
+        p.userId = user.id;
+    }
     return p;
-  }, [searchParams]);
+  }, [searchParams, user?.id]);
 
   const { jobs, isLoading, isError } = useJobs(params);
 

@@ -87,12 +87,12 @@ export default function Header() {
 
   // Link active states
   const isReferralActive = isJobSearchPage && searchParams.get('isReferral') === 'true';
-  const isRecommendedActive = isJobSearchPage && searchParams.get('domain') === user?.domainId && searchParams.get('isReferral') !== 'true';
-  const isJobsActive = isJobSearchPage && !searchParams.get('isReferral') && !searchParams.get('domain');
+  const isRecommendedActive = isJobSearchPage && searchParams.get('view') === 'recommended';
+  const isJobsActive = isJobSearchPage && !searchParams.get('isReferral') && !searchParams.get('view');
   
   // Link Hrefs
-  const referralJobsHref = user?.domainId ? `/jobs?isReferral=true&domain=${user.domainId}` : '/jobs?isReferral=true';
-  const recommendedJobsHref = user?.domainId ? `/jobs?domain=${user.domainId}` : '/jobs';
+  const referralJobsHref = '/jobs?isReferral=true';
+  const recommendedJobsHref = '/jobs?view=recommended';
 
   const getProfileSectionTitle = () => {
     if (!isProfileSectionEditPage) return '';
