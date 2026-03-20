@@ -46,10 +46,22 @@ function JobSearchContent() {
   const { savedJobs, mutateSavedJobs } = useSavedJobs(user?.id);
   const { toast } = useToast();
 
-  const params = Object.fromEntries(searchParams.entries());
+  const params = useMemo(() => {
+    const p: Record<string, any> = {};
+    searchParams.forEach((value, key) => {
+      if (p[key]) {
+        if (Array.isArray(p[key])) p[key].push(value);
+        else p[key] = [p[key], value];
+      } else {
+        p[key] = value;
+      }
+    });
+    return p;
+  }, [searchParams]);
+
   const { jobs, isLoading, isError } = useJobs(params);
 
-  const isRecommended = searchParams.has("domain") && searchParams.get("isReferral") !== "true";
+  const isRecommended = searchParams.get("view") === "recommended";
   const isReferral = searchParams.get("isReferral") === "true";
   const mode = isReferral ? "referral" : isRecommended ? "recommended" : "all";
   const config = pageConfig[mode];

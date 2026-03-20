@@ -32,6 +32,42 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       updatedAt: FieldValue.serverTimestamp(),
     });
 
+    // Create a notification for the job seeker
+    const appDoc = await applicationRef.get();
+    const appData = appDoc.data();
+    
+    if (appData) {
+      const applicantId = appData.userId;
+      console.log(`[API_APP_STATUS] Creating notification for user: ${applicantId}, statusId: ${statusId}`);
+      
+      let jobTitle = 'a job';
+      if (appData.jobId) {
+        const jobDoc = await db.collection('jobs').doc(appData.jobId).get();
+        if (jobDoc.exists) {
+          jobTitle = jobDoc.data()?.title || 'a job';
+        }
+      }
+
+      let message = '';
+      const sId = Number(statusId);
+      switch (sId) {
+        case 2: message = `Your profile was viewed for the ${jobTitle} position.`; break;
+        case 3: message = `Your application for ${jobTitle} was reviewed. The company decided to move forward with other candidates at this time.`; break;
+        case 4: message = `Congratulations! You have been selected for the ${jobTitle} position.`; break;
+        default: message = `Your application status for ${jobTitle} has been updated.`;
+      }
+
+      console.log(`[API_APP_STATUS] Final message: "${message}"`);
+
+      await db.collection('notifications').add({
+        userId: applicantId,
+        message: message,
+        type: 'application_status',
+        jobId: appData.jobId,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    }
+
     // Fetch the updated application along with the status name
     const updatedDoc = await applicationRef.get();
     const updatedData = updatedDoc.data();

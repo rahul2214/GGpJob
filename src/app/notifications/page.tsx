@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/use-jobs";
+import axiosInstance from "@/lib/axios";
 
 interface Notification {
     id: string;
@@ -41,19 +42,11 @@ export default function NotificationsPage() {
             if (!user.notificationLastViewedAt || new Date(latestTimestamp).getTime() > new Date(user.notificationLastViewedAt).getTime()) {
                 const updateNotificationViewed = async () => {
                     try {
-                        const response = await fetch(`/api/users/${user.id}`, {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                ...user,
-                                notificationLastViewedAt: latestTimestamp,
-                            }),
+                        const updatedUser = await axiosInstance.put(`/users/${user.id}`, {
+                            ...user,
+                            notificationLastViewedAt: latestTimestamp,
                         });
-                        
-                        if (response.ok) {
-                            const updatedUser = await response.json();
-                            setUser(updatedUser);
-                        }
+                        setUser(updatedUser);
                     } catch (error) {
                         console.error("Failed to update notification view status", error);
                     }

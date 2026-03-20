@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Job Portal Auto Apply",
+  "version": "1.0",
+  "description": "Automate your LinkedIn job applications with AI powered by your Job Portal profile.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.linkedin.com/*",
+    "http://localhost:3000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
