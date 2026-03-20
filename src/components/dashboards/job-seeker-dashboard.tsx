@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import type { Job, Application } from "@/lib/types";
 import JobCard from "../job-card";
 import { Button } from "../ui/button";
-import { Search, ArrowRight, BriefcaseBusiness, Star, ThumbsUp, BookmarkCheck, Bell, TrendingUp, Zap } from "lucide-react";
+import { Search, ArrowRight, BriefcaseBusiness, Star, ThumbsUp, BookmarkCheck, Bell, TrendingUp, Zap, Bot, Loader2 } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Link from "next/link";
@@ -31,6 +31,7 @@ export default function JobSeekerDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const { toast } = useToast();
+  const [isAutoApplying, setIsAutoApplying] = useState(false);
 
   const { applications: userApplications } = useApplications(user ? { userId: user.id } : undefined);
   const { savedJobs, mutateSavedJobs } = useSavedJobs(user?.id);
@@ -45,6 +46,26 @@ export default function JobSeekerDashboard() {
   };
 
   const handleQuickSearch = (term: string) => router.push(`/jobs?search=${term}`);
+
+  const handleAutoApply = async () => {
+    if (!user) return;
+    setIsAutoApplying(true);
+    try {
+        const response = await fetch('/api/linkedin/auto-apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to start automation');
+        
+        toast({ title: 'Automation Started', description: data.message });
+    } catch (error: any) {
+        toast({ title: 'Automation Error', description: error.message, variant: 'destructive' });
+    } finally {
+        setIsAutoApplying(false);
+    }
+  };
 
   const handleSaveToggle = async (jobId: string, isCurrentlySaved: boolean) => {
     if (!user) return;
@@ -82,7 +103,7 @@ export default function JobSeekerDashboard() {
     { label: "Applications", value: userApplications.length, icon: BriefcaseBusiness, color: "from-indigo-500 to-violet-600", bg: "bg-indigo-50", text: "text-indigo-600", href: "/applications" },
     { label: "Saved Jobs", value: savedJobs?.length || 0, icon: BookmarkCheck, color: "from-rose-500 to-pink-600", bg: "bg-rose-50", text: "text-rose-600", href: "/saved-jobs" },
     { label: "Referrals Available", value: referralJobs.length, icon: ThumbsUp, color: "from-amber-500 to-orange-500", bg: "bg-amber-50", text: "text-amber-600", href: user?.domainId ? `/jobs?domain=${user.domainId}&isReferral=true` : "/jobs?isReferral=true" },
-    { label: "Recommended", value: recommendedJobs.length, icon: Star, color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50", text: "text-emerald-600", href: user?.domainId ? `/jobs?domain=${user.domainId}` : "/jobs" },
+    { label: "Recommended", value: recommendedJobs.length, icon: Star, color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50", text: "text-emerald-600", href: user?.domainId ? `/jobs?domain=${user.domainId}&view=recommended` : "/jobs?view=recommended" },
   ];
 
   return (
@@ -114,18 +135,25 @@ export default function JobSeekerDashboard() {
 
           {/* Quick action buttons */}
           <div className="flex flex-wrap gap-3">
-            <Link href="/jobs">
+            <Link href="/jobs" className="hidden md:block">
               <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-                className="flex items-center gap-2 bg-white text-indigo-700 font-bold px-4 py-2.5 rounded-xl text-sm shadow-md hover:bg-indigo-50 transition-colors">
+                className="flex items-center gap-2 bg-white text-indigo-700 font-bold px-4 py-2.5 rounded-xl text-sm shadow-md hover:bg-indigo-50 transition-colors w-full md:w-auto">
                 <Search className="w-4 h-4" /> Browse Jobs
               </motion.button>
             </Link>
-            <Link href="/notifications">
+            <Link href="/notifications" className="hidden md:block">
               <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-                className="flex items-center gap-2 bg-white/15 border border-white/30 text-white font-bold px-4 py-2.5 rounded-xl text-sm hover:bg-white/25 transition-colors">
+                className="flex items-center gap-2 bg-white/15 border border-white/30 text-white font-bold px-4 py-2.5 rounded-xl text-sm hover:bg-white/25 transition-colors w-full md:w-auto">
                 <Bell className="w-4 h-4" /> Alerts
               </motion.button>
             </Link>
+            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+              onClick={handleAutoApply}
+              disabled={isAutoApplying}
+              className="hidden md:flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-colors disabled:opacity-70 disabled:cursor-not-allowed border border-emerald-300/50">
+              {isAutoApplying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
+              {isAutoApplying ? "Starting Bot..." : "LinkedIn Auto Apply"}
+            </motion.button>
           </div>
         </div>
       </motion.div>

@@ -26,7 +26,7 @@ type ProfileData = {
 };
 
 interface ProfileSectionsProps {
-    userId: number;
+    userId: string | number;
     isEditable?: boolean;
 }
 
@@ -116,7 +116,7 @@ export function ProfileSections({ userId, isEditable = false }: ProfileSectionsP
         }
     };
     
-     const handleDelete = async (section: Section, id: number) => {
+     const handleDelete = async (section: Section, id: string | number) => {
         if (!window.confirm("Are you sure you want to delete this item?")) return;
 
         try {

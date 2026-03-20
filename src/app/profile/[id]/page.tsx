@@ -13,6 +13,7 @@ import { AtSign, Phone, MapPin, Linkedin, FileText, User as UserIcon, Calendar, 
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { format } from "date-fns";
+import axiosInstance from "@/lib/axios";
 
 export default function PublicProfilePage() {
     const { user: currentUser, loading: currentUserLoading } = useUser();
@@ -29,13 +30,8 @@ export default function PublicProfilePage() {
         if (id) {
             setLoading(true);
             try {
-                const res = await fetch(`/api/users/${id}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setProfileUser(data);
-                } else {
-                   setProfileUser(null);
-                }
+                const data = await axiosInstance.get(`/users/${id}`);
+                setProfileUser(data);
             } catch (error) {
                 console.error("Failed to fetch user data", error);
                 setProfileUser(null);
@@ -44,6 +40,36 @@ export default function PublicProfilePage() {
             }
         }
     }, [id]);
+
+    const [hasNotified, setHasNotified] = useState(false);
+
+    useEffect(() => {
+        const notifyView = async () => {
+            if (
+                !loading && 
+                !currentUserLoading && 
+                currentUser && 
+                profileUser && 
+                !isOwnProfile && 
+                profileUser.role === 'Job Seeker' && 
+                currentUser.role === 'Recruiter' &&
+                !hasNotified
+            ) {
+                try {
+                    await axiosInstance.post('/notifications', {
+                        userId: profileUser.id,
+                        message: `A recruiter (${currentUser.name}) viewed your profile.`,
+                        type: 'profile_view',
+                        viewerId: currentUser.id
+                    });
+                    setHasNotified(true);
+                } catch (error) {
+                    console.error("Failed to send profile view notification", error);
+                }
+            }
+        };
+        notifyView();
+    }, [loading, currentUserLoading, currentUser, profileUser, isOwnProfile, hasNotified]);
 
     useEffect(() => {
         fetchUser();

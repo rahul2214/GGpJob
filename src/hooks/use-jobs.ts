@@ -1,19 +1,19 @@
 
 "use client";
 
+import { useState, useEffect } from "react";
 import useSWR from 'swr';
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/firebase/config";
 import type { Job } from '@/lib/types';
+import axiosInstance from "@/lib/axios";
 
-const fetcher = (url: string) => fetch(url).then(res => {
-    if (!res.ok) {
-        throw new Error('An error occurred while fetching the data.');
-    }
-    return res.json();
-});
+// Axios-based fetcher with explicit typing for SWR
+const fetcher = (url: string) => axiosInstance.get(url) as any;
 
 export function useJobs(params?: Record<string, any>) {
   const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
-  const { data, error, isLoading } = useSWR<Job[]>(`/api/jobs${queryString}`, fetcher, {
+  const { data, error, isLoading } = useSWR<Job[]>(`/jobs${queryString}`, fetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 60000, // 1 minute
   });
@@ -27,7 +27,7 @@ export function useJobs(params?: Record<string, any>) {
 
 export function useDashboardJobs(params?: Record<string, any>) {
   const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
-  const { data, error, isLoading } = useSWR<{ recommended: Job[], referral: Job[] }>(`/api/jobs${queryString}`, fetcher, {
+  const { data, error, isLoading } = useSWR<{ recommended: Job[], referral: Job[] }>(`/jobs${queryString}`, fetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 60000,
   });
@@ -41,11 +41,9 @@ export function useDashboardJobs(params?: Record<string, any>) {
 
 export function useSavedJobs(userId?: string) {
     const { data, error, isLoading, mutate } = useSWR<string[]>(
-        userId ? `/api/users/${userId}/saved-jobs` : null, 
+        userId ? `/users/${userId}/saved-jobs` : null, 
         async (url) => {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error('Failed to fetch saved jobs');
-            const savedJobsData: { jobId: string }[] = await res.json();
+            const savedJobsData: { jobId: string }[] = await axiosInstance.get(url);
             return savedJobsData.map(item => item.jobId);
         },
         {
@@ -65,7 +63,7 @@ export function useSavedJobs(userId?: string) {
 export function useApplications(params?: Record<string, any>) {
   const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
   const { data, error, isLoading, mutate } = useSWR<any[]>(
-      `/api/applications${queryString}`, 
+      `/applications${queryString}`, 
       fetcher,
       {
           revalidateOnFocus: false,
@@ -81,20 +79,73 @@ export function useApplications(params?: Record<string, any>) {
   };
 }
 
+
+
 export function useNotifications(userId?: string) {
-    const { data, error, isLoading, mutate } = useSWR<any[]>(
-        userId ? `/api/notifications?userId=${userId}` : null,
-        fetcher,
-        {
-            refreshInterval: 30000, // Refresh every 30 seconds
-            revalidateOnFocus: true,
+    const [notifications, setNotifications] = useState<any[] | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
+
+    useEffect(() => {
+        if (!userId) {
+            setNotifications(null);
+            setIsLoading(false);
+            return;
         }
-    );
+
+        setIsLoading(true);
+        const q = query(
+            collection(db, "notifications"),
+            where("userId", "==", userId)
+            // Temporarily removing orderBy to test if it's an index issue
+            // orderBy("createdAt", "desc")
+        );
+
+        console.log(`[useNotifications] Listening for user: ${userId}`);
+
+        const unsubscribe = onSnapshot(q, 
+            (snapshot) => {
+                console.log(`[useNotifications] Received data! Count: ${snapshot.size}`);
+                const notificationsData = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    // Convert Firestore Timestamp to Date/String
+                    let timestamp = new Date().toISOString();
+                    if (data.createdAt && typeof data.createdAt.toDate === 'function') {
+                        timestamp = data.createdAt.toDate().toISOString();
+                    } else if (data.timestamp) {
+                        // Handle legacy timestamp format or if already a string
+                        timestamp = data.timestamp;
+                    }
+
+                    return {
+                        id: doc.id,
+                        ...data,
+                        timestamp: timestamp
+                    };
+                });
+
+                // Manually sort since we removed orderBy
+                notificationsData.sort((a: any, b: any) => {
+                    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+                });
+                setNotifications(notificationsData);
+                setIsLoading(false);
+            },
+            (err) => {
+                console.error("Firestore notification listener error:", err);
+                setError(err as Error);
+                setIsLoading(false);
+            }
+        );
+
+        return () => unsubscribe();
+    }, [userId]);
 
     return {
-        notifications: data,
+        notifications,
         isLoading,
         isError: error,
-        mutateNotifications: mutate,
+        // No longer need manual mutate with real-time listener
+        mutateNotifications: () => {} 
     };
 }

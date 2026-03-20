@@ -20,6 +20,27 @@ export async function POST(request: Request, { params }: { params: { id: string 
       updatedAt: FieldValue.serverTimestamp(),
     });
 
+    // Create a notification for the job seeker
+    const appDoc = await applicationRef.get();
+    const appData = appDoc.data();
+    if (appData) {
+      let jobTitle = 'a job';
+      if (appData.jobId) {
+        const jobDoc = await db.collection('jobs').doc(appData.jobId).get();
+        if (jobDoc.exists) {
+          jobTitle = jobDoc.data()?.title || 'a job';
+        }
+      }
+
+      await db.collection('notifications').add({
+        userId: appData.userId,
+        message: `Your profile was viewed for the ${jobTitle} position.`,
+        type: 'application_status',
+        jobId: appData.jobId,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    }
+
     return NextResponse.json({ success: true, message: 'Application status updated to "Profile Viewed"' }, { status: 200 });
 
   } catch (e: any) {

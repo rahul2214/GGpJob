@@ -32,7 +32,7 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
     const [jobTypes, setJobTypes] = useState<JobType[]>([]);
     const [activeCategory, setActiveCategory] = useState<FilterCategory>('posted');
     
-    const isRecommended = searchParams.has('domain') && searchParams.get('isReferral') !== 'true';
+    const isRecommended = searchParams.get('view') === 'recommended';
     const isReferral = searchParams.get('isReferral') === 'true';
     const hideDomain = isRecommended || isReferral;
 
@@ -99,6 +99,7 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
         const currentSearch = searchParams.get('search');
         if (currentSearch) params.set('search', currentSearch);
         if (isReferral) params.set('isReferral', 'true');
+        if (isRecommended) params.set('view', 'recommended');
         
         const currentDomain = searchParams.get('domain');
         if (hideDomain && currentDomain) params.set('domain', currentDomain);
@@ -135,6 +136,7 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
         
         if (currentSearch) newParams.set('search', currentSearch);
         if (isReferral) newParams.set('isReferral', 'true');
+        if (isRecommended) newParams.set('view', 'recommended');
         if (hideDomain && currentDomain) newParams.set('domain', currentDomain);
         
         router.push(`/jobs?${newParams.toString()}`);

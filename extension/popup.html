@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Job Portal Auto Apply</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h2>🚀 AI Auto Apply</h2>
+    <p>Ready to automate your applications? Just open any LinkedIn job post and click start!</p>
+    
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <label for="user-id-input" style="font-size: 12px; font-weight: 600;">Your Job Portal User ID:</label>
+      <input type="text" id="user-id-input" placeholder="Paste your User ID here" style="padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px;">
+    </div>
+    
+    <button id="start-btn">Start Automation</button>
+    <div id="status-log">Waiting for action...</div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
