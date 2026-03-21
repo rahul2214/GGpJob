@@ -7,10 +7,9 @@ import JobCard from "@/components/job-card";
 import { JobFilters } from "@/components/job-filters";
 import { useUser } from "@/contexts/user-context";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useJobs, useSavedJobs } from "@/hooks/use-jobs";
-import { useToast } from "@/hooks/use-toast";
+import { useJobs } from "@/hooks/use-jobs";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Briefcase, ThumbsUp, Star, SlidersHorizontal, BriefcaseBusiness } from "lucide-react";
+import { Search, ThumbsUp, Star, SlidersHorizontal, BriefcaseBusiness } from "lucide-react";
 
 const pageConfig = {
   referral: {
@@ -43,8 +42,6 @@ function JobSearchContent() {
   const searchParams = useSearchParams();
   const { user } = useUser();
   const [userApplications, setUserApplications] = useState<Application[]>([]);
-  const { savedJobs, mutateSavedJobs } = useSavedJobs(user?.id);
-  const { toast } = useToast();
 
   const params = useMemo(() => {
     const p: Record<string, any> = {};
@@ -87,33 +84,8 @@ function JobSearchContent() {
     fetchApplications();
   }, [user]);
 
-  const handleSaveToggle = async (jobId: string, isCurrentlySaved: boolean) => {
-    if (!user) return;
-    const originalSavedJobs = savedJobs ? [...savedJobs] : [];
-    const newSavedJobs = isCurrentlySaved
-      ? originalSavedJobs.filter((id) => id !== jobId)
-      : [...originalSavedJobs, jobId];
-    mutateSavedJobs(newSavedJobs, false);
-    const method = isCurrentlySaved ? "DELETE" : "POST";
-    const url = isCurrentlySaved
-      ? `/api/users/${user.id}/saved-jobs?jobId=${jobId}`
-      : `/api/users/${user.id}/saved-jobs`;
-    try {
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: isCurrentlySaved ? undefined : JSON.stringify({ jobId }),
-      });
-      if (!response.ok) throw new Error("Failed to update saved status");
-      mutateSavedJobs();
-    } catch (error) {
-      mutateSavedJobs(originalSavedJobs, false);
-      toast({ title: "Error", description: "Could not update saved jobs.", variant: "destructive" });
-    }
-  };
 
   const appliedJobIds = useMemo(() => new Set(userApplications.map((app) => app.jobId)), [userApplications]);
-  const savedJobIds = useMemo(() => new Set(savedJobs || []), [savedJobs]);
   const filteredJobs = useMemo(
     () => (user?.role === "Job Seeker" ? jobs?.filter((job) => !appliedJobIds.has(job.id)) : jobs),
     [jobs, appliedJobIds, user]
@@ -221,9 +193,7 @@ function JobSearchContent() {
                       <JobCard
                         job={job}
                         isApplied={appliedJobIds.has(job.id)}
-                        isSaved={savedJobIds.has(job.id)}
-                        onSaveToggle={handleSaveToggle}
-                      />
+                                            />
                     </motion.div>
                   ))}
                 </div>

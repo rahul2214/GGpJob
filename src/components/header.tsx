@@ -166,7 +166,7 @@ export default function Header() {
       );
     }
     return (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center">
             <Sheet>
                 <SheetTrigger asChild>
                     <Button variant="ghost" size="icon" className="shrink-0 md:hidden p-0">
@@ -178,16 +178,15 @@ export default function Header() {
                  <SheetHeader className="p-4">
                     <SheetTitle asChild>
                         <SheetClose asChild>
-                            <Link href="/" className="flex items-center gap-2 font-bold">
-                                <BriefcaseBusiness className="h-6 w-6 text-primary" />
-                                <span className="text-xl">Job Portal</span>
+                            <Link href="/" className="flex items-center font-bold py-2">
+                                <img src="/logo.png" alt="JobsDart Logo" className="h-14 w-auto object-contain" />
                             </Link>
                         </SheetClose>
                     </SheetTitle>
                 </SheetHeader>
                <ScrollArea className="flex-1">
                 <div className="p-6 pt-0">
-                    <nav className="grid gap-3 text-lg font-medium mt-6">
+                    <nav className="grid text-lg font-medium mt-6">
                         {isClient && !userLoading && user && (user.role === 'Admin' || user.role === 'Super Admin') ? (
                            <>
                             {adminNavItems.map(item => (
@@ -223,25 +222,7 @@ export default function Header() {
                                         Referral Jobs
                                     </Link>
                                 </SheetClose>
-                                <SheetClose asChild>
-                                    <Link href="/saved-jobs" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/saved-jobs' && "text-foreground font-bold")}>
-                                        <Bookmark className="h-5 w-5" />
-                                        Saved Jobs
-                                    </Link>
-                                </SheetClose>
-                                <SheetClose asChild>
-                                    <Link href="/notifications" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", isNotificationsPage && "text-foreground font-bold")}>
-                                        <div className="relative">
-                                          <Bell className="h-5 w-5" />
-                                          {notificationCount > 0 && (
-                                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                                              {notificationCount > 9 ? '9+' : notificationCount}
-                                            </span>
-                                          )}
-                                        </div>
-                                        Notifications
-                                    </Link>
-                                </SheetClose>
+                               
                                 {user.domainId && (
                                     <SheetClose asChild>
                                        <Link href={recommendedJobsHref} className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", isRecommendedActive && "text-foreground font-bold")}>
@@ -272,7 +253,7 @@ export default function Header() {
                     {isClient && !userLoading && user && (
                         <>
                             <Separator className="my-4" />
-                            <nav className="grid gap-3 text-lg font-medium">
+                            <nav className="grid text-lg font-medium">
                                <div className="text-sm font-semibold text-muted-foreground px-1">My Account</div>
                                 <SheetClose asChild>
                                     <Link href="/profile" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/profile' && "text-foreground font-bold")}>
@@ -383,9 +364,8 @@ export default function Header() {
     <header className={cn("sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-2 sm:px-6", isJobDetailsPage && "hidden md:flex")}>
        <div className="flex items-center gap-2">
         {renderMobileLeftButton()}
-        <Link href="/" className="hidden md:flex items-center gap-2 font-bold whitespace-nowrap">
-            <BriefcaseBusiness className="h-6 w-6 text-primary" />
-            <span className="text-xl">Job Portal</span>
+        <Link href="/" className="hidden md:flex items-center gap-2 font-bold whitespace-nowrap py-1">
+            <img src="/logo.png" alt="JobsDart Logo" className="h-16 w-auto object-contain" />
         </Link>
         {isClient && (isNotificationsPage || isProfileSectionEditPage || (isMobile && (isAdminAddPage || isAdminEditPage))) && (
           <div className="md:hidden text-lg font-semibold whitespace-nowrap">
@@ -419,9 +399,7 @@ export default function Header() {
                     <Link href={referralJobsHref} className={`transition-colors hover:text-foreground ${isReferralActive ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
                         Referral Jobs
                     </Link>
-                    <Link href="/saved-jobs" className={`transition-colors hover:text-foreground ${pathname === "/saved-jobs" ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
-                        Saved Jobs
-                    </Link>
+                   
                     {user.domainId && (
                          <Link href={recommendedJobsHref} className={`transition-colors hover:text-foreground ${isRecommendedActive ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
                             Recommended Jobs
@@ -500,12 +478,7 @@ export default function Header() {
                                 <span>My Applications</span>
                                 </Link>
                             </DropdownMenuItem>
-                             <DropdownMenuItem asChild>
-                                <Link href="/saved-jobs">
-                                <Bookmark className="mr-2 h-4 w-4" />
-                                <span>Saved Jobs</span>
-                                </Link>
-                            </DropdownMenuItem>
+                           
                         </>
                         )}
                         {['Job Seeker', 'Recruiter', 'Employee'].includes(user.role) && (
