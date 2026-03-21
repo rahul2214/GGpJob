@@ -3,7 +3,6 @@
 
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
 import type { Job, Application } from "@/lib/types";
-import { Badge } from '@/components/ui/badge';
 import { 
     Briefcase, MapPin, Building, Calendar, Users, 
     BadgeDollarSign, Clock, UserCheck, 
@@ -11,17 +10,15 @@ import {
     Layers, User as UserIcon, ArrowLeft, Bookmark,
     ChevronDown
 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { ApplyButton } from './apply-button';
 import JobCard from '@/components/job-card';
 import { ShareButton } from '@/components/share-button';
 import { useUser } from '@/contexts/user-context';
 import { useState, useEffect, Suspense, useCallback, useMemo, useRef } from 'react';
 import JobDetailsLoading from './loading';
-import { useSavedJobs } from '@/hooks/use-jobs';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,7 +55,6 @@ function JobDetailsContent() {
     const params = useParams();
     const searchParams = useSearchParams();
     const id = params.id as string;
-    const { savedJobs, mutateSavedJobs } = useSavedJobs(user?.id);
     
     // Visibility tracking for footer
     const [isApplyAreaVisible, setIsApplyAreaVisible] = useState(false);
@@ -69,8 +65,7 @@ function JobDetailsContent() {
     const isAdminView = searchParams.get('view') === 'admin';
 
     const appliedJobIds = useMemo(() => new Set(userApplications.map(app => app.jobId)), [userApplications]);
-    const savedJobIds = useMemo(() => new Set(savedJobs || []), [savedJobs]);
-    const isCurrentlySaved = savedJobIds.has(id);
+   
 
     // Filter related jobs: remove those the user has already applied to
     const relatedJobs = useMemo(() => {
@@ -144,46 +139,7 @@ function JobDetailsContent() {
         return () => observer.disconnect();
     }, [loading, job]);
 
-    const handleSaveToggle = async () => {
-        if (!user) {
-            router.push('/login');
-            return;
-        }
-
-        const jobId = id;
-        const wasSaved = isCurrentlySaved;
-        const originalSavedJobs = savedJobs ? [...savedJobs] : [];
-
-        const newSavedJobs = wasSaved
-            ? originalSavedJobs.filter(id => id !== jobId)
-            : [...originalSavedJobs, jobId];
-        mutateSavedJobs(newSavedJobs, false);
-
-        const method = wasSaved ? 'DELETE' : 'POST';
-        const url = wasSaved 
-            ? `/api/users/${user.id}/saved-jobs?jobId=${jobId}`
-            : `/api/users/${user.id}/saved-jobs`;
-
-        try {
-            const response = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: wasSaved ? undefined : JSON.stringify({ jobId }),
-            });
-
-            if (!response.ok) throw new Error('Failed');
-            
-            toast({
-                title: wasSaved ? "Job Unsaved" : "Job Saved",
-                description: `"${job?.title}" has been ${wasSaved ? 'removed from' : 'added to'} your saved jobs.`,
-            });
-            mutateSavedJobs();
-        } catch (error) {
-            mutateSavedJobs(originalSavedJobs, false);
-            toast({ title: "Error", description: "Could not update saved jobs.", variant: "destructive" });
-        }
-    };
-
+  
     const handleExternalApply = async (e: React.MouseEvent, url: string) => {
         e.preventDefault();
         e.stopPropagation();
@@ -257,9 +213,6 @@ function JobDetailsContent() {
                     </Button>
                 </div>
                 <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" onClick={handleSaveToggle} className="rounded-full">
-                        <Bookmark className={cn("h-6 w-6", isCurrentlySaved && "fill-primary text-primary")} />
-                    </Button>
                     <ShareButton jobId={job.id} jobTitle={job.title} companyName={job.companyName} />
                 </div>
             </div>
@@ -318,16 +271,7 @@ function JobDetailsContent() {
                                 </div>
                                 
                                 <div className="flex items-center gap-3">
-                                    <Button 
-                                        variant="outline" 
-                                        className={cn(
-                                            "rounded-full px-10 h-11 border-blue-600 text-blue-600 hover:bg-blue-50 font-bold text-base transition-colors",
-                                            isCurrentlySaved && "bg-blue-50"
-                                        )}
-                                        onClick={handleSaveToggle}
-                                    >
-                                        {isCurrentlySaved ? 'Saved' : 'Save'}
-                                    </Button>
+                                   
                                     <div className="min-w-[120px]">
                                         {job.jobLink ? (
                                             <Button 
@@ -540,8 +484,7 @@ function JobDetailsContent() {
                                             key={relatedJob.id} 
                                             job={relatedJob} 
                                             isApplied={appliedJobIds.has(relatedJob.id)} 
-                                            isSaved={savedJobIds.has(relatedJob.id)}
-                                            onSaveToggle={handleSaveToggle}
+                                          
                                         />
                                     ))}
                                 </div>
