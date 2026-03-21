@@ -39,26 +39,6 @@ export function useDashboardJobs(params?: Record<string, any>) {
   }
 }
 
-export function useSavedJobs(userId?: string) {
-    const { data, error, isLoading, mutate } = useSWR<string[]>(
-        userId ? `/users/${userId}/saved-jobs` : null, 
-        async (url) => {
-            const savedJobsData: { jobId: string }[] = await axiosInstance.get(url);
-            return savedJobsData.map(item => item.jobId);
-        },
-        {
-            revalidateOnFocus: false,
-            dedupingInterval: 60000,
-        }
-    );
-
-    return {
-        savedJobs: data,
-        isLoading,
-        isError: error,
-        mutateSavedJobs: mutate,
-    };
-}
 
 export function useApplications(params?: Record<string, any>) {
   const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
@@ -101,11 +81,9 @@ export function useNotifications(userId?: string) {
             // orderBy("createdAt", "desc")
         );
 
-        console.log(`[useNotifications] Listening for user: ${userId}`);
 
         const unsubscribe = onSnapshot(q, 
             (snapshot) => {
-                console.log(`[useNotifications] Received data! Count: ${snapshot.size}`);
                 const notificationsData = snapshot.docs.map(doc => {
                     const data = doc.data();
                     // Convert Firestore Timestamp to Date/String

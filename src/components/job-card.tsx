@@ -3,35 +3,17 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Job } from "@/lib/types";
-import { MapPin, Briefcase, Clock, Star, CheckCircle, BadgeDollarSign, Bookmark } from 'lucide-react';
+import { MapPin, Briefcase, Clock, Star, CheckCircle, BadgeDollarSign } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { Button } from './ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
 
 interface JobCardProps {
   job: Job;
   isApplied?: boolean;
-  isSaved?: boolean;
   hideDetails?: boolean;
   onSaveToggle?: (jobId: string, isCurrentlySaved: boolean) => void;
 }
 
-export default function JobCard({ job, isApplied = false, isSaved = false, hideDetails = false, onSaveToggle }: JobCardProps) {
-  const { toast } = useToast();
-  const [isBookmarked, setIsBookmarked] = useState(isSaved);
-
-  const handleSaveClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onSaveToggle?.(job.id, isBookmarked);
-    setIsBookmarked(!isBookmarked);
-    toast({
-      title: !isBookmarked ? "Job Saved" : "Job Unsaved",
-      description: `"${job.title}" has been ${!isBookmarked ? 'added to' : 'removed from'} your saved jobs.`,
-    })
-  }
+export default function JobCard({ job, isApplied = false, hideDetails = false }: JobCardProps) {
 
   return (
     <Link href={`/jobs/${job.id}`} className="block hover:shadow-lg transition-shadow duration-300 rounded-lg h-full">
@@ -63,8 +45,8 @@ export default function JobCard({ job, isApplied = false, isSaved = false, hideD
                   <span>{job.type}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <BadgeDollarSign className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-foreground">{job.salary || 'Not Disclosed'}</span>
+                  <BadgeDollarSign className="h-4 w-4 text-primary" />
+                  <span className="font-semibold text-foreground">{job.salary || 'Not Disclosed'}</span>
                 </div>
               </>
             )}
@@ -75,24 +57,14 @@ export default function JobCard({ job, isApplied = false, isSaved = false, hideD
             <Clock className="h-3 w-3" />
             {formatDistanceToNow(new Date(job.postedAt), { addSuffix: true })}
           </div>
-           <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             {isApplied && (
-                <Badge variant="secondary" className="flex items-center gap-1.5 border-green-300 bg-green-50 text-green-800">
-                    <CheckCircle className="h-4 w-4" />
-                    Applied
-                </Badge>
+              <Badge variant="secondary" className="flex items-center gap-1.5 border-green-300 bg-green-50 text-green-800">
+                <CheckCircle className="h-4 w-4" />
+                Applied
+              </Badge>
             )}
-             {onSaveToggle && (
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8 text-muted-foreground hover:text-primary"
-                    onClick={handleSaveClick}
-                    aria-label={isBookmarked ? 'Unsave job' : 'Save job'}
-                >
-                    <Bookmark className={cn("h-5 w-5", isBookmarked && "fill-primary text-primary")} />
-                </Button>
-            )}
+
           </div>
         </CardFooter>
       </Card>
