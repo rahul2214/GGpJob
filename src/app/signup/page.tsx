@@ -146,12 +146,7 @@ export default function SignupPage() {
         <div className="absolute top-0 -left-20 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 -right-20 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl" />
 
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="flex items-center gap-3 relative z-10">
-          <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
-            <Briefcase className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-white font-bold text-xl">Job Portal</span>
-        </motion.div>
+       
 
         <div className="relative z-10 space-y-8">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.2 }}>
@@ -213,13 +208,7 @@ export default function SignupPage() {
       <div className="w-full lg:w-[58%] flex items-start justify-center px-6 py-10 lg:px-16 overflow-y-auto">
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="w-full max-w-lg py-4">
 
-          {/* Mobile logo */}
-          <div className="flex lg:hidden items-center gap-2 mb-6">
-            <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center">
-              <Briefcase className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-slate-900 text-lg">Job Portal</span>
-          </div>
+         
 
           <div className="mb-7">
             <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
@@ -362,10 +351,7 @@ export default function SignupPage() {
             <Link href="/login" className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors">Sign in</Link>
           </p>
 
-          <p className="mt-2 text-center text-sm text-slate-400 lg:hidden">
-            Recruiter?{" "}
-            <Link href="/company/signup" className="text-slate-600 font-semibold hover:text-indigo-600 transition-colors">Sign up here →</Link>
-          </p>
+         
         </motion.div>
       </div>
     </div>

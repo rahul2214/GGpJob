@@ -10,7 +10,7 @@
   ],
   "host_permissions": [
     "https://www.linkedin.com/*",
-    "http://localhost:3000/*"
+    "http://localhost:9002/*"
   ],
   "action": {
     "default_popup": "popup.html"

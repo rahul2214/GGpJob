@@ -168,14 +168,7 @@ export default function CompanyLoginPage() {
         <div className="absolute bottom-0 -right-20 w-96 h-96 bg-emerald-400/20 rounded-full blur-3xl" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-teal-500/10 rounded-full blur-[80px]" />
 
-        {/* Logo */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="flex items-center gap-3 relative z-10">
-          <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
-            <Briefcase className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-white font-bold text-xl">Job Portal</span>
-          <span className="bg-white/20 text-white text-xs font-bold px-2 py-0.5 rounded-full border border-white/30">Recruiter</span>
-        </motion.div>
+        
 
         {/* Center content */}
         <div className="relative z-10 space-y-8">
@@ -230,14 +223,7 @@ export default function CompanyLoginPage() {
           transition={{ duration: 0.6 }}
           className="w-full max-w-md"
         >
-          {/* Mobile logo */}
-          <div className="flex lg:hidden items-center gap-2 mb-8">
-            <div className="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center">
-              <Briefcase className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-slate-900 text-lg">Job Portal</span>
-            <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">Recruiter</span>
-          </div>
+         
 
           <div className="mb-8">
             <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
@@ -347,13 +333,7 @@ export default function CompanyLoginPage() {
             </Link>
           </p>
 
-          {/* Mobile candidate link */}
-          <p className="mt-3 text-center text-sm text-slate-400 lg:hidden">
-            Job seeker?{" "}
-            <Link href="/login" className="text-slate-600 font-semibold hover:text-emerald-600 transition-colors">
-              Candidate Login →
-            </Link>
-          </p>
+        
         </motion.div>
       </div>
     </div>

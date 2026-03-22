@@ -5,7 +5,7 @@ chrome.runtime.onInstalled.addListener(() => {
 // The Background service worker easily bypasses CORS to hit the Next.js API!
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "FETCH_ANSWERS") {
-    fetch('http://localhost:3000/api/extension/get-answers', {
+    fetch('http://localhost:9002/api/extension/get-answers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request.payload)

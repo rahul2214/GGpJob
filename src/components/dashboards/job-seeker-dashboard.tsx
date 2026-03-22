@@ -45,15 +45,17 @@ export default function JobSeekerDashboard() {
     if (!user) return;
     setIsAutoApplying(true);
     try {
-      const response = await fetch('/api/linkedin/auto-apply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id })
+      // Formulate the customized search URL based on the user's profile
+      const keyword = user.headline || 'Software Engineer';
+      const userLocation = user.location || 'Remote';
+      const linkedinUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(keyword)}&location=${encodeURIComponent(userLocation)}&f_AL=true&autoApply=true&userId=${user.id}`;
+      
+      window.open(linkedinUrl, '_blank');
+      
+      toast({ 
+        title: 'LinkedIn Auto Apply', 
+        description: 'A new tab opened. If the Chrome extension is active, it will start applying.' 
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to start automation');
-
-      toast({ title: 'Automation Started', description: data.message });
     } catch (error: any) {
       toast({ title: 'Automation Error', description: error.message, variant: 'destructive' });
     } finally {

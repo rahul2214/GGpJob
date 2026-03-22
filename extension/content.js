@@ -2,6 +2,20 @@ console.log("Job Portal Auto Apply Content Script Loaded!");
 
 let isApplying = false;
 
+// Check if we were opened by the Job Portal dashboard explicitly
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('autoApply') === 'true' && urlParams.get('userId')) {
+    const userId = urlParams.get('userId');
+    console.log("Auto-Apply triggered via URL for user:", userId);
+    // Wait a few seconds for the LinkedIn SPA and job list to fully load
+    setTimeout(() => {
+        if (!isApplying) {
+            isApplying = true;
+            startAutoApply(userId);
+        }
+    }, 4000);
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "START_APPLY") {
     if (isApplying) {
@@ -21,58 +35,111 @@ function getVisibleText(el) {
     return el.innerText || el.textContent || "";
 }
 
-async function startAutoApply(userId) {
-   console.log("Looking for Easy Apply button...");
-   let easyApplyButton = null;
-   
-   // Poll for up to 10 seconds (20 tries * 500ms)
-   for (let i = 0; i < 20; i++) {
-       // Look for the specific LinkedIn class, or ARIA label, ignoring tag type
-       const applyElements = Array.from(document.querySelectorAll('.jobs-apply-button, [aria-label*="Easy Apply" i], button'));
-       
-       for (const el of applyElements) {
-           // Skip hidden elements
-           if (el.offsetWidth === 0 && el.offsetHeight === 0) continue;
-           
-           const isApplyClass = el.classList && el.classList.contains('jobs-apply-button');
-           const btnText = getVisibleText(el).toLowerCase();
-           
-           // Extra safety: only click the large one in the main job description panel if we're on the search page
-           const isInMainPanel = el.closest('.job-view-layout') || el.closest('.jobs-search__job-details--container');
-           
-           if (isApplyClass || btnText.includes('easy apply')) {
-               // If we are on a split-pane view, prefer the button inside the details pane!
-               if (isInMainPanel || document.querySelectorAll('.jobs-apply-button').length === 1) {
-                   easyApplyButton = el;
-                   break;
-               } else if (!easyApplyButton) {
-                   // Fallback to the first one found if not in main pane but we have no other choice
-                   easyApplyButton = el;
-               }
-           }
-       }
-       if (easyApplyButton) {
-           break;
-       }
-       await new Promise(r => setTimeout(r, 500));
-   }
+let processedJobs = new Set();
+let isAutoApplyingLoop = false;
 
-   if (!easyApplyButton) {
-      alert("No Easy Apply button available for this job. Make sure the job actually says 'Easy Apply' and not just 'Apply'!");
-      isApplying = false;
-      return;
-   }
-   
-   console.log("Clicking Easy Apply...");
-   easyApplyButton.click();
-   
-   await new Promise(r => setTimeout(r, 2000));
-   await handleModal(userId);
+async function startAutoApply(userId) {
+    console.log("Starting Auto Apply Job Loop...");
+    isAutoApplyingLoop = true;
+    
+    // Wait for the job list to load initially
+    await new Promise(r => setTimeout(r, 5000));
+    
+    while(isAutoApplyingLoop && isApplying) {
+        // Find scroll container
+        const scrollContainer = document.querySelector('.jobs-search-results-list') || document.querySelector('.scaffold-layout__list') || document.querySelector('.jobs-search__left-rail');
+        
+        let jobCards = Array.from(document.querySelectorAll('.job-card-container'));
+        
+        // Find the first job we haven't processed
+        let targetJob = null;
+        for (const card of jobCards) {
+            const jobId = card.getAttribute('data-job-id') || getVisibleText(card.querySelector('.job-card-list__title'));
+            if (!processedJobs.has(jobId)) {
+                targetJob = card;
+                processedJobs.add(jobId);
+                break;
+            }
+        }
+        
+        if (targetJob) {
+            console.log("Processing new job...");
+            targetJob.scrollIntoView({ behavior: "smooth", block: "center" });
+            await new Promise(r => setTimeout(r, 1000));
+            targetJob.click();
+            
+            // Wait for right pane to load
+            await new Promise(r => setTimeout(r, 3000));
+            
+            // Look for easy apply button
+            const applyElements = Array.from(document.querySelectorAll('.jobs-apply-button, [aria-label*="Easy Apply" i]'));
+            let easyApplyButton = null;
+            for (const el of applyElements) {
+               if (el.offsetWidth === 0 && el.offsetHeight === 0) continue;
+               const isApplyClass = el.classList && el.classList.contains('jobs-apply-button');
+               const btnText = getVisibleText(el).toLowerCase();
+               const isInMainPanel = el.closest('.job-view-layout') || el.closest('.jobs-search__job-details--container');
+               
+               if (isApplyClass || btnText.includes('easy apply')) {
+                   if (isInMainPanel || applyElements.length === 1) {
+                       easyApplyButton = el;
+                       break;
+                   } else if (!easyApplyButton) {
+                       easyApplyButton = el;
+                   }
+               }
+            }
+            
+            if (easyApplyButton) {
+                console.log("Clicking Easy Apply...");
+                easyApplyButton.click();
+                await new Promise(r => setTimeout(r, 2000));
+                await handleModal(userId);
+            } else {
+                console.log("No Easy Apply button for this job. Skipping.");
+            }
+            await new Promise(r => setTimeout(r, 2000));
+            
+        } else {
+             // Try to scroll to load more
+             if (scrollContainer) {
+                 const oldHeight = scrollContainer.scrollHeight;
+                 scrollContainer.scrollTop += 1500;
+                 await new Promise(r => setTimeout(r, 2500));
+                 
+                 // If height didn't change and we are at bottom, we might be out of jobs on this page.
+                 if (scrollContainer.scrollHeight === oldHeight && (scrollContainer.scrollTop + scrollContainer.clientHeight + 10) >= scrollContainer.scrollHeight) {
+                     console.log("Reached end of current job list page.");
+                     
+                     // Attempt to find next page button
+                     const btnNext = document.querySelector('button[aria-label*="page"][aria-label*="next" i], button.artdeco-pagination__button--next') || 
+                                     document.querySelector('li[data-test-pagination-page-btn].active + li button');
+                                     
+                     if (btnNext && !btnNext.disabled) {
+                         console.log("Clicking Next Page...");
+                         btnNext.click();
+                         await new Promise(r => setTimeout(r, 5000));
+                     } else {
+                         console.log("No more pages. Stopping Auto Apply.");
+                         isAutoApplyingLoop = false;
+                     }
+                 }
+             } else {
+                 console.log("No scroll container found. Assuming end of list.");
+                 isAutoApplyingLoop = false;
+             }
+        }
+    }
+    
+    isApplying = false;
+    alert("Auto Apply Finished!");
 }
 
 async function handleModal(userId) {
     const maxPages = 15;
     for (let i = 0; i < maxPages; i++) {
+        if (!isApplying) break; 
+        
         await new Promise(r => setTimeout(r, 2000));
 
         // 1. Check for Submit button first
@@ -90,7 +157,6 @@ async function handleModal(userId) {
             });
             if (dismissBtns) dismissBtns.click();
             
-            isApplying = false;
             return;
         }
 
@@ -112,8 +178,11 @@ async function handleModal(userId) {
         if (questions.length > 0) {
             console.log(`Found ${questions.length} questions. Requesting AI answers...`);
             const answers = await fetchAnswersFromAPI(userId, questions);
-            if (answers) {
+            if (answers && Object.keys(answers).length > 0) {
                  fillFormAnswers(questions, answers);
+            } else {
+                 console.log("AI failed to provide answers. Running heuristic fallback...");
+                 runHeuristics(questions);
             }
         }
         
@@ -123,8 +192,55 @@ async function handleModal(userId) {
         await new Promise(r => setTimeout(r, 1000));
     }
     
-    console.log("Hit max pages, discarding.");
-    discardApplication();
+    if (isApplying) {
+        console.log("Hit max pages, discarding.");
+        discardApplication();
+    }
+}
+
+function runHeuristics(questions) {
+    const safeNum = "1";
+    const safeYes = "Yes";
+    const safeNo = "No";
+    
+    for (const q of questions) {
+        const qText = (q.question || "").toLowerCase();
+        try {
+            if (q.type === "text") {
+                let val = safeNum; 
+                setReactValue(q.element, val);
+            } 
+            else if (q.type === "radio") {
+                let answer = safeYes;
+                if (qText.includes("sponsor") || qText.includes("visa") || qText.includes("clearance")) answer = safeNo;
+                if (qText.includes("authorized") || qText.includes("legally")) answer = safeYes;
+                
+                const targetInput = q.inputs.find(inp => inp._foundLabel && getVisibleText(inp._foundLabel).trim().toLowerCase() === answer.toLowerCase());
+                if (targetInput) {
+                    targetInput._foundLabel.click();
+                    targetInput.click();
+                } else if (q.inputs.length > 0 && q.inputs[0]._foundLabel) {
+                    q.inputs[0]._foundLabel.click(); 
+                }
+            }
+            else if (q.type === "dropdown") {
+               let answer = safeYes;
+               if (qText.includes("sponsor") || qText.includes("visa")) answer = safeNo;
+               
+               const options = Array.from(q.element.querySelectorAll('option'));
+               const targetOpt = options.find(o => getVisibleText(o).trim().toLowerCase().includes(answer.toLowerCase()));
+               if (targetOpt) {
+                   q.element.value = targetOpt.value;
+                   q.element.dispatchEvent(new Event('change', { bubbles: true }));
+               } else if (options.length > 1) {
+                   q.element.value = options[options.length - 1].value;
+                   q.element.dispatchEvent(new Event('change', { bubbles: true }));
+               }
+            }
+        } catch(e) {
+            console.error("Heuristic failed for", qText, e);
+        }
+    }
 }
 
 function setReactValue(element, value) {
@@ -315,7 +431,7 @@ async function fetchAnswersFromAPI(userId, questionsPayload) {
 }
 
 function discardApplication() {
-    isApplying = false;
+    console.log("Discarding application. Main loop will continue to next job.");
     const dismissBtns = Array.from(document.querySelectorAll('button')).find(b => getVisibleText(b).toLowerCase().includes('dismiss'));
     if (dismissBtns) {
         dismissBtns.click();
