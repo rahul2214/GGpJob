@@ -49,7 +49,6 @@ const benefits = [
 const formSchema = z.object({
   name: z.string().min(2, "Full name must be at least 2 characters."),
   email: z.string().email("Please enter a valid email address."),
-  phone: z.string().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian phone number."),
   password: z.string().min(8, "Password must be at least 8 characters."),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -69,7 +68,7 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      if (user.role === 'Job Seeker' && (!user.domainId || !user.resumeUrl)) {
+      if (user.role === 'Job Seeker' && (!user.domainId && !user.resumeUrl && !user.phone)) {
         router.push('/onboarding');
       } else {
         router.push('/');
@@ -79,7 +78,7 @@ export default function SignupPage() {
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name: "", email: "", phone: "", password: "", confirmPassword: "" },
+    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
   });
 
   const { isSubmitting } = form.formState;
@@ -96,7 +95,7 @@ export default function SignupPage() {
       } catch (err: any) {
         setEmailError("Account created, but verification email failed. Try resending from the login page.");
       }
-      const profileData = { id: firebaseUser.uid, name: data.name, email: data.email, phone: data.phone, role: "Job Seeker", domainId: null };
+      const profileData = { id: firebaseUser.uid, name: data.name, email: data.email, role: "Job Seeker", domainId: null };
       const response = await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(profileData) });
       if (!response.ok) {
         const errorData = await response.json();
@@ -126,7 +125,7 @@ export default function SignupPage() {
       if (!profile) profile = await createNewUserProfile(firebaseUser);
       if (profile) {
         setUser(profile);
-        if (profile.domainId && profile.resumeUrl) {
+        if (profile.domainId && profile.resumeUrl && profile.phone) {
           router.push("/");
         } else {
           router.push("/onboarding");
@@ -265,21 +264,8 @@ export default function SignupPage() {
                 )} />
               </div>
 
-              {/* Phone + Password row */}
+              {/* Password + Confirm */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField control={form.control} name="phone" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-slate-700 font-semibold text-sm">Phone Number</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center">
-                        <span className="px-3 h-11 flex items-center bg-slate-100 border border-r-0 border-slate-200 rounded-l-xl text-slate-600 text-sm font-medium">+91</span>
-                        <Input type="tel" maxLength={10} placeholder="10-digit number" className="h-11 rounded-l-none rounded-r-xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors"
-                          {...field} onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); field.onChange(v); }} value={field.value} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
                 <FormField control={form.control} name="password" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-slate-700 font-semibold text-sm">Password</FormLabel>

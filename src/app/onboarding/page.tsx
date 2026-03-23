@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { LoaderCircle, FileText, CheckCircle2, UploadCloud, Briefcase, Building2, Paperclip, ChevronRight, LayoutDashboard } from "lucide-react";
+import { LoaderCircle, FileText, CheckCircle2, UploadCloud, Briefcase, Building2, Paperclip, ChevronRight, LayoutDashboard, Phone } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -21,6 +21,7 @@ export default function OnboardingPage() {
 
     const [domains, setDomains] = useState<Domain[]>([]);
     const [selectedDomain, setSelectedDomain] = useState<string>("");
+    const [phone, setPhone] = useState<string>("");
     const [resumeFile, setResumeFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,7 +45,7 @@ export default function OnboardingPage() {
                 router.push('/login');
             } else if (user.role !== 'Job Seeker') {
                 router.push('/');
-            } else if (user.domainId && user.resumeUrl) {
+            } else if (user.domainId && user.resumeUrl && user.phone) {
                 router.push('/');
             }
         }
@@ -56,6 +57,10 @@ export default function OnboardingPage() {
         if (!user) return;
         if (!selectedDomain) {
             toast({ title: "Domain Required", description: "Please select your primary job domain.", variant: "destructive" });
+            return;
+        }
+        if (!phone || phone.length < 10) {
+            toast({ title: "Phone Required", description: "Please enter a valid 10-digit Indian phone number.", variant: "destructive" });
             return;
         }
         if (!resumeFile) {
@@ -91,7 +96,7 @@ export default function OnboardingPage() {
                 body: JSON.stringify({
                     name: user.name,
                     email: user.email,
-                    phone: user.phone || "0000000000",
+                    phone: phone,
                     domainId: selectedDomain
                 }),
             });
@@ -99,7 +104,7 @@ export default function OnboardingPage() {
             const updatedProfile = await profileRes.json();
 
             // 4. Update Context & Redirect
-            setUser({ ...user, ...updatedProfile, resumeUrl: downloadURL, domainId: selectedDomain });
+            setUser({ ...user, ...updatedProfile, resumeUrl: downloadURL, domainId: selectedDomain, phone: phone });
             toast({ title: "Profile Completed! 🎉", description: "Welcome aboard! Let's find your next job." });
             router.push('/');
 
@@ -131,7 +136,7 @@ export default function OnboardingPage() {
                         <CheckCircle2 className="w-8 h-8 text-white" />
                     </div>
                     <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-2">Almost there!</h1>
-                    <p className="text-slate-500 text-lg">Just two more quick details to complete your profile.</p>
+                    <p className="text-slate-500 text-lg">Just a few more quick details to complete your profile.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-8">
@@ -153,6 +158,25 @@ export default function OnboardingPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+                    </div>
+
+                    {/* Phone Selection */}
+                    <div className="space-y-3">
+                        <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-emerald-500" />
+                            Your Phone Number
+                        </label>
+                        <div className="flex items-center">
+                            <span className="px-4 h-14 flex items-center bg-slate-100 border border-r-0 border-slate-200 rounded-l-2xl text-slate-600 text-base font-medium">+91</span>
+                            <Input 
+                                type="tel" 
+                                maxLength={10} 
+                                placeholder="10-digit number" 
+                                className="h-14 rounded-l-none rounded-r-2xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors text-base"
+                                value={phone} 
+                                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} 
+                            />
+                        </div>
                     </div>
 
                     {/* Resume Upload */}
