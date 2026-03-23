@@ -45,7 +45,7 @@ export default function OnboardingPage() {
                 router.push('/login');
             } else if (user.role !== 'Job Seeker') {
                 router.push('/');
-            } else if (user.domainId && user.resumeUrl && user.phone) {
+            } else if (user.domainId && user.resumeUrl && user.phone && user.phone.length >= 10) {
                 router.push('/');
             }
         }
@@ -55,15 +55,15 @@ export default function OnboardingPage() {
         e.preventDefault();
         
         if (!user) return;
-        if (!selectedDomain) {
+        if (!user.domainId && !selectedDomain) {
             toast({ title: "Domain Required", description: "Please select your primary job domain.", variant: "destructive" });
             return;
         }
-        if (!phone || phone.length < 10) {
+        if ((!user.phone || user.phone.length < 10) && (!phone || phone.length < 10)) {
             toast({ title: "Phone Required", description: "Please enter a valid 10-digit Indian phone number.", variant: "destructive" });
             return;
         }
-        if (!resumeFile) {
+        if (!user.resumeUrl && !resumeFile) {
             toast({ title: "Resume Required", description: "Please upload your resume to continue.", variant: "destructive" });
             return;
         }
@@ -71,40 +71,49 @@ export default function OnboardingPage() {
         setIsSubmitting(true);
 
         try {
-            // 1. Upload Resume
-            setUploadProgress(50);
-            const storageRef = ref(storage, `resumes/${user.id}/${resumeFile.name}`);
-            
-            // Using standard uploadBytes instead of uploadBytesResumable to avoid chunked SSL Proxy errors
-            const uploadSnapshot = await uploadBytes(storageRef, resumeFile);
-            setUploadProgress(90);
-            
-            const downloadURL = await getDownloadURL(uploadSnapshot.ref);
+            // 1. Upload Resume if needed
+            let downloadURL = user.resumeUrl || "";
+            if (!user.resumeUrl && resumeFile) {
+                setUploadProgress(50);
+                const storageRef = ref(storage, `resumes/${user.id}/${resumeFile.name}`);
+                
+                const uploadSnapshot = await uploadBytes(storageRef, resumeFile);
+                setUploadProgress(90);
+                
+                downloadURL = await getDownloadURL(uploadSnapshot.ref);
 
-            // 2. Save Resume URL to DB
-            const resumeRes = await fetch(`/api/users/${user.id}/resume`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ resumeUrl: downloadURL }),
-            });
-            if (!resumeRes.ok) throw new Error("Failed to save resume URL.");
+                const resumeRes = await fetch(`/api/users/${user.id}/resume`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ resumeUrl: downloadURL }),
+                });
+                if (!resumeRes.ok) throw new Error("Failed to save resume URL.");
+            }
 
-            // 3. Save Domain ID to DB (Requires name, email, phone too)
-            const profileRes = await fetch(`/api/users/${user.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: user.name,
-                    email: user.email,
-                    phone: phone,
-                    domainId: selectedDomain
-                }),
-            });
-            if (!profileRes.ok) throw new Error("Failed to save domain info.");
-            const updatedProfile = await profileRes.json();
+            // 2. Save Domain ID and Phone if needed
+            const finalPhone = (user.phone && user.phone.length >= 10) ? user.phone : phone;
+            const finalDomainId = user.domainId || selectedDomain;
+
+            if (!user.domainId || !user.phone || user.phone.length < 10) {
+                const profileRes = await fetch(`/api/users/${user.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        name: user.name,
+                        email: user.email,
+                        phone: finalPhone,
+                        domainId: finalDomainId
+                    }),
+                });
+                if (!profileRes.ok) throw new Error("Failed to save profile info.");
+            }
+
+            // 3. Fetch Fresh Profile to guarantee context accuracy
+            const updatedProfileRes = await fetch(`/api/users?uid=${user.id}`);
+            const updatedProfile = await updatedProfileRes.json();
 
             // 4. Update Context & Redirect
-            setUser({ ...user, ...updatedProfile, resumeUrl: downloadURL, domainId: selectedDomain, phone: phone });
+            setUser(updatedProfile);
             toast({ title: "Profile Completed! 🎉", description: "Welcome aboard! Let's find your next job." });
             router.push('/');
 
@@ -141,81 +150,87 @@ export default function OnboardingPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-8">
                     {/* Domain Selection */}
-                    <div className="space-y-3">
-                        <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                            <Building2 className="w-4 h-4 text-indigo-500" />
-                            What is your primary profession?
-                        </label>
-                        <Select onValueChange={setSelectedDomain} value={selectedDomain}>
-                            <SelectTrigger className="h-14 rounded-2xl border-slate-200 focus:border-indigo-400 focus:ring-indigo-100 bg-slate-50 focus:bg-white text-base transition-all">
-                                <SelectValue placeholder="Select your domain" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                                {domains.map(domain => (
-                                    <SelectItem key={domain.id} value={domain.id} className="py-3 px-4 rounded-lg cursor-pointer focus:bg-indigo-50 focus:text-indigo-700 transition-colors">
-                                        {domain.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    {!user.domainId && (
+                        <div className="space-y-3">
+                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <Building2 className="w-4 h-4 text-indigo-500" />
+                                What is your primary profession?
+                            </label>
+                            <Select onValueChange={setSelectedDomain} value={selectedDomain}>
+                                <SelectTrigger className="h-14 rounded-2xl border-slate-200 focus:border-indigo-400 focus:ring-indigo-100 bg-slate-50 focus:bg-white text-base transition-all">
+                                    <SelectValue placeholder="Select your domain" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                                    {domains.map(domain => (
+                                        <SelectItem key={domain.id} value={domain.id} className="py-3 px-4 rounded-lg cursor-pointer focus:bg-indigo-50 focus:text-indigo-700 transition-colors">
+                                            {domain.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
 
                     {/* Phone Selection */}
-                    <div className="space-y-3">
-                        <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                            <Phone className="w-4 h-4 text-emerald-500" />
-                            Your Phone Number
-                        </label>
-                        <div className="flex items-center">
-                            <span className="px-4 h-14 flex items-center bg-slate-100 border border-r-0 border-slate-200 rounded-l-2xl text-slate-600 text-base font-medium">+91</span>
-                            <Input 
-                                type="tel" 
-                                maxLength={10} 
-                                placeholder="10-digit number" 
-                                className="h-14 rounded-l-none rounded-r-2xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors text-base"
-                                value={phone} 
-                                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} 
-                            />
-                        </div>
-                    </div>
-
-                    {/* Resume Upload */}
-                    <div className="space-y-3">
-                        <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-violet-500" />
-                            Upload your Resume
-                        </label>
-                        <div className="relative group">
-                            <div className={`absolute inset-0 bg-gradient-to-r from-indigo-50 to-violet-50 rounded-2xl border-2 border-dashed transition-colors ${resumeFile ? 'border-indigo-400' : 'border-slate-300 group-hover:border-indigo-300'}`} />
-                            <div className="relative px-6 py-8 flex flex-col items-center justify-center text-center cursor-pointer">
-                                <UploadCloud className={`w-10 h-10 mb-4 transition-colors ${resumeFile ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500'}`} />
-                                <h3 className="text-sm font-semibold text-slate-700 mb-1">
-                                    {resumeFile ? 'Resume Selected' : 'Click to upload or drag and drop'}
-                                </h3>
-                                <p className="text-xs text-slate-500 max-w-[200px]">
-                                    {resumeFile ? resumeFile.name : 'PDF, DOC, or DOCX (max. 5MB)'}
-                                </p>
+                    {(!user.phone || user.phone.length < 10) && (
+                        <div className="space-y-3">
+                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <Phone className="w-4 h-4 text-emerald-500" />
+                                Your Phone Number
+                            </label>
+                            <div className="flex items-center">
+                                <span className="px-4 h-14 flex items-center bg-slate-100 border border-r-0 border-slate-200 rounded-l-2xl text-slate-600 text-base font-medium">+91</span>
                                 <Input 
-                                    type="file"
-                                    accept=".pdf,.doc,.docx"
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) setResumeFile(file);
-                                    }}
+                                    type="tel" 
+                                    maxLength={10} 
+                                    placeholder="10-digit number" 
+                                    className="h-14 rounded-l-none rounded-r-2xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors text-base"
+                                    value={phone} 
+                                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} 
                                 />
                             </div>
                         </div>
+                    )}
 
-                        {uploadProgress !== null && (
-                            <div className="space-y-2 mt-4">
-                                <Progress value={uploadProgress} className="h-2.5 rounded-full bg-slate-100" indicatorClassName="bg-gradient-to-r from-indigo-500 to-violet-500" />
-                                <p className="text-xs font-medium text-slate-500 text-center animate-pulse">
-                                    Uploading securely... {Math.round(uploadProgress)}%
-                                </p>
+                    {/* Resume Upload */}
+                    {!user.resumeUrl && (
+                        <div className="space-y-3">
+                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-violet-500" />
+                                Upload your Resume
+                            </label>
+                            <div className="relative group">
+                                <div className={`absolute inset-0 bg-gradient-to-r from-indigo-50 to-violet-50 rounded-2xl border-2 border-dashed transition-colors ${resumeFile ? 'border-indigo-400' : 'border-slate-300 group-hover:border-indigo-300'}`} />
+                                <div className="relative px-6 py-8 flex flex-col items-center justify-center text-center cursor-pointer">
+                                    <UploadCloud className={`w-10 h-10 mb-4 transition-colors ${resumeFile ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500'}`} />
+                                    <h3 className="text-sm font-semibold text-slate-700 mb-1">
+                                        {resumeFile ? 'Resume Selected' : 'Click to upload or drag and drop'}
+                                    </h3>
+                                    <p className="text-xs text-slate-500 max-w-[200px]">
+                                        {resumeFile ? resumeFile.name : 'PDF, DOC, or DOCX (max. 5MB)'}
+                                    </p>
+                                    <Input 
+                                        type="file"
+                                        accept=".pdf,.doc,.docx"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) setResumeFile(file);
+                                        }}
+                                    />
+                                </div>
                             </div>
-                        )}
-                    </div>
+
+                            {uploadProgress !== null && (
+                                <div className="space-y-2 mt-4">
+                                    <Progress value={uploadProgress} className="h-2.5 rounded-full bg-slate-100" indicatorClassName="bg-gradient-to-r from-indigo-500 to-violet-500" />
+                                    <p className="text-xs font-medium text-slate-500 text-center animate-pulse">
+                                        Uploading securely... {Math.round(uploadProgress)}%
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Submit Button */}
                     <div className="pt-4">
