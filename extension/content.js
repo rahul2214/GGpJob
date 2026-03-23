@@ -322,6 +322,7 @@ function gatherFormQuestions() {
                 inp._foundLabel = label; // Tag the input for easy clicking later
             }
         });
+        
 
         if (options.length > 0) {
             data.push({

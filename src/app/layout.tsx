@@ -12,8 +12,33 @@ import { Suspense } from 'react';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Job Portal',
-  description: 'The premier platform for connecting talent with opportunity.',
+  title: {
+    default: 'Jobs Dart - Connect with Opportunity',
+    template: '%s | Jobs Dart',
+  },
+  description: 'The premier platform for connecting talent with opportunity. Discover top jobs across software engineering, marketing, business, and more.',
+  keywords: ['jobs', 'careers', 'hiring', 'recruitment', 'job search', 'job portal'],
+  authors: [{ name: 'Jobs Dart Team' }],
+  creator: 'Jobs Dart',
+  publisher: 'Jobs Dart',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    title: 'Jobs Dart - Connect with Opportunity',
+    description: 'The premier platform for connecting talent with opportunity. Discover and apply for top jobs easily.',
+    url: 'https://jobsdart.in', // Replace with your actual domain when launching
+    siteName: 'Jobs Dart',
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Jobs Dart - Connect with Opportunity',
+    description: 'The premier platform for connecting talent with opportunity.',
+  },
   icons: null,
 };
 
