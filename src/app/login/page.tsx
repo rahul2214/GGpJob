@@ -66,7 +66,11 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.push('/');
+      if (user.role === 'Job Seeker' && (!user.domainId || !user.resumeUrl)) {
+        router.push('/onboarding');
+      } else {
+        router.push('/');
+      }
     }
   }, [user, loading, router]);
 
@@ -168,7 +172,11 @@ export default function LoginPage() {
           return;
         }
         setUser(profile);
-        router.push("/");
+        if (profile.domainId && profile.resumeUrl) {
+          router.push("/");
+        } else {
+          router.push("/onboarding");
+        }
       } else {
         toast({ title: "Error", description: "Failed to load user profile.", variant: "destructive" });
       }

@@ -27,7 +27,6 @@ import {
   sendEmailVerification,
 } from "firebase/auth";
 import { firebaseApp } from "@/firebase/config";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Domain } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from "framer-motion";
@@ -51,7 +50,6 @@ const formSchema = z.object({
   name: z.string().min(2, "Full name must be at least 2 characters."),
   email: z.string().email("Please enter a valid email address."),
   phone: z.string().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian phone number."),
-  domainId: z.string().min(1, "Please select your domain."),
   password: z.string().min(8, "Password must be at least 8 characters."),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -65,28 +63,23 @@ export default function SignupPage() {
   const { toast } = useToast();
   const router = useRouter();
   const { user, loading, fetchUserProfile, createNewUserProfile, setUser } = useUser();
-  const [domains, setDomains] = useState<Domain[]>([]);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
-    const fetchDomains = async () => {
-      try {
-        const res = await fetch('/api/domains');
-        if (res.ok) setDomains(await res.json());
-      } catch (error) { console.error("Failed to fetch domains", error); }
-    };
-    fetchDomains();
-  }, []);
-
-  useEffect(() => {
-    if (!loading && user) router.push("/");
+    if (!loading && user) {
+      if (user.role === 'Job Seeker' && (!user.domainId || !user.resumeUrl)) {
+        router.push('/onboarding');
+      } else {
+        router.push('/');
+      }
+    }
   }, [user, loading, router]);
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name: "", email: "", phone: "", domainId: "", password: "", confirmPassword: "" },
+    defaultValues: { name: "", email: "", phone: "", password: "", confirmPassword: "" },
   });
 
   const { isSubmitting } = form.formState;
@@ -103,12 +96,13 @@ export default function SignupPage() {
       } catch (err: any) {
         setEmailError("Account created, but verification email failed. Try resending from the login page.");
       }
-      const profileData = { id: firebaseUser.uid, name: data.name, email: data.email, phone: data.phone, role: "Job Seeker", domainId: data.domainId };
+      const profileData = { id: firebaseUser.uid, name: data.name, email: data.email, phone: data.phone, role: "Job Seeker", domainId: null };
       const response = await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(profileData) });
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to create user profile.");
       }
+
       await auth.signOut();
       toast({ title: "Account Created!", description: "A verification email has been sent. Please verify before logging in." });
       router.push("/login");
@@ -117,6 +111,7 @@ export default function SignupPage() {
       if (error.code === "auth/email-already-in-use") errorMessage = "This email is already in use.";
       else if (error.code === "auth/weak-password") errorMessage = "The password is too weak.";
       else if (error.message) errorMessage = error.message;
+      
       toast({ title: "Signup Failed", description: errorMessage, variant: "destructive" });
     }
   };
@@ -129,7 +124,14 @@ export default function SignupPage() {
       const firebaseUser = userCredential.user;
       let profile = await fetchUserProfile(firebaseUser.uid);
       if (!profile) profile = await createNewUserProfile(firebaseUser);
-      if (profile) { setUser(profile); router.push("/"); }
+      if (profile) {
+        setUser(profile);
+        if (profile.domainId && profile.resumeUrl) {
+          router.push("/");
+        } else {
+          router.push("/onboarding");
+        }
+      }
       else toast({ title: "Error", description: "Failed to initialize user profile.", variant: "destructive" });
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') return;
@@ -263,7 +265,7 @@ export default function SignupPage() {
                 )} />
               </div>
 
-              {/* Phone + Domain row */}
+              {/* Phone + Password row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField control={form.control} name="phone" render={({ field }) => (
                   <FormItem>
@@ -278,28 +280,6 @@ export default function SignupPage() {
                     <FormMessage />
                   </FormItem>
                 )} />
-                <FormField control={form.control} name="domainId" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-slate-700 font-semibold text-sm">Job Domain</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="h-11 rounded-xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors">
-                          <SelectValue placeholder="Select your domain" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {domains.map(domain => (
-                          <SelectItem key={domain.id} value={domain.id}>{domain.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
-
-              {/* Password + Confirm */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField control={form.control} name="password" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-slate-700 font-semibold text-sm">Password</FormLabel>
@@ -314,6 +294,10 @@ export default function SignupPage() {
                     <FormMessage />
                   </FormItem>
                 )} />
+              </div>
+
+              {/* Confirm Password */}
+              <div className="grid grid-cols-1 gap-4">
                 <FormField control={form.control} name="confirmPassword" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-slate-700 font-semibold text-sm">Confirm Password</FormLabel>
