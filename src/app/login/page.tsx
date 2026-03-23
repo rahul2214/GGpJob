@@ -66,7 +66,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      if (user.role === 'Job Seeker' && (!user.domainId || !user.resumeUrl)) {
+      if (user.role === 'Job Seeker' && (!user.domainId || !user.resumeUrl || !user.phone)) {
         router.push('/onboarding');
       } else {
         router.push('/');
@@ -172,7 +172,7 @@ export default function LoginPage() {
           return;
         }
         setUser(profile);
-        if (profile.domainId && profile.resumeUrl) {
+        if (profile.domainId && profile.resumeUrl && profile.phone) {
           router.push("/");
         } else {
           router.push("/onboarding");
