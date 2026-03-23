@@ -68,7 +68,7 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      if (user.role === 'Job Seeker' && (!user.domainId && !user.resumeUrl && !user.phone)) {
+      if (user.role === 'Job Seeker' && (!user.domainId || !user.resumeUrl || !user.phone)) {
         router.push('/onboarding');
       } else {
         router.push('/');
