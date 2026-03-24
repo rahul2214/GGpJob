@@ -335,6 +335,7 @@ export function ProfileSections({ userId, isEditable = false }: ProfileSectionsP
                         currentSection={currentSection}
                         editingItem={editingItem}
                         onFormSubmit={handleFormSubmit}
+                        existingData={data}
                     />
                 </DialogContent>
             </Dialog>

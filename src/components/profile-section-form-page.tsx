@@ -21,7 +21,8 @@ export function ProfileSectionFormPage({ section, itemId }: ProfileSectionFormPa
     const { user, loading: userLoading } = useUser();
     const { toast } = useToast();
     const [editingItem, setEditingItem] = useState<any | null>(null);
-    const [loading, setLoading] = useState(!!itemId);
+    const [loading, setLoading] = useState(true);
+    const [existingData, setExistingData] = useState<any>(null);
 
     const isEditing = !!itemId;
 
@@ -32,17 +33,22 @@ export function ProfileSectionFormPage({ section, itemId }: ProfileSectionFormPa
     }, [user, userLoading, router]);
 
     const fetchItem = useCallback(async () => {
-        if (isEditing && user) {
+        if (user) {
             setLoading(true);
             try {
                 const res = await fetch(`/api/users/${user.id}/profile?section=${section}`);
                 const items = await res.json();
-                const itemToEdit = items.find((item: any) => String(item.id) === itemId);
-                if (itemToEdit) {
-                    setEditingItem(itemToEdit);
-                } else {
-                    toast({ title: 'Error', description: 'Item not found.', variant: 'destructive' });
-                    router.push('/profile');
+                
+                setExistingData({ [section]: items });
+
+                if (isEditing) {
+                    const itemToEdit = items.find((item: any) => String(item.id) === itemId);
+                    if (itemToEdit) {
+                        setEditingItem(itemToEdit);
+                    } else {
+                        toast({ title: 'Error', description: 'Item not found.', variant: 'destructive' });
+                        router.push('/profile');
+                    }
                 }
             } catch (error) {
                 toast({ title: 'Error', description: 'Failed to fetch item data.', variant: 'destructive' });
@@ -115,6 +121,7 @@ export function ProfileSectionFormPage({ section, itemId }: ProfileSectionFormPa
                             editingItem={editingItem}
                             onFormSubmit={handleFormSubmit}
                             onCancel={() => router.back()}
+                            existingData={existingData}
                         />
                     </CardContent>
                 </Card>
