@@ -164,6 +164,11 @@ export interface Skill {
     name: string;
 }
 
+export interface MasterSkill {
+    id: string;
+    name: string;
+}
+
 export interface PortalFeedback {
     id: string; // Changed to string for Firestore ID
     userId: string; // Changed to string for Firestore UID
