@@ -101,7 +101,15 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             category,
             disabilityStatus,
             militaryExperience,
-            careerBreak
+            careerBreak,
+            workStatus,
+            experienceYears,
+            experienceMonths,
+            currentCity,
+            currentArea,
+            annualSalary,
+            salaryBreakdown,
+            noticePeriod
         } = body;
         
         if (!name || !email || !phone) {
@@ -131,6 +139,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             disabilityStatus: disabilityStatus || null,
             militaryExperience: militaryExperience || null,
             careerBreak: careerBreak || null,
+            workStatus: workStatus || null,
+            experienceYears: experienceYears || null,
+            experienceMonths: experienceMonths || null,
+            currentCity: currentCity || null,
+            currentArea: currentArea || null,
+            annualSalary: annualSalary || null,
+            salaryBreakdown: salaryBreakdown || null,
+            noticePeriod: noticePeriod || null,
         };
 
         await userDocRef.update(dataToUpdate);

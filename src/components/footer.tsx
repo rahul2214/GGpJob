@@ -1,6 +1,6 @@
 
 import Link from "next/link";
-import { BriefcaseBusiness, Linkedin, Twitter, Github, Instagram } from "lucide-react";
+import { Linkedin, Twitter, Github, Instagram } from "lucide-react";
 
 export default function Footer() {
   return (
