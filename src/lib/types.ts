@@ -25,6 +25,16 @@ export interface User {
   careerBreak?: string;
   // Joined fields
   location?: string;
+  // Basic Info Extended
+  workStatus?: 'Fresher' | 'Experienced';
+  experienceYears?: number;
+  experienceMonths?: number;
+  currentCity?: string;
+  currentArea?: string;
+  annualSalary?: number;
+  salaryBreakdown?: 'Fixed' | 'Fixed + Variable' | 'Fixed + Variable + Stocks' | 'Fixed + Stocks';
+  noticePeriod?: '15 Days or less' | '1 Month' | '2 Months' | '3 Months' | 'More than 3 Months' | 'Serving Notice Period';
+
   // Profile completion stats
   profileStats?: {
     hasEducation: boolean;
