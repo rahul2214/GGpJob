@@ -1,7 +1,10 @@
-
 import { NextResponse } from 'next/server';
 import { db } from '@/firebase/admin-config';
 import { FieldValue } from 'firebase-admin/firestore';
+import { Resend } from 'resend';
+
+// Initialize but handle missing keys gracefully later
+const resend = new Resend(process.env.RESEND_API_KEY || 'missing_key');
 
 const statusMap: { [key: number]: string } = {
     1: 'Applied',
@@ -66,6 +69,54 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         jobId: appData.jobId,
         createdAt: FieldValue.serverTimestamp(),
       });
+
+      // --- SEND RESEND EMAIL ---
+      try {
+         const userDoc = await db.collection('users').doc(applicantId).get();
+         if (userDoc.exists) {
+            const userData = userDoc.data();
+            if (userData && userData.email && process.env.RESEND_API_KEY) {
+               console.log(`[API_APP_STATUS] Sending email via Resend to ${userData.email}`);
+               
+               // Use the verified domain email from env or default to Resend's testing sandbox if not set
+               const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+               const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://jobsdart.in/';
+               
+               const emailResponse = await resend.emails.send({
+                 from: `Job Portal <${fromEmail}>`,
+                 to: [userData.email],
+                 subject: `Update on your application: ${jobTitle}`,
+                 html: `
+                   <div style="font-family: Arial, sans-serif; padding: 24px; color: #1e293b; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                      <h2 style="color: #4f46e5; margin-top: 0;">Application Status Update</h2>
+                      <p style="font-size: 16px; line-height: 1.5;">Hi ${userData.name || 'Job Seeker'},</p>
+                      <p style="font-size: 16px; line-height: 1.5; padding: 12px; background: #f8fafc; border-radius: 4px; border-left: 4px solid #4f46e5;">
+                        ${message}
+                      </p>
+                      <p style="font-size: 14px; color: #64748b; margin-top: 24px;">Log in to your dashboard to view more details and track all your applications.</p>
+                      <div style="margin: 32px 0; text-align: center;">
+                        <a href="${appUrl}/login" style="background-color: #4f46e5; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Log In to Dashboard</a>
+                      </div>
+                      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+                      <p style="font-size: 12px; color: #94a3b8; margin: 0;">Best regards,<br/><strong>The Jobs Dart Team</strong></p>
+                   </div>
+                 `
+               });
+               
+               if (emailResponse.error) {
+                 console.error('[API_APP_STATUS] Resend API Error:', emailResponse.error);
+               } else {
+                 console.log('[API_APP_STATUS] Email sent successfully:', emailResponse.data);
+               }
+            } else {
+               console.log('[API_APP_STATUS] Skipping email: Missing user email or RESEND_API_KEY not configured in environment.');
+            }
+         }
+      } catch (err) {
+         console.error('[API_APP_STATUS] Exception while trying to send email:', err);
+      }
+      // ------------------------
+
     }
 
     // Fetch the updated application along with the status name
