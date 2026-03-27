@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -18,11 +18,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, Briefcase, Save, PlusCircle, Trash2, Link as LinkIcon } from "lucide-react";
+import { LoaderCircle, Briefcase, Save, PlusCircle, Trash2, Link as LinkIcon, GripVertical, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Domain, JobType, WorkplaceType, Job, Location } from "@/lib/types";
+import type { Domain, JobType, WorkplaceType, Job, Location, MasterSkill } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
 import { MultiSelectFilter } from "./multi-select-filter";
+
+// ─── Schema ────────────────────────────────────────────────────────────────
+
+const sectionSchema = z.object({
+  title: z.string().min(1, "Section heading cannot be empty."),
+  items: z.array(z.object({ value: z.string().min(1, "Point cannot be empty.") })),
+});
 
 const formSchema = z.object({
   jobTitle: z.string().min(5, "Job title must be at least 5 characters long."),
@@ -36,11 +43,13 @@ const formSchema = z.object({
   workplaceTypeId: z.string().min(1, "Please select a workplace type."),
   domainId: z.string().min(1, "Please select a domain."),
   vacancies: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().min(1, "Vacancies must be at least 1.").optional()),
-  contactEmail: z.string().email("Please enter a valid email address."),
-  contactPhone: z.string().length(10, "Please enter a valid 10-digit phone number."),
+  companyOverview: z.string().optional(),
+  companyWebsite: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
+  address: z.string().optional(),
   salary: z.string().optional(),
   jobLink: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
-  requirements: z.array(z.object({ value: z.string().min(1, "Requirement cannot be empty.") })).optional(),
+  skillIds: z.array(z.string()).optional(),
+  sections: z.array(sectionSchema).optional(),
   benefits: z.array(z.object({ value: z.string().min(1, "Benefit cannot be empty.") })).optional(),
 }).refine(data => data.maxExperience >= data.minExperience, {
     message: "Max experience cannot be less than min experience",
@@ -48,6 +57,51 @@ const formSchema = z.object({
 });
 
 type JobFormValues = z.infer<typeof formSchema>;
+
+// ─── Nested Section Items ──────────────────────────────────────────────────
+
+function SectionItemsInput({ sectionIndex, control }: { sectionIndex: number; control: Control<JobFormValues> }) {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: `sections.${sectionIndex}.items`,
+  });
+
+  return (
+    <div className="space-y-2 mt-2">
+      {fields.map((field, itemIndex) => (
+        <FormField
+          key={field.id}
+          control={control}
+          name={`sections.${sectionIndex}.items.${itemIndex}.value`}
+          render={({ field }) => (
+            <FormItem className="flex items-center gap-2">
+              <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+              <FormControl>
+                <Input {...field} placeholder={`Point ${itemIndex + 1}`} className="flex-1" />
+              </FormControl>
+              <Button type="button" variant="ghost" size="icon" onClick={() => remove(itemIndex)}>
+                <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+              </Button>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ))}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="text-muted-foreground hover:text-foreground"
+        onClick={() => append({ value: "" })}
+      >
+        <PlusCircle className="mr-2 h-3.5 w-3.5" />
+        Add point
+      </Button>
+    </div>
+  );
+}
+
+// ─── Main Form ─────────────────────────────────────────────────────────────
 
 interface JobFormProps {
   job?: Job | null;
@@ -62,6 +116,7 @@ export function JobForm({ job }: JobFormProps) {
   const [jobTypes, setJobTypes] = useState<JobType[]>([]);
   const [workplaceTypes, setWorkplaceTypes] = useState<WorkplaceType[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [masterSkills, setMasterSkills] = useState<MasterSkill[]>([]);
 
   useEffect(() => {
     const fetchSelectData = async () => {
@@ -82,6 +137,9 @@ export function JobForm({ job }: JobFormProps) {
             setJobTypes(fetchedJobTypes);
             setWorkplaceTypes(await workplaceTypesRes.json());
             setLocations(await locationsRes.json());
+            
+            const skillsRes = await fetch('/api/skills');
+            if (skillsRes.ok) setMasterSkills(await skillsRes.json());
         } catch (error) {
             console.error("Failed to fetch form select data", error);
             toast({
@@ -90,9 +148,19 @@ export function JobForm({ job }: JobFormProps) {
                 variant: "destructive",
             });
         }
-    }
+    };
     fetchSelectData();
   }, [toast]);
+
+  // Convert legacy flat arrays to sections when editing old jobs
+  const legacySections = useMemo(() => {
+    if (!job) return [];
+    const built: { title: string; items: { value: string }[] }[] = [];
+    if (job.requirements?.length) built.push({ title: "Requirements", items: job.requirements.map(v => ({ value: v })) });
+    if ((job as any).responsibilities?.length) built.push({ title: "Key Responsibilities", items: (job as any).responsibilities.map((v: string) => ({ value: v })) });
+    if ((job as any).qualifications?.length) built.push({ title: "Qualifications", items: (job as any).qualifications.map((v: string) => ({ value: v })) });
+    return built;
+  }, [job]);
 
   const form = useForm<JobFormValues>({
     resolver: zodResolver(formSchema),
@@ -103,8 +171,9 @@ export function JobForm({ job }: JobFormProps) {
       role: job?.role || "",
       jobDescription: job?.description || "",
       vacancies: job?.vacancies ?? undefined,
-      contactEmail: job?.contactEmail || "",
-      contactPhone: job?.contactPhone || "",
+      companyOverview: (job as any)?.companyOverview || "",
+      companyWebsite: (job as any)?.companyWebsite || "",
+      address: (job as any)?.address || "",
       salary: job?.salary || "",
       jobLink: job?.jobLink || "",
       minExperience: job?.minExperience ?? 0,
@@ -112,16 +181,19 @@ export function JobForm({ job }: JobFormProps) {
       jobTypeId: String(job?.jobTypeId || ''),
       workplaceTypeId: String(job?.workplaceTypeId || ''),
       domainId: String(job?.domainId || ''),
-      requirements: job?.requirements?.map(r => ({ value: r })) || [],
+      skillIds: job?.skillIds || [],
+      sections: job?.sections?.map(s => ({ title: s.title, items: s.items.map(v => ({ value: v })) })) || legacySections,
       benefits: job?.benefits?.map(b => ({ value: b })) || [],
     },
   });
 
-  const { fields: requirementFields, append: appendRequirement, remove: removeRequirement } = useFieldArray({
+  // Sections field array
+  const { fields: sectionFields, append: appendSection, remove: removeSection } = useFieldArray({
     control: form.control,
-    name: "requirements",
+    name: "sections",
   });
 
+  // Benefits field array
   const { fields: benefitFields, append: appendBenefit, remove: removeBenefit } = useFieldArray({
     control: form.control,
     name: "benefits",
@@ -129,6 +201,7 @@ export function JobForm({ job }: JobFormProps) {
 
    useEffect(() => {
     if (job) {
+      const builtSections = job?.sections?.map(s => ({ title: s.title, items: s.items.map(v => ({ value: v })) })) || legacySections;
       form.reset({
         jobTitle: job.title || "",
         companyName: job.companyName || "",
@@ -136,8 +209,9 @@ export function JobForm({ job }: JobFormProps) {
         role: job.role || "",
         jobDescription: job.description || "",
         vacancies: job.vacancies ?? undefined,
-        contactEmail: job.contactEmail || "",
-        contactPhone: job.contactPhone || "",
+        companyOverview: (job as any)?.companyOverview || "",
+        companyWebsite: (job as any)?.companyWebsite || "",
+        address: (job as any)?.address || "",
         salary: job.salary || "",
         jobLink: job.jobLink || "",
         minExperience: job.minExperience ?? 0,
@@ -145,15 +219,20 @@ export function JobForm({ job }: JobFormProps) {
         jobTypeId: String(job.jobTypeId || ''),
         workplaceTypeId: String(job.workplaceTypeId || ''),
         domainId: String(job.domainId || ''),
-        requirements: job.requirements?.map(r => ({ value: r })) || [],
+        skillIds: job.skillIds || [],
+        sections: builtSections,
         benefits: job.benefits?.map(b => ({ value: b })) || [],
       });
     }
-  }, [job, form]);
+  }, [job, form, legacySections]);
 
   const locationOptions = useMemo(() => 
     locations.map(loc => ({ value: String(loc.id), label: `${loc.name}, ${loc.country}` })), 
   [locations]);
+
+  const skillOptions = useMemo(() =>
+    masterSkills.map(s => ({ value: s.id, label: s.name })),
+  [masterSkills]);
 
   const onSubmit = async (data: JobFormValues) => {
     if (!user) {
@@ -172,15 +251,17 @@ export function JobForm({ job }: JobFormProps) {
         isReferral: false,
         recruiterId: user.id,
         postedAt: job?.postedAt || new Date().toISOString(),
-        requirements: data.requirements?.map(r => r.value),
+        sections: data.sections?.map(s => ({ title: s.title, items: s.items.map(i => i.value) })) || [],
         benefits: data.benefits?.map(b => b.value),
+        skillIds: data.skillIds || [],
+        companyOverview: data.companyOverview,
+        companyWebsite: data.companyWebsite,
+        address: data.address,
       };
 
       const response = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
@@ -278,34 +359,91 @@ export function JobForm({ job }: JobFormProps) {
             </FormItem>
           )}
         />
-         <div>
-          <FormLabel>Requirements</FormLabel>
-          <div className="space-y-2 mt-2">
-            {requirementFields.map((field, index) => (
-              <FormField
-                key={field.id}
-                control={form.control}
-                name={`requirements.${index}.value`}
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-2">
-                    <FormControl>
-                      <Input {...field} placeholder={`Requirement ${index + 1}`} />
-                    </FormControl>
-                    <Button type="button" variant="ghost" size="icon" onClick={() => removeRequirement(index)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ))}
+
+        {/* Required Skills */}
+        <FormField
+          control={form.control}
+          name="skillIds"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Required Skills (Optional)</FormLabel>
+              <FormControl>
+                <MultiSelectFilter
+                  title="Skills"
+                  options={skillOptions}
+                  selectedValues={field.value || []}
+                  onChange={field.onChange}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* ── Dynamic Sections ─────────────────────────── */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <FormLabel className="text-base">
+              Job Sections{" "}
+              <span className="text-xs font-normal text-muted-foreground">({sectionFields.length}/5)</span>
+            </FormLabel>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={sectionFields.length >= 5}
+              onClick={() => appendSection({ title: "", items: [{ value: "" }] })}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              {sectionFields.length >= 5 ? "Max 5 sections" : "Add Section"}
+            </Button>
           </div>
-          <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => appendRequirement({ value: "" })}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Requirement
-          </Button>
+
+          {sectionFields.length === 0 && (
+            <div className="text-center py-8 border-2 border-dashed border-slate-200 rounded-xl text-muted-foreground text-sm">
+              No sections yet. Click <strong>Add Section</strong> to add structured content like<br />
+              &quot;Requirements&quot;, &quot;Key Responsibilities&quot;, &quot;Qualifications&quot;, etc.
+            </div>
+          )}
+
+          {sectionFields.map((section, sectionIndex) => (
+            <div key={section.id} className="border border-slate-200 rounded-xl p-4 space-y-3 bg-slate-50/50">
+              {/* Section header row */}
+              <div className="flex items-center gap-2">
+                <FormField
+                  control={form.control}
+                  name={`sections.${sectionIndex}.title`}
+                  render={({ field }) => (
+                    <FormItem className="flex-1">
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Section heading (e.g. Key Responsibilities)"
+                          className="font-semibold bg-white"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeSection(sectionIndex)}
+                  title="Remove section"
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+
+              {/* Section items (nested) */}
+              <SectionItemsInput sectionIndex={sectionIndex} control={form.control} />
+            </div>
+          ))}
         </div>
 
+        {/* Benefits */}
         <div>
           <FormLabel>Benefits</FormLabel>
           <div className="space-y-2 mt-2">
@@ -333,6 +471,7 @@ export function JobForm({ job }: JobFormProps) {
             Add Benefit
           </Button>
         </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
            <FormField
             control={form.control}
@@ -469,34 +608,51 @@ export function JobForm({ job }: JobFormProps) {
             )}
           />
         </div>
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="companyOverview"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company Overview (Optional)</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Brief description of your company, culture, and mission..." className="min-h-[80px]" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
-              control={form.control}
-              name="contactEmail"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contact Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="hiring.manager@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
             control={form.control}
-            name="contactPhone"
+            name="companyWebsite"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Contact Phone</FormLabel>
+                <FormLabel>Company Website (Optional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="(123) 456-7890" {...field} />
+                  <div className="relative">
+                    <LinkIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="https://yourcompany.com" className="pl-8" {...field} />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-         </div>
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Office Address (Optional)</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g. 42 MG Road, Bengaluru, KA 560001" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <div className="flex justify-end pt-4">
            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? <LoaderCircle className="animate-spin mr-2 h-4 w-4"/> : (job ? <Save className="mr-2 h-4 w-4" /> : <Briefcase className="mr-2 h-4 w-4" />)}

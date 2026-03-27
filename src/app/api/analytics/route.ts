@@ -27,16 +27,19 @@ export async function GET(request: Request) {
     const toDate = searchParams.get('to') ? new Date(searchParams.get('to') as string) : null;
 
     // Fetch all necessary data in parallel
-    const [usersSnap, recruitersSnap, jobsSnap, applicationsSnap, domainsSnap] = await Promise.all([
+    const [usersSnap, recruitersSnap, employeesSnap, jobsSnap, applicationsSnap, domainsSnap] = await Promise.all([
         db.collection('users').get(),
         db.collection('recruiters').get(),
+        db.collection('employees').get(),
         db.collection('jobs').get(),
         db.collection('applications').get(),
         db.collection('domains').get()
     ]);
 
     const jobSeekers = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
-    const companyUsers = recruitersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
+    const companyUsers1 = recruitersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
+    const companyUsers2 = employeesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
+    const companyUsers = [...companyUsers1, ...companyUsers2];
     const allUsers = [...jobSeekers, ...companyUsers];
 
     let allJobs = jobsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Job[];

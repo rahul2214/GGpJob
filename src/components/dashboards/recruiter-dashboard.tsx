@@ -115,6 +115,7 @@ export default function RecruiterDashboard() {
             <TableHeader>
               <TableRow>
                 <TableHead>Job Title</TableHead>
+                
                 <TableHead>Location</TableHead>
                 <TableHead>Date Posted</TableHead>
                 <TableHead>Status</TableHead>
@@ -175,6 +176,7 @@ export default function RecruiterDashboard() {
             <TableHeader>
               <TableRow>
                 <TableHead>Job Title</TableHead>
+                <TableHead>Company</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Date Posted</TableHead>
                 <TableHead>Status</TableHead>
@@ -186,6 +188,7 @@ export default function RecruiterDashboard() {
               {postedJobs.map((job) => (
                 <TableRow key={job.id}>
                   <TableCell className="font-medium">{job.title}</TableCell>
+                  <TableCell className="text-muted-foreground">{job.companyName || '—'}</TableCell>
                   <TableCell>{job.location}</TableCell>
                   <TableCell>{format(new Date(job.postedAt), "PPP")}</TableCell>
                   <TableCell>

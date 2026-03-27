@@ -1,0 +1,96 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/firebase/admin-config';
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = request.nextUrl;
+    const search = searchParams.get('search')?.toLowerCase() || '';
+    const domainId = searchParams.get('domain') || '';
+    const skillId = searchParams.get('skill') || '';
+    // No cap — return all matching candidates
+
+    // Paginate through the entire users collection in batches of 200
+    const PAGE_SIZE = 200;
+    let allDocs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+    let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | undefined;
+
+    while (true) {
+      let query = db.collection('users').orderBy('__name__').limit(PAGE_SIZE);
+      if (lastDoc) query = query.startAfter(lastDoc) as any;
+
+      const snap = await query.get();
+      allDocs = allDocs.concat(snap.docs);
+      if (snap.docs.length < PAGE_SIZE) break; // last page reached
+      lastDoc = snap.docs[snap.docs.length - 1];
+    }
+
+    const allUsers = allDocs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+
+    // Fetch skills for each matched user (in parallel, capped at 50 per user)
+    const usersWithSkills = await Promise.all(
+      allUsers.map(async (u) => {
+        try {
+          const skillsSnap = await db.collection('users').doc(u.id).collection('skills').get();
+          const skills: { id: string; name: string }[] = skillsSnap.docs.map(s => ({
+            id: s.id,
+            name: s.data().name || '',
+          }));
+          return { ...u, skills };
+        } catch {
+          return { ...u, skills: [] };
+        }
+      })
+    );
+
+    let results = usersWithSkills;
+
+    // Filter by domain
+    if (domainId) {
+      results = results.filter(u => u.domainId === domainId);
+    }
+
+    // Filter by specific skill ID or skill name search
+    if (skillId) {
+      results = results.filter(u =>
+        u.skills.some((s: any) => s.id === skillId || s.name?.toLowerCase() === skillId.toLowerCase())
+      );
+    }
+
+    // Filter by text search (name, headline, role, skills)
+    if (search) {
+      results = results.filter(u => {
+        const skillNames = u.skills.map((s: any) => s.name?.toLowerCase()).join(' ');
+        return (
+          u.name?.toLowerCase().includes(search) ||
+          u.headline?.toLowerCase().includes(search) ||
+          u.role?.toLowerCase().includes(search) ||
+          skillNames.includes(search)
+        );
+      });
+    }
+
+    // Sort: users with photo and headline first (more complete profiles)
+    results.sort((a, b) => {
+      const scoreA = (a.photoUrl ? 2 : 0) + (a.headline ? 1 : 0) + (a.skills.length > 0 ? 1 : 0);
+      const scoreB = (b.photoUrl ? 2 : 0) + (b.headline ? 1 : 0) + (b.skills.length > 0 ? 1 : 0);
+      return scoreB - scoreA;
+    });
+
+    // Sanitize output — never send sensitive fields to recruiter
+    const sanitized = results.map(u => ({
+      id: u.id,
+      name: u.name,
+      headline: u.headline || '',
+      photoUrl: u.photoUrl || '',
+      domainId: u.domainId || '',
+      skills: u.skills,
+      resumeUrl: u.resumeUrl || '',
+      location: u.location || '',
+    }));
+
+    return NextResponse.json(sanitized);
+  } catch (e: any) {
+    console.error('[API_TALENT_SEARCH] Error:', e);
+    return NextResponse.json({ error: 'Failed to search talent', details: e.message }, { status: 500 });
+  }
+}
