@@ -198,7 +198,6 @@ function JobDetailsContent() {
     }
     
     const hasBenefits = job.benefits && job.benefits.length > 0;
-    const hasRequirements = job.requirements && job.requirements.length > 0;
     const showSimilarJobs = relatedJobs.length > 0 && !isAdminView;
     const isFooterHidden = isApplyAreaVisible || isSimilarJobsVisible;
 
@@ -318,88 +317,55 @@ function JobDetailsContent() {
                                 {hasBenefits && (
                                     <TabsTrigger value="benefits" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold text-base">Benefits</TabsTrigger>
                                 )}
+                                {job.companyOverview && (
+                                    <TabsTrigger value="company" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold text-base">About Company</TabsTrigger>
+                                )}
                             </TabsList>
 
                             <TabsContent value="details" className="space-y-6">
                                 <div className="bg-white rounded-xl border p-6 space-y-8">
-                                    <div className="space-y-4 mb-8">
+                                    {/* Primary Info: Location, Vacancies, Salary, Experience */}
+                                    <div className="space-y-4">
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                                                <MapPin className="h-5 w-5 text-blue-500" />
-                                            </div>
                                             <div>
-                                                <div className="text-xs text-muted-foreground">Location</div>
-                                                <div className="font-bold">{job.location}</div>
+                                                <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Location</div>
+                                                <div className="font-bold text-slate-900">{job.location}</div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                                                <Briefcase className="h-5 w-5 text-blue-500" />
-                                            </div>
                                             <div>
-                                                <div className="text-xs text-muted-foreground">Job Type</div>
-                                                <div className="font-bold">{job.type}</div>
+                                                <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Vacancies</div>
+                                                <div className="font-bold text-slate-900">{job.vacancies || 'Not Disclosed'}</div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                                                <BadgeDollarSign className="h-5 w-5 text-blue-500" />
-                                            </div>
                                             <div>
-                                                <div className="text-xs text-muted-foreground">Salary</div>
-                                                <div className="font-bold">{job.salary || 'Not Disclosed'}</div>
+                                                <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Salary</div>
+                                                <div className="font-bold text-slate-900">{job.salary || 'Not Disclosed'}</div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                                                <Layers className="h-5 w-5 text-blue-500" />
-                                            </div>
                                             <div>
-                                                <div className="text-xs text-muted-foreground">Domain</div>
-                                                <div className="font-bold">{job.domain}</div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                                                <UserIcon className="h-5 w-5 text-blue-500" />
-                                            </div>
-                                            <div>
-                                                <div className="text-xs text-muted-foreground">Role</div>
-                                                <div className="font-bold">{job.role}</div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                                                <Building className="h-5 w-5 text-blue-500" />
-                                            </div>
-                                            <div>
-                                                <div className="text-xs text-muted-foreground">Workplace</div>
-                                                <div className="font-bold">{job.workplaceType}</div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                                                <UserCheck className="h-5 w-5 text-blue-500" />
-                                            </div>
-                                            <div>
-                                                <div className="text-xs text-muted-foreground">Experience</div>
-                                                <div className="font-bold">{job.experienceLevel}</div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-sm sm:text-base">
-                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                                                <Clock className="h-5 w-5 text-blue-500" />
-                                            </div>
-                                            <div>
-                                                <div className="text-xs text-muted-foreground">Vacancies</div>
-                                                <div className="font-bold">{job.vacancies || 'Not Disclosed'}</div>
+                                                <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Experience</div>
+                                                <div className="font-bold text-slate-900">{job.experienceLevel}</div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                                            <Info className="h-5 w-5 text-primary" />
+                                    {/* Required Skills Section */}
+                                    {((job as any).requiredSkills?.length > 0) && (
+                                        <div>
+                                            <h3 className="text-lg font-bold text-slate-900">
+                                                Required Skills
+                                            </h3>
+                                            <p className="text-sm text-gray-600 leading-relaxed font-medium">
+                                                {(job as any).requiredSkills.join(', ')}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <div className="mt-8 border-t pt-8">
+                                        <h3 className="text-lg font-bold mb-4 text-slate-900">
                                             Job Description
                                         </h3>
                                         <div className="prose prose-sm max-w-none text-gray-600 space-y-4">
@@ -409,22 +375,42 @@ function JobDetailsContent() {
                                         </div>
                                     </div>
 
-                                    {hasRequirements && (
-                                        <div className="mt-8">
-                                            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                                                <LayoutList className="h-5 w-5 text-primary" />
-                                                Requirements
+                                    {/* Secondary Info: Job Type, Domain, Role, Workplace */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 mt-8 border-t pt-8">
+                                        <div className="text-sm">
+                                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Job Type</div>
+                                            <div className="font-bold text-slate-800">{job.type}</div>
+                                        </div>
+                                        <div className="text-sm">
+                                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Domain</div>
+                                            <div className="font-bold text-slate-800">{job.domain}</div>
+                                        </div>
+                                        <div className="text-sm">
+                                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Role</div>
+                                            <div className="font-bold text-slate-800">{job.role}</div>
+                                        </div>
+                                        <div className="text-sm">
+                                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Workplace</div>
+                                            <div className="font-bold text-slate-800">{job.workplaceType}</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Dynamic Sections (Responsibilities, Qualifications, etc.) */}
+                                    {job.sections && job.sections.map((section, sIndex) => (
+                                        <div key={sIndex} className="mt-8 border-t pt-8">
+                                            <h3 className="text-lg font-bold mb-4 text-slate-900">
+                                                {section.title}
                                             </h3>
                                             <ul className="space-y-3">
-                                                {job.requirements?.map((req, index) => (
-                                                    <li key={index} className="flex items-start gap-3 text-sm text-gray-600">
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-gray-400 shrink-0 mt-2" />
-                                                        <span>{req}</span>
+                                                {section.items.map((item, iIndex) => (
+                                                    <li key={iIndex} className="flex items-start gap-3 text-sm text-gray-600">
+                                                        <div className="h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0 mt-2" />
+                                                        <span>{item}</span>
                                                     </li>
                                                 ))}
                                             </ul>
                                         </div>
-                                    )}
+                                    ))}
 
                                     <div ref={footerSentinelRef} className="h-1 w-full" />
 
@@ -450,7 +436,7 @@ function JobDetailsContent() {
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2">
                                                 <Award className="h-5 w-5 text-primary" />
-                                                Perks & Benefits
+                                                Benefits
                                             </CardTitle>
                                             <CardDescription>What you can expect when joining our team.</CardDescription>
                                         </CardHeader>
@@ -465,6 +451,48 @@ function JobDetailsContent() {
                                             </div>
                                         </CardContent>
                                     </Card>
+                                </TabsContent>
+                            )}
+
+                            {job.companyOverview && (
+                                <TabsContent value="company">
+                                    <div className="bg-white rounded-xl border p-6 space-y-6">
+                                        <div className="flex items-center gap-4 mb-2">
+                                            <div className="w-16 h-16 bg-black rounded-xl flex items-center justify-center text-white text-2xl font-bold">
+                                                {job.companyName.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold text-gray-900">{job.companyName}</h3>
+                                                {job.companyWebsite && (
+                                                  <a href={job.companyWebsite} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                                                    Visit Website
+                                                  </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <Separator />
+                                        
+                                        <div>
+                                            <h4 className="text-lg font-bold mb-3 flex items-center gap-2 text-slate-800">
+                                                <Building className="h-5 w-5 text-indigo-500" />
+                                                About the Company
+                                            </h4>
+                                            <div className="prose prose-sm max-w-none text-gray-600 leading-relaxed whitespace-pre-wrap">
+                                                {job.companyOverview}
+                                            </div>
+                                        </div>
+
+                                        {(job as any).address && (
+                                            <div>
+                                                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Office Address</h4>
+                                                <p className="text-sm text-gray-600 flex items-start gap-2">
+                                                    <MapPin className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
+                                                    {(job as any).address}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </TabsContent>
                             )}
                         </Tabs>

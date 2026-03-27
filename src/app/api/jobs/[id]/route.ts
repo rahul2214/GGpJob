@@ -38,30 +38,40 @@ export async function GET(request: Request, { params }: { params: { id: string }
     } else {
         lookupPromises.push(Promise.resolve(null));
     }
-    
     const applicantsPromise = db.collection('applications').where('jobId', '==', id).count().get();
 
-    const [locationSnaps, typeSnap, workplaceTypeSnap, domainDoc, applicantsSnap] = await Promise.all([
-        Promise.all(locationsPromises),
-        ...lookupPromises,
-        applicantsPromise
-    ]);
-
-    const locNames = locationSnaps.map(snap => (snap && !snap.empty) ? snap.docs[0].data().name : '').filter(Boolean);
+    // Fetch Job Type, Workplace, and Domain concurrently
+    const [typeSnap, workplaceTypeSnap, domainDoc] = await Promise.all(lookupPromises);
+    const applicantsSnap = await applicantsPromise;
+    
+    // Fetch Skill Names
+    const skillIds = jobData.skillIds || [];
+    const skillSnaps = await Promise.all(skillIds.map(sid => db.collection('skills').doc(sid).get()));
+    const skillNames = skillSnaps.map(snap => (snap && snap.exists) ? snap.data()?.name : '').filter(Boolean);
+    
+    const locationSnaps = await Promise.all(locationsPromises);
+    const locNames = locationSnaps.map(snap => {
+        if (!snap || (snap as any).empty) return '';
+        return (snap as any).docs[0].data().name;
+    }).filter(Boolean);
+    
     const minExp = jobData.minExperience ?? 0;
     const maxExp = jobData.maxExperience ?? minExp;
 
     const job: Job = {
-        id: jobDoc.id,
         ...jobData,
+        id: jobDoc.id, // Explicitly keep this one if jobData.id is numeric/different, but typically they match.
         location: locNames.join(', ') || 'N/A',
         locations: locNames,
-        type: (typeSnap && !typeSnap.empty) ? typeSnap.docs[0].data().name : '',
-        workplaceType: (workplaceTypeSnap && !workplaceTypeSnap.empty) ? workplaceTypeSnap.docs[0].data().name : '',
+        type: (typeSnap && !(typeSnap as any).empty) ? (typeSnap as any).docs[0].data().name : '',
+        workplaceType: (workplaceTypeSnap && !(workplaceTypeSnap as any).empty) ? (workplaceTypeSnap as any).docs[0].data().name : '',
         experienceLevel: minExp === maxExp ? `${minExp} Years` : `${minExp} - ${maxExp} Years`,
-        domain: (domainDoc && domainDoc.exists) ? (domainDoc as adminFirestore.DocumentSnapshot).data()?.name : '',
+        domain: (domainDoc && (domainDoc as any).exists) ? (domainDoc as any).data()?.name : '',
         applicantCount: applicantsSnap.data().count,
+        requirements: skillNames.length > 0 ? skillNames : jobData.requirements,
     };
+
+    (job as any).requiredSkills = skillNames;
 
     const response = NextResponse.json(job);
     
