@@ -13,6 +13,7 @@ export interface User {
   domainId?: string;
   resumeUrl?: string;
   linkedinUrl?: string;
+  githubUrl?: string;
   notificationLastViewedAt?: string;
   // Personal Details
   gender?: string;
@@ -83,10 +84,15 @@ export interface Job {
   employeeLinkedIn?: string;
   jobLink?: string; // Added jobLink field
   vacancies?: number;
-  contactEmail?: string;
-  contactPhone?: string;
-  requirements?: string[];
+  companyOverview?: string;
+  companyWebsite?: string;
+  address?: string;
+  requirements?: string[];       // legacy – kept for backward read compat
+  responsibilities?: string[];    // legacy – kept for backward read compat
+  qualifications?: string[];      // legacy – kept for backward read compat
+  sections?: { title: string; items: string[] }[]; // new dynamic sections
   benefits?: string[];
+  skillIds?: string[]; // IDs of required MasterSkills
   // Joined fields
   location?: string; // Comma separated list for display
   locations?: string[]; // Array of location names

@@ -1,21 +1,44 @@
-
 import { NextResponse } from 'next/server';
-import { db } from '@/firebase/admin-config';
+import { db, auth } from '@/firebase/admin-config';
 import { User } from '@/lib/types';
 
 
 async function getUserDocRef(id: string): Promise<FirebaseFirestore.DocumentReference | null> {
+    try {
+        const userRecord = await auth.getUser(id);
+        const role = userRecord.customClaims?.role;
+        
+        if (role) {
+            let collectionName = 'users';
+            if (role === 'Admin' || role === 'Super Admin') collectionName = 'admins';
+            else if (role === 'Recruiter') collectionName = 'recruiters';
+            else if (role === 'Employee') collectionName = 'employees';
+            
+            const docRef = db.collection(collectionName).doc(id);
+            const doc = await docRef.get();
+            if (doc.exists) return docRef;
+        }
+    } catch (authErr) {
+        console.error('[API_USERS_ID] Failed to fetch auth claims:', authErr);
+    }
+
+    // Fallback for older accounts without custom claims
     // 1. Prioritize Admins
     const adminDocRef = db.collection('admins').doc(id);
     const adminDoc = await adminDocRef.get();
     if (adminDoc.exists) return adminDocRef;
 
-    // 2. Prioritize recruiters/employees
+    // 2. Prioritize recruiters
     const recruiterDocRef = db.collection('recruiters').doc(id);
     const recruiterDoc = await recruiterDocRef.get();
     if (recruiterDoc.exists) return recruiterDocRef;
+    
+    // 3. Check employees
+    const employeeDocRef = db.collection('employees').doc(id);
+    const employeeDoc = await employeeDocRef.get();
+    if (employeeDoc.exists) return employeeDocRef;
 
-    // 3. Look in users for Job Seekers
+    // 4. Look in users for Job Seekers
     const userDocRef = db.collection('users').doc(id);
     const userDoc = await userDocRef.get();
     if (userDoc.exists) return userDocRef;

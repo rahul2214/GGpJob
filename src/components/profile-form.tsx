@@ -43,6 +43,7 @@ const formSchema = z.object({
   headline: z.string().optional(),
   domainId: z.string().optional(),
   linkedinUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
+  githubUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   workStatus: z.enum(['Fresher', 'Experienced']).optional(),
   experienceYears: z.coerce.number().optional().or(z.literal('')),
   experienceMonths: z.coerce.number().optional().or(z.literal('')),
@@ -218,6 +219,10 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                         <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
                             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">LinkedIn URL</span>
                             <span className="text-sm text-slate-800 font-medium">{user.linkedinUrl || "Not specified"}</span>
+                        </div>
+                        <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
+                            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">GitHub URL</span>
+                            <span className="text-sm text-slate-800 font-medium">{(user as any).githubUrl || "Not specified"}</span>
                         </div>
                      </>
                  )}
@@ -478,6 +483,19 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                       <FormLabel>LinkedIn URL</FormLabel>
                       <FormControl>
                         <Input placeholder="https://linkedin.com/in/your-profile" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="githubUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>GitHub URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://github.com/your-username" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

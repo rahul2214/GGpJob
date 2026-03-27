@@ -31,6 +31,7 @@ import {
   Bookmark,
   ThumbsUp,
   ClipboardList,
+  Users,
   Wrench
 } from "lucide-react";
 import {
@@ -239,6 +240,12 @@ export default function Header() {
                                         Training
                                     </Link>
                                 </SheetClose>
+                                {/* <SheetClose asChild>
+                                    <Link href="/ats-score" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/ats-score' && "text-foreground font-bold")}>
+                                        <ClipboardList className="h-5 w-5" />
+                                        ATS Score
+                                    </Link>
+                                </SheetClose> */}
                                </>
                             )}
                              {isClient && !userLoading && user && (user.role === 'Recruiter' || user.role === 'Employee') && (
@@ -246,6 +253,14 @@ export default function Header() {
                                     <Link href={user.role === 'Recruiter' ? '/jobs/post' : '/referrals/post'} className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
                                         <PlusCircle className="h-5 w-5" />
                                         Post Job
+                                    </Link>
+                                </SheetClose>
+                            )}
+                            {isClient && !userLoading && user && user.role === 'Recruiter' && (
+                                 <SheetClose asChild>
+                                    <Link href="/company/talent" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/company/talent' && "text-foreground font-bold")}>
+                                        <Users className="h-5 w-5" />
+                                        Talent Search
                                     </Link>
                                 </SheetClose>
                             )}
@@ -393,6 +408,11 @@ export default function Header() {
                 Dashboard
               </Link>
             )}
+            {isClient && !userLoading && user?.role === 'Recruiter' && (
+              <Link href="/company/talent" className={`transition-colors hover:text-foreground ${pathname === '/company/talent' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                Talent Search
+              </Link>
+            )}
             {isClient && !userLoading && user?.role === 'Job Seeker' && (
                 <Suspense>
                     <Link href="/jobs" className={`transition-colors hover:text-foreground ${isJobsActive ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
@@ -410,6 +430,9 @@ export default function Header() {
                     <Link href="#" className={`transition-colors hover:text-foreground ${pathname === "/training" ? "text-foreground" : "text-foreground/60"}`}>
                         Training
                     </Link>
+                    {/* <Link href="/ats-score" className={`transition-colors hover:text-foreground ${pathname === "/ats-score" ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                        ATS Score
+                    </Link> */}
                 </Suspense>
             )}
           </>

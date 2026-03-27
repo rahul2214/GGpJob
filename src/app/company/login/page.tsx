@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, Eye, EyeOff, Briefcase, Building2, Users, TrendingUp, ArrowRight, Zap } from "lucide-react";
+import { LoaderCircle, Eye, EyeOff, Briefcase, Building2, Users, TrendingUp, ArrowRight, Zap, Database, Star, BarChart2, Mail, Phone, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
@@ -159,182 +159,317 @@ export default function CompanyLoginPage() {
 
   if (loading || user) return null;
 
+  const features = [
+    {
+      icon: Database,
+      title: "Resume Database Access",
+      desc: "Search and filter through 100K+ verified candidate profiles. Find the perfect fit using skills, location, experience, and domain filters — all in real time.",
+      gradient: "from-sky-500 to-blue-600",
+      bg: "bg-sky-50",
+      border: "border-sky-100",
+    },
+    {
+      icon: Star,
+      title: "Premium Job Posts",
+      desc: "Supercharge your listings with featured placement, priority indexing, and highlighted badges that put your opportunities in front of the right candidates first.",
+      gradient: "from-amber-400 to-orange-500",
+      bg: "bg-amber-50",
+      border: "border-amber-100",
+    },
+    {
+      icon: Users,
+      title: "Referral Network",
+      desc: "Unlock insider referrals from verified employees in your industry. Referral hires are 5x faster and show 40% higher retention — a channel no recruiter can afford to skip.",
+      gradient: "from-violet-500 to-purple-600",
+      bg: "bg-violet-50",
+      border: "border-violet-100",
+    },
+    {
+      icon: BarChart2,
+      title: "Analytics & Insights",
+      desc: "Track job performance, application funnel metrics, candidate engagement, and time-to-hire benchmarks with a powerful real-time recruiter dashboard.",
+      gradient: "from-emerald-500 to-teal-600",
+      bg: "bg-emerald-50",
+      border: "border-emerald-100",
+    },
+  ];
+
   return (
-    <div className="min-h-screen flex bg-white">
-      {/* Left Panel — Brand side */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 flex-col justify-between p-12">
-        {/* Decorative blobs */}
-        <div className="absolute top-0 -left-20 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 -right-20 w-96 h-96 bg-emerald-400/20 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-teal-500/10 rounded-full blur-[80px]" />
+    <div className="min-h-screen bg-white">
+      {/* Top Split Login Section */}
+      <div className="flex">
+        {/* Left Panel — Brand side */}
+        <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 flex-col justify-between p-12" style={{ minHeight: '100vh' }}>
+          {/* Decorative blobs */}
+          <div className="absolute top-0 -left-20 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 -right-20 w-96 h-96 bg-emerald-400/20 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-teal-500/10 rounded-full blur-[80px]" />
 
-        
+          {/* Center content */}
+          <div className="relative z-10 space-y-8">
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.2 }}>
+              <h1 className="text-4xl xl:text-5xl font-extrabold text-white leading-tight mb-4">
+                Hire the <br />
+                <span className="text-emerald-200">Best Talent</span> Fast
+              </h1>
+              <p className="text-emerald-100 text-lg leading-relaxed max-w-sm">
+                Post jobs for free, receive referrals from insiders, and connect with qualified candidates in minutes.
+              </p>
+            </motion.div>
 
-        {/* Center content */}
-        <div className="relative z-10 space-y-8">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.2 }}>
-            <h1 className="text-4xl xl:text-5xl font-extrabold text-white leading-tight mb-4">
-              Hire the <br />
-              <span className="text-emerald-200">Best Talent</span> Fast
-            </h1>
-            <p className="text-emerald-100 text-lg leading-relaxed max-w-sm">
-              Post jobs for free, receive referrals from insiders, and connect with qualified candidates in minutes.
+            {/* Floating stat cards */}
+            <div className="space-y-4">
+              {recruiterStats.map((card, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0, y: [0, -6, 0] }}
+                  transition={{ opacity: { duration: 0.5, delay: 0.4 + idx * 0.15 }, x: { duration: 0.5, delay: 0.4 + idx * 0.15 }, y: { duration: 3 + idx, repeat: Infinity, ease: "easeInOut", delay: card.delay } }}
+                  className="flex items-center gap-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-5 py-4 w-fit"
+                >
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center shadow-lg`}>
+                    <card.icon className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-white font-bold text-sm">{card.label}</p>
+                    <p className="text-emerald-200 text-xs">{card.sub}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Bottom switch link */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="relative z-10">
+            <p className="text-emerald-100 text-sm">
+              Looking for jobs instead?{" "}
+              <Link href="/login" className="text-white font-semibold underline underline-offset-2 hover:text-emerald-100 transition-colors">
+                Candidate Login →
+              </Link>
+            </p>
+          </motion.div>
+        </div>
+
+        {/* Right Panel — Form side */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 lg:px-16">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="w-full max-w-md"
+          >
+
+            <div className="mb-8">
+              <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
+                <Zap className="w-3 h-3" /> Recruiter Portal
+              </div>
+              <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Welcome back 🏢</h2>
+              <p className="text-slate-500">Sign in to manage your jobs and candidates.</p>
+            </div>
+
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-slate-700 font-semibold">Work Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="you@company.com"
+                          className="h-12 rounded-xl border-slate-200 focus:border-emerald-400 focus:ring-emerald-100 bg-slate-50 focus:bg-white transition-colors"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between">
+                        <FormLabel className="text-slate-700 font-semibold">Password</FormLabel>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="link" type="button" className="p-0 h-auto text-sm text-emerald-600 hover:text-emerald-700">Forgot Password?</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Reset Password</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Enter your email address. If an account exists, we'll send you a reset link.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <div className="py-4">
+                              <Input id="reset-email" type="email" placeholder="your.email@company.com" defaultValue={form.getValues("email")} onChange={(e) => form.setValue("email", e.target.value)} />
+                            </div>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={async (e) => {
+                                e.preventDefault();
+                                const success = await handlePasswordReset();
+                                if (success) {
+                                  const cancel = document.querySelector('[data-radix-collection-item][aria-label="Cancel"]');
+                                  if (cancel instanceof HTMLElement) cancel.click();
+                                }
+                              }} disabled={isResettingPassword}>
+                                {isResettingPassword && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                Send Reset Link
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            className="h-12 rounded-xl border-slate-200 focus:border-emerald-400 focus:ring-emerald-100 bg-slate-50 focus:bg-white transition-colors pr-12"
+                            {...field}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                          >
+                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    type="submit"
+                    className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base shadow-lg shadow-emerald-200 transition-all"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? <LoaderCircle className="mr-2 h-5 w-5 animate-spin" /> : <ArrowRight className="mr-2 h-5 w-5" />}
+                    {isSubmitting ? "Signing in..." : "Sign In as Recruiter"}
+                  </Button>
+                </motion.div>
+              </form>
+            </Form>
+
+            <p className="mt-6 text-center text-sm text-slate-500">
+              New recruiter?{" "}
+              <Link href="/company/signup" className="text-emerald-600 font-semibold hover:text-emerald-700 transition-colors">
+                Create a company account
+              </Link>
+            </p>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* ============ MARKETING SECTION ============ */}
+      <div className="bg-slate-950 text-white">
+
+        {/* Why Jobs Dart — Feature Cards */}
+        <div className="max-w-7xl mx-auto px-6 py-20">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-14"
+          >
+            <div className="inline-flex items-center gap-2 bg-emerald-900/50 border border-emerald-700/40 text-emerald-400 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
+              <ShieldCheck className="w-3 h-3" /> Enterprise-Grade Hiring Tools
+            </div>
+            <h2 className="text-4xl font-extrabold text-white mb-3">
+              Why Top Companies Choose <span className="text-emerald-400">Jobs Dart</span>
+            </h2>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+              From your first hire to scaling entire teams — we give recruiters and HR professionals the unfair advantage they need.
             </p>
           </motion.div>
 
-          {/* Floating stat cards */}
-          <div className="space-y-4">
-            {recruiterStats.map((card, idx) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {features.map((f, idx) => (
               <motion.div
                 key={idx}
-                initial={{ opacity: 0, x: -30 }}
-                animate={{ opacity: 1, x: 0, y: [0, -6, 0] }}
-                transition={{ opacity: { duration: 0.5, delay: 0.4 + idx * 0.15 }, x: { duration: 0.5, delay: 0.4 + idx * 0.15 }, y: { duration: 3 + idx, repeat: Infinity, ease: "easeInOut", delay: card.delay } }}
-                className="flex items-center gap-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-5 py-4 w-fit"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: idx * 0.1 }}
+                className="group relative bg-slate-900 border border-slate-800 rounded-2xl p-7 hover:border-slate-600 transition-all duration-300 overflow-hidden"
               >
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center shadow-lg`}>
-                  <card.icon className="w-5 h-5 text-white" />
+                {/* Glow on hover */}
+                <div className={`absolute -top-10 -right-10 w-36 h-36 bg-gradient-to-br ${f.gradient} opacity-0 group-hover:opacity-10 rounded-full blur-2xl transition-opacity duration-500`} />
+
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.gradient} flex items-center justify-center shadow-lg mb-5`}>
+                  <f.icon className="w-6 h-6 text-white" />
                 </div>
-                <div>
-                  <p className="text-white font-bold text-sm">{card.label}</p>
-                  <p className="text-emerald-200 text-xs">{card.sub}</p>
-                </div>
+                <h3 className="text-xl font-bold text-white mb-2">{f.title}</h3>
+                <p className="text-slate-400 leading-relaxed text-sm">{f.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
 
-        {/* Bottom switch link */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="relative z-10">
-          <p className="text-emerald-100 text-sm">
-            Looking for jobs instead?{" "}
-            <Link href="/login" className="text-white font-semibold underline underline-offset-2 hover:text-emerald-100 transition-colors">
-              Candidate Login →
-            </Link>
-          </p>
-        </motion.div>
-      </div>
+        {/* Business Inquiry CTA Strip */}
+        <div className="border-t border-slate-800">
+          <div className="max-w-7xl mx-auto px-6 py-16 flex flex-col lg:flex-row items-center justify-between gap-10">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="inline-flex items-center gap-2 bg-amber-900/40 border border-amber-700/30 text-amber-400 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
+                <Briefcase className="w-3 h-3" /> Business Inquiry
+              </div>
+              <h3 className="text-3xl font-extrabold text-white mb-2">
+                Looking for an Enterprise Plan?
+              </h3>
+              <p className="text-slate-400 max-w-lg leading-relaxed">
+                We offer customised enterprise solutions including bulk resume access, dedicated account managers, ATS integrations, white-label portals, and priority support — tailored around your hiring volume.
+              </p>
+            </motion.div>
 
-      {/* Right Panel — Form side */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 lg:px-16">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="w-full max-w-md"
-        >
-         
-
-          <div className="mb-8">
-            <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
-              <Zap className="w-3 h-3" /> Recruiter Portal
-            </div>
-            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Welcome back 🏢</h2>
-            <p className="text-slate-500">Sign in to manage your jobs and candidates.</p>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="flex flex-col gap-4 min-w-[260px]"
+            >
+              <a
+                href="mailto:admin@veltria.in"
+                className="flex items-center gap-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-4 rounded-xl transition-all duration-200 shadow-lg shadow-emerald-900/40 group"
+              >
+                <Mail className="w-5 h-5 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold">Email Sales Team</p>
+                  <p className="text-emerald-200 text-xs font-medium">admin@veltria.in</p>
+                </div>
+                <ArrowRight className="w-4 h-4 ml-auto opacity-60 group-hover:translate-x-1 transition-transform" />
+              </a>
+              <a
+                href="tel:+916303563546"
+                className="flex items-center gap-3 bg-slate-800 hover:bg-slate-700 text-white font-bold px-6 py-4 rounded-xl transition-all duration-200 border border-slate-700 group"
+              >
+                <Phone className="w-5 h-5 shrink-0 text-emerald-400" />
+                <div>
+                  <p className="text-sm font-bold">Call Us Directly</p>
+                  <p className="text-slate-400 text-xs font-medium">Mon–Sat, 9am–6pm IST</p>
+                </div>
+                <ArrowRight className="w-4 h-4 ml-auto opacity-60 group-hover:translate-x-1 transition-transform" />
+              </a>
+            </motion.div>
           </div>
+        </div>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-slate-700 font-semibold">Work Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="you@company.com"
-                        className="h-12 rounded-xl border-slate-200 focus:border-emerald-400 focus:ring-emerald-100 bg-slate-50 focus:bg-white transition-colors"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center justify-between">
-                      <FormLabel className="text-slate-700 font-semibold">Password</FormLabel>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="link" type="button" className="p-0 h-auto text-sm text-emerald-600 hover:text-emerald-700">Forgot Password?</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Reset Password</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Enter your email address. If an account exists, we'll send you a reset link.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <div className="py-4">
-                            <Input id="reset-email" type="email" placeholder="your.email@company.com" defaultValue={form.getValues("email")} onChange={(e) => form.setValue("email", e.target.value)} />
-                          </div>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={async (e) => {
-                              e.preventDefault();
-                              const success = await handlePasswordReset();
-                              if (success) {
-                                const cancel = document.querySelector('[data-radix-collection-item][aria-label="Cancel"]');
-                                if (cancel instanceof HTMLElement) cancel.click();
-                              }
-                            }} disabled={isResettingPassword}>
-                              {isResettingPassword && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                              Send Reset Link
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          type={showPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          className="h-12 rounded-xl border-slate-200 focus:border-emerald-400 focus:ring-emerald-100 bg-slate-50 focus:bg-white transition-colors pr-12"
-                          {...field}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
-                <Button
-                  type="submit"
-                  className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base shadow-lg shadow-emerald-200 transition-all"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? <LoaderCircle className="mr-2 h-5 w-5 animate-spin" /> : <ArrowRight className="mr-2 h-5 w-5" />}
-                  {isSubmitting ? "Signing in..." : "Sign In as Recruiter"}
-                </Button>
-              </motion.div>
-            </form>
-          </Form>
-
-          <p className="mt-6 text-center text-sm text-slate-500">
-            New recruiter?{" "}
-            <Link href="/company/signup" className="text-emerald-600 font-semibold hover:text-emerald-700 transition-colors">
-              Create a company account
-            </Link>
-          </p>
-
-        
-        </motion.div>
+       
       </div>
     </div>
   );
