@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Search, SlidersHorizontal, X, User2, FileText, MapPin, Sparkles, ChevronRight } from "lucide-react";
+import { Search, SlidersHorizontal, X, User2, FileText, MapPin, Sparkles, ChevronRight, Check, ChevronsUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import type { Domain, MasterSkill } from "@/lib/types";
 import Image from "next/image";
@@ -128,7 +131,7 @@ export default function TalentSearch() {
   const [initialLoaded, setInitialLoaded] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedDomain, setSelectedDomain] = useState("all");
-  const [selectedSkill, setSelectedSkill] = useState("all");
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [masterSkills, setMasterSkills] = useState<MasterSkill[]>([]);
 
@@ -148,7 +151,7 @@ export default function TalentSearch() {
       const params = new URLSearchParams();
       if (search.trim()) params.set('search', search.trim());
       if (selectedDomain !== 'all') params.set('domain', selectedDomain);
-      if (selectedSkill !== 'all') params.set('skill', selectedSkill);
+      selectedSkills.forEach(skillId => params.append('skill', skillId));
 
       const res = await fetch(`/api/talent-search?${params}`);
       if (res.ok) setCandidates(await res.json());
@@ -158,7 +161,7 @@ export default function TalentSearch() {
       setLoading(false);
       setInitialLoaded(true);
     }
-  }, [search, selectedDomain, selectedSkill]);
+  }, [search, selectedDomain, selectedSkills]);
 
   // Auto-search with debounce on text, immediate on filters
   useEffect(() => {
@@ -172,12 +175,20 @@ export default function TalentSearch() {
     return m;
   }, [domains]);
 
-  const hasFilters = selectedDomain !== 'all' || selectedSkill !== 'all' || search.trim() !== '';
+  const hasFilters = selectedDomain !== 'all' || selectedSkills.length > 0 || search.trim() !== '';
 
   const clearFilters = () => {
     setSearch('');
     setSelectedDomain('all');
-    setSelectedSkill('all');
+    setSelectedSkills([]);
+  };
+
+  const toggleSkill = (skillId: string) => {
+    setSelectedSkills(current =>
+      current.includes(skillId)
+        ? current.filter(id => id !== skillId)
+        : [...current, skillId]
+    );
   };
 
   return (
@@ -243,19 +254,86 @@ export default function TalentSearch() {
             </SelectContent>
           </Select>
 
-          {/* Skill filter */}
-          <Select value={selectedSkill} onValueChange={setSelectedSkill}>
-            <SelectTrigger className="bg-white border-slate-200 h-10">
-              <SelectValue placeholder="All Skills" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Skills</SelectItem>
-              {masterSkills.map(s => (
-                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Skill multi-select filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="w-full bg-white border-slate-200 h-10 justify-between font-normal hover:bg-white hover:border-indigo-400"
+              >
+                <div className="flex gap-1 truncate max-w-[90%]">
+                  {selectedSkills.length > 0 ? (
+                    <span className="text-slate-900">
+                      {selectedSkills.length} skill{selectedSkills.length > 1 ? 's' : ''}
+                    </span>
+                  ) : (
+                    <span className="text-slate-500">Skills...</span>
+                  )}
+                </div>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Search skills..." />
+                <CommandList>
+                  <CommandEmpty>No skill found.</CommandEmpty>
+                  <CommandGroup>
+                    {masterSkills.map((skill) => (
+                      <CommandItem
+                        key={skill.id}
+                        value={skill.name}
+                        onSelect={() => toggleSkill(skill.id)}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedSkills.includes(skill.id) ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {skill.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
+
+        {/* Selected Skill Badges */}
+        {selectedSkills.length > 0 && (
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 mt-2">
+            {selectedSkills.map(id => {
+              const skill = masterSkills.find(s => s.id === id);
+              if (!skill) return null;
+              return (
+                <Badge 
+                  key={id} 
+                  variant="secondary" 
+                  className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-indigo-200 gap-1 flex items-center pr-1.5"
+                >
+                  {skill.name}
+                  <button 
+                    onClick={() => toggleSkill(id)}
+                    className="hover:bg-indigo-300/50 rounded-full p-0.5 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              );
+            })}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-6 px-2 text-[10px] text-slate-500 hover:text-indigo-600"
+              onClick={() => setSelectedSkills([])}
+            >
+              Clear all skills
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Results grid */}
