@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const search = searchParams.get('search')?.toLowerCase() || '';
     const domainId = searchParams.get('domain') || '';
-    const skillId = searchParams.get('skill') || '';
+    const skillIds = searchParams.getAll('skill').filter(Boolean);
     // No cap — return all matching candidates
 
     // Paginate through the entire users collection in batches of 200
@@ -49,11 +49,23 @@ export async function GET(request: NextRequest) {
       results = results.filter(u => u.domainId === domainId);
     }
 
-    // Filter by specific skill ID or skill name search
-    if (skillId) {
-      results = results.filter(u =>
-        u.skills.some((s: any) => s.id === skillId || s.name?.toLowerCase() === skillId.toLowerCase())
-      );
+    // Fetch master skills once to map IDs to names for more robust filtering
+    const masterSkillsSnap = await db.collection('skills').get();
+    const masterSkillsMap = new Map();
+    masterSkillsSnap.docs.forEach(doc => masterSkillsMap.set(doc.id, doc.data().name?.toLowerCase()));
+
+    // Filter by specific skill IDs (check ID or Name for robustness)
+    if (skillIds.length > 0) {
+      results = results.filter(u => {
+        return skillIds.some(id => {
+          const targetName = masterSkillsMap.get(id);
+          const match = u.skills.some((s: any) => 
+            s.id === id || 
+            (targetName && s.name?.toLowerCase() === targetName)
+          );
+          return match;
+        });
+      });
     }
 
     // Filter by text search (name, headline, role, skills)

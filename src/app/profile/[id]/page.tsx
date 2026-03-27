@@ -61,7 +61,7 @@ export default function PublicProfilePage() {
         try {
           await axiosInstance.post('/notifications', {
             userId: profileUser.id,
-            message: `A recruiter (${currentUser.name}) viewed your profile.`,
+            message: 'A recruiter viewed your profile.',
             type: 'profile_view',
             viewerId: currentUser.id
           });
