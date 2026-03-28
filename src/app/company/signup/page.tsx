@@ -31,15 +31,31 @@ import { firebaseApp } from "@/firebase/config";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from "framer-motion";
 
+const DISALLOWED_DOMAINS = [
+  'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 
+  'icloud.com', 'mail.com', 'aol.com', 'zoho.com', 'yandex.com',
+  'protonmail.com', 'gmx.com', 'lycos.com'
+];
+
 const formSchema = z.object({
   name: z.string().min(2, "Full name must be at least 2 characters."),
   email: z.string().email("Please enter a valid email address."),
+  phone: z.string().min(10, "Phone number must be at least 10 digits."),
   role: z.enum(["Recruiter", "Employee"]),
   password: z.string().min(8, "Password must be at least 8 characters."),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
+}).refine((data) => {
+  if (data.role === 'Recruiter') {
+    const domain = data.email.split('@')[1]?.toLowerCase();
+    return !DISALLOWED_DOMAINS.includes(domain);
+  }
+  return true;
+}, {
+  message: "Recruiters must use a corporate email address (Personal domains like Gmail/Yahoo are not allowed).",
+  path: ["email"],
 });
 
 type SignupFormValues = z.infer<typeof formSchema>;
@@ -64,7 +80,7 @@ export default function CompanySignupPage() {
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
+    defaultValues: { name: "", email: "", phone: "", password: "", confirmPassword: "" },
   });
 
   const { isSubmitting } = form.formState;
@@ -81,7 +97,7 @@ export default function CompanySignupPage() {
       } catch (err: any) {
         setEmailError("Account created, but we couldn't send the verification email. Try resending from the login page.");
       }
-      const profileData = { id: firebaseUser.uid, name: data.name, email: data.email, role: data.role };
+      const profileData = { id: firebaseUser.uid, name: data.name, email: data.email, role: data.role, phone: `+91${data.phone}` };
       const response = await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(profileData) });
       if (!response.ok) {
         const errorData = await response.json();
@@ -198,13 +214,30 @@ export default function CompanySignupPage() {
                 </FormItem>
               )} />
 
-              <FormField control={form.control} name="email" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-slate-700 font-semibold text-sm">Work Email</FormLabel>
-                  <FormControl><Input type="email" placeholder="you@company.com" className="h-11 rounded-xl border-slate-200 focus:border-emerald-400 bg-slate-50 focus:bg-white transition-colors" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-slate-700 font-semibold text-sm">Work Email</FormLabel>
+                    <FormControl><Input type="email" placeholder="you@company.com" className="h-11 rounded-xl border-slate-200 focus:border-emerald-400 bg-slate-50 focus:bg-white transition-colors" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <FormField control={form.control} name="phone" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-slate-700 font-semibold text-sm">Phone Number</FormLabel>
+                    <FormControl>
+                      <div className="flex gap-2">
+                        <div className="flex items-center justify-center px-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-bold text-sm select-none animate-in fade-in slide-in-from-left-2 duration-300">
+                          +91
+                        </div>
+                        <Input placeholder="9876543210" className="h-11 rounded-xl border-slate-200 focus:border-emerald-400 bg-slate-50 focus:bg-white transition-colors flex-1" {...field} />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
 
               <FormField control={form.control} name="role" render={({ field }) => (
                 <FormItem>
