@@ -180,10 +180,12 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Phone Number</span>
                      <span className="text-sm text-slate-800 font-medium">{user.phone}</span>
                  </div>
-                 <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
-                     <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Headline</span>
-                     <span className="text-sm text-slate-800 font-medium">{user.headline || "Not specified"}</span>
-                 </div>
+                 {user.role === 'Job Seeker' && (
+                  <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
+                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Headline</span>
+                      <span className="text-sm text-slate-800 font-medium">{user.headline || "Not specified"}</span>
+                  </div>
+                 )}
                  {user.role === 'Job Seeker' && (
                      <>
                         <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
@@ -280,19 +282,21 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="headline"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Headline</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. Senior Software Engineer at Acme Inc." {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {user.role === 'Job Seeker' && (
+          <FormField
+            control={form.control}
+            name="headline"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Headline</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g. Senior Software Engineer at Acme Inc." {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         
 
         {user.role === 'Job Seeker' && (

@@ -96,6 +96,12 @@ export async function GET(request: Request) {
   }
 }
 
+const DISALLOWED_DOMAINS = [
+  'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 
+  'icloud.com', 'mail.com', 'aol.com', 'zoho.com', 'yandex.com',
+  'protonmail.com', 'gmx.com', 'lycos.com'
+];
+
 // POST a new user (create profile after signup)
 export async function POST(request: Request) {
   try {
@@ -104,16 +110,29 @@ export async function POST(request: Request) {
     if (!id || !name || !email || !role) {
         return NextResponse.json({ error: 'Missing required fields for profile creation' }, { status: 400 });
     }
+
+    if (role === 'Recruiter') {
+        const domain = email.split('@')[1]?.toLowerCase();
+        if (DISALLOWED_DOMAINS.includes(domain)) {
+            return NextResponse.json({ 
+                error: 'Recruiters must use a corporate email address (Personal domains like Gmail/Yahoo are not allowed).' 
+            }, { status: 400 });
+        }
+    }
     
-    const dataToSave: Omit<User, 'id'> = {
+    const dataToSave: any = {
         name,
         email,
         role,
         phone: phone || '',
-        headline: '',
-        summary: '',
-        resumeUrl: '',
     };
+
+    // Only include career-specific fields for Job Seekers
+    if (role !== 'Recruiter' && role !== 'Employee') {
+        dataToSave.headline = '';
+        dataToSave.summary = '';
+        dataToSave.resumeUrl = '';
+    }
     
     if (domainId) {
         dataToSave.domainId = domainId;
