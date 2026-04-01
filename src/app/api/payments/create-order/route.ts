@@ -17,7 +17,32 @@ export async function POST(request: Request) {
 
     // Get user from auth to check role
     const userRecord = await auth.getUser(userId);
-    const role = userRecord.customClaims?.role;
+    let role = userRecord.customClaims?.role;
+
+    // Fallback: If role is missing from custom claims (common for legacy users or desynced sessions), check Firestore
+    if (!role) {
+        const [recDoc, empDoc, userDoc] = await Promise.all([
+            db.collection('recruiters').doc(userId).get(),
+            db.collection('employees').doc(userId).get(),
+            db.collection('users').doc(userId).get()
+        ]);
+        
+        if (recDoc.exists) role = 'Recruiter';
+        else if (empDoc.exists) role = 'Employee';
+        else if (userDoc.exists) {
+            const userData = userDoc.data();
+            role = userData?.role || 'Job Seeker';
+        }
+
+        // Proactively set the custom claim now to fix future requests
+        if (role) {
+            try {
+                await auth.setCustomUserClaims(userId, { role });
+            } catch (claimErr) {
+                console.error('[PAYMENT_ORDER_CREATE] Non-fatal: Failed to sync claims:', claimErr);
+            }
+        }
+    }
 
     if (role !== 'Recruiter' && role !== 'Employee' && role !== 'Job Seeker') {
       return NextResponse.json({ error: 'Only authorized users can purchase plans.' }, { status: 403 });
