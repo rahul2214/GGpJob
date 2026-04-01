@@ -33,6 +33,7 @@ import { useEffect, useState } from "react";
 import { getAuth, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } from "firebase/auth";
 import { firebaseApp } from "@/firebase/config";
 import { motion } from "framer-motion";
+import RecruiterPricingGrid from "@/components/recruiter-pricing-grid";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -119,12 +120,11 @@ export default function CompanyLoginPage() {
       const res = await fetch(`/api/users?uid=${firebaseUser.uid}`);
       if (res.ok) {
         const profile = await res.json();
-        if (profile.role !== 'Recruiter' && profile.role !== 'Employee') {
-          await auth.signOut();
-          let portalName = "Job Seeker Login";
-          if (profile.role === 'Admin' || profile.role === 'Super Admin') portalName = "Admin Login";
-          toast({ title: "Access Denied", description: `This account is a ${profile.role}. Please use the ${portalName} portal.`, variant: "destructive" });
-          return;
+        if (profile.role === 'Recruiter' || profile.role === 'Employee') {
+          if (!profile.isPaid) {
+            router.push("/company/payment");
+            return;
+          }
         }
       } else {
         await auth.signOut();
@@ -413,6 +413,35 @@ export default function CompanyLoginPage() {
                 <p className="text-slate-400 leading-relaxed text-sm">{f.desc}</p>
               </motion.div>
             ))}
+          </div>
+        </div>
+
+        {/* Pricing Plans Section — NEW */}
+        <div id="plans" className="max-w-7xl mx-auto px-6 py-20 border-t border-slate-800">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center gap-2 bg-emerald-900/50 border border-emerald-700/40 text-emerald-400 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
+              <Zap className="w-3 h-3" /> Flexible Hiring Plans
+            </div>
+            <h2 className="text-4xl font-extrabold text-white mb-3">
+              Scale Your Hiring <span className="text-emerald-400">On Your Terms</span>
+            </h2>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+              Whether you're a startup making your first hire or an enterprise scaling teams, we have a plan that fits your business needs.
+            </p>
+          </motion.div>
+
+          <RecruiterPricingGrid isMarketing={true} />
+          
+          <div className="mt-12 text-center">
+            <p className="text-slate-500 text-sm italic">
+              All plans are one-time payments. No recurring subscriptions. No hidden fees.
+            </p>
           </div>
         </div>
 

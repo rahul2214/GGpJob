@@ -14,11 +14,11 @@ const sections = [
   },
   {
     title: "2. How We Use Your Information",
-    content: `We use the information we collect to: create and manage your account; match you with relevant jobs or candidates; send transactional emails such as application status updates and account notifications; improve our Platform through analytics; prevent fraud and ensure platform security; and comply with legal obligations.`,
+    content: `We use the information we collect to: create and manage your account; match you with relevant jobs or candidates; send transactional emails such as application status updates and account notifications; improve our Platform through analytics; prevent fraud and ensure platform security; and comply with legal obligations. We may also use your information to process payments, manage subscriptions, and provide access to paid services offered on the Platform.`,
   },
   {
     title: "3. Information Sharing",
-    content: `We do not sell your personal information to third parties. When you apply for a job, your profile and resume are shared with the relevant Recruiter or Employer. When a Recruiter posts a job, their company information is visible to Job Seekers. We may share anonymised, aggregated data with business partners for analytics purposes.`,
+    content: `We do not sell your personal information to third parties. We do not sell or rent your personal data to third parties under any circumstances. When you apply for a job, your profile and resume are shared with the relevant Recruiter or Employer. When a Recruiter posts a job, their company information is visible to Job Seekers. We may share anonymised, aggregated data with business partners for analytics purposes.`,
   },
   {
     title: "4. Data Retention",
@@ -34,7 +34,7 @@ const sections = [
   },
   {
     title: "7. Your Rights",
-    content: `Depending on your location, you may have the following rights: access to your personal data; correction of inaccurate data; deletion of your data ("right to be forgotten"); restriction of processing; data portability; and the right to object to certain processing. To exercise these rights, contact us at privacy@jobsdart.in.`,
+    content: `Depending on your location, you may have the following rights: access to your personal data; correction of inaccurate data; deletion of your data ("right to be forgotten"); restriction of processing; data portability; and the right to object to certain processing. To exercise these rights, contact us at admin@veltria.in.`,
   },
   {
     title: "8. Third-Party Services",
@@ -49,8 +49,12 @@ const sections = [
     content: `We may update this Privacy Policy from time to time. We will notify you of any material changes by posting the new Privacy Policy on this page and, where appropriate, by sending you an email notification. Your continued use of the Platform after changes are posted constitutes your acceptance.`,
   },
   {
-    title: "11. Contact Us",
-    content: `If you have any questions or concerns about this Privacy Policy or our data practices, please contact our Data Protection contact at admin@veltria.in or write to us at Jobs Dart, India.`,
+    title: "11. Contact Us & Grievance Officer",
+    content: `If you have any questions or concerns about this Privacy Policy or our data practices, please contact our Data Protection contact at admin@veltria.in or write to us at Jobs Dart, India. For any complaints or concerns regarding your data, you may contact our Grievance Officer at admin@veltria.in.`,
+  },
+  {
+    title: "12. Payments & Third-Party Processors",
+    content: `We use third-party payment gateways (such as Razorpay or Cashfree) to process payments securely. We do not store your debit/credit card details. All payment transactions are processed through secure and compliant payment providers. These payment providers may collect and process your payment information in accordance with their own privacy policies. We encourage you to review their policies before making any transactions. Payments are handled by third-party secure providers and are governed by their respective terms of service.`,
   },
 ];
 
@@ -76,7 +80,7 @@ export default function PrivacyPage() {
             </div>
           </div>
           <p className="text-slate-400 mt-4">
-            Last updated: <span className="text-slate-300 font-semibold">March 26, 2026</span>
+            Last updated: <span className="text-slate-300 font-semibold">March 31, 2026</span>
           </p>
           <p className="text-slate-400 mt-2 leading-relaxed max-w-2xl">
             Your privacy matters to us. This policy explains what data we collect, how we use it, and the choices you have over your personal information.
@@ -95,20 +99,7 @@ export default function PrivacyPage() {
           ))}
         </div>
 
-        {/* Footer note */}
-        <div className="mt-8 text-center">
-          <p className="text-slate-500 text-sm">
-            For privacy-related requests, contact{" "}
-            <a href="mailto:admin@veltria.in" className="text-indigo-600 font-semibold hover:underline">
-              admin@veltria.in
-            </a>
-          </p>
-          <div className="mt-4 flex items-center justify-center gap-4 text-xs text-slate-400">
-            <Link href="/terms" className="hover:text-slate-600 transition-colors">Terms of Service</Link>
-            <span>·</span>
-            <Link href="/" className="hover:text-slate-600 transition-colors">Back to Jobs Dart</Link>
-          </div>
-        </div>
+       
       </div>
     </div>
   );

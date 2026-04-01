@@ -48,12 +48,24 @@ export default function Home() {
     let dashboardComponent;
     switch(user.role) {
       case "Job Seeker":
+        if (!user.planType) {
+            router.push('/jobseeker/plans');
+            return null;
+        }
         dashboardComponent = <JobSeekerDashboard />;
         break;
       case "Recruiter":
+        if (!user.isPaid) {
+            router.push('/company/payment');
+            return null;
+        }
         dashboardComponent = <RecruiterDashboard />;
         break;
       case "Employee":
+        if (!user.isPaid) {
+            router.push('/company/payment');
+            return null;
+        }
         dashboardComponent = <EmployeeDashboard />;
         break;
       case "Admin":

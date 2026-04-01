@@ -65,7 +65,11 @@ export default function OnboardingPage() {
             } else if (user.role !== 'Job Seeker') {
                 router.push('/');
             } else if (isOnboardingComplete(user)) {
-                router.push('/');
+                if (!user.planType) {
+                    router.push('/jobseeker/plans');
+                } else {
+                    router.push('/');
+                }
             }
         }
     }, [user, loading, router]);
@@ -154,8 +158,8 @@ export default function OnboardingPage() {
             const updatedProfile = await updatedProfileRes.json();
             setUser(updatedProfile);
 
-            toast({ title: "Profile Completed! 🎉", description: "Welcome aboard! Let's find your next job." });
-            router.push('/');
+            toast({ title: "Profile Completed! 🎉", description: "You're all set! Up next, choose your plan." });
+            router.push('/jobseeker/plans');
 
         } catch (error: any) {
             console.error("Onboarding error:", error);

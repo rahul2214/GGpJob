@@ -26,7 +26,7 @@ const sections = [
   },
   {
     title: "5. Job Listings & Applications",
-    content: `Recruiters are solely responsible for the accuracy and legality of their job listings. Jobs Dart does not guarantee employment or the quality of any candidate. Job Seekers are responsible for ensuring that all information submitted in their profiles and applications is truthful and accurate.`,
+    content: `Recruiters are solely responsible for the accuracy and legality of their job listings. Jobs Dart does not guarantee employment or the quality of any candidate. Job Seekers are responsible for ensuring that all information submitted in their profiles and applications is truthful and accurate. Jobs Dart does not guarantee job placement, interview selection, or hiring outcomes for any user.`,
   },
   {
     title: "6. Referrals",
@@ -56,6 +56,14 @@ const sections = [
     title: "12. Contact Us",
     content: `If you have any questions about these Terms of Service, please contact us at admin@veltria.in or write to us at Jobs Dart, India.`,
   },
+  {
+    title: "13. Payments & Services",
+    content: `Jobs Dart may offer paid services such as premium memberships, enhanced profile visibility, and other career-related features. By purchasing any paid service, you agree to pay all applicable fees as described on the Platform. All payments are processed through secure third-party payment gateways. Jobs Dart does not guarantee job placement, interview calls, or hiring outcomes as part of any paid service. Paid features only enhance visibility and access to platform functionalities.`,
+  },
+  {
+    title: "14. Refund & Cancellation",
+    content: `All payments made on Jobs Dart are subject to our Refund Policy. Users are advised to review the Refund Policy before making any purchase. Refunds, if applicable, will be processed according to the terms mentioned on the Refund Policy page.`,
+  },
 ];
 
 export default function TermsPage() {
@@ -80,7 +88,7 @@ export default function TermsPage() {
             </div>
           </div>
           <p className="text-slate-400 mt-4">
-            Last updated: <span className="text-slate-300 font-semibold">March 26, 2026</span>
+            Last updated: <span className="text-slate-300 font-semibold">March 31, 2026</span>
           </p>
           <p className="text-slate-400 mt-2 leading-relaxed max-w-2xl">
             Please read these Terms of Service carefully before using Jobs Dart. By using our platform, you agree to be bound by these terms.
@@ -99,20 +107,7 @@ export default function TermsPage() {
           ))}
         </div>
 
-        {/* Footer note */}
-        <div className="mt-8 text-center">
-          <p className="text-slate-500 text-sm">
-            For any legal inquiries, please contact{" "}
-            <a href="mailto:admin@veltria.in" className="text-emerald-600 font-semibold hover:underline">
-              admin@veltria.in
-            </a>
-          </p>
-          <div className="mt-4 flex items-center justify-center gap-4 text-xs text-slate-400">
-            <Link href="/privacy" className="hover:text-slate-600 transition-colors">Privacy Policy</Link>
-            <span>·</span>
-            <Link href="/" className="hover:text-slate-600 transition-colors">Back to Jobs Dart</Link>
-          </div>
-        </div>
+        
       </div>
     </div>
   );

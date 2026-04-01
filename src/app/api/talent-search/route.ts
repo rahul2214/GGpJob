@@ -4,6 +4,33 @@ import { db } from '@/firebase/admin-config';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+        return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
+    // Check authorization
+    const recruiterDoc = await db.collection('recruiters').doc(userId).get();
+    const employeeDoc = !recruiterDoc.exists ? await db.collection('employees').doc(userId).get() : null;
+    const userDoc = recruiterDoc.exists ? recruiterDoc : employeeDoc;
+
+    if (!userDoc || !userDoc.exists) {
+        return NextResponse.json({ error: 'Unauthorized: Recruiter profile not found' }, { status: 403 });
+    }
+
+    const userData = userDoc.data()!;
+    const now = new Date();
+    const hasPremium = userData.planType === 'premium';
+    const hasTalentPlan = userData.talentSearchExpiresAt && new Date(userData.talentSearchExpiresAt) > now;
+
+    if (!hasPremium && !hasTalentPlan) {
+        return NextResponse.json({ 
+            error: 'Access Denied: Talent Search requires a Premium or Talent Search plan.',
+            requiresPlan: true 
+        }, { status: 403 });
+    }
+
     const search = searchParams.get('search')?.toLowerCase() || '';
     const domainId = searchParams.get('domain') || '';
     const skillIds = searchParams.getAll('skill').filter(Boolean);

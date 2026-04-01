@@ -68,10 +68,18 @@ export async function GET(request: Request) {
     const skillsResults = await Promise.all(skillsPromises);
     const skillsMap = new Map(skillsResults.map(s => [s.userId, s.skills]));
 
-    // 4. Construct final payload
+    // 4. Construct final payload and filter expired ones
+    const now = new Date();
     const applications = appDocs.map(appData => {
         const applicant = appData.userId ? usersMap.get(appData.userId) : null;
         const job = appData.jobId ? jobsMap.get(appData.jobId) : null;
+        
+        // Check if application is expired for this recruiter view
+        if (jobId && job?.appExpiresAt) {
+            const expiry = new Date(job.appExpiresAt);
+            if (expiry < now) return null;
+        }
+
         const skills = appData.userId ? skillsMap.get(appData.userId) || '' : '';
         const statusName = statusMap[appData.statusId] || 'Applied';
         
@@ -88,7 +96,7 @@ export async function GET(request: Request) {
           companyName: job?.companyName,
           statusName,
         };
-    });
+    }).filter(Boolean);
 
     return NextResponse.json(applications);
 
@@ -112,6 +120,26 @@ export async function POST(request: Request) {
 
         if (!existingApplication.empty) {
             return NextResponse.json({ error: 'You have already applied for this job' }, { status: 409 });
+        }
+
+        // Check job validity and limits
+        const jobDoc = await db.collection('jobs').doc(jobId).get();
+        if (!jobDoc.exists) {
+            return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+        }
+
+        const job = jobDoc.data() as Job;
+        const now = new Date();
+        
+        if (job.appExpiresAt && new Date(job.appExpiresAt) < now) {
+            return NextResponse.json({ error: 'This job is no longer accepting applications (Link expired)' }, { status: 403 });
+        }
+
+        if (job.maxApplies && job.maxApplies > 0) {
+            const currentAppCountSnap = await db.collection('applications').where('jobId', '==', jobId).get();
+            if (currentAppCountSnap.size >= job.maxApplies) {
+                return NextResponse.json({ error: 'This job has reached its maximum application limit' }, { status: 403 });
+            }
         }
         
         const applicationStatuses = await db.collection('application_statuses').where('name', '==', 'Applied').limit(1).get();

@@ -86,6 +86,7 @@ export default function Header() {
   const isPublicProfilePage = /^\/profile\/[^/]+$/.test(pathname);
   const isAdminAddPage = /^\/admin\/(users|domains|locations)\/add$/.test(pathname);
   const isAdminEditPage = /^\/admin\/(domains|locations)\/edit\/[^/]+$/.test(pathname);
+  const isPlanSelectionPage = pathname === '/jobseeker/plans' || pathname === '/company/payment';
 
   // Link active states
   const isReferralActive = isJobSearchPage && searchParams.get('isReferral') === 'true';
@@ -129,6 +130,7 @@ export default function Header() {
     { href: "/admin/locations", label: "Manage Locations", icon: MapPin },
     { href: "/admin/employment-types", label: "Employment Types", icon: Network },
     { href: "/admin/workplace-types", label: "Workplace Types", icon: Building },
+    { href: "/admin/coupons", label: "Manage Coupons", icon: Award },
   ];
 
   if (user?.role === 'Super Admin') {
@@ -203,7 +205,7 @@ export default function Header() {
                            </>
                         ) : (
                           <>
-                            {isClient && !userLoading && user && (
+                            {isClient && !userLoading && user && !isPlanSelectionPage && (
                               <SheetClose asChild>
                                   <Link href="/" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
                                       <LayoutGrid className="h-5 w-5" />
@@ -211,7 +213,7 @@ export default function Header() {
                                   </Link>
                               </SheetClose>
                             )}
-                             {isClient && !userLoading && user?.role === 'Job Seeker' && (
+                             {isClient && !userLoading && user?.role === 'Job Seeker' && !isPlanSelectionPage && (
                                <>
                                 <SheetClose asChild>
                                     <Link href="/jobs" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", isJobsActive && "text-foreground font-bold")}>
@@ -240,15 +242,9 @@ export default function Header() {
                                         Training
                                     </Link>
                                 </SheetClose>
-                                {/* <SheetClose asChild>
-                                    <Link href="/ats-score" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/ats-score' && "text-foreground font-bold")}>
-                                        <ClipboardList className="h-5 w-5" />
-                                        ATS Score
-                                    </Link>
-                                </SheetClose> */}
                                </>
                             )}
-                             {isClient && !userLoading && user && (user.role === 'Recruiter' || user.role === 'Employee') && (
+                             {isClient && !userLoading && user && (user.role === 'Recruiter' || user.role === 'Employee') && !isPlanSelectionPage && (
                                  <SheetClose asChild>
                                     <Link href={user.role === 'Recruiter' ? '/jobs/post' : '/referrals/post'} className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
                                         <PlusCircle className="h-5 w-5" />
@@ -256,7 +252,7 @@ export default function Header() {
                                     </Link>
                                 </SheetClose>
                             )}
-                            {isClient && !userLoading && user && user.role === 'Recruiter' && (
+                            {isClient && !userLoading && user && user.role === 'Recruiter' && !isPlanSelectionPage && (
                                  <SheetClose asChild>
                                     <Link href="/company/talent" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/company/talent' && "text-foreground font-bold")}>
                                         <Users className="h-5 w-5" />
@@ -278,7 +274,7 @@ export default function Header() {
                                         Profile
                                     </Link>
                                 </SheetClose>
-                                {user.role === 'Job Seeker' && (
+                                {user.role === 'Job Seeker' && !isPlanSelectionPage && (
                                     <>
                                         <SheetClose asChild>
                                             <Link href="/applications" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/applications' && "text-foreground font-bold")}>
@@ -288,7 +284,7 @@ export default function Header() {
                                         </SheetClose>
                                     </>
                                 )}
-                                 {['Job Seeker', 'Recruiter', 'Employee'].includes(user.role) && (
+                                {['Job Seeker', 'Recruiter', 'Employee'].includes(user.role) && (
                                     <SheetClose asChild>
                                         <Link href="/feedback" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/feedback' && "text-foreground font-bold")}>
                                             <MessageSquareQuote className="h-5 w-5" />
@@ -296,7 +292,7 @@ export default function Header() {
                                         </Link>
                                     </SheetClose>
                                 )}
-                                 <SheetClose asChild>
+                                <SheetClose asChild>
                                     <Link href="#" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
                                         <Settings className="h-5 w-5" />
                                         Settings
@@ -403,17 +399,22 @@ export default function Header() {
           </>
         ) : (
           <>
-            {isClient && !userLoading && user && (
+            {isClient && !userLoading && user && !isPlanSelectionPage && (
               <Link href="/" className={`transition-colors hover:text-foreground ${pathname === "/" ? "text-foreground" : "text-foreground/60"}`}>
                 Dashboard
               </Link>
             )}
-            {isClient && !userLoading && user?.role === 'Recruiter' && (
+            {isClient && !userLoading && user?.role === 'Recruiter' && !isPlanSelectionPage && (
               <Link href="/company/talent" className={`transition-colors hover:text-foreground ${pathname === '/company/talent' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
                 Talent Search
               </Link>
             )}
-            {isClient && !userLoading && user?.role === 'Job Seeker' && (
+            {isClient && !userLoading && user && (user.role === 'Recruiter' || user.role === 'Employee') && !isPlanSelectionPage && (
+              <Link href={user.role === 'Recruiter' ? '/jobs/post' : '/referrals/post'} className={`transition-colors hover:text-foreground ${pathname === '/jobs/post' || pathname === '/referrals/post' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                Post Job
+              </Link>
+            )}
+            {isClient && !userLoading && user?.role === 'Job Seeker' && !isPlanSelectionPage && (
                 <Suspense>
                     <Link href="/jobs" className={`transition-colors hover:text-foreground ${isJobsActive ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
                         Jobs
@@ -430,9 +431,6 @@ export default function Header() {
                     <Link href="#" className={`transition-colors hover:text-foreground ${pathname === "/training" ? "text-foreground" : "text-foreground/60"}`}>
                         Training
                     </Link>
-                    {/* <Link href="/ats-score" className={`transition-colors hover:text-foreground ${pathname === "/ats-score" ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
-                        ATS Score
-                    </Link> */}
                 </Suspense>
             )}
           </>
@@ -440,9 +438,11 @@ export default function Header() {
       </nav>
 
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-        <Suspense fallback={null}>
-            <HeaderSearch />
-        </Suspense>
+        {!isPlanSelectionPage && (
+            <Suspense fallback={null}>
+                <HeaderSearch />
+            </Suspense>
+        )}
         <div className="ml-auto flex items-center gap-2">
            {renderMobileRightButton()}
            {isClient && !userLoading && user ? (
@@ -477,7 +477,7 @@ export default function Header() {
                         </Button>
                     </>
                 )}
-                 <div className="hidden md:flex">
+                 <div className="hidden md:flex items-center gap-2">
                     <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="rounded-full">
@@ -495,7 +495,7 @@ export default function Header() {
                             <span>Profile</span>
                         </Link>
                         </DropdownMenuItem>
-                        {user.role === 'Job Seeker' && (
+                        {user.role === 'Job Seeker' && !isPlanSelectionPage && (
                         <>
                             <DropdownMenuItem asChild>
                                 <Link href="/applications">
@@ -519,12 +519,12 @@ export default function Header() {
                         <span>Settings</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleLogout}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Logout</span>
-                        </DropdownMenuItem>
                     </DropdownMenuContent>
                     </DropdownMenu>
+                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors" onClick={handleLogout} title="Logout">
+                        <LogOut className="h-5 w-5" />
+                        <span className="sr-only">Logout</span>
+                    </Button>
                 </div>
             </div>
           ) : (

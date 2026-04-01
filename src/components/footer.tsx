@@ -24,6 +24,12 @@ export default function Footer() {
               </Link>
               . All rights reserved.
             </p>
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-2 text-xs text-muted-foreground/80">
+              <Link href="/terms" className="hover:text-primary transition-colors">Terms & Conditions</Link>
+              <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+              <Link href="/refund" className="hover:text-primary transition-colors">Refund & Cancellation Policy</Link>
+              <Link href="/contact" className="hover:text-primary transition-colors">Contact Us</Link>
+            </div>
           </div>
           <div className="flex items-center space-x-4">
             <Link href="https://www.linkedin.com/company/veltria/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
