@@ -131,6 +131,10 @@ export async function GET(request: NextRequest) {
 
     // --- Start General Search/Listing Logic ---
     let query: adminFirestore.Query = jobsRef;
+    
+    // const now = new Date().toISOString();
+    // query = query.where('expiresAt', '>', now); // This requires a composite index with orderBy. Moved to in-memory filter.
+    
     let hasComplexFilters = false;
 
     const isRecommended = searchParams.get('view') === 'recommended';
@@ -185,7 +189,9 @@ export async function GET(request: NextRequest) {
     if (hasComplexFilters || searchParams.get('search')) {
         query = query.limit(500);
     } else if (searchParams.get('limit')) {
-        query = query.limit(parseInt(searchParams.get('limit')!, 10));
+        // Fetch slightly more than needed to account for in-memory filtering of expired jobs
+        const requestedLimit = parseInt(searchParams.get('limit')!, 10);
+        query = query.limit(Math.max(50, requestedLimit * 2));
     }
 
     const jobsSnapshot = await query.get();
@@ -213,6 +219,9 @@ export async function GET(request: NextRequest) {
     let jobs = jobsSnapshot.docs.map(doc => ({ ...(doc.data() as Job), id: doc.id }));
 
     // In-memory filters
+    const now = new Date().toISOString();
+    jobs = jobs.filter(job => String(job.expiresAt) > now);
+
     const postedParam = searchParams.get('posted');
     if (postedParam && postedParam !== 'all') {
         const days = parseInt(postedParam, 10);
@@ -239,7 +248,11 @@ export async function GET(request: NextRequest) {
 
     finalJobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
 
-    const response = NextResponse.json(finalJobs);
+    // Apply limit if specified
+    const limit = searchParams.get('limit');
+    const finalResult = limit ? finalJobs.slice(0, parseInt(limit, 10)) : finalJobs;
+
+    const response = NextResponse.json(finalResult);
     if (!recruiterId && !employeeId) {
         response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
     }
@@ -254,11 +267,58 @@ export async function GET(request: NextRequest) {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
+    const { recruiterId, employeeId } = data;
+    const userId = recruiterId || employeeId;
+
+    if (!userId) {
+        return NextResponse.json({ error: 'Recruiter ID or Employee ID is required' }, { status: 400 });
+    }
+
+    // Check user plan and limits
+    const userDoc = await db.collection(recruiterId ? 'recruiters' : 'employees').doc(userId).get();
+    if (!userDoc.exists) {
+        return NextResponse.json({ error: 'Recruiter profile not found' }, { status: 404 });
+    }
+
+    const user = userDoc.data()!;
+    const planType = user.planType || 'none';
+    const planExpiresAt = user.planExpiresAt ? new Date(user.planExpiresAt) : null;
+    const now = new Date();
+
+    if (planType === 'none' || (planExpiresAt && planExpiresAt < now)) {
+        return NextResponse.json({ error: 'Active subscription required to post jobs' }, { status: 403 });
+    }
+
+    // Check active job count
+    const activeJobsSnap = await db.collection('jobs')
+        .where(recruiterId ? 'recruiterId' : 'employeeId', '==', userId)
+        .where('expiresAt', '>', now.toISOString())
+        .get();
+    
+    const maxJobs = planType === 'premium' ? 10 : 1;
+    if (activeJobsSnap.size >= maxJobs) {
+        return NextResponse.json({ 
+            error: `Job limit reached. ${planType === 'premium' ? 'Premium' : 'Basic'} plan allows only ${maxJobs} active jobs.` 
+        }, { status: 403 });
+    }
+
+    // Calculate expiry dates
+    const jobExpiry = new Date();
+    jobExpiry.setDate(now.getDate() + 30);
+    
+    const appExpiry = new Date();
+    appExpiry.setDate(now.getDate() + (planType === 'premium' ? 90 : 30));
+
     const jobToCreate: Partial<Job> = {
         ...data,
         locationId: (data.locationIds && data.locationIds.length > 0) ? data.locationIds[0] : (data.locationId || ''),
-        postedAt: data.postedAt || new Date().toISOString(),
+        postedAt: now.toISOString(),
+        expiresAt: jobExpiry.toISOString(),
+        appExpiresAt: appExpiry.toISOString(),
+        maxApplies: planType === 'premium' ? -1 : 300,
+        planTypeAtPosting: planType
     };
+    
     const docRef = await db.collection('jobs').add(jobToCreate);
     return NextResponse.json({ id: docRef.id, ...jobToCreate }, { status: 201 });
   } catch (e: any) {

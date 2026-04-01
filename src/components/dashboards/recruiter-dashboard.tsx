@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Users, Share2 } from "lucide-react";
-import { format } from "date-fns";
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Users, Share2, Zap, Calendar, LayoutDashboard, Crown, Star, Search } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -143,6 +143,75 @@ export default function RecruiterDashboard() {
 
   return (
     <>
+      {user && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-2">
+            <Card className="border-none shadow-lg shadow-indigo-100 bg-gradient-to-br from-indigo-600 to-indigo-700 text-white">
+                <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="p-2 bg-white/20 rounded-lg">
+                            {user.planType === 'premium' ? <Crown className="w-5 h-5" /> : (user.planType === 'talent' ? <Search className="w-5 h-5" /> : <Star className="w-5 h-5" />)}
+                        </div>
+                        <Badge className="bg-white/20 hover:bg-white/30 text-white border-none uppercase text-[10px] tracking-widest font-bold">
+                            Active Plan
+                        </Badge>
+                    </div>
+                    <h3 className="text-2xl font-black mb-1 capitalize">{user.planType || 'Basic'} Plan</h3>
+                    <p className="text-indigo-100 text-xs font-medium opacity-80">
+                        {user.planType === 'premium' ? 'Full portal access & Talent Search' : (user.planType === 'talent' ? 'Talent database access only' : 'Entry-level hiring tools')}
+                    </p>
+                </CardContent>
+            </Card>
+
+            <Card className="border-none shadow-md bg-white border border-slate-100">
+                <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="p-2 bg-emerald-100 rounded-lg">
+                            <LayoutDashboard className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Job Usage</div>
+                    </div>
+                    <div className="flex items-baseline gap-2 mb-2">
+                        <span className="text-3xl font-black text-slate-900">{postedJobs.length}</span>
+                        <span className="text-slate-400 font-bold text-sm">/ {user.planType === 'premium' ? '10' : '1'} Jobs</span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div 
+                            className="bg-emerald-500 h-full transition-all duration-500" 
+                            style={{ width: `${Math.min((postedJobs.length / (user.planType === 'premium' ? 10 : 1)) * 100, 100)}%` }}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="border-none shadow-md bg-white border border-slate-100">
+                <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="p-2 bg-amber-100 rounded-lg">
+                            <Calendar className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Expiration</div>
+                    </div>
+                    <div className="flex items-baseline gap-2 mb-1">
+                        <span className="text-3xl font-black text-slate-900">
+                            {user.planExpiresAt ? differenceInDays(new Date(user.planExpiresAt), new Date()) : '30'}
+                        </span>
+                        <span className="text-slate-400 font-bold text-sm">Days Left</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-medium">
+                        Valid until {user.planExpiresAt ? format(new Date(user.planExpiresAt), "MMM dd, yyyy") : format(new Date().setDate(new Date().getDate() + 30), "MMM dd, yyyy")}
+                    </p>
+                    <div className="mt-4 flex gap-2">
+                        <Button asChild variant="ghost" size="sm" className="h-7 text-[10px] font-black uppercase text-indigo-600 hover:bg-indigo-50 px-0">
+                            <Link href="/company/payment?upgrade=true" className="flex items-center gap-1">
+                                Upgrade Plan <Zap className="w-3 h-3 fill-indigo-600" />
+                            </Link>
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+      )}
+
       <AlertDialog open={!!jobToDelete} onOpenChange={(open) => !open && setJobToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

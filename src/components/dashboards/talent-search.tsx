@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import type { Domain, MasterSkill } from "@/lib/types";
 import Image from "next/image";
+import { useUser } from "@/contexts/user-context";
+import { Lock } from "lucide-react";
 
 interface Candidate {
   id: string;
@@ -134,6 +136,8 @@ export default function TalentSearch() {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [masterSkills, setMasterSkills] = useState<MasterSkill[]>([]);
+  const { user } = useUser();
+  const [errorStatus, setErrorStatus] = useState<{ message: string; requiresPlan: boolean } | null>(null);
 
   // Load metadata
   useEffect(() => {
@@ -146,22 +150,33 @@ export default function TalentSearch() {
   }, []);
 
   const fetchCandidates = useCallback(async () => {
+    if (!user?.id) return;
     setLoading(true);
+    setErrorStatus(null);
     try {
       const params = new URLSearchParams();
+      params.set('userId', user.id);
       if (search.trim()) params.set('search', search.trim());
       if (selectedDomain !== 'all') params.set('domain', selectedDomain);
       selectedSkills.forEach(skillId => params.append('skill', skillId));
 
       const res = await fetch(`/api/talent-search?${params}`);
-      if (res.ok) setCandidates(await res.json());
+      if (res.ok) {
+          setCandidates(await res.json());
+      } else if (res.status === 403) {
+          const errData = await res.json();
+          setErrorStatus({ 
+              message: errData.error || 'Access Denied', 
+              requiresPlan: errData.requiresPlan || false 
+          });
+      }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
       setInitialLoaded(true);
     }
-  }, [search, selectedDomain, selectedSkills]);
+  }, [search, selectedDomain, selectedSkills, user?.id]);
 
   // Auto-search with debounce on text, immediate on filters
   useEffect(() => {
@@ -370,6 +385,28 @@ export default function TalentSearch() {
             <Button variant="outline" size="sm" className="mt-4" onClick={clearFilters}>
               Clear filters
             </Button>
+          )}
+        </div>
+      ) : errorStatus ? (
+        <div className="text-center py-20 border-2 border-dashed border-red-100 bg-red-50/30 rounded-2xl">
+          <div className="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center mb-6">
+            <Lock className="w-8 h-8 text-red-600" />
+          </div>
+          <h3 className="text-slate-900 font-bold text-xl">{errorStatus.message}</h3>
+          <p className="text-slate-500 text-sm mt-3 max-w-sm mx-auto">
+            {errorStatus.requiresPlan 
+              ? "Upgrade to the Premium Plan or purchase the Talent Search plan to connect with our verified talent database."
+              : "Something went wrong while verifying your access."}
+          </p>
+          {errorStatus.requiresPlan && (
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+               <Button asChild size="lg" className="bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-100 rounded-xl px-8 font-bold">
+                  <Link href="/company/payment">Upgrade Your Plan</Link>
+               </Button>
+               <Button asChild variant="outline" size="lg" className="rounded-xl px-8 bg-white">
+                  <Link href="/company/payment">View Pricing</Link>
+               </Button>
+            </div>
           )}
         </div>
       ) : (

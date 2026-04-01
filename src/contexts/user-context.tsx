@@ -2,6 +2,7 @@
 "use client";
 
 import { createContext, useState, useContext, useEffect, ReactNode, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import type { User } from '@/lib/types';
 import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { firebaseApp } from '@/firebase/config';
@@ -20,6 +21,27 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (loading || !user || !pathname) return;
+
+    const allowedPaths = ['/profile', '/feedback', '/settings'];
+    const isAllowedPath = allowedPaths.some(p => pathname.startsWith(p));
+
+    if (user.role === 'Recruiter' && !user.isPaid) {
+        if (!pathname.startsWith('/company/payment') && !isAllowedPath) {
+            router.replace('/company/payment');
+        }
+    }
+
+    if (user.role === 'Job Seeker' && (!user.planType || user.planType === 'none')) {
+        if (!pathname.startsWith('/jobseeker/plans') && !isAllowedPath) {
+            router.replace('/jobseeker/plans');
+        }
+    }
+  }, [user, loading, pathname, router]);
 
   const fetchUserProfile = useCallback(async (uid: string): Promise<User | null> => {
     try {
