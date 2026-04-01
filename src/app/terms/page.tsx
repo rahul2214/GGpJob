@@ -26,7 +26,7 @@ const sections = [
   },
   {
     title: "5. Job Listings & Applications",
-    content: `Recruiters are responsible for the accuracy and legality of their job listings. Jobs Dart does not guarantee employment or the quality of any candidate. Job Seekers are responsible for ensuring that all information submitted in their profiles and applications is truthful and accurate. Jobs Dart does not guarantee job placement, interview selection, or hiring outcomes for any user.`,
+    content: `Recruiters are solely responsible for the accuracy and legality of their job listings. Jobs Dart does not guarantee employment or the quality of any candidate. Job Seekers are responsible for ensuring that all information submitted in their profiles and applications is truthful and accurate. Jobs Dart does not guarantee job placement, interview selection, or hiring outcomes for any user.`,
   },
   {
     title: "6. Referrals",
