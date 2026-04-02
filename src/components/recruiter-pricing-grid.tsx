@@ -41,7 +41,8 @@ export default function RecruiterPricingGrid({ onPlanSelect, isMarketing = false
               "p-8 text-white",
               plan.color === 'emerald' && "bg-gradient-to-br from-emerald-600 to-teal-700",
               plan.color === 'amber' && "bg-gradient-to-br from-amber-500 to-orange-600",
-              plan.color === 'sky' && "bg-gradient-to-br from-sky-500 to-blue-600"
+              plan.color === 'sky' && "bg-gradient-to-br from-sky-500 to-blue-600",
+              plan.color === 'indigo' && "bg-gradient-to-br from-indigo-600 to-purple-700"
             )}>
               <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6">
                 <plan.icon className="w-6 h-6 text-white" />
@@ -72,7 +73,8 @@ export default function RecruiterPricingGrid({ onPlanSelect, isMarketing = false
                         "w-5 h-5 mt-0.5 shrink-0",
                         plan.color === 'emerald' && "text-emerald-500",
                         plan.color === 'amber' && "text-amber-500",
-                        plan.color === 'sky' && "text-sky-500"
+                        plan.color === 'sky' && "text-sky-500",
+                        plan.color === 'indigo' && "text-indigo-500"
                       )} />
                       <span className="text-slate-600 text-sm font-medium leading-snug">{feature}</span>
                     </li>
@@ -90,6 +92,7 @@ export default function RecruiterPricingGrid({ onPlanSelect, isMarketing = false
                       plan.color === 'emerald' && "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200",
                       plan.color === 'amber' && "bg-amber-500 hover:bg-amber-600 shadow-amber-200",
                       plan.color === 'sky' && "bg-sky-500 hover:bg-sky-600 shadow-sky-200",
+                      plan.color === 'indigo' && "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200",
                       "text-white"
                     )}
                   >
@@ -105,6 +108,7 @@ export default function RecruiterPricingGrid({ onPlanSelect, isMarketing = false
                     plan.color === 'emerald' && "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200",
                     plan.color === 'amber' && "bg-amber-500 hover:bg-amber-600 shadow-amber-200",
                     plan.color === 'sky' && "bg-sky-500 hover:bg-sky-600 shadow-sky-200",
+                    plan.color === 'indigo' && "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200",
                     "text-white"
                   )}
                 >

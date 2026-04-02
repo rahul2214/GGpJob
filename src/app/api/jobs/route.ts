@@ -295,19 +295,21 @@ export async function POST(request: Request) {
         .where('expiresAt', '>', now.toISOString())
         .get();
     
-    const maxJobs = planType === 'premium' ? 10 : 1;
+    const maxJobs = planType === 'pro' ? 50 : (planType === 'premium' ? 10 : 1);
     if (activeJobsSnap.size >= maxJobs) {
         return NextResponse.json({ 
-            error: `Job limit reached. ${planType === 'premium' ? 'Premium' : 'Basic'} plan allows only ${maxJobs} active jobs.` 
+            error: `Job limit reached. ${planType === 'pro' ? 'Pro' : (planType === 'premium' ? 'Premium' : 'Basic')} plan allows only ${maxJobs} active jobs.` 
         }, { status: 403 });
     }
 
     // Calculate expiry dates
     const jobExpiry = new Date();
-    jobExpiry.setDate(now.getDate() + 30);
+    const jobValidityDays = planType === 'pro' ? 90 : 30;
+    jobExpiry.setDate(now.getDate() + jobValidityDays);
     
     const appExpiry = new Date();
-    appExpiry.setDate(now.getDate() + (planType === 'premium' ? 90 : 30));
+    const appAccessDays = planType === 'pro' ? 180 : (planType === 'premium' ? 90 : 30);
+    appExpiry.setDate(now.getDate() + appAccessDays);
 
     const jobToCreate: Partial<Job> = {
         ...data,
@@ -315,7 +317,7 @@ export async function POST(request: Request) {
         postedAt: now.toISOString(),
         expiresAt: jobExpiry.toISOString(),
         appExpiresAt: appExpiry.toISOString(),
-        maxApplies: planType === 'premium' ? -1 : 300,
+        maxApplies: (planType === 'premium' || planType === 'pro') ? -1 : 300,
         planTypeAtPosting: planType
     };
     

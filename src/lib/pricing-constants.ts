@@ -36,6 +36,23 @@ export const RECRUITER_PLANS = [
     ]
   },
   {
+    id: "pro",
+    name: "Pro Recruitment",
+    price: 4999,
+    originalPrice: 9999,
+    description: "The ultimate hiring suite for power recruiters.",
+    icon: Crown,
+    color: "indigo",
+    features: [
+      "Post up to 50 jobs",
+      "Unlimited applications",
+      "90-day job validity",
+      "180-day application access",
+      "Full Talent Search access",
+      "Priority Support & Verified Status"
+    ]
+  },
+  {
     id: "talent",
     name: "Talent Search",
     price: 499,
