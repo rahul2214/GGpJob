@@ -88,7 +88,7 @@ export async function POST(request: Request) {
     const options = {
       amount: amount * 100, // Convert to paise
       currency: "INR",
-      receipt: `receipt_${planId}_${userId}_${Date.now()}`,
+      receipt: `rcpt_${Date.now()}`,
       notes: {
         userId,
         planId
