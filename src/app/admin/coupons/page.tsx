@@ -219,6 +219,7 @@ export default function AdminCouponsPage() {
                     <option value="basic">Recruiter - Basic Plan</option>
                     <option value="talent">Recruiter - Talent Search</option>
                     <option value="premium">Recruiter - Premium Plan</option>
+                    <option value="pro">Recruiter - Pro Recruitment</option>
                     <option value="jobseeker_premium">Job Seeker - Premium</option>
                  </select>
                </div>
@@ -289,6 +290,7 @@ export default function AdminCouponsPage() {
                                     {coupon.applicablePlan === 'all' || !coupon.applicablePlan ? 'All Plans' : 
                                      coupon.applicablePlan === 'basic' ? 'RC - Basic' : 
                                      coupon.applicablePlan === 'premium' ? 'RC - Premium' : 
+                                     coupon.applicablePlan === 'pro' ? 'RC - Pro' : 
                                      coupon.applicablePlan === 'talent' ? 'RC - Talent' : 
                                      coupon.applicablePlan === 'jobseeker_premium' ? 'JS - Premium' : coupon.applicablePlan}
                                 </Badge>

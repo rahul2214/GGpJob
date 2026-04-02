@@ -65,6 +65,7 @@ export default function Header() {
   const isMobile = useIsMobile();
 
   const { notifications } = useNotifications(user?.id);
+  const [jobCount, setJobCount] = useState<number>(0);
   
   const notificationCount = useMemo(() => {
     if (!notifications || !user) return 0;
@@ -77,6 +78,25 @@ export default function Header() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    if (isClient && user && (user.role === 'Recruiter' || user.role === 'Employee')) {
+        const fetchJobCount = async () => {
+            try {
+                const res = await fetch(`/api/jobs?recruiterId=${user.id}&isReferral=false&fresh=true`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data)) {
+                        setJobCount(data.length);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch job count in Header:", err);
+            }
+        };
+        fetchJobCount();
+    }
+  }, [isClient, user]);
 
   const isJobSearchPage = pathname === '/jobs';
   const isNotificationsPage = pathname === '/notifications';
@@ -245,14 +265,16 @@ export default function Header() {
                                </>
                             )}
                              {isClient && !userLoading && user && (user.role === 'Recruiter' || user.role === 'Employee') && !isPlanSelectionPage && (
-                                 <SheetClose asChild>
-                                    <Link href={user.role === 'Recruiter' ? '/jobs/post' : '/referrals/post'} className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
-                                        <PlusCircle className="h-5 w-5" />
-                                        Post Job
-                                    </Link>
-                                </SheetClose>
+                                  (!(user.planType === 'basic' && jobCount >= 1)) && (
+                                     <SheetClose asChild>
+                                        <Link href={user.role === 'Recruiter' ? '/jobs/post' : '/referrals/post'} className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                            <PlusCircle className="h-5 w-5" />
+                                            Post Job
+                                        </Link>
+                                    </SheetClose>
+                                  )
                             )}
-                            {isClient && !userLoading && user && user.role === 'Recruiter' && !isPlanSelectionPage && (
+                            {isClient && !userLoading && user && user.role === 'Recruiter' && !isPlanSelectionPage && user.planType !== 'basic' && (
                                  <SheetClose asChild>
                                     <Link href="/company/talent" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/company/talent' && "text-foreground font-bold")}>
                                         <Users className="h-5 w-5" />
@@ -404,15 +426,17 @@ export default function Header() {
                 Dashboard
               </Link>
             )}
-            {isClient && !userLoading && user?.role === 'Recruiter' && !isPlanSelectionPage && (
+            {isClient && !userLoading && user?.role === 'Recruiter' && !isPlanSelectionPage && user.planType !== 'basic' && (
               <Link href="/company/talent" className={`transition-colors hover:text-foreground ${pathname === '/company/talent' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
                 Talent Search
               </Link>
             )}
             {isClient && !userLoading && user && (user.role === 'Recruiter' || user.role === 'Employee') && !isPlanSelectionPage && (
-              <Link href={user.role === 'Recruiter' ? '/jobs/post' : '/referrals/post'} className={`transition-colors hover:text-foreground ${pathname === '/jobs/post' || pathname === '/referrals/post' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
-                Post Job
-              </Link>
+              (!(user.planType === 'basic' && jobCount >= 1)) && (
+                <Link href={user.role === 'Recruiter' ? '/jobs/post' : '/referrals/post'} className={`transition-colors hover:text-foreground ${pathname === '/jobs/post' || pathname === '/referrals/post' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                    Post Job
+                </Link>
+              )
             )}
             {isClient && !userLoading && user?.role === 'Job Seeker' && !isPlanSelectionPage && (
                 <Suspense>

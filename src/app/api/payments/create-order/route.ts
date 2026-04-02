@@ -53,6 +53,7 @@ export async function POST(request: Request) {
         'basic': 199,
         'premium': 1499,
         'talent': 499,
+        'pro': 4999,
         'jobseeker_premium': 199
     };
 
@@ -83,6 +84,18 @@ export async function POST(request: Request) {
 
     if (expectedAmount !== amount) {
         return NextResponse.json({ error: `Invalid plan amount. Expected ₹${expectedAmount}.` }, { status: 400 });
+    }
+
+    if (expectedAmount === 0) {
+        return NextResponse.json({
+            id: `free_order_${userId}_${Date.now()}`,
+            amount: 0,
+            currency: "INR",
+            isFree: true,
+            planId,
+            userId,
+            key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+        });
     }
 
     const options = {

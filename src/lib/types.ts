@@ -37,7 +37,7 @@ export interface User {
   noticePeriod?: '15 Days or less' | '1 Month' | '2 Months' | '3 Months' | 'More than 3 Months' | 'Serving Notice Period';
 
   isPaid?: boolean;
-  planType?: 'none' | 'basic' | 'premium' | 'talent';
+  planType?: 'none' | 'basic' | 'premium' | 'talent' | 'pro';
   planExpiresAt?: string;
   talentSearchExpiresAt?: string;
   // Profile completion stats

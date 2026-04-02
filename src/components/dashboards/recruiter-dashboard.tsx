@@ -149,15 +149,15 @@ export default function RecruiterDashboard() {
                 <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
                         <div className="p-2 bg-white/20 rounded-lg">
-                            {user.planType === 'premium' ? <Crown className="w-5 h-5" /> : (user.planType === 'talent' ? <Search className="w-5 h-5" /> : <Star className="w-5 h-5" />)}
+                            {(user.planType === 'premium' || user.planType === 'pro') ? <Crown className="w-5 h-5" /> : (user.planType === 'talent' ? <Search className="w-5 h-5" /> : <Star className="w-5 h-5" />)}
                         </div>
                         <Badge className="bg-white/20 hover:bg-white/30 text-white border-none uppercase text-[10px] tracking-widest font-bold">
                             Active Plan
                         </Badge>
                     </div>
-                    <h3 className="text-2xl font-black mb-1 capitalize">{user.planType || 'Basic'} Plan</h3>
+                    <h3 className="text-2xl font-black mb-1 capitalize">{user.planType === 'pro' ? 'Pro' : (user.planType || 'Basic')} Plan</h3>
                     <p className="text-indigo-100 text-xs font-medium opacity-80">
-                        {user.planType === 'premium' ? 'Full portal access & Talent Search' : (user.planType === 'talent' ? 'Talent database access only' : 'Entry-level hiring tools')}
+                        {user.planType === 'pro' ? '50 Jobs, 3-Month Portal Access' : (user.planType === 'premium' ? 'Full portal access & Talent Search' : (user.planType === 'talent' ? 'Talent database access only' : 'Entry-level hiring tools'))}
                     </p>
                 </CardContent>
             </Card>
@@ -172,12 +172,12 @@ export default function RecruiterDashboard() {
                     </div>
                     <div className="flex items-baseline gap-2 mb-2">
                         <span className="text-3xl font-black text-slate-900">{postedJobs.length}</span>
-                        <span className="text-slate-400 font-bold text-sm">/ {user.planType === 'premium' ? '10' : '1'} Jobs</span>
+                        <span className="text-slate-400 font-bold text-sm">/ {user.planType === 'pro' ? '50' : (user.planType === 'premium' ? '10' : '1')} Jobs</span>
                     </div>
                     <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                         <div 
                             className="bg-emerald-500 h-full transition-all duration-500" 
-                            style={{ width: `${Math.min((postedJobs.length / (user.planType === 'premium' ? 10 : 1)) * 100, 100)}%` }}
+                            style={{ width: `${Math.min((postedJobs.length / (user.planType === 'pro' ? 50 : (user.planType === 'premium' ? 10 : 1))) * 100, 100)}%` }}
                         />
                     </div>
                 </CardContent>
@@ -233,12 +233,14 @@ export default function RecruiterDashboard() {
             <CardTitle>My Job Postings</CardTitle>
             <CardDescription>Manage your company's open positions.</CardDescription>
           </div>
-          <Button asChild>
-            <Link href="/jobs/post">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Post a New Job
-            </Link>
-          </Button>
+          {!(user?.planType === 'basic' && postedJobs.length >= 1) && (
+            <Button asChild>
+              <Link href="/jobs/post">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Post a New Job
+              </Link>
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           <Table>

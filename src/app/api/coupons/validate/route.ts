@@ -39,6 +39,7 @@ export async function POST(request: Request) {
          const planNames: Record<string, string> = {
              'basic': 'Basic Plan',
              'premium': 'Premium Plan',
+             'pro': 'Pro Recruitment',
              'talent': 'Talent Search',
              'jobseeker_premium': 'Job Seeker Premium'
          };

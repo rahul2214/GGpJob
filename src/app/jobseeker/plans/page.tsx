@@ -139,6 +139,32 @@ export default function JobSeekerPlansPage() {
         if (!orderRes.ok) throw new Error("Failed to create payment order.");
         const order = await orderRes.json();
 
+        // Handle Free Activation (100% discount)
+        if (order.isFree) {
+            const verifyRes = await fetch("/api/payments/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    razorpay_order_id: order.id,
+                    razorpay_payment_id: `free_pay_${Date.now()}`,
+                    razorpay_signature: "free_sig",
+                    userId: user.id,
+                    planId: selectedPlan.id,
+                    couponCode: appliedCoupon?.code
+                }),
+            });
+
+            if (verifyRes.ok) {
+                toast({ title: "Activated Successfully!", description: `The ${selectedPlan.name} is now active on your account.` });
+                const updatedProfile = await fetchUserProfile(user.id);
+                setUser(updatedProfile);
+                router.push("/");
+            } else {
+                throw new Error("Verification failed.");
+            }
+            return;
+        }
+
         const options = {
             key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || order.key_id,
             amount: order.amount,

@@ -10,8 +10,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Missing required verification fields' }, { status: 400 });
     }
 
+    const isFreeOrder = razorpay_order_id.startsWith('free_order_');
     const sign = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSign = crypto
+    const expectedSign = isFreeOrder ? razorpay_signature : crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || 'secret_placeholder')
       .update(sign.toString())
       .digest("hex");
@@ -41,12 +42,18 @@ export async function POST(request: Request) {
       };
 
       // Handle specific plan effects
-      if (planId === 'basic' || planId === 'premium') {
-          updateData.planExpiresAt = isoExpiration;
+      if (planId === 'basic' || planId === 'premium' || planId === 'pro') {
+          const validityDays = planId === 'pro' ? 90 : 30;
+          const proExpiration = new Date();
+          proExpiration.setDate(now.getDate() + validityDays);
+          updateData.planExpiresAt = proExpiration.toISOString();
       }
       
-      if (planId === 'talent' || planId === 'premium') {
-          updateData.talentSearchExpiresAt = isoExpiration;
+      if (planId === 'talent' || planId === 'premium' || planId === 'pro') {
+          const talentDays = planId === 'pro' ? 90 : 30;
+          const talentExp = new Date();
+          talentExp.setDate(now.getDate() + talentDays);
+          updateData.talentSearchExpiresAt = talentExp.toISOString();
       }
 
       if (planId === 'jobseeker_premium') {
@@ -55,7 +62,10 @@ export async function POST(request: Request) {
           updateData.planExpiresAt = jsExpiration.toISOString();
       }
 
-      let finalAmount = planId === 'jobseeker_premium' ? 199 : (planId === 'basic' ? 199 : planId === 'premium' ? 1499 : 499);
+      let finalAmount = planId === 'jobseeker_premium' ? 199 : 
+                        (planId === 'basic' ? 199 : 
+                         planId === 'premium' ? 1499 : 
+                         planId === 'pro' ? 4999 : 499);
       let appliedCouponString = undefined;
 
       if (couponCode) {
