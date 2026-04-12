@@ -1,16 +1,5 @@
-
 import { NextResponse } from 'next/server';
-import { db } from '@/firebase/admin-config';
-import type { Application, Job } from '@/lib/types';
-import { FieldValue } from 'firebase-admin/firestore';
-import type { firestore as adminFirestore } from 'firebase-admin';
-
-const statusMap: { [key: number]: string } = {
-    1: 'Applied',
-    2: 'Profile Viewed',
-    3: 'Not Suitable',
-    4: 'Selected',
-};
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function GET(request: Request) {
   try {
@@ -21,72 +10,62 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // 1. Fetch on-the-fly notifications from applications
-    const applicationsRef = db.collection('applications');
-    const q = applicationsRef.where('userId', '==', userId).where('statusId', 'in', [2, 3, 4]);
-    const querySnapshot = await q.get();
+    // Resolve user_pk from userId (can be UUID or numeric string)
+    const isNumericId = /^\d+$/.test(userId);
+    let userPk = null;
 
-    let appNotifications: any[] = [];
-    if (!querySnapshot.empty) {
-        appNotifications = await Promise.all(
-            querySnapshot.docs.map(async (doc) => {
-                const appData = doc.data() as Application & { 
-                    viewedAt?: adminFirestore.Timestamp; 
-                    updatedAt?: adminFirestore.Timestamp;
-                    appliedAt?: adminFirestore.Timestamp;
-                };
-
-                let jobTitle = 'a job';
-                if (appData.jobId) {
-                    const jobDoc = await db.collection('jobs').doc(appData.jobId).get();
-                    if (jobDoc.exists) {
-                        jobTitle = (jobDoc.data() as Job).title;
-                    }
-                }
-
-                let message = '';
-                switch (appData.statusId) {
-                    case 2: message = `Your profile was viewed for the ${jobTitle} position.`; break;
-                    case 3: message = `Your application for ${jobTitle} was reviewed. The company decided to move forward with other candidates at this time.`; break;
-                    case 4: message = `Congratulations! You have been selected for the ${jobTitle} position.`; break;
-                    default: message = `Your application status for ${jobTitle} has been updated.`;
-                }
-
-                const ts = appData.updatedAt || appData.viewedAt || appData.appliedAt;
-
-                return {
-                    id: doc.id,
-                    userId,
-                    jobId: appData.jobId,
-                    jobTitle: jobTitle,
-                    message: message,
-                    statusName: statusMap[appData.statusId],
-                    timestamp: ts ? ts.toDate().toISOString() : new Date().toISOString(),
-                    type: 'application_status'
-                };
-            })
-        );
+    if (isNumericId) {
+        userPk = parseInt(userId);
+    } else {
+        // Resolve UUID to numeric PK
+        let { data: seeker } = await supabaseAdmin.from('jobseekers').select('id').eq('uuid', userId).maybeSingle();
+        if (seeker) {
+            userPk = seeker.id;
+        } else {
+            let { data: recruiter } = await supabaseAdmin.from('recruiters').select('id').eq('uuid', userId).maybeSingle();
+            if (recruiter) {
+                userPk = recruiter.id;
+            } else {
+                let { data: employee } = await supabaseAdmin.from('employees').select('id').eq('uuid', userId).maybeSingle();
+                if (employee) userPk = employee.id;
+            }
+        }
     }
 
-    // 2. Fetch persistent notifications from notifications collection
-    const notificationsRef = db.collection('notifications');
-    const notifSnapshot = await notificationsRef.where('userId', '==', userId).get();
-    
-    const persistentNotifications = notifSnapshot.docs.map(doc => {
-        const data = doc.data();
-        const ts = data.createdAt as adminFirestore.Timestamp;
-        return {
-            id: doc.id,
-            ...data,
-            timestamp: ts ? ts.toDate().toISOString() : new Date().toISOString(),
-        };
-    });
+    if (!userPk) return NextResponse.json([]);
 
-    // Merge and sort
-    const allNotifications = [...appNotifications, ...persistentNotifications];
-    allNotifications.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    // Fetch notifications: Support numeric user_pk or UUID user_id
+    // Explicitly select columns to avoid schema cache issues (e.g., phantom 'viewerId')
+    const { data: notifications, error } = await supabaseAdmin
+        .from('notifications')
+        .select(`
+            id, 
+            user_pk, message, type, job_pk, 
+            created_at, 
+            is_read,
+            jobs (uuid, title)
+        `)
+        .eq('user_pk', userPk) // Supports both UUID and BIGINT lookup
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
     
-    return NextResponse.json(allNotifications);
+    // Map to frontend structure
+    const formattedNotifications = (notifications || []).map((n: any) => ({
+        id: n.id,
+        userId: n.user_id || n.user_pk, // Return UUID if available, fallback to PK
+        userPk: n.user_pk,
+        message: n.message,
+        type: n.type,
+        jobId: n.jobs?.uuid,
+        jobPk: n.job_pk,
+        jobTitle: n.jobs?.title,
+        statusName: n.type === 'application_status' ? 'Updated' : undefined,
+        timestamp: n.created_at,
+        isRead: n.is_read
+    }));
+
+    return NextResponse.json(formattedNotifications);
 
   } catch (e: any) {
     console.error('[API_NOTIFICATIONS_GET] Error:', e);
@@ -97,23 +76,63 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { userId, message, type, ...rest } = body;
+        const { userId, message, type, jobId, ...rest } = body;
 
         if (!userId || !message) {
             return NextResponse.json({ error: 'User ID and message are required' }, { status: 400 });
         }
 
-        const notificationData = {
-            userId,
-            message,
+        // 1. Resolve internal numeric PKs
+        const isNumericUser = /^\d+$/.test(userId);
+        const isNumericJob = jobId && /^\d+$/.test(jobId);
+
+        let jobPk = null;
+        if (jobId) {
+            const { data: jobData } = await (isNumericJob 
+                ? supabaseAdmin.from('jobs').select('id').eq('id', parseInt(jobId))
+                : supabaseAdmin.from('jobs').select('id').eq('uuid', jobId)
+            ).maybeSingle();
+            if (jobData) jobPk = jobData.id;
+        }
+
+        // Try to find user in any role table
+        let userProfileId = null;
+        const tables = ['jobseekers', 'recruiters', 'employees'];
+        
+        for (const table of tables) {
+            const { data: profile } = await (isNumericUser
+                ? supabaseAdmin.from(table).select('id').eq('id', parseInt(userId))
+                : supabaseAdmin.from(table).select('id').eq('uuid', userId)
+            ).maybeSingle();
+            
+            if (profile) {
+                userProfileId = profile.id;
+                break;
+            }
+        }
+        
+        if (!userProfileId) {
+            return NextResponse.json({ error: 'User not found to send notification' }, { status: 404 });
+        }
+        
+        const notificationData: any = {
+            user_pk: userProfileId, // Internal BIGINT
+            job_pk: jobPk,         // Internal BIGINT
+            message: message,
             type: type || 'generic',
-            createdAt: FieldValue.serverTimestamp(),
-            ...rest
+            created_at: new Date().toISOString(),
+            is_read: body.isRead || false
         };
 
-        const docRef = await db.collection('notifications').add(notificationData);
+        const { data: createdNotif, error } = await supabaseAdmin
+            .from('notifications')
+            .insert([notificationData])
+            .select('id,  message, type,  created_at, is_read')
+            .single();
         
-        return NextResponse.json({ id: docRef.id, ...notificationData }, { status: 201 });
+        if (error) throw error;
+
+        return NextResponse.json(createdNotif, { status: 201 });
     } catch (e: any) {
         console.error('[API_NOTIFICATIONS_POST] Error:', e);
         return NextResponse.json({ error: 'Failed to create notification', details: e.message }, { status: 500 });

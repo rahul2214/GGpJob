@@ -1,13 +1,14 @@
-
 import { NextResponse } from 'next/server';
-import { db } from '@/firebase/admin-config';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function GET() {
   try {
-    const typesCol = db.collection('workplace_types');
-    const q = typesCol.orderBy('id');
-    const typeSnapshot = await q.get();
-    const workplaceTypes = typeSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const { data: workplaceTypes, error } = await supabaseAdmin
+      .from('workplace_types')
+      .select('*')
+      .order('name');
+    
+    if (error) throw error;
     return NextResponse.json(workplaceTypes);
   } catch (e: any) {
     console.error(e);
@@ -21,17 +22,16 @@ export async function POST(request: Request) {
     if (!name) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
+
+    const { data: workplaceType, error } = await supabaseAdmin
+      .from('workplace_types')
+      .insert([{ name }])
+      .select()
+      .single();
+
+    if (error) throw error;
     
-    const snapshot = await db.collection('workplace_types').orderBy('id', 'desc').limit(1).get();
-    let newId = 1;
-    if (!snapshot.empty) {
-      newId = snapshot.docs[0].data().id + 1;
-    }
-    
-    const docRef = db.collection("workplace_types").doc();
-    await docRef.set({ id: newId, name });
-    
-    return NextResponse.json({ id: docRef.id, name, newId }, { status: 201 });
+    return NextResponse.json(workplaceType, { status: 201 });
   } catch (e: any) {
     console.error(e);
     return NextResponse.json({ error: 'Failed to create workplace type', details: e.message }, { status: 500 });

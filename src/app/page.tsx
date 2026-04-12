@@ -62,10 +62,8 @@ export default function Home() {
         dashboardComponent = <RecruiterDashboard />;
         break;
       case "Employee":
-        if (!user.isPaid) {
-            router.push('/company/payment');
-            return null;
-        }
+        // Employees are added by the company and covered by the company's plan.
+        // They do NOT need to pay separately.
         dashboardComponent = <EmployeeDashboard />;
         break;
       case "Admin":

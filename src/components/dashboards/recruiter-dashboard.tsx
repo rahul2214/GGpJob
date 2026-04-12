@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Users, Share2, Zap, Calendar, LayoutDashboard, Crown, Star, Search } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Users, Share2, Zap, Calendar, LayoutDashboard, Crown, Star, Search, TrendingUp, Briefcase } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import {
   DropdownMenu,
@@ -44,7 +44,7 @@ export default function RecruiterDashboard() {
     setLoading(true);
     try {
       // Use cache: 'no-store' to ensure recruiters always see their latest job list
-      const res = await fetch(`/api/jobs?recruiterId=${user.id}&isReferral=false&fresh=true`, { cache: 'no-store' });
+      const res = await fetch(`/api/jobs?recruiterId=${user.uuid}&isReferral=false&fresh=true`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if(Array.isArray(data)) {
@@ -75,12 +75,12 @@ export default function RecruiterDashboard() {
   const handleDeleteJob = async () => {
     if (!jobToDelete) return;
     
-    const idToDelete = jobToDelete.id;
-    // Optimistic UI update: remove from local state immediately
-    setPostedJobs(prev => prev.filter(job => job.id !== idToDelete));
+    const uuidToDelete = jobToDelete.uuid;
+    // Optimistic UI update
+    setPostedJobs(prev => prev.filter(job => job.uuid !== uuidToDelete));
     
     try {
-      const response = await fetch(`/api/jobs/${idToDelete}`, {
+      const response = await fetch(`/api/jobs/${uuidToDelete}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -140,11 +140,13 @@ export default function RecruiterDashboard() {
       </Card>
     );
   }
+  const totalApplicants = postedJobs.reduce((acc, job) => acc + (job.applicantCount || 0), 0);
+  const totalSelected = postedJobs.reduce((acc, job) => acc + (job.selectedApplicantCount || 0), 0);
 
   return (
     <>
       {user && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8 mt-2">
             <Card className="border-none shadow-lg shadow-indigo-100 bg-gradient-to-br from-indigo-600 to-indigo-700 text-white">
                 <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
@@ -165,20 +167,58 @@ export default function RecruiterDashboard() {
             <Card className="border-none shadow-md bg-white border border-slate-100">
                 <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
-                        <div className="p-2 bg-emerald-100 rounded-lg">
-                            <LayoutDashboard className="w-5 h-5 text-emerald-600" />
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                            <Briefcase className="w-5 h-5 text-blue-600" />
                         </div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Job Usage</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Jobs</div>
                     </div>
                     <div className="flex items-baseline gap-2 mb-2">
                         <span className="text-3xl font-black text-slate-900">{postedJobs.length}</span>
-                        <span className="text-slate-400 font-bold text-sm">/ {user.planType === 'pro' ? '50' : (user.planType === 'premium' ? '10' : '1')} Jobs</span>
+                        <span className="text-slate-400 font-bold text-sm">/ {user.planType === 'pro' ? '50' : (user.planType === 'premium' ? '10' : '1')}</span>
                     </div>
-                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                         <div 
-                            className="bg-emerald-500 h-full transition-all duration-500" 
+                            className="bg-blue-500 h-full transition-all duration-500" 
                             style={{ width: `${Math.min((postedJobs.length / (user.planType === 'pro' ? 50 : (user.planType === 'premium' ? 10 : 1))) * 100, 100)}%` }}
                         />
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="border-none shadow-md bg-white border border-slate-100">
+                <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="p-2 bg-emerald-100 rounded-lg">
+                            <LayoutDashboard className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Appls</div>
+                    </div>
+                    <div className="flex items-baseline gap-2 mb-2">
+                        <span className="text-3xl font-black text-slate-900">{totalApplicants}</span>
+                        <span className="text-slate-400 font-bold text-sm">Applications</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Live Tracking</span>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="border-none shadow-md bg-white border border-slate-100">
+                <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="p-2 bg-indigo-100 rounded-lg">
+                            <TrendingUp className="w-5 h-5 text-indigo-600" />
+                        </div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Selections</div>
+                    </div>
+                    <div className="flex items-baseline gap-2 mb-2">
+                        <span className="text-3xl font-black text-slate-900">{totalSelected}</span>
+                        <span className="text-slate-400 font-bold text-sm">Candidates</span>
+                    </div>
+                     <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                      <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Hiring Success</span>
                     </div>
                 </CardContent>
             </Card>
@@ -198,15 +238,8 @@ export default function RecruiterDashboard() {
                         <span className="text-slate-400 font-bold text-sm">Days Left</span>
                     </div>
                     <p className="text-[10px] text-slate-400 font-medium">
-                        Valid until {user.planExpiresAt ? format(new Date(user.planExpiresAt), "MMM dd, yyyy") : format(new Date().setDate(new Date().getDate() + 30), "MMM dd, yyyy")}
+                        Until {user.planExpiresAt ? format(new Date(user.planExpiresAt), "MMM dd, yyyy") : format(new Date().setDate(new Date().getDate() + 30), "MMM dd, yyyy")}
                     </p>
-                    <div className="mt-4 flex gap-2">
-                        <Button asChild variant="ghost" size="sm" className="h-7 text-[10px] font-black uppercase text-indigo-600 hover:bg-indigo-50 px-0">
-                            <Link href="/company/payment?upgrade=true" className="flex items-center gap-1">
-                                Upgrade Plan <Zap className="w-3 h-3 fill-indigo-600" />
-                            </Link>
-                        </Button>
-                    </div>
                 </CardContent>
             </Card>
         </div>
@@ -233,14 +266,7 @@ export default function RecruiterDashboard() {
             <CardTitle>My Job Postings</CardTitle>
             <CardDescription>Manage your company's open positions.</CardDescription>
           </div>
-          {!(user?.planType === 'basic' && postedJobs.length >= 1) && (
-            <Button asChild>
-              <Link href="/jobs/post">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Post a New Job
-              </Link>
-            </Button>
-          )}
+         
         </CardHeader>
         <CardContent>
           <Table>
@@ -250,24 +276,36 @@ export default function RecruiterDashboard() {
                 <TableHead>Company</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Date Posted</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Applicants</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {postedJobs.map((job) => (
-                <TableRow key={job.id}>
-                  <TableCell className="font-medium">{job.title}</TableCell>
-                  <TableCell className="text-muted-foreground">{job.companyName || '—'}</TableCell>
-                  <TableCell>{job.location}</TableCell>
-                  <TableCell>{format(new Date(job.postedAt), "PPP")}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
-                      Open
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{job.applicantCount}</TableCell>
+                 <TableHead>Status</TableHead>
+                 <TableHead>Applicants</TableHead>
+                 <TableHead>Selected</TableHead>
+                 <TableHead className="text-right">Actions</TableHead>
+               </TableRow>
+             </TableHeader>
+             <TableBody>
+               {postedJobs.map((job) => (
+                 <TableRow key={job.id}>
+                   <TableCell className="font-medium">{job.title}</TableCell>
+                   <TableCell className="text-muted-foreground">{job.companyName || '—'}</TableCell>
+                   <TableCell className="text-xs">{job.location}</TableCell>
+                   <TableCell className="text-xs">{format(new Date(job.postedAt), "dd MMM yyyy")}</TableCell>
+                   <TableCell>
+                     <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200 text-[10px]">
+                       Open
+                     </Badge>
+                   </TableCell>
+                   <TableCell>
+                     <div className="flex items-center gap-1.5 font-medium">
+                        <Users className="w-3 h-3 text-slate-400" />
+                        {job.applicantCount || 0}
+                     </div>
+                   </TableCell>
+                   <TableCell>
+                      <div className="flex items-center gap-1.5 font-bold text-indigo-600">
+                        <TrendingUp className="w-3 h-3" />
+                        {job.selectedApplicantCount || 0}
+                      </div>
+                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -284,7 +322,7 @@ export default function RecruiterDashboard() {
                          </DropdownMenuItem>
                           <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                             <Share2 className="mr-2 h-4 w-4" />
-                            <ShareButton jobId={job.id} jobTitle={job.title} companyName={job.companyName} />
+                            <ShareButton jobId={job.uuid} jobTitle={job.title} companyName={job.companyName} />
                          </DropdownMenuItem>
                          <DropdownMenuItem asChild>
                            <Link href={`/jobs/edit/${job.id}`}>

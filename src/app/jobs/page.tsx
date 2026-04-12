@@ -41,7 +41,6 @@ const pageConfig = {
 function JobSearchContent() {
   const searchParams = useSearchParams();
   const { user } = useUser();
-  const [userApplications, setUserApplications] = useState<Application[]>([]);
 
   const params = useMemo(() => {
     const p: Record<string, any> = {};
@@ -53,8 +52,8 @@ function JobSearchContent() {
         p[key] = value;
       }
     });
-    if (user?.id) {
-        p.userId = user.id;
+    if (user?.uuid) {
+        p.userId = user.uuid;
     }
     return p;
   }, [searchParams, user?.id]);
@@ -67,29 +66,7 @@ function JobSearchContent() {
   const config = pageConfig[mode];
   const Icon = config.icon;
 
-  useEffect(() => {
-    const fetchApplications = async () => {
-      if (user) {
-        try {
-          const res = await fetch(`/api/applications?userId=${user.id}`);
-          if (res.ok) {
-            const appsData = await res.json();
-            setUserApplications(Array.isArray(appsData) ? appsData : []);
-          }
-        } catch (error) {
-          console.error("Failed to fetch applications", error);
-        }
-      }
-    };
-    fetchApplications();
-  }, [user]);
-
-
-  const appliedJobIds = useMemo(() => new Set(userApplications.map((app) => app.jobId)), [userApplications]);
-  const filteredJobs = useMemo(
-    () => (user?.role === "Job Seeker" ? jobs?.filter((job) => !appliedJobIds.has(job.id)) : jobs),
-    [jobs, appliedJobIds, user]
-  );
+  const jobsToDisplay = jobs || [];
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -138,7 +115,7 @@ function JobSearchContent() {
                 </span>
                 {!isLoading && (
                   <span className="text-slate-500 text-sm">
-                    {filteredJobs?.length || 0} results
+                    {jobsToDisplay.length} results
                   </span>
                 )}
               </div>
@@ -179,10 +156,10 @@ function JobSearchContent() {
             )}
 
             {/* Job Cards */}
-            {!isLoading && !isError && filteredJobs && filteredJobs.length > 0 && (
+            {!isLoading && !isError && jobsToDisplay.length > 0 && (
               <AnimatePresence>
                 <div className="space-y-3">
-                  {filteredJobs.map((job, i) => (
+                  {jobsToDisplay.map((job, i) => (
                     <motion.div
                       key={job.id}
                       initial={{ opacity: 0, y: 14 }}
@@ -192,7 +169,7 @@ function JobSearchContent() {
                     >
                       <JobCard
                         job={job}
-                        isApplied={appliedJobIds.has(job.id)}
+                        isApplied={false}
                                             />
                     </motion.div>
                   ))}
@@ -201,7 +178,7 @@ function JobSearchContent() {
             )}
 
             {/* Empty State */}
-            {!isLoading && !isError && (!filteredJobs || filteredJobs.length === 0) && (
+            {!isLoading && !isError && jobsToDisplay.length === 0 && (
               <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }}
                 className="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-14 text-center"
               >

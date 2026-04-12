@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
-import { auth, db } from '@/firebase/admin-config';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder',
@@ -15,38 +15,53 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User ID, Plan ID, and Amount are required' }, { status: 400 });
     }
 
-    // Get user from auth to check role
-    const userRecord = await auth.getUser(userId);
-    let role = userRecord.customClaims?.role;
+    console.log(`[PAYMENT_ORDER_CREATE] Checking profile for userId: ${userId}`);
+    
+    // 1. Check jobseekers
+    let { data: profile, error: profileError } = await supabaseAdmin
+        .from('jobseekers')
+        .select('id, role')
+        .eq('uuid', userId)
+        .maybeSingle();
+    
+    if (profile) console.log(`[PAYMENT_ORDER_CREATE] Found in jobseekers: ${profile.role}`);
 
-    // Fallback: If role is missing from custom claims (common for legacy users or desynced sessions), check Firestore
-    if (!role) {
-        const [recDoc, empDoc, userDoc] = await Promise.all([
-            db.collection('recruiters').doc(userId).get(),
-            db.collection('employees').doc(userId).get(),
-            db.collection('users').doc(userId).get()
-        ]);
+    // 2. Check recruiters if not found
+    if (!profile) {
+        const { data: recruiter, error: recError } = await supabaseAdmin
+            .from('recruiters')
+            .select('id')
+            .eq('uuid', userId)
+            .maybeSingle();
         
-        if (recDoc.exists) role = 'Recruiter';
-        else if (empDoc.exists) role = 'Employee';
-        else if (userDoc.exists) {
-            const userData = userDoc.data();
-            role = userData?.role || 'Job Seeker';
-        }
-
-        // Proactively set the custom claim now to fix future requests
-        if (role) {
-            try {
-                await auth.setCustomUserClaims(userId, { role });
-            } catch (claimErr) {
-                console.error('[PAYMENT_ORDER_CREATE] Non-fatal: Failed to sync claims:', claimErr);
-            }
+        if (recError) console.error(`[PAYMENT_ORDER_CREATE] Recruiter lookup error:`, recError);
+        if (recruiter) {
+            console.log(`[PAYMENT_ORDER_CREATE] Found in recruiters table`);
+            profile = { role: 'Recruiter' } as any;
         }
     }
 
-    if (role !== 'Recruiter' && role !== 'Employee' && role !== 'Job Seeker') {
-      return NextResponse.json({ error: 'Only authorized users can purchase plans.' }, { status: 403 });
+    // 3. Check employees if still not found
+    if (!profile) {
+        const { data: employee, error: empError } = await supabaseAdmin
+            .from('employees')
+            .select('id')
+            .eq('uuid', userId)
+            .maybeSingle();
+        
+        if (empError) console.error(`[PAYMENT_ORDER_CREATE] Employee lookup error:`, empError);
+        if (employee) {
+            console.log(`[PAYMENT_ORDER_CREATE] Found in employees table`);
+            profile = { role: 'Employee' } as any;
+        }
     }
+
+    if (!profile) {
+        console.error(`[PAYMENT_ORDER_CREATE] No profile found in any table for userId: ${userId}`);
+        return NextResponse.json({ error: 'User profile not found. Please log in again.' }, { status: 404 });
+    }
+
+    const { role } = profile;
 
     // Validate amount based on planId (Backend Security)
     const validPlans: Record<string, number> = {
@@ -64,20 +79,22 @@ export async function POST(request: Request) {
 
     let expectedAmount = baseAmount;
     
-    // Apply server-side coupon validation directly before transaction creation
+    // Apply server-side coupon validation
     if (couponCode) {
-         const snapshot = await db.collection('coupons')
-                                  .where('code', '==', couponCode.toUpperCase().trim())
-                                  .get();
-         if (!snapshot.empty) {
-             const coupon = snapshot.docs[0].data();
-             const isValid = new Date(coupon.expiresAt) >= new Date() && 
-                             coupon.currentUses < coupon.maxUses && 
-                             coupon.isActive &&
-                             (coupon.applicablePlan === 'all' || coupon.applicablePlan === planId || !coupon.applicablePlan);
+         const { data: coupon, error: couponError } = await supabaseAdmin
+            .from('coupons')
+            .select('*')
+            .eq('code', couponCode.toUpperCase().trim())
+            .maybeSingle();
+
+         if (coupon) {
+             const isValid = new Date(coupon.expires_at) >= new Date() && 
+                             coupon.current_uses < coupon.max_uses && 
+                             coupon.is_active &&
+                             (coupon.applicable_plan === 'all' || coupon.applicable_plan === planId || !coupon.applicable_plan);
              
              if (isValid) {
-                 expectedAmount = Math.max(0, Math.round(baseAmount * (1 - coupon.discountPercent / 100)));
+                 expectedAmount = Math.max(0, Math.round(baseAmount * (1 - coupon.discount_percent / 100)));
              }
          }
     }

@@ -67,9 +67,9 @@ export default function ManageJobsPage() {
   const handleDeleteJob = async () => {
     if (!jobToDelete) return;
     
-    const idToDelete = jobToDelete.id;
+    const idToDelete = jobToDelete.uuid;
     // Optimistic UI update
-    setJobs(prev => prev.filter(job => job.id !== idToDelete));
+    setJobs(prev => prev.filter(job => job.uuid !== idToDelete));
     
     try {
       const response = await fetch(`/api/jobs/${idToDelete}`, {
@@ -136,7 +136,7 @@ export default function ManageJobsPage() {
         </TableHeader>
         <TableBody>
           {filteredJobs.map((job) => (
-            <TableRow key={job.id}>
+            <TableRow key={job.uuid}>
               <TableCell className="font-medium">{job.title}</TableCell>
               <TableCell>{job.companyName}</TableCell>
               <TableCell>
@@ -156,14 +156,14 @@ export default function ManageJobsPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                      <DropdownMenuItem asChild>
-                       <Link href={`/jobs/${job.id}?view=admin`}>
+                       <Link href={`/jobs/${job.uuid}?view=admin`}>
                           <Eye className="mr-2 h-4 w-4" />
                           View Details
                        </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                       <Share2 className="mr-2 h-4 w-4" />
-                      <ShareButton jobId={job.id} jobTitle={job.title} companyName={job.companyName} />
+                      <ShareButton jobId={job.uuid} jobTitle={job.title} companyName={job.companyName} />
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setJobToDelete(job)} className="text-destructive">
                       <Trash2 className="mr-2 h-4 w-4" />

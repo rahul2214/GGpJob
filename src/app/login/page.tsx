@@ -30,8 +30,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { useEffect, useState } from "react";
-import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendEmailVerification, sendPasswordResetEmail } from "firebase/auth";
-import { firebaseApp } from "@/firebase/config";
+import { supabase } from "@/lib/supabase-client";
 import { motion } from "framer-motion";
 
 const formSchema = z.object({
@@ -84,26 +83,15 @@ export default function LoginPage() {
   const handleResendVerification = async (email: string) => {
     setIsResending(true);
     try {
-      const auth = getAuth(firebaseApp);
-      const { password } = form.getValues();
-      if (!password) {
-        toast({ title: 'Password Required', description: 'Please enter your password to resend the verification email.', variant: 'destructive' });
-        return;
-      }
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-      if (firebaseUser && !firebaseUser.emailVerified) {
-        const actionCodeSettings = { url: window.location.origin + "/login", handleCodeInApp: true };
-        await sendEmailVerification(firebaseUser, actionCodeSettings);
-        toast({ title: 'Verification Email Sent', description: 'A new verification link has been sent. Please check your inbox and spam folder.' });
-      } else if (firebaseUser?.emailVerified) {
-        toast({ title: 'Already Verified', description: 'Your email is already verified. You can log in normally.' });
-      }
-      await auth.signOut();
+      const res = await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, redirectUrl: window.location.origin + '/login' }),
+      });
+      if (!res.ok) throw new Error('Failed to resend');
+      toast({ title: 'Verification Email Sent', description: 'A new verification link has been sent via Firebase. Please check your inbox.' });
     } catch (error: any) {
-      let msg = "Failed to resend verification. Please check your password.";
-      if (error.code === 'auth/too-many-requests') msg = "Too many attempts. Please try again later.";
-      toast({ title: 'Error', description: msg, variant: 'destructive' });
+      toast({ title: 'Error', description: error.message || 'Failed to resend verification.', variant: 'destructive' });
     } finally {
       setIsResending(false);
     }
@@ -111,77 +99,58 @@ export default function LoginPage() {
 
   const onEmailSubmit = async (data: LoginFormValues) => {
     try {
-      const auth = getAuth(firebaseApp);
-      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      const firebaseUser = userCredential.user;
-      if (!firebaseUser.emailVerified) {
-        await auth.signOut();
-        toast({
-          title: "Email Not Verified",
-          description: "Please verify your email address before logging in.",
-          variant: "destructive",
-          duration: 10000,
-          action: (
-            <Button variant="outline" size="sm" onClick={() => handleResendVerification(data.email)} disabled={isResending}>
-              {isResending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : "Resend Email"}
-            </Button>
-          )
-        });
-        return;
-      }
-      const res = await fetch(`/api/users?uid=${firebaseUser.uid}`);
-      if (res.ok) {
-        const profile = await res.json();
-        if (profile.role !== 'Job Seeker') {
-          await auth.signOut();
-          let portalName = "Company Login";
-          if (profile.role === 'Admin' || profile.role === 'Super Admin') portalName = "Admin Login";
-          toast({ title: "Access Denied", description: `This account is a ${profile.role}. Please use the ${portalName} page.`, variant: "destructive" });
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (error) {
+        if (error.message.includes("Email not confirmed")) {
+          toast({
+            title: "Email Not Verified",
+            description: "Please verify your email address before logging in.",
+            variant: "destructive",
+            duration: 10000,
+            action: (
+              <Button variant="outline" size="sm" onClick={() => handleResendVerification(data.email)} disabled={isResending}>
+                {isResending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : "Resend Email"}
+              </Button>
+            )
+          });
           return;
+        }
+        throw error;
+      }
+
+      if (authData.user) {
+        const res = await fetch(`/api/users?uid=${authData.user.id}`);
+        if (res.ok) {
+          const profile = await res.json();
+          if (profile.role !== 'Job Seeker') {
+            await supabase.auth.signOut();
+            let portalName = "Company Login";
+            if (profile.role === 'Admin' || profile.role === 'Super Admin') portalName = "Admin Login";
+            toast({ title: "Access Denied", description: `This account is a ${profile.role}. Please use the ${portalName} page.`, variant: "destructive" });
+            return;
+          }
         }
       }
     } catch (error: any) {
-      let errorMessage = "An unexpected error occurred.";
-      if (error.code) {
-        switch (error.code) {
-          case 'auth/user-not-found':
-          case 'auth/wrong-password':
-          case 'auth/invalid-credential':
-            errorMessage = 'Invalid email or password.';
-            break;
-          default:
-            errorMessage = error.message;
-        }
-      }
-      toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
+      toast({ title: "Login Failed", description: error.message || "Invalid email or password.", variant: "destructive" });
     }
   };
 
   const handleGoogleSignIn = async () => {
-    const auth = getAuth(firebaseApp);
-    const provider = new GoogleAuthProvider();
     try {
-      const userCredential = await signInWithPopup(auth, provider);
-      const firebaseUser = userCredential.user;
-      let profile = await fetchUserProfile(firebaseUser.uid);
-      if (!profile) profile = await createNewUserProfile(firebaseUser);
-      if (profile) {
-        if (profile.role !== 'Job Seeker') {
-          await auth.signOut();
-          toast({ title: "Access Denied", description: "Google Sign-In is only available for job seekers.", variant: "destructive" });
-          return;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/auth/callback',
         }
-        setUser(profile);
-        if (profile.domainId && profile.resumeUrl && profile.phone && profile.profileStats?.hasSkills) {
-          router.push("/");
-        } else {
-          router.push("/onboarding");
-        }
-      } else {
-        toast({ title: "Error", description: "Failed to load user profile.", variant: "destructive" });
-      }
+      });
+      if (error) throw error;
+      // In OAuth flow, page will redirect, so no need for further local logic here.
     } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') return;
       toast({ title: "Google Sign-In Failed", description: error.message || "An unexpected error occurred.", variant: "destructive" });
     }
   };
@@ -194,9 +163,17 @@ export default function LoginPage() {
     }
     setIsResettingPassword(true);
     try {
-      const auth = getAuth(firebaseApp);
-      await sendPasswordResetEmail(auth, email);
-      toast({ title: "Password Reset Email Sent", description: "Check your inbox for a link to reset your password." });
+      // Use Firebase to send password reset — bypasses Supabase email rate limits
+      const res = await fetch('/api/auth/password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, redirectUrl: window.location.origin + '/reset-password' }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to send password reset email.');
+      }
+      toast({ title: "Password Reset Email Sent", description: "Check your inbox for a link from Firebase to reset your password." });
       return true;
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to send password reset email.", variant: "destructive" });

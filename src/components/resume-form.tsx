@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -20,8 +19,6 @@ import { LoaderCircle, FileText, ExternalLink, UploadCloud, Paperclip } from "lu
 import { User } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
 import Link from "next/link";
-import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
-import { storage } from "@/firebase/config";
 import { Progress } from "./ui/progress";
 
 const formSchema = z.object({
@@ -58,56 +55,79 @@ export function ResumeForm({ user: initialUser }: ResumeFormProps) {
         return;
     }
     
-    // If a resume already exists, delete it before uploading a new one.
-    if (user.resumeUrl) {
-      try {
-        const oldResumeRef = ref(storage, user.resumeUrl);
-        await deleteObject(oldResumeRef);
-      } catch (error: any) {
-        // If deletion fails (e.g., file not found), log it but don't block the upload.
-        console.error("Failed to delete old resume, it might not exist.", error);
-      }
+    const file = data.resumeFile;
+    
+    // Check file size (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+        toast({ 
+            title: "File too large", 
+            description: "The selected resume exceeds the 2MB limit. Please upload a smaller file.", 
+            variant: "destructive" 
+        });
+        return;
     }
 
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.uuid}-${Date.now()}.${fileExt}`;
+    const filePath = `resumes/${user.uuid}/${fileName}`;
+    
+    setUploadProgress(10); // Start progress
+    
+    try {
+      // 1. Get presigned upload URL from our API
+      const presignedResponse = await fetch(`/api/users/${user.uuid}/resume/presigned`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+              fileName: file.name, 
+              contentType: file.type 
+          }),
+      });
 
-    const file = data.resumeFile;
-    const storageRef = ref(storage, `resumes/${user.id}/${file.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
+      if (!presignedResponse.ok) throw new Error("Failed to get upload authorization.");
+      const { url, r2Uri } = await presignedResponse.json();
+      
+      setUploadProgress(30);
 
-    uploadTask.on('state_changed',
-        (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            setUploadProgress(progress);
-        },
-        (error) => {
-            console.error("Upload failed:", error);
-            toast({ title: "Upload Failed", description: "Your resume could not be uploaded. Please try again.", variant: "destructive" });
-            setUploadProgress(null);
-        },
-        async () => {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            
-            try {
-                const response = await fetch(`/api/users/${user.id}/resume`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ resumeUrl: downloadURL }),
-                });
+      // 2. Upload directly to Cloudflare R2
+      const uploadResponse = await fetch(url, {
+          method: "PUT",
+          body: file,
+          headers: {
+              "Content-Type": file.type,
+          },
+      });
 
-                if (!response.ok) throw new Error("Failed to save resume URL.");
-                
-                const updatedData = await response.json();
-                setUser({ ...user, resumeUrl: updatedData.resumeUrl });
+      if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error("R2 Upload Error:", errorText);
+          throw new Error("Direct upload to Cloudflare failed. Please check CORS settings.");
+      }
+      
+      setUploadProgress(70);
 
-                toast({ title: "Resume Uploaded!", description: "Your new resume has been successfully saved." });
-            } catch (error) {
-                toast({ title: "Error", description: "Failed to save your new resume. Please try again.", variant: "destructive" });
-            } finally {
-                setUploadProgress(null);
-                reset();
-            }
-        }
-    );
+      // 3. Save R2 URI to profile via existing API
+      const response = await fetch(`/api/users/${user.uuid}/resume`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resumeUrl: r2Uri }),
+      });
+
+      if (!response.ok) throw new Error("Failed to save resume pointer to database.");
+      
+      const updatedData = await response.json();
+      setUser({ ...user, resumeUrl: updatedData.resume_url || updatedData.resumeUrl });
+
+      setUploadProgress(100);
+      toast({ title: "Resume Uploaded!", description: "Your resume was uploaded directly to secure storage." });
+      
+    } catch (error: any) {
+      console.error("Upload failed:", error);
+      toast({ title: "Upload Failed", description: error.message || "Your resume could not be uploaded. Please try again.", variant: "destructive" });
+    } finally {
+      setTimeout(() => setUploadProgress(null), 500);
+      reset();
+    }
   };
   
   const currentResumeUrl = user?.resumeUrl;
@@ -145,6 +165,16 @@ export function ResumeForm({ user: initialUser }: ResumeFormProps) {
                             onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
+                                    if (file.size > 2 * 1024 * 1024) {
+                                        toast({
+                                            title: "File too large",
+                                            description: "Resume must be less than 2MB.",
+                                            variant: "destructive"
+                                        });
+                                        e.target.value = ""; // Clear file
+                                        setValue("resumeFile", undefined);
+                                        return;
+                                    }
                                     setValue("resumeFile", file);
                                 }
                             }}

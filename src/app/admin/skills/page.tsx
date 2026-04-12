@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/contexts/user-context";
 import type { MasterSkill } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -38,6 +39,7 @@ import { Input } from "@/components/ui/input";
 
 export default function ManageSkillsPage() {
   const router = useRouter();
+  const { user, loading: userLoading } = useUser();
   const [skills, setSkills] = useState<MasterSkill[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSkillFormOpen, setIsSkillFormOpen] = useState(false);
@@ -62,8 +64,12 @@ export default function ManageSkillsPage() {
   };
 
   useEffect(() => {
+    if (!userLoading && (!user || (user.role !== 'Admin' && user.role !== 'Super Admin'))) {
+        router.replace('/');
+        return;
+    }
     fetchSkills();
-  }, []);
+  }, [user, userLoading, router]);
 
   const filteredSkills = useMemo(() => {
     return skills.filter(skill =>
@@ -90,9 +96,9 @@ export default function ManageSkillsPage() {
   };
   
   const handleDeleteSkill = async () => {
-    if (!skillToDelete) return;
+    if (!skillToDelete || !user) return;
     try {
-      const response = await fetch(`/api/skills/${skillToDelete.id}`, {
+      const response = await fetch(`/api/skills/${skillToDelete.id}?userId=${user.id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -109,7 +115,7 @@ export default function ManageSkillsPage() {
   };
 
   const renderContent = () => {
-    if (loading) {
+    if (userLoading || loading) {
       return (
         <Table>
           <TableHeader>

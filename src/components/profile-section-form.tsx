@@ -24,6 +24,7 @@ const educationSchema = z.object({
     fieldOfStudy: z.string().optional(),
     startDate: z.string().optional(),
     endDate: z.string().optional(),
+    grade: z.string().optional(),
     description: z.string().optional(),
     isCurrent: z.boolean().default(false).optional(),
 });
@@ -55,6 +56,22 @@ const languageSchema = z.object({
 
 const skillSchema = z.object({
     name: z.string().min(1, "Skill name is required"),
+    uuid: z.string().min(1, "Selection from list required"),
+    proficiencyLevel: z.preprocess(
+        (val) => (val === null || val === "") ? undefined : val,
+        z.enum(['beginner', 'intermediate', 'expert']).optional().default('beginner')
+    ),
+    yearsExperience: z.coerce.number().min(0, "Experience must be 0 or more").optional().default(0),
+});
+
+const personalDetailsSchema = z.object({
+    gender: z.string().optional(),
+    maritalStatus: z.string().optional(),
+    dateOfBirth: z.string().optional(),
+    category: z.string().optional(),
+    disabilityStatus: z.string().optional(),
+    militaryExperience: z.string().optional(),
+    careerBreak: z.string().optional(),
 });
 
 const schemas = {
@@ -63,18 +80,29 @@ const schemas = {
     projects: projectSchema,
     languages: languageSchema,
     skills: skillSchema,
+    personal: personalDetailsSchema,
 };
 
 const defaultValues = {
-    education: { institution: '', degree: '', fieldOfStudy: '', startDate: '', endDate: '', description: '', isCurrent: false },
+    education: {
+        institution: '',
+        degree: '',
+        fieldOfStudy: '',
+        startDate: '',
+        endDate: '',
+        grade: '',
+        description: '',
+        isCurrent: false,
+    },
     employment: { company: '', title: '', employmentType: 'Full-time' as const, location: '', startDate: '', endDate: '', description: '', isCurrent: false },
     projects: { name: '', description: '', url: '', startDate: '', endDate: '', isCurrent: false },
     languages: { language: '', proficiency: 'Beginner' as const },
-    skills: { name: '' },
+    skills: { name: '', uuid: '', proficiencyLevel: 'beginner' as const, yearsExperience: 0 },
+    personal: { gender: '', maritalStatus: '', dateOfBirth: '', category: '', disabilityStatus: '', militaryExperience: '', careerBreak: '' },
 };
 
-type FormData = z.infer<typeof educationSchema> | z.infer<typeof employmentSchema> | z.infer<typeof projectSchema> | z.infer<typeof languageSchema> | z.infer<typeof skillSchema>;
-type Section = 'education' | 'employment' | 'projects' | 'languages' | 'skills';
+type FormData = z.infer<typeof educationSchema> | z.infer<typeof employmentSchema> | z.infer<typeof projectSchema> | z.infer<typeof languageSchema> | z.infer<typeof skillSchema> | z.infer<typeof personalDetailsSchema>;
+type Section = 'education' | 'employment' | 'projects' | 'languages' | 'skills' | 'personal';
 
 interface ProfileSectionFormProps {
     currentSection: Section | null;
@@ -103,22 +131,20 @@ export const ProfileSectionForm = ({
                 if (!typedResult.errors.name) {
                     const typedName = (data as any).name;
 
-                    // 1. Must be from master list
                     const isValidSkill = masterSkills.some(s => s.name.toLowerCase() === typedName.toLowerCase());
                     if (!isValidSkill) {
                         return {
-                            values: {},
+                            values: data,
                             errors: { name: { type: "manual", message: "Please select a valid skill from the dropdown." } }
                         };
                     }
 
-                    // 2. Must not be a duplicate
                     const isDuplicate = existingData?.skills?.some(
-                        (s: any) => s.name.toLowerCase() === typedName.toLowerCase() && s.id !== editingItem?.id
+                        (s: any) => s.name.toLowerCase() === typedName.toLowerCase() && s.uuid !== editingItem?.uuid
                     );
                     if (isDuplicate) {
                         return {
-                            values: {},
+                            values: data,
                             errors: { name: { type: "manual", message: "This skill is already in your profile." } }
                         };
                     }
@@ -167,9 +193,10 @@ export const ProfileSectionForm = ({
                         <FormField control={form.control} name="institution" render={({ field }) => (<FormItem> <FormLabel>Institution</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem>)} />
                         <FormField control={form.control} name="degree" render={({ field }) => (<FormItem> <FormLabel>Degree</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem>)} />
                         <FormField control={form.control} name="fieldOfStudy" render={({ field }) => (<FormItem> <FormLabel>Field of Study</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+                        <FormField control={form.control} name="grade" render={({ field }) => (<FormItem> <FormLabel>Grade / CGPA</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem>)} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="startDate" render={({ field }) => (<FormItem> <FormLabel>Start Date</FormLabel> <FormControl><Input type="month" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
-                            <FormField control={form.control} name="endDate" render={({ field }) => (<FormItem> <FormLabel>End Date</FormLabel> <FormControl><Input type="month" {...field} disabled={isCurrent} /></FormControl> <FormMessage /> </FormItem>)} />
+                            <FormField control={form.control} name="startDate" render={({ field }) => (<FormItem> <FormLabel>Start Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+                            <FormField control={form.control} name="endDate" render={({ field }) => (<FormItem> <FormLabel>End Date</FormLabel> <FormControl><Input type="date" {...field} disabled={isCurrent} /></FormControl> <FormMessage /> </FormItem>)} />
                         </div>
                         <FormField control={form.control} name="isCurrent" render={({ field }) => (
                             <FormItem className="flex flex-row items-start space-x-3 space-y-0">
@@ -232,8 +259,8 @@ export const ProfileSectionForm = ({
                         <FormField control={form.control} name="name" render={({ field }) => (<FormItem> <FormLabel>Project Name</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem>)} />
                         <FormField control={form.control} name="url" render={({ field }) => (<FormItem> <FormLabel>Project URL</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem>)} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="startDate" render={({ field }) => (<FormItem> <FormLabel>Start Date</FormLabel> <FormControl><Input type="month" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
-                            <FormField control={form.control} name="endDate" render={({ field }) => (<FormItem> <FormLabel>End Date</FormLabel> <FormControl><Input type="month" {...field} disabled={isCurrent} /></FormControl> <FormMessage /> </FormItem>)} />
+                            <FormField control={form.control} name="startDate" render={({ field }) => (<FormItem> <FormLabel>Start Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+                            <FormField control={form.control} name="endDate" render={({ field }) => (<FormItem> <FormLabel>End Date</FormLabel> <FormControl><Input type="date" {...field} disabled={isCurrent} /></FormControl> <FormMessage /> </FormItem>)} />
                         </div>
                         <FormField control={form.control} name="isCurrent" render={({ field }) => (
                             <FormItem className="flex flex-row items-start space-x-3 space-y-0">
@@ -305,6 +332,7 @@ export const ProfileSectionForm = ({
                                                                 } else {
                                                                     form.clearErrors("name");
                                                                     form.setValue("name", skill.name);
+                                                                    form.setValue("uuid", skill.uuid);
                                                                     setSkillDropdownOpen(false);
                                                                 }
                                                             }}
@@ -327,6 +355,140 @@ export const ProfileSectionForm = ({
                                 <FormMessage />
                             </FormItem>
                         )} />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 animate-in fade-in slide-in-from-top-2">
+                            <FormField control={form.control} name="proficiencyLevel" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Proficiency Level</FormLabel>
+                                    <Select 
+                                        onValueChange={field.onChange} 
+                                        value={field.value || "beginner"}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select proficiency" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="beginner">Beginner</SelectItem>
+                                            <SelectItem value="intermediate">Intermediate</SelectItem>
+                                            <SelectItem value="expert">Expert</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+
+                            <FormField control={form.control} name="yearsExperience" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Years of Experience</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <Input type="number" min={0} {...field} />
+                                            <span className="absolute right-3 top-2 text-sm text-slate-400">Years</span>
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                        </div>
+                    </>
+                )}
+                {currentSection === 'personal' && (
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="gender" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Gender</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="Male">Male</SelectItem>
+                                            <SelectItem value="Female">Female</SelectItem>
+                                            <SelectItem value="Other">Other</SelectItem>
+                                            <SelectItem value="Prefer not to say">Prefer not to say</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
+                            )} />
+                            <FormField control={form.control} name="maritalStatus" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Marital Status</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Select marital status" /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="Single">Single</SelectItem>
+                                            <SelectItem value="Married">Married</SelectItem>
+                                            <SelectItem value="Other">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
+                            )} />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="dateOfBirth" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Date of Birth</FormLabel>
+                                    <FormControl><Input type="date" {...field} /></FormControl>
+                                </FormItem>
+                            )} />
+                            <FormField control={form.control} name="category" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Category</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="General">General</SelectItem>
+                                            <SelectItem value="OBC">OBC</SelectItem>
+                                            <SelectItem value="SC">SC</SelectItem>
+                                            <SelectItem value="ST">ST</SelectItem>
+                                            <SelectItem value="Other">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
+                            )} />
+                        </div>
+                        <div className="pt-4 border-t">
+                            <h3 className="text-sm font-semibold mb-3">Diversity and Inclusion</h3>
+                            <div className="space-y-4">
+                                <FormField control={form.control} name="disabilityStatus" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Disability Status</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="No">No</SelectItem>
+                                                <SelectItem value="Yes">Yes</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </FormItem>
+                                )} />
+                                <FormField control={form.control} name="militaryExperience" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Military Experience</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="No">No</SelectItem>
+                                                <SelectItem value="Yes">Yes</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </FormItem>
+                                )} />
+                                <FormField control={form.control} name="careerBreak" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Have you taken a career break?</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="No">No</SelectItem>
+                                                <SelectItem value="Yes">Yes</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </FormItem>
+                                )} />
+                            </div>
+                        </div>
                     </>
                 )}
                 <div className="flex justify-end gap-2 pt-4">

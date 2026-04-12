@@ -92,15 +92,15 @@ export default function JobSeekerPlansPage() {
          if (!user) return;
          setProcessing(plan.id);
          try {
-             const res = await fetch("/api/payments/activate-free", {
-                 method: "POST",
-                 headers: { "Content-Type": "application/json" },
-                 body: JSON.stringify({ userId: user.id }),
-             });
+            const res = await fetch("/api/payments/activate-free", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: user.uuid }),
+            });
              if (!res.ok) throw new Error("Failed to activate free plan.");
              
              toast({ title: "Plan Activated!", description: "Your free plan is now active." });
-             const updatedProfile = await fetchUserProfile(user.id);
+            const updatedProfile = await fetchUserProfile(user.uuid);
              setUser(updatedProfile);
              router.push("/");
          } catch (error: any) {
@@ -129,7 +129,7 @@ export default function JobSeekerPlansPage() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
-                userId: user.id, 
+                userId: user.uuid, 
                 planId: selectedPlan.id, 
                 amount: finalPrice,
                 couponCode: appliedCoupon?.code
@@ -148,7 +148,7 @@ export default function JobSeekerPlansPage() {
                     razorpay_order_id: order.id,
                     razorpay_payment_id: `free_pay_${Date.now()}`,
                     razorpay_signature: "free_sig",
-                    userId: user.id,
+                    userId: user.uuid,
                     planId: selectedPlan.id,
                     couponCode: appliedCoupon?.code
                 }),
@@ -156,7 +156,7 @@ export default function JobSeekerPlansPage() {
 
             if (verifyRes.ok) {
                 toast({ title: "Activated Successfully!", description: `The ${selectedPlan.name} is now active on your account.` });
-                const updatedProfile = await fetchUserProfile(user.id);
+               const updatedProfile = await fetchUserProfile(user.uuid);
                 setUser(updatedProfile);
                 router.push("/");
             } else {
@@ -179,7 +179,7 @@ export default function JobSeekerPlansPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     ...response,
-                    userId: user.id,
+                    userId: user.uuid,
                     planId: selectedPlan.id,
                     couponCode: appliedCoupon?.code
                 }),
@@ -187,7 +187,7 @@ export default function JobSeekerPlansPage() {
 
                 if (verifyRes.ok) {
                 toast({ title: "Activated Successfully!", description: `The ${selectedPlan.name} is now active on your account.` });
-                const updatedProfile = await fetchUserProfile(user.id);
+               const updatedProfile = await fetchUserProfile(user.uuid);
                 setUser(updatedProfile);
                 router.push("/");
                 } else {

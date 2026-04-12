@@ -26,8 +26,8 @@ import { LoaderCircle, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { useEffect } from "react";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { firebaseApp } from "@/firebase/config";
+import { supabase } from "@/lib/supabase-client";
+
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -63,39 +63,37 @@ export default function AdminLoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      const auth = getAuth(firebaseApp);
-      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      const firebaseUser = userCredential.user;
-      
-      // Explicitly check if the user exists in the admins collection
-      const res = await fetch(`/api/users?uid=${firebaseUser.uid}`);
-      if (res.ok) {
-          const profile = await res.json();
-          if (profile.role !== 'Admin' && profile.role !== 'Super Admin') {
-              await auth.signOut();
-              toast({
-                  title: "Access Denied",
-                  description: "This portal is restricted to administrators only.",
-                  variant: "destructive",
-              });
-              return;
-          }
-      } else {
-          await auth.signOut();
-          toast({
-              title: "Access Denied",
-              description: "Administrator profile not found.",
-              variant: "destructive",
-          });
-          return;
+      // Step 1: Sign in with Supabase Auth
+      const { data: { user: authUser }, error: authError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (authError) throw authError;
+      if (!authUser) throw new Error("Login failed. No user found.");
+
+      // Step 2: Verify this user exists in the admins table
+      const res = await fetch(`/api/admin/verify?uid=${authUser.id}`);
+      const result = await res.json();
+
+      if (!res.ok || !result.isAdmin) {
+        // Not an admin — sign them out immediately
+        await supabase.auth.signOut();
+        toast({
+          title: "Access Denied",
+          description: result.error || "This portal is restricted to administrators only.",
+          variant: "destructive",
+        });
+        return;
       }
-      
+
+      // Step 3: Success — redirect to dashboard
       router.push("/admin/dashboard");
+
     } catch (error: any) {
-      let errorMessage = "Invalid email or password.";
       toast({
         title: "Login Failed",
-        description: errorMessage,
+        description: error.message || "Invalid email or password.",
         variant: "destructive",
       });
     }

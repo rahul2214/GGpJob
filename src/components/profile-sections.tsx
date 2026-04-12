@@ -16,13 +16,14 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from './ui/badge';
 
 
-type Section = 'education' | 'employment' | 'projects' | 'languages' | 'skills';
+type Section = 'education' | 'employment' | 'projects' | 'languages' | 'skills' | 'personal';
 type ProfileData = {
     education: Education[],
     employment: Employment[],
     projects: Project[],
     languages: Language[],
     skills: Skill[],
+    personal: any | null,
 };
 
 interface ProfileSectionsProps {
@@ -31,7 +32,7 @@ interface ProfileSectionsProps {
 }
 
 export function ProfileSections({ userId, isEditable = false }: ProfileSectionsProps) {
-    const [data, setData] = useState<ProfileData>({ education: [], employment: [], projects: [], languages: [], skills: [] });
+    const [data, setData] = useState<ProfileData>({ education: [], employment: [], projects: [], languages: [], skills: [], personal: null });
     const [loading, setLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [currentSection, setCurrentSection] = useState<Section | null>(null);
@@ -52,6 +53,7 @@ export function ProfileSections({ userId, isEditable = false }: ProfileSectionsP
                 projects: fetchedData.projects || [],
                 languages: fetchedData.languages || [],
                 skills: fetchedData.skills || [],
+                personal: fetchedData.personal || null,
             });
         } catch (error) {
             console.error("Failed to fetch profile sections", error);
@@ -139,9 +141,14 @@ export function ProfileSections({ userId, isEditable = false }: ProfileSectionsP
     };
     
     const formatDate = (dateStr: string | undefined) => {
-        if (!dateStr) return 'Present';
-        const [year, month] = dateStr.split('-');
-        return format(new Date(Number(year), Number(month) - 1), 'MMM yyyy');
+        if (!dateStr || dateStr.toLowerCase() === 'present') return 'Present';
+        try {
+            const [year, month] = dateStr.split('-');
+            if (!year || !month) return 'Present';
+            return format(new Date(Number(year), Number(month) - 1), 'MMM yyyy');
+        } catch (e) {
+            return 'Present';
+        }
     }
 
     if(loading) return <div>Loading profile...</div>
@@ -204,6 +211,7 @@ export function ProfileSections({ userId, isEditable = false }: ProfileSectionsP
                                         )}
                                         <h3 className="font-semibold">{item.institution}</h3>
                                         <p className="text-sm">{item.degree}, {item.fieldOfStudy}</p>
+                                        {item.grade && <p className="text-sm font-medium">Grade: {item.grade}</p>}
                                         <p className="text-xs text-muted-foreground">{formatDate(item.startDate)} - {formatDate(item.endDate)}</p>
                                         {item.description && <p className="text-sm mt-2 whitespace-pre-wrap">{item.description}</p>}
                                     </div>
@@ -229,14 +237,21 @@ export function ProfileSections({ userId, isEditable = false }: ProfileSectionsP
                         <AccordionContent className="p-6 pt-0">
                             <div className="flex flex-wrap gap-2">
                                 {data.skills.map(item => (
-                                    <div key={item.id} className="relative group">
-                                         <Badge variant="secondary" className="text-sm py-1 pr-8">
+                                    <div key={item.uuid || item.id} className="relative group">
+                                         <Badge variant="secondary" className="text-sm py-1 pr-8 pl-3 flex items-center gap-2">
                                             {item.name}
+                                            {(item.proficiencyLevel || item.yearsExperience !== undefined) && (
+                                                <span className="text-[10px] text-muted-foreground border-l pl-2 flex items-center gap-1 opacity-70">
+                                                    {item.proficiencyLevel && <span className="capitalize">{item.proficiencyLevel}</span>}
+                                                    {item.proficiencyLevel && item.yearsExperience !== undefined && <span>·</span>}
+                                                    {item.yearsExperience !== undefined && <span>{item.yearsExperience} yrs</span>}
+                                                </span>
+                                            )}
                                         </Badge>
                                         {isEditable && (
                                             <div className="absolute -top-2 -right-2 flex opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenForm('skills', item)}><Edit className="h-3 w-3" /></Button>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDelete('skills', item.id)}><Trash2 className="h-3 w-3" /></Button>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDelete('skills', item.uuid || item.id)}><Trash2 className="h-3 w-3" /></Button>
                                             </div>
                                         )}
                                     </div>
@@ -322,23 +337,28 @@ export function ProfileSections({ userId, isEditable = false }: ProfileSectionsP
                     </Card>
                 </AccordionItem>
             </Accordion>
+
+            
         
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>{editingItem ? 'Edit' : 'Add'} {currentSection}</DialogTitle>
-                        <DialogDescription>
-                            Fill in the details below.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <ProfileSectionForm 
-                        currentSection={currentSection}
-                        editingItem={editingItem}
-                        onFormSubmit={handleFormSubmit}
-                        existingData={data}
-                    />
-                </DialogContent>
-            </Dialog>
+            {!isMobile && (
+                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                    <DialogContent className="max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle>{editingItem ? 'Edit' : 'Add'} {currentSection === 'personal' ? 'Personal Details' : currentSection}</DialogTitle>
+                            <DialogDescription>
+                                Fill in the details below.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <ProfileSectionForm 
+                            currentSection={currentSection}
+                            editingItem={editingItem}
+                            onFormSubmit={handleFormSubmit}
+                            onCancel={() => setIsFormOpen(false)}
+                            existingData={data}
+                        />
+                    </DialogContent>
+                </Dialog>
+            )}
        </>
     )
 }

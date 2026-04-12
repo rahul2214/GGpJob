@@ -1,13 +1,14 @@
-
 import { NextResponse } from 'next/server';
-import { db } from '@/firebase/admin-config';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function GET() {
   try {
-    const typesCol = db.collection('job_types');
-    const q = typesCol.orderBy('id');
-    const typeSnapshot = await q.get();
-    const jobTypes = typeSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const { data: jobTypes, error } = await supabaseAdmin
+      .from('job_types')
+      .select('*')
+      .order('name');
+    
+    if (error) throw error;
     return NextResponse.json(jobTypes);
   } catch (e: any) {
     console.error(e);
@@ -21,18 +22,16 @@ export async function POST(request: Request) {
     if (!name) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
+
+    const { data: jobType, error } = await supabaseAdmin
+      .from('job_types')
+      .insert([{ name }])
+      .select()
+      .single();
+
+    if (error) throw error;
     
-    // Get the highest current ID to auto-increment
-    const snapshot = await db.collection('job_types').orderBy('id', 'desc').limit(1).get();
-    let newId = 1;
-    if (!snapshot.empty) {
-      newId = snapshot.docs[0].data().id + 1;
-    }
-    
-    const docRef = db.collection("job_types").doc();
-    await docRef.set({ id: newId, name });
-    
-    return NextResponse.json({ id: docRef.id, name, newId }, { status: 201 });
+    return NextResponse.json(jobType, { status: 201 });
   } catch (e: any) {
     console.error(e);
     return NextResponse.json({ error: 'Failed to create job type', details: e.message }, { status: 500 });

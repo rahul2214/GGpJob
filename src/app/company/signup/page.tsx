@@ -26,8 +26,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { useEffect, useState } from "react";
-import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
-import { firebaseApp } from "@/firebase/config";
+import { supabase } from "@/lib/supabase-client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from "framer-motion";
 
@@ -92,30 +91,34 @@ export default function CompanySignupPage() {
   const onSubmit = async (data: SignupFormValues) => {
     setEmailError(null);
     try {
-      const auth = getAuth(firebaseApp);
-      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-      const firebaseUser = userCredential.user;
-      const actionCodeSettings = { url: window.location.origin + "/company/login", handleCodeInApp: true };
-      try {
-        await sendEmailVerification(firebaseUser, actionCodeSettings);
-      } catch (err: any) {
-        setEmailError("Account created, but we couldn't send the verification email. Try resending from the login page.");
+      // Call our server-side API which uses Supabase Admin to create the user
+      // WITHOUT triggering Supabase's own verification email.
+      // Firebase will send the verification email instead.
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          role: data.role,
+          phone: data.phone,
+        }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Signup failed.');
       }
-      const profileData = { id: firebaseUser.uid, name: data.name, email: data.email, role: data.role, phone: `+91${data.phone}` };
-      const response = await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(profileData) });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create user profile.");
-      }
-      await auth.signOut();
-      toast({ title: "Account Created!", description: "A verification email has been sent. Please verify to complete registration." });
+
+      toast({
+        title: "Account Created!",
+        description: "A verification email has been sent from Firebase. Please check your inbox and verify to complete registration.",
+      });
       router.push("/company/login");
     } catch (error: any) {
-      let errorMessage = "An unexpected error occurred.";
-      if (error.code === 'auth/email-already-in-use') errorMessage = 'This email address is already in use.';
-      else if (error.code === 'auth/weak-password') errorMessage = 'The password is too weak.';
-      else if (error.message) errorMessage = error.message;
-      toast({ title: "Signup Failed", description: errorMessage, variant: "destructive" });
+      toast({ title: "Signup Failed", description: error.message || "An unexpected error occurred.", variant: "destructive" });
     }
   };
 

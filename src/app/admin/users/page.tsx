@@ -107,7 +107,7 @@ export default function ManageUsersPage() {
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
     try {
-      const response = await fetch(`/api/users/${userToDelete.id}`, {
+      const response = await fetch(`/api/users/${userToDelete.uuid}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -161,7 +161,7 @@ export default function ManageUsersPage() {
         </TableHeader>
         <TableBody>
           {displayedUsers.map((u) => (
-            <TableRow key={u.id}>
+            <TableRow key={u.uuid}>
               <TableCell className="font-medium flex items-center gap-3">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
@@ -173,13 +173,13 @@ export default function ManageUsersPage() {
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" disabled={u.id === user?.id}>
+                    <Button variant="ghost" size="icon" disabled={u.uuid === user?.uuid}>
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                       <Link href={`/profile/${u.id}`}>
+                       <Link href={`/profile/${u.uuid}`}>
                           <UserIcon className="mr-2 h-4 w-4" />
                           View Profile
                        </Link>

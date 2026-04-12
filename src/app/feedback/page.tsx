@@ -59,7 +59,7 @@ export default function FeedbackPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <PortalFeedbackForm userId={user.id} />
+                        <PortalFeedbackForm userId={user.uuid} />
                     </CardContent>
                 </Card>
             </div>

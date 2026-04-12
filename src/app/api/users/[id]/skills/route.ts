@@ -1,42 +1,77 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/firebase/admin-config';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 /**
  * POST /api/users/[id]/skills
- * Bulk-saves an array of skills to the user's `skills` subcollection.
+ * Bulk-saves an array of skills to the user's `jobseeker_skills` table and syncs to JSONB.
  * Body: { skills: [{ id: string; name: string }] }
- * Also marks profileStats.hasSkills = true on the parent user document.
  */
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id: userId } = params;
     const body = await request.json();
     const skills: { id: string; name: string }[] = body.skills || [];
 
-    if (!Array.isArray(skills) || skills.length === 0) {
+    if (!Array.isArray(skills)) {
       return NextResponse.json({ error: 'Skills array is required.' }, { status: 400 });
     }
 
-    const userRef = db.collection('users').doc(id);
-    const skillsColRef = userRef.collection('skills');
+    // 1. Get user_pk
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('jobseekers')
+      .select('id, uuid')
+      .eq(isUUID ? 'uuid' : 'id', isUUID ? userId : parseInt(userId, 10))
+      .single();
 
-    // Write each skill as its own document (id = skill master id)
-    const batch = db.batch();
-    for (const skill of skills) {
-      if (!skill.id) continue;
-      const skillDocRef = skillsColRef.doc(skill.id);
-      batch.set(skillDocRef, { name: skill.name, addedAt: new Date().toISOString() }, { merge: true });
+    if (userError || !user) {
+       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    const userPk = user.id;
+
+    // 2. Delete old skill associations
+    await supabaseAdmin
+      .from('jobseeker_skills')
+      .delete()
+      .eq('user_pk', userPk);
+
+    // 3. Resolve skill_pks
+    let skillInserts: any[] = [];
+    if (skills.length > 0) {
+      const skillUuids = skills.map(s => s.id || (s as any).uuid).filter(Boolean);
+      const { data: dbSkills } = await supabaseAdmin
+        .from('skills')
+        .select('id, uuid, name')
+        .in('uuid', skillUuids);
+
+      if (dbSkills && dbSkills.length > 0) {
+         skillInserts = dbSkills.map(dbSkill => ({
+
+            user_pk: userPk,
+            skill_pk: dbSkill.id
+         }));
+
+         const { error: insertError } = await supabaseAdmin
+           .from('jobseeker_skills')
+           .insert(skillInserts);
+         
+         if (insertError) throw insertError;
+      }
     }
 
-    // Update profileStats.hasSkills = true on user document
-    batch.update(userRef, { 'profileStats.hasSkills': true });
+    // 4. Sync to jobseekers table (JSONB column as backup)
+    await supabaseAdmin
+      .from('jobseekers')
+      .update({ 
+        skills: skills,
+        updated_at: new Date().toISOString() 
+      })
+      .eq(isUUID ? 'uuid' : 'id', isUUID ? userId : parseInt(userId, 10));
 
-    await batch.commit();
-
-    return NextResponse.json({ success: true, savedCount: skills.length });
+    return NextResponse.json({ success: true, savedCount: skillInserts.length });
   } catch (e: any) {
     console.error('[API_USERS_SKILLS_POST]', e);
     return NextResponse.json({ error: 'Failed to save skills', details: e.message }, { status: 500 });

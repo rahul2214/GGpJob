@@ -7,7 +7,7 @@ import {
     BadgeDollarSign, Clock, UserCheck, 
     ChevronRight, Info, Award, LayoutList, CheckCircle2,
     Layers, User as UserIcon, ArrowLeft, Bookmark,
-    ChevronDown
+    ChevronDown, Linkedin
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ApplyButton } from './apply-button';
@@ -23,24 +23,14 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
-async function getJobData(id: string): Promise<{ job: Job | null; relatedJobs: Job[] }> {
-    const jobRes = await fetch(`/api/jobs/${id}?fresh=true`, { cache: 'no-store' });
+async function getJobData(id: string, userId?: string): Promise<Job | null> {
+    const url = `/api/jobs/${id}?fresh=true${userId ? `&userId=${userId}` : ''}`;
+    const jobRes = await fetch(url, { cache: 'no-store' });
     if (!jobRes.ok) {
-        if (jobRes.status === 404) return { job: null, relatedJobs: [] };
+        if (jobRes.status === 404) return null;
         throw new Error('Failed to fetch job data');
     }
-    const job: Job = await jobRes.json();
-
-    const relatedJobsRes = await fetch(`/api/jobs?domainId=${job.domainId}&limit=10`, { cache: 'no-store' });
-    let relatedJobs: Job[] = [];
-    if (relatedJobsRes.ok) {
-        const allRelated = await relatedJobsRes.json();
-        relatedJobs = allRelated
-            .filter((j: Job) => j.id !== job.id)
-            .slice(0, 3);
-    }
-    
-    return { job, relatedJobs };
+    return jobRes.json();
 }
 
 function JobDetailsContent() {
@@ -69,7 +59,7 @@ function JobDetailsContent() {
     // Filter related jobs: remove those the user has already applied to
     const relatedJobs = useMemo(() => {
         if (user?.role === 'Job Seeker' && allRelatedJobs.length > 0) {
-            return allRelatedJobs.filter(j => !appliedJobIds.has(j.id));
+            return allRelatedJobs.filter(j => !appliedJobIds.has(j.uuid));
         }
         return allRelatedJobs;
     }, [allRelatedJobs, appliedJobIds, user]);
@@ -79,9 +69,13 @@ function JobDetailsContent() {
         if (!id) return;
         setLoading(true);
         try {
-            const data = await getJobData(id);
-            setJob(data.job);
-            setAllRelatedJobs(data.relatedJobs);
+            const data = await getJobData(id, user?.uuid);
+            setJob(data);
+            
+            // If the API says we've applied, add it to our local state
+            if (data?.isApplied) {
+                setUserApplications([{ jobId: id } as any]);
+            }
         } catch (error) {
             console.error(error);
         } finally {
@@ -95,21 +89,43 @@ function JobDetailsContent() {
 
     // Secondary fetch for user applications (runs when user session is available)
     useEffect(() => {
-        if (user && id) {
-            const fetchApplications = async () => {
-                try {
-                    const res = await fetch(`/api/applications?userId=${user.id}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        setUserApplications(Array.isArray(data) ? data : []);
+        if (!id) return;
+
+        const fetchSecondaryData = async () => {
+            try {
+                // 1. Removed: Fetch User Applications (Redundant - handled by main job details API)
+                // setUserApplications is now set during fetchJobInfo if data.isApplied is true
+                // Similar jobs exclusion is handled server-side by the /api/jobs?similar=true endpoint
+
+                // 2. Fetch Related Jobs (Personalized if user exists)
+                if (job || loading) {
+                    // Start related jobs fetch once we have basic job info (domain)
+                    const baseUrl = '/api/jobs';
+                    let query = '';
+                    if (user) {
+                        query = `?similar=true&userId=${user.uuid}&currentJobId=${id}&limit=10`;
+                    } else if (job?.domainId) {
+                        query = `?domainId=${job.domainId}&currentJobId=${id}&limit=10`;
                     }
-                } catch (error) {
-                    console.error("Failed to fetch applications", error);
+
+                    if (query) {
+                        const relRes = await fetch(baseUrl + query, { cache: 'no-store' });
+                        if (relRes.ok) {
+                            const data = await relRes.json();
+                            const filtered = data
+                                .filter((j: Job) => (j.id !== job?.id && j.uuid !== job?.uuid))
+                                .slice(0, 4); // Show up to 4 similar jobs
+                            setAllRelatedJobs(filtered);
+                        }
+                    }
                 }
-            };
-            fetchApplications();
-        }
-    }, [user, id]);
+            } catch (error) {
+                console.error("Failed to fetch secondary job data", error);
+            }
+        };
+
+        fetchSecondaryData();
+    }, [user, id, job?.id]);
 
     useEffect(() => {
         const sentinel = footerSentinelRef.current;
@@ -162,12 +178,12 @@ function JobDetailsContent() {
             const response = await fetch('/api/applications', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ jobId: id, userId: user.id }),
+                body: JSON.stringify({ jobId: id, userId: user.uuid }),
             });
 
             if (response.ok || response.status === 409) {
                 // Refresh only the applicant count and apps list locally
-                const res = await fetch(`/api/applications?userId=${user.id}`);
+                const res = await fetch(`/api/applications?userId=${user.uuid}`);
                 if (res.ok) {
                     const data = await res.json();
                     setUserApplications(Array.isArray(data) ? data : []);
@@ -225,8 +241,14 @@ function JobDetailsContent() {
                                 <div className="space-y-4">
                                     <div>
                                         <h1 className="text-2xl font-bold text-gray-900">{job.title}</h1>
-                                        <div className="flex items-center gap-2 mt-1">
+                                        <div className="flex flex-wrap items-center gap-2 mt-1">
                                             <span className="text-gray-600 font-medium">{job.companyName}</span>
+                                            {job.job_role && (
+                                                <>
+                                                    <div className="w-1 h-1 rounded-full bg-gray-300" />
+                                                    <span className="text-blue-600 font-medium text-sm">{job.job_role}</span>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                     
@@ -238,7 +260,15 @@ function JobDetailsContent() {
                                             </div>
                                             <div className="w-px h-4 bg-gray-200" />
                                             <div className="flex items-center gap-1.5">
-                                                <span className="font-bold text-gray-800">₹ {job.salary || 'Not Disclosed'}</span>
+                                                <span className="font-bold text-gray-800">
+                                                    {job.salaryMin && job.salaryMax 
+                                                        ? `₹ ${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()}`
+                                                        : job.salaryMin 
+                                                            ? `From ₹ ${job.salaryMin.toLocaleString()}`
+                                                            : job.salaryMax 
+                                                                ? `Up to ₹ ${job.salaryMax.toLocaleString()}`
+                                                                : 'Not Disclosed'}
+                                                </span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-1.5 text-gray-500">
@@ -317,7 +347,7 @@ function JobDetailsContent() {
                                 {hasBenefits && (
                                     <TabsTrigger value="benefits" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold text-base">Benefits</TabsTrigger>
                                 )}
-                                {job.companyOverview && (
+                                {(job.companyOverview || job.companySize || job.companyLinkedinUrl) && (
                                     <TabsTrigger value="company" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 font-semibold text-base">About Company</TabsTrigger>
                                 )}
                             </TabsList>
@@ -341,7 +371,15 @@ function JobDetailsContent() {
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
                                             <div>
                                                 <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Salary</div>
-                                                <div className="font-bold text-slate-900">{job.salary || 'Not Disclosed'}</div>
+                                                <div className="font-bold text-slate-900">
+                                                    {job.salaryMin && job.salaryMax 
+                                                        ? `₹ ${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()}`
+                                                        : job.salaryMin 
+                                                            ? `From ₹ ${job.salaryMin.toLocaleString()}`
+                                                            : job.salaryMax 
+                                                                ? `Up to ₹ ${job.salaryMax.toLocaleString()}`
+                                                                : 'Not Disclosed'}
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
@@ -353,13 +391,13 @@ function JobDetailsContent() {
                                     </div>
 
                                     {/* Required Skills Section */}
-                                    {((job as any).requiredSkills?.length > 0) && (
+                                    {job.requirements && job.requirements.length > 0 && (
                                         <div>
                                             <h3 className="text-lg font-bold text-slate-900">
-                                                Required Skills
+                                                Requirements
                                             </h3>
                                             <p className="text-sm text-gray-600 leading-relaxed font-medium">
-                                                {(job as any).requiredSkills.join(', ')}
+                                                {job.requirements.join(', ')}
                                             </p>
                                         </div>
                                     )}
@@ -387,7 +425,7 @@ function JobDetailsContent() {
                                         </div>
                                         <div className="text-sm">
                                             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Role</div>
-                                            <div className="font-bold text-slate-800">{job.role}</div>
+                                            <div className="font-bold text-slate-800">{job.job_role}</div>
                                         </div>
                                         <div className="text-sm">
                                             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Workplace</div>
@@ -454,13 +492,19 @@ function JobDetailsContent() {
                                 </TabsContent>
                             )}
 
-                            {job.companyOverview && (
+                            {(job.companyOverview || job.companySize || job.companyLinkedinUrl || (job as any).address) && (
                                 <TabsContent value="company">
                                     <div className="bg-white rounded-xl border p-6 space-y-6">
                                         <div className="flex items-center gap-4 mb-2">
-                                            <div className="w-16 h-16 bg-black rounded-xl flex items-center justify-center text-white text-2xl font-bold">
-                                                {job.companyName.charAt(0).toUpperCase()}
-                                            </div>
+                                            {job.companyLogo ? (
+                                                <div className="w-16 h-16 bg-white border rounded-xl overflow-hidden flex items-center justify-center p-1">
+                                                    <img src={job.companyLogo} alt={job.companyName} className="max-w-full max-h-full object-contain" />
+                                                </div>
+                                            ) : (
+                                                <div className="w-16 h-16 bg-black rounded-xl flex items-center justify-center text-white text-2xl font-bold">
+                                                    {job.companyName.charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
                                             <div>
                                                 <h3 className="text-xl font-bold text-gray-900">{job.companyName}</h3>
                                                 {job.companyWebsite && (
@@ -468,27 +512,47 @@ function JobDetailsContent() {
                                                     Visit Website
                                                   </a>
                                                 )}
+                                                {job.companyLinkedinUrl && (
+                                                  <a href={job.companyLinkedinUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-800 hover:underline flex items-center gap-1 mt-1">
+                                                    <Linkedin className="h-3 w-3" />
+                                                    LinkedIn Profile
+                                                  </a>
+                                                )}
                                             </div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {job.companySize && (
+                                                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">Company Size</div>
+                                                    <div className="flex items-center gap-2 font-bold text-slate-800">
+                                                        <Users className="h-4 w-4 text-indigo-500" />
+                                                        {job.companySize} Employees
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                         
                                         <Separator />
                                         
-                                        <div>
-                                            <h4 className="text-lg font-bold mb-3 flex items-center gap-2 text-slate-800">
-                                                <Building className="h-5 w-5 text-indigo-500" />
-                                                About the Company
-                                            </h4>
-                                            <div className="prose prose-sm max-w-none text-gray-600 leading-relaxed whitespace-pre-wrap">
-                                                {job.companyOverview}
+                                        {job.companyOverview && (
+                                            <div>
+                                                <h4 className="text-lg font-bold mb-3 flex items-center gap-2 text-slate-800">
+                                                    <Building className="h-5 w-5 text-indigo-500" />
+                                                    About the Company
+                                                </h4>
+                                                <div className="prose prose-sm max-w-none text-gray-600 leading-relaxed whitespace-pre-wrap">
+                                                    {job.companyOverview}
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
 
-                                        {(job as any).address && (
+                                        {job.address && (
                                             <div>
                                                 <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Office Address</h4>
                                                 <p className="text-sm text-gray-600 flex items-start gap-2">
                                                     <MapPin className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
-                                                    {(job as any).address}
+                                                    {job.address}
                                                 </p>
                                             </div>
                                         )}
@@ -510,7 +574,7 @@ function JobDetailsContent() {
                                         <JobCard 
                                             key={relatedJob.id} 
                                             job={relatedJob} 
-                                            isApplied={appliedJobIds.has(relatedJob.id)} 
+                                            isApplied={appliedJobIds.has(relatedJob.uuid)} 
                                           
                                         />
                                     ))}

@@ -9,8 +9,7 @@ import { motion } from "framer-motion";
 import { LoaderCircle, FileText, CheckCircle2, UploadCloud, Building2, ChevronRight, Phone, Sparkles, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "@/firebase/config";
+import { supabase } from "@/lib/supabase-client";
 import type { Domain, MasterSkill } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +39,8 @@ export default function OnboardingPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>([]);
     const [skillSearch, setSkillSearch] = useState("");
+    const [linkedinUrl, setLinkedinUrl] = useState<string>("");
+    const [githubUrl, setGithubUrl] = useState<string>("");
 
     useEffect(() => {
         const fetchData = async () => {
@@ -108,17 +109,31 @@ export default function OnboardingPage() {
         setIsSubmitting(true);
         try {
             // 1. Upload Resume if needed
-            let downloadURL = user.resumeUrl || "";
+            let currentResumeUrl = user.resumeUrl || "";
             if (!user.resumeUrl && resumeFile) {
                 setUploadProgress(30);
-                const storageRef = ref(storage, `resumes/${user.id}/${resumeFile.name}`);
-                const uploadSnapshot = await uploadBytes(storageRef, resumeFile);
+                const fileExt = resumeFile.name.split('.').pop();
+                const fileName = `${user.uuid}-${Date.now()}.${fileExt}`;
+                const filePath = `resumes/${user.uuid}/${fileName}`;
+                
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('Resumes')
+                    .upload(filePath, resumeFile);
+                
+                if (uploadError) throw uploadError;
+                
                 setUploadProgress(60);
-                downloadURL = await getDownloadURL(uploadSnapshot.ref);
-                const resumeRes = await fetch(`/api/users/${user.id}/resume`, {
+                
+                const { data: { publicUrl } } = supabase.storage
+                    .from('Resumes')
+                    .getPublicUrl(filePath);
+
+                currentResumeUrl = publicUrl;
+
+                const resumeRes = await fetch(`/api/users/${user.uuid}/resume`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ resumeUrl: downloadURL }),
+                    body: JSON.stringify({ resumeUrl: currentResumeUrl }),
                 });
                 if (!resumeRes.ok) throw new Error("Failed to save resume URL.");
                 setUploadProgress(70);
@@ -128,10 +143,17 @@ export default function OnboardingPage() {
             const finalPhone = (user.phone && user.phone.length >= 10) ? user.phone : phone;
             const finalDomainId = user.domainId || selectedDomain;
             if (!user.domainId || !user.phone || user.phone.length < 10) {
-                const profileRes = await fetch(`/api/users/${user.id}`, {
+                const profileRes = await fetch(`/api/users/${user.uuid}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name: user.name, email: user.email, phone: finalPhone, domainId: finalDomainId }),
+                    body: JSON.stringify({ 
+                        name: user.name, 
+                        email: user.email, 
+                        phone: finalPhone, 
+                        domainId: finalDomainId,
+                        linkedinUrl: linkedinUrl || user.linkedinUrl,
+                        githubUrl: githubUrl || user.githubUrl
+                    }),
                 });
                 if (!profileRes.ok) throw new Error("Failed to save profile info.");
             }
@@ -139,11 +161,11 @@ export default function OnboardingPage() {
             // 3. Save Skills subcollection if needed
             if (!user.profileStats?.hasSkills && selectedSkillIds.length > 0) {
                 setUploadProgress(85);
-                const skillsToSave = selectedSkillIds.map(id => {
-                    const skill = masterSkills.find(s => s.id === id);
-                    return { id, name: skill?.name || "" };
+                const skillsToSave = selectedSkillIds.map(uuid => {
+                    const skill = masterSkills.find(s => s.uuid === uuid);
+                    return { id: uuid, name: skill?.name || "" };
                 });
-                const skillsRes = await fetch(`/api/users/${user.id}/skills`, {
+                const skillsRes = await fetch(`/api/users/${user.uuid}/skills`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ skills: skillsToSave }),
@@ -154,7 +176,7 @@ export default function OnboardingPage() {
             setUploadProgress(100);
 
             // 4. Fetch fresh profile & update context
-            const updatedProfileRes = await fetch(`/api/users?uid=${user.id}`);
+            const updatedProfileRes = await fetch(`/api/users?uid=${user.uuid}`);
             const updatedProfile = await updatedProfileRes.json();
             setUser(updatedProfile);
 
@@ -222,15 +244,15 @@ export default function OnboardingPage() {
                         <div className="space-y-3">
                             <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                                 <Building2 className="w-4 h-4 text-indigo-500" />
-                                What is your primary profession?
+                                Select your preferred domain
                             </label>
                             <Select onValueChange={setSelectedDomain} value={selectedDomain}>
                                 <SelectTrigger className="h-14 rounded-2xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white text-base transition-all">
-                                    <SelectValue placeholder="Select your domain" />
+                                    <SelectValue placeholder="Select your preferred domain" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-slate-100 shadow-xl">
                                     {domains.map(domain => (
-                                        <SelectItem key={domain.id} value={domain.id} className="py-3 px-4 rounded-lg cursor-pointer focus:bg-indigo-50 focus:text-indigo-700">
+                                        <SelectItem key={domain.uuid} value={domain.uuid} className="py-3 px-4 rounded-lg cursor-pointer focus:bg-indigo-50 focus:text-indigo-700">
                                             {domain.name}
                                         </SelectItem>
                                     ))}
@@ -259,6 +281,34 @@ export default function OnboardingPage() {
                             </div>
                         </div>
                     )}
+
+                    {/* Social Links */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-3">
+                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <Building2 className="w-4 h-4 text-blue-500" />
+                                LinkedIn URL (Optional)
+                            </label>
+                            <Input
+                                placeholder="https://linkedin.com/in/yourprofile"
+                                className="h-14 rounded-2xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors text-base"
+                                value={linkedinUrl}
+                                onChange={(e) => setLinkedinUrl(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-3">
+                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <Building2 className="w-4 h-4 text-slate-800" />
+                                GitHub URL (Optional)
+                            </label>
+                            <Input
+                                placeholder="https://github.com/yourprofile"
+                                className="h-14 rounded-2xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors text-base"
+                                value={githubUrl}
+                                onChange={(e) => setGithubUrl(e.target.value)}
+                            />
+                        </div>
+                    </div>
 
                     {/* Resume Upload */}
                     {needsResume && (
@@ -312,7 +362,7 @@ export default function OnboardingPage() {
                             {selectedSkillIds.length > 0 && (
                                 <div className="flex flex-wrap gap-2 p-3 bg-indigo-50 rounded-2xl border border-indigo-100">
                                     {selectedSkillIds.map(id => {
-                                        const skill = masterSkills.find(s => s.id === id);
+                                        const skill = masterSkills.find(s => s.uuid === id);
                                         return skill ? (
                                             <Badge key={id} className="bg-indigo-600 text-white hover:bg-indigo-700 gap-1 pr-1.5">
                                                 {skill.name}
@@ -336,12 +386,12 @@ export default function OnboardingPage() {
                             {/* Skill chips */}
                             <div className="flex flex-wrap gap-2 max-h-44 overflow-y-auto py-1 pr-1">
                                 {filteredSkills.map(skill => {
-                                    const selected = selectedSkillIds.includes(skill.id);
+                                    const selected = selectedSkillIds.includes(skill.uuid);
                                     return (
                                         <button
-                                            key={skill.id}
+                                            key={skill.uuid}
                                             type="button"
-                                            onClick={() => toggleSkill(skill.id)}
+                                            onClick={() => toggleSkill(skill.uuid)}
                                             className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                                                 selected
                                                     ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'

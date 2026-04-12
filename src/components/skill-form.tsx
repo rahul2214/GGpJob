@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle } from "lucide-react";
 import type { MasterSkill } from "@/lib/types";
+import { useUser } from "@/contexts/user-context";
 
 const formSchema = z.object({
   name: z.string().min(2, "Skill name must be at least 2 characters long."),
@@ -29,6 +30,7 @@ interface SkillFormProps {
 }
 
 export function SkillForm({ skill, onSuccess }: SkillFormProps) {
+  const { user } = useUser();
   const { toast } = useToast();
   const form = useForm<SkillFormValues>({
     resolver: zodResolver(formSchema),
@@ -40,8 +42,9 @@ export function SkillForm({ skill, onSuccess }: SkillFormProps) {
   const { isSubmitting } = form.formState;
 
   const onSubmit = async (data: SkillFormValues) => {
+    if (!user) return;
     try {
-      const url = skill ? `/api/skills/${skill.id}` : "/api/skills";
+      const url = skill ? `/api/skills/${skill.id}?userId=${user.uuid}` : `/api/skills?userId=${user.uuid}`;
       const method = skill ? "PUT" : "POST";
       const response = await fetch(url, {
         method,

@@ -63,7 +63,7 @@ export default function AdminCouponsPage() {
   const loadCoupons = async () => {
     try {
       setFetching(true);
-      const res = await fetch(`/api/coupons?userId=${user?.id}`);
+      const res = await fetch(`/api/coupons?userId=${user?.uuid}`);
       if (!res.ok) throw new Error("Failed to load coupons");
       const data = await res.json();
       setCoupons(data);
@@ -82,7 +82,7 @@ export default function AdminCouponsPage() {
       const url = editingCoupon ? `/api/coupons/${editingCoupon.id}` : "/api/coupons";
       const method = editingCoupon ? "PUT" : "POST";
       
-      const payload: any = { ...formData, userId: user.id };
+      const payload: any = { ...formData, userId: user.uuid };
       if (editingCoupon) payload.isActive = formData.isActive === "true";
 
       const res = await fetch(url, {
@@ -111,7 +111,7 @@ export default function AdminCouponsPage() {
       if (!user) return;
       
       try {
-          const res = await fetch(`/api/coupons/${id}?userId=${user.id}`, { method: 'DELETE' });
+          const res = await fetch(`/api/coupons/${id}?userId=${user.uuid}`, { method: 'DELETE' });
           if (!res.ok) throw new Error("Failed to delete coupon");
           toast({ title: "Deleted", description: "Coupon deleted successfully." });
           loadCoupons();
@@ -302,7 +302,12 @@ export default function AdminCouponsPage() {
                                 <span className="text-slate-400"> / {coupon.maxUses} uses</span>
                             </TableCell>
                             <TableCell className={isExpired ? "text-red-500 font-medium" : ""}>
-                                {format(new Date(coupon.expiresAt), "MMM dd, yyyy")}
+                                {coupon.expiresAt ? (
+                                    (() => {
+                                        const d = new Date(coupon.expiresAt);
+                                        return isNaN(d.getTime()) ? 'Invalid Date' : format(d, "MMM dd, yyyy");
+                                    })()
+                                ) : "Never"}
                             </TableCell>
                             <TableCell>
                                 {isValid ? (

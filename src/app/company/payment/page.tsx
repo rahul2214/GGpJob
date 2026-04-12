@@ -82,7 +82,7 @@ export default function PaymentPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          userId: user.id, 
+          userId: user.uuid, 
           planId: selectedPlan.id, 
           amount: finalPrice,
           couponCode: appliedCoupon?.code
@@ -101,7 +101,7 @@ export default function PaymentPage() {
             razorpay_order_id: order.id,
             razorpay_payment_id: `free_pay_${Date.now()}`,
             razorpay_signature: "free_sig",
-            userId: user.id,
+            userId: user.uuid,
             planId: selectedPlan.id,
             couponCode: appliedCoupon?.code
           }),
@@ -132,7 +132,7 @@ export default function PaymentPage() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 ...response,
-                userId: user.id,
+                userId: user.uuid,
                 planId: selectedPlan.id,
                 couponCode: appliedCoupon?.code
               }),
@@ -140,7 +140,7 @@ export default function PaymentPage() {
 
             if (verifyRes.ok) {
               toast({ title: "Activated Successfully!", description: `The ${selectedPlan.name} is now active on your account.` });
-              const updatedProfile = await fetchUserProfile(user.id);
+              const updatedProfile = await fetchUserProfile(user.uuid);
               setUser(updatedProfile);
               router.push("/");
             } else {

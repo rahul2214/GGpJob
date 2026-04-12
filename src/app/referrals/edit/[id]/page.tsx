@@ -60,17 +60,9 @@ export default function EditReferralPage() {
     return (
         <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-center">
-                <Card className="w-full max-w-3xl">
-                    <CardHeader>
-                        <CardTitle>Edit Referral Job</CardTitle>
-                        <CardDescription>
-                           Update the details for the job you want to refer.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ReferralForm job={job} />
-                    </CardContent>
-                </Card>
+                <div className="w-full max-w-4xl">
+                    <ReferralForm job={job} />
+                </div>
             </div>
         </div>
     );

@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
-import { collection, getDocs, addDoc } from 'firebase/firestore';
-import { db } from '@/firebase/admin-config'; // Use admin config for server-side operations
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function GET() {
   try {
-    const domainsCol = db.collection('domains');
-    const domainSnapshot = await domainsCol.get();
-    const domains = domainSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    // Sort alphabetically by name
-    domains.sort((a, b) => a.name.localeCompare(b.name));
+    const { data: domains, error } = await supabaseAdmin
+      .from('domains')
+      .select('*')
+      .order('name');
+    
+    if (error) throw error;
     return NextResponse.json(domains);
   } catch (e) {
     console.error(e);
@@ -23,15 +23,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Domain name is required' }, { status: 400 });
     }
     
-    // Note: Firestore doesn't enforce uniqueness on its own like SQL UNIQUE.
-    // A more robust solution might involve a separate lookup document or Cloud Functions.
-    // For now, we'll proceed assuming duplicates are handled by the client or are acceptable.
+    const { data: domain, error } = await supabaseAdmin
+      .from('domains')
+      .insert([{ name }])
+      .select()
+      .single();
+
+    if (error) throw error;
     
-    const docRef = await db.collection("domains").add({ name });
-    
-    return NextResponse.json({ id: docRef.id, name }, { status: 201 });
-  } catch (e) {
+    return NextResponse.json(domain, { status: 201 });
+  } catch (e: any) {
     console.error(e);
-    return NextResponse.json({ error: 'Failed to create domain' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create domain', details: e.message }, { status: 500 });
   }
 }

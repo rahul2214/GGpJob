@@ -23,7 +23,17 @@ export function AtsChecker() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0])
+      const selectedFile = e.target.files[0]
+      
+      // Check for 2MB limit
+      if (selectedFile.size > 2 * 1024 * 1024) {
+        setError("File size exceeds 2MB limit. Please upload a smaller PDF.")
+        setFile(null)
+        e.target.value = "" // Reset input
+        return
+      }
+
+      setFile(selectedFile)
       setResult(null)
       setError(null)
     }
@@ -92,7 +102,7 @@ export function AtsChecker() {
                   <p className="text-sm font-semibold text-foreground">
                     {file ? file.name : "Click to upload your resume"}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">PDF up to 5MB</p>
+                  <p className="text-xs text-muted-foreground mt-1">PDF up to 2MB</p>
                 </div>
                 <Button variant="outline" type="button" className="mt-2" onClick={() => document.getElementById('resume-upload')?.click()}>
                   Select File

@@ -28,7 +28,7 @@ const formSchema = z.object({
 type FeedbackFormValues = z.infer<typeof formSchema>;
 
 interface PortalFeedbackFormProps {
-  userId: number;
+  userId: string;
 }
 
 export function PortalFeedbackForm({ userId }: PortalFeedbackFormProps) {

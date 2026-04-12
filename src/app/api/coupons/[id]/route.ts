@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { db, auth } from '@/firebase/admin-config';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { checkAdmin } from '@/lib/check-admin';
 
 export async function PUT(request: Request, context: any) {
   try {
@@ -12,8 +13,8 @@ export async function PUT(request: Request, context: any) {
        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userRecord = await auth.getUser(userId);
-    if (!['Admin', 'Super Admin'].includes(userRecord.customClaims?.role)) {
+    const isAdmin = await checkAdmin(userId);
+    if (!isAdmin) {
        return NextResponse.json({ error: 'Forbidden. Admin access required.' }, { status: 403 });
     }
 
@@ -22,15 +23,20 @@ export async function PUT(request: Request, context: any) {
     }
 
     const updateData: any = {};
-    if (discountPercent !== undefined) updateData.discountPercent = Number(discountPercent);
-    if (expiresAt !== undefined) updateData.expiresAt = new Date(expiresAt).toISOString();
-    if (maxUses !== undefined) updateData.maxUses = Number(maxUses);
-    if (applicablePlan !== undefined) updateData.applicablePlan = applicablePlan;
-    if (isActive !== undefined) updateData.isActive = Boolean(isActive);
+    if (discountPercent !== undefined) updateData.discount_percent = Number(discountPercent);
+    if (expiresAt !== undefined) updateData.expires_at = new Date(expiresAt).toISOString();
+    if (maxUses !== undefined) updateData.max_uses = Number(maxUses);
+    if (applicablePlan !== undefined) updateData.applicable_plan = applicablePlan;
+    if (isActive !== undefined) updateData.is_active = Boolean(isActive);
 
-    updateData.updatedAt = new Date().toISOString();
+    updateData.updated_at = new Date().toISOString();
 
-    await db.collection('coupons').doc(id).update(updateData);
+    const { error: updateError } = await supabaseAdmin
+        .from('coupons')
+        .update(updateData)
+        .eq('id', id);
+
+    if (updateError) throw updateError;
 
     return NextResponse.json({ success: true, id, ...updateData });
   } catch (error: any) {
@@ -50,8 +56,8 @@ export async function DELETE(request: Request, context: any) {
        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userRecord = await auth.getUser(userId);
-    if (!['Admin', 'Super Admin'].includes(userRecord.customClaims?.role)) {
+    const isAdmin = await checkAdmin(userId);
+    if (!isAdmin) {
        return NextResponse.json({ error: 'Forbidden. Admin access required.' }, { status: 403 });
     }
 
@@ -59,7 +65,12 @@ export async function DELETE(request: Request, context: any) {
        return NextResponse.json({ error: 'Coupon ID required' }, { status: 400 });
     }
 
-    await db.collection('coupons').doc(id).delete();
+    const { error: deleteError } = await supabaseAdmin
+        .from('coupons')
+        .delete()
+        .eq('id', id);
+
+    if (deleteError) throw deleteError;
 
     return NextResponse.json({ success: true, id });
   } catch (error: any) {

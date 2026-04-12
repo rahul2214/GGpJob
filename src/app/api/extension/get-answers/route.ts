@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/firebase/admin-config';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import path from 'path';
 import fs from 'fs';
 
@@ -14,26 +14,40 @@ export async function POST(request: Request) {
             return NextResponse.json({ data: {} });
         }
 
-        // 1. Fetch User Data from Firestore
-        const userDoc = await db.collection('users').doc(userId).get();
-        if (!userDoc.exists) {
+        // 1. Fetch User Data from Supabase
+        const { data: userData, error: userError } = await supabaseAdmin
+            .from('jobseekers')
+            .select('*')
+            .eq('uuid', userId)
+            .single();
+
+        if (userError || !userData) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
-        const userData = userDoc.data() as any;
 
-        const domainDoc = userData.domainId ? await db.collection('domains').doc(userData.domainId).get() : null;
-        const locationDoc = userData.locationId ? await db.collection('locations').doc(userData.locationId).get() : null;
-        
-        const preferredJobTitle = domainDoc?.exists ? domainDoc.data()?.name : 'Software Engineer';
-        const preferredLocation = locationDoc?.exists ? locationDoc.data()?.name : userData.location || 'Remote';
+        // 2. Fetch Preferred Metadata (Domain and Location)
+        const domainId = userData.domain_id;
+        const locationId = userData.location_id;
 
-        // 2. Build User Context 
+        let preferredJobTitle = 'Software Engineer';
+        if (domainId) {
+            const { data: domain } = await supabaseAdmin.from('domains').select('name').eq('id', domainId).single();
+            if (domain) preferredJobTitle = domain.name;
+        }
+
+        let preferredLocation = userData.current_city || 'Remote';
+        if (locationId) {
+            const { data: loc } = await supabaseAdmin.from('locations').select('name').eq('id', locationId).single();
+            if (loc) preferredLocation = loc.name;
+        }
+
+        // 3. Build User Context 
         const userContext = {
             personal_info: {
                 first_name: userData.name?.split(' ')[0] || '',
                 last_name: userData.name?.split(' ').slice(1).join(' ') || '',
                 phone: userData.phone || "",
-                city: userData.location || "",
+                city: userData.current_city || "",
                 email: userData.email || ""
             },
             preferences: {
@@ -42,15 +56,15 @@ export async function POST(request: Request) {
                 workplace_type: "Remote"
             },
             qa: {
-                years_of_experience: "2",
+                years_of_experience: userData.experience_years?.toString() || "2",
                 sponsorship_required: "No",
                 legally_authorized: "Yes",
                 clearance: "No",
-                degree: userData.educationLevel || "Bachelor's"
+                degree: "Bachelor's"
             }
         };
 
-        // 3. Extract Groq API Key from old AutoJobApply config 
+        // 4. Extract Groq API Key
         let groqApiKey = process.env.GROQ_API_KEY;
         if (!groqApiKey) {
             try {
@@ -69,7 +83,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Groq API Key not configured on the server.' }, { status: 500 });
         }
 
-        // 4. Construct Prompt
+        // 5. Construct Prompt
         const prompt = `You are an intelligent job application assistant helping a user automatically fill out an online "Easy Apply" job application form.
 
 Here is the user's parsed profile and configuration context:
@@ -91,7 +105,7 @@ For each question, determine the most accurate answer based ONLY on the user's p
 
 Respond ONLY with a valid JSON object. No explanation, no markdown, no extra text. Just the raw JSON.`;
 
-        // 5. Fetch Answers from Groq
+        // 6. Fetch Answers from Groq
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {

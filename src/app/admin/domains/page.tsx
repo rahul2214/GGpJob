@@ -74,7 +74,7 @@ export default function ManageDomainsPage() {
 
   const handleEditDomain = (domain: Domain) => {
     if (isMobile) {
-      router.push(`/admin/domains/edit/${domain.id}`);
+      router.push(`/admin/domains/edit/${domain.uuid}`);
     } else {
       setSelectedDomain(domain);
       setIsDomainFormOpen(true);
@@ -93,7 +93,7 @@ export default function ManageDomainsPage() {
   const handleDeleteDomain = async () => {
     if (!domainToDelete) return;
     try {
-      const response = await fetch(`/api/domains/${domainToDelete.id}`, {
+      const response = await fetch(`/api/domains/${domainToDelete.uuid}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -141,7 +141,7 @@ export default function ManageDomainsPage() {
         </TableHeader>
         <TableBody>
           {filteredDomains.map((domain) => (
-            <TableRow key={domain.id}>
+            <TableRow key={domain.uuid}>
               <TableCell className="font-medium">{domain.name}</TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>

@@ -64,7 +64,9 @@ export default function Header() {
   const [isClient, setIsClient] = useState(false);
   const isMobile = useIsMobile();
 
-  const { notifications } = useNotifications(user?.id);
+  // Only fetch notifications on Dashboard or Notifications page for a cleaner experience
+  const shouldFetchNotifications = pathname === '/' || pathname === '/notifications';
+  const { notifications } = useNotifications(user?.uuid, { skip: !shouldFetchNotifications });
   const [jobCount, setJobCount] = useState<number>(0);
   
   const notificationCount = useMemo(() => {
@@ -83,7 +85,7 @@ export default function Header() {
     if (isClient && user && (user.role === 'Recruiter' || user.role === 'Employee')) {
         const fetchJobCount = async () => {
             try {
-                const res = await fetch(`/api/jobs?recruiterId=${user.id}&isReferral=false&fresh=true`);
+                const res = await fetch(`/api/jobs?recruiterId=${user.uuid}&isReferral=false&fresh=true`);
                 if (res.ok) {
                     const data = await res.json();
                     if (Array.isArray(data)) {
@@ -133,8 +135,9 @@ export default function Header() {
     router.push('/login');
   };
   
-  const getInitials = (name: string) => {
-    const names = name.split(' ');
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return '?';
+    const names = name.trim().split(' ');
     if (names.length > 1) {
       return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
     }

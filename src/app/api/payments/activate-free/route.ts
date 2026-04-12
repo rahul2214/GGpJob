@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db, auth } from '@/firebase/admin-config';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function POST(request: Request) {
   try {
@@ -9,11 +9,18 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // Verify user role
-    const userRecord = await auth.getUser(userId);
-    const role = userRecord.customClaims?.role;
+    // Verify user profile and role
+    const { data: profile, error: profileError } = await supabaseAdmin
+        .from('jobseekers')
+        .select('role')
+        .eq('uuid', userId)
+        .single();
 
-    if (role !== 'Job Seeker') {
+    if (profileError || !profile) {
+        return NextResponse.json({ error: 'User profile not found. Please log in again.' }, { status: 404 });
+    }
+
+    if (profile.role !== 'Job Seeker') {
         return NextResponse.json({ error: 'Only Job Seekers can activate the free plan' }, { status: 403 });
     }
 
@@ -21,12 +28,17 @@ export async function POST(request: Request) {
     
     // We don't set an expiration for the Free tier to keep it simple, or we can just set it far in the future
     const updateData = {
-        isPaid: true,
-        planType: 'free',
-        lastPaymentAt: now.toISOString(),
+        is_paid: true,
+        plan_type: 'free',
+        updated_at: now.toISOString(),
     };
 
-    await db.collection('users').doc(userId).update(updateData);
+    const { error: updateError } = await supabaseAdmin
+        .from('jobseekers')
+        .update(updateData)
+        .eq('uuid', userId);
+
+    if (updateError) throw updateError;
 
     return NextResponse.json({ success: true, message: `Free plan activated successfully.` }, { status: 200 });
     

@@ -14,20 +14,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, AlertCircle, Briefcase, Eye, EyeOff, CheckCircle2, Rocket, ShieldCheck, ArrowRight, Zap } from "lucide-react";
+import { LoaderCircle, AlertCircle, Eye, EyeOff, CheckCircle2, Rocket, ShieldCheck, ArrowRight, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { useEffect, useState } from "react";
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
-  sendEmailVerification,
-} from "firebase/auth";
-import { firebaseApp } from "@/firebase/config";
-import type { Domain } from "@/lib/types";
+import { supabase } from "@/lib/supabase-client"; // still used for Google OAuth
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from "framer-motion";
 
@@ -90,54 +83,50 @@ export default function SignupPage() {
   const onSubmit = async (data: SignupFormValues) => {
     setEmailError(null);
     try {
-      const auth = getAuth(firebaseApp);
-      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-      const firebaseUser = userCredential.user;
-      const actionCodeSettings = { url: window.location.origin + "/login", handleCodeInApp: true };
-      try {
-        await sendEmailVerification(firebaseUser, actionCodeSettings);
-      } catch (err: any) {
-        setEmailError("Account created, but verification email failed. Try resending from the login page.");
-      }
-      const profileData = { id: firebaseUser.uid, name: data.name, email: data.email, role: "Job Seeker", domainId: null };
-      const response = await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(profileData) });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create user profile.");
+      // Call our server-side API which uses Supabase Admin to create the user
+      // WITHOUT triggering Supabase's own verification email.
+      // Firebase will send the verification email instead.
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          role: 'Job Seeker',
+        }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Signup failed.');
       }
 
-      await auth.signOut();
-      toast({ title: "Account Created!", description: "A verification email has been sent. Please verify before logging in." });
+      toast({
+        title: "Account Created!",
+        description: "A verification email has been sent from Firebase. Please check your inbox and verify before logging in.",
+      });
       router.push("/login");
     } catch (error: any) {
-      let errorMessage = "An unexpected error occurred.";
-      if (error.code === "auth/email-already-in-use") errorMessage = "This email is already in use.";
-      else if (error.code === "auth/weak-password") errorMessage = "The password is too weak.";
-      else if (error.message) errorMessage = error.message;
-      
-      toast({ title: "Signup Failed", description: errorMessage, variant: "destructive" });
+      toast({ title: "Signup Failed", description: error.message || "An unexpected error occurred.", variant: "destructive" });
     }
   };
 
   const handleGoogleSignUp = async () => {
-    const auth = getAuth(firebaseApp);
-    const provider = new GoogleAuthProvider();
     try {
-      const userCredential = await signInWithPopup(auth, provider);
-      const firebaseUser = userCredential.user;
-      let profile = await fetchUserProfile(firebaseUser.uid);
-      if (!profile) profile = await createNewUserProfile(firebaseUser);
-      if (profile) {
-        setUser(profile);
-        if (profile.domainId && profile.resumeUrl && profile.phone && profile.profileStats?.hasSkills) {
-          router.push("/");
-        } else {
-          router.push("/onboarding");
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+          redirectTo: window.location.origin + '/auth/callback',
         }
-      }
-      else toast({ title: "Error", description: "Failed to initialize user profile.", variant: "destructive" });
+      });
+      if (error) throw error;
     } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') return;
       toast({ title: "Google Sign-Up Failed", description: error.message || "An unexpected error occurred.", variant: "destructive" });
     }
   };

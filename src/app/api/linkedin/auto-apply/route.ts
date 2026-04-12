@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/firebase/admin-config';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { resolveResumeUrl } from '@/lib/resolve-resume';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import os from 'os';
 
 export async function POST(request: Request) {
     try {
@@ -13,19 +13,32 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
         }
 
-        // 1. Fetch User Data
-        const userDoc = await db.collection('users').doc(userId).get();
-        if (!userDoc.exists) {
-             return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
-        const userData = userDoc.data() as any;
+        // 1. Fetch User Profile
+        const { data: userData, error: userError } = await supabaseAdmin
+            .from('jobseekers')
+            .select('*')
+            .eq('uuid', userId)
+            .single();
 
-        // 2. Fetch User's details to make the bot smarter
-        const domainDoc = userData.domainId ? await db.collection('domains').doc(userData.domainId).get() : null;
-        const locationDoc = userData.locationId ? await db.collection('locations').doc(userData.locationId).get() : null;
-        
-        const preferredJobTitle = domainDoc?.exists ? domainDoc.data()?.name : 'Software Engineer';
-        const preferredLocation = locationDoc?.exists ? locationDoc.data()?.name : userData.location || 'Remote';
+        if (userError || !userData) {
+             return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
+        }
+
+        // 2. Fetch Preferred Metadata (Domain and Location)
+        const domainId = userData.domain_id;
+        const locationId = userData.location_id;
+
+        let preferredJobTitle = 'Software Engineer';
+        if (domainId) {
+            const { data: domain } = await supabaseAdmin.from('domains').select('name').eq('id', domainId).single();
+            if (domain) preferredJobTitle = domain.name;
+        }
+
+        let preferredLocation = userData.current_city || 'Remote';
+        if (locationId) {
+            const { data: loc } = await supabaseAdmin.from('locations').select('name').eq('id', locationId).single();
+            if (loc) preferredLocation = loc.name;
+        }
 
         // 3. Prepare Paths
         const projectRoot = process.cwd();
@@ -45,11 +58,12 @@ export async function POST(request: Request) {
         const customConfigPath = path.join(configsDir, `${userId}_config.json`);
         const customResumePath = path.join(resumesDir, `${userId}_resume.pdf`);
 
-        // 4. Download Resume if available (fallback to dummy if not)
+        // 4. Download Resume if available (fallback to empty if not)
         let resumeSaved = false;
-        if (userData.resumeUrl) {
+        if (userData.resume_url) {
             try {
-                const res = await fetch(userData.resumeUrl);
+                const resolvedUrl = await resolveResumeUrl(userData.resume_url);
+                const res = await fetch(resolvedUrl);
                 if (res.ok) {
                     const buffer = Buffer.from(await res.arrayBuffer());
                     fs.writeFileSync(customResumePath, buffer);
@@ -61,7 +75,6 @@ export async function POST(request: Request) {
         }
         
         if (!resumeSaved) {
-             // Just creating an empty file to prevent errors if no resume
              fs.writeFileSync(customResumePath, "");
         }
 
@@ -87,7 +100,7 @@ export async function POST(request: Request) {
                 first_name: firstName,
                 last_name: lastName,
                 phone: userData.phone || "",
-                city: userData.location || "",
+                city: userData.current_city || "",
                 email: userData.email || ""
             },
             preferences: {
@@ -97,32 +110,30 @@ export async function POST(request: Request) {
                 workplace_type: "Remote"
             },
             qa: {
-                years_of_experience: "2",
+                years_of_experience: userData.experience_years?.toString() || "2",
                 sponsorship_required: "No",
                 legally_authorized: "Yes",
                 clearance: "No",
-                degree: userData.educationLevel || "Bachelor's"
+                degree: "Bachelor's"
             }
         };
 
         fs.writeFileSync(customConfigPath, JSON.stringify(customConfig, null, 4));
 
         // 7. Spawn Python Process
-        // Run detatched so NextJS doesn't wait for it
         let pythonExecutable = 'python';
         const venvPythonPath = path.join(autoJobApplyPath, 'venv', 'Scripts', 'python.exe');
         if (fs.existsSync(venvPythonPath)) {
             pythonExecutable = venvPythonPath;
         }
 
-        console.log(`Executing: ${pythonExecutable} main.py --config configs/${userId}_config.json`);
         const botProcess = spawn(pythonExecutable, ['main.py', '--config', `configs/${userId}_config.json`], {
             cwd: autoJobApplyPath,
             detached: true,
             stdio: 'ignore'
         });
         
-        botProcess.unref(); // Allow the parent to exit independently
+        botProcess.unref();
 
         return NextResponse.json({ 
             success: true, 

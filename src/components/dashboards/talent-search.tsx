@@ -22,6 +22,7 @@ interface Candidate {
   headline: string;
   photoUrl: string;
   domainId: string;
+  domain: string;
   skills: { id: string; name: string }[];
   resumeUrl: string;
   location: string;
@@ -150,12 +151,12 @@ export default function TalentSearch() {
   }, []);
 
   const fetchCandidates = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.uuid) return;
     setLoading(true);
     setErrorStatus(null);
     try {
       const params = new URLSearchParams();
-      params.set('userId', user.id);
+      params.set('userId', user.uuid);
       if (search.trim()) params.set('search', search.trim());
       if (selectedDomain !== 'all') params.set('domain', selectedDomain);
       selectedSkills.forEach(skillId => params.append('skill', skillId));
@@ -412,7 +413,7 @@ export default function TalentSearch() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {candidates.map(c => (
-            <CandidateCard key={c.id} candidate={c} domainName={domainMap[c.domainId] || ''} />
+            <CandidateCard key={c.id} candidate={c} domainName={c.domain || domainMap[c.domainId] || ''} />
           ))}
         </div>
       )}

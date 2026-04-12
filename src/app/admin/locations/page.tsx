@@ -78,7 +78,7 @@ export default function ManageLocationsPage() {
 
   const handleEdit = (location: Location) => {
     if (isMobile) {
-      router.push(`/admin/locations/edit/${location.id}`);
+      router.push(`/admin/locations/edit/${location.uuid}`);
     } else {
       setSelectedLocation(location);
       setIsFormOpen(true);
@@ -97,7 +97,7 @@ export default function ManageLocationsPage() {
   const handleDelete = async () => {
     if (!locationToDelete) return;
     try {
-      const response = await fetch(`${apiPath}/${locationToDelete.id}`, {
+      const response = await fetch(`${apiPath}/${locationToDelete.uuid}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -148,7 +148,7 @@ export default function ManageLocationsPage() {
         </TableHeader>
         <TableBody>
           {filteredLocations.map((location) => (
-            <TableRow key={location.id}>
+            <TableRow key={location.uuid}>
               <TableCell className="font-medium">{location.name}</TableCell>
               <TableCell>{location.country}</TableCell>
               <TableCell className="text-right">

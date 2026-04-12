@@ -64,7 +64,7 @@ export function SummaryForm({ user }: SummaryFormProps) {
 
   const onSubmit = async (data: SummaryFormValues) => {
     try {
-      const response = await fetch(`/api/users/${user.id}`, {
+      const response = await fetch(`/api/users/${user.uuid}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...user, summary: data.summary }),

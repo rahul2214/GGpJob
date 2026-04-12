@@ -29,17 +29,18 @@ export function ApplyButton({ job, variant = 'default' }: ApplyButtonProps) {
             if (user && job) {
                 setLoadingState(true);
                 try {
-                    const res = await fetch(`/api/applications?userId=${user.id}`);
+                    const res = await fetch(`/api/applications?userId=${user.uuid}`);
                     if (res.ok) {
                         const userApplications: Application[] = await res.json();
-                        const alreadyApplied = userApplications.some(app => app.jobId === job.id);
+                        const alreadyApplied = userApplications.some(app => app.jobId === job.uuid);
                         setIsApplied(alreadyApplied);
                     }
                 } catch (error) {
                     console.error("Failed to check application status", error);
                 }
 
-                const isOwner = job.recruiterId === user.id || job.employeeId === user.id;
+                const isOwner = (user.role === 'Recruiter' || user.role === 'Employee' || user.role === 'Admin') && 
+                                (job.recruiterId === user.uuid || job.employeeId === user.uuid || job.recruiterPk === user.id || job.employeePk === user.id);
                 setIsJobOwner(isOwner);
                 setLoadingState(false);
             } else {
@@ -69,7 +70,7 @@ export function ApplyButton({ job, variant = 'default' }: ApplyButtonProps) {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ jobId: job.id, userId: user.id }),
+                body: JSON.stringify({ jobId: job.uuid, userId: user.uuid }),
             });
 
             const data = await response.json();

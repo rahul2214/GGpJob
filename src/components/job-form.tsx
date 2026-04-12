@@ -20,7 +20,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle, Briefcase, Save, PlusCircle, Trash2, Link as LinkIcon, GripVertical, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Domain, JobType, WorkplaceType, Job, Location, MasterSkill } from "@/lib/types";
+import { Switch } from "@/components/ui/switch";
+import type { Domain, JobType, WorkplaceType, Job, Location, MasterSkill, CompanySize } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
 import { MultiSelectFilter } from "./multi-select-filter";
 
@@ -35,7 +36,7 @@ const formSchema = z.object({
   jobTitle: z.string().min(5, "Job title must be at least 5 characters long."),
   companyName: z.string().min(2, "Company name must be at least 2 characters long."),
   locationIds: z.array(z.string()).min(1, "At least one location is required."),
-  role: z.string().min(2, "Role must be at least 2 characters long."),
+  job_role: z.string().min(2, "Role must be at least 2 characters long."),
   jobDescription: z.string().min(50, "Job description must be at least 50 characters long."),
   minExperience: z.coerce.number().min(0, "Min experience must be 0 or more."),
   maxExperience: z.coerce.number().min(0, "Max experience must be 0 or more."),
@@ -45,12 +46,16 @@ const formSchema = z.object({
   vacancies: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().min(1, "Vacancies must be at least 1.").optional()),
   companyOverview: z.string().optional(),
   companyWebsite: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
+  companySizeId: z.string().optional().or(z.literal('')),
+  companyLinkedinUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   address: z.string().optional(),
-  salary: z.string().optional(),
+  salaryMin: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().min(0, "Min salary must be 0 or more.").optional()),
+  salaryMax: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().min(0, "Max salary must be 0 or more.").optional()),
   jobLink: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   skillIds: z.array(z.string()).optional(),
+  benefitIds: z.array(z.string()).optional(),
   sections: z.array(sectionSchema).optional(),
-  benefits: z.array(z.object({ value: z.string().min(1, "Benefit cannot be empty.") })).optional(),
+  isConsultancy: z.boolean().default(false),
 }).refine(data => data.maxExperience >= data.minExperience, {
     message: "Max experience cannot be less than min experience",
     path: ["maxExperience"]
@@ -116,30 +121,34 @@ export function JobForm({ job }: JobFormProps) {
   const [jobTypes, setJobTypes] = useState<JobType[]>([]);
   const [workplaceTypes, setWorkplaceTypes] = useState<WorkplaceType[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [companySizes, setCompanySizes] = useState<CompanySize[]>([]);
   const [masterSkills, setMasterSkills] = useState<MasterSkill[]>([]);
+  const [masterBenefits, setMasterBenefits] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     const fetchSelectData = async () => {
         try {
-            const [domainsRes, jobTypesRes, workplaceTypesRes, locationsRes] = await Promise.all([
+            const [domainsRes, jobTypesRes, workplaceTypesRes, locationsRes, companySizesRes] = await Promise.all([
                 fetch('/api/domains'),
                 fetch('/api/job-types'),
                 fetch('/api/workplace-types'),
-                fetch('/api/locations')
+                fetch('/api/locations'),
+                fetch('/api/company-sizes')
             ]);
             
             setDomains(await domainsRes.json());
-            const fetchedJobTypes = await jobTypesRes.json();
-            if (Array.isArray(fetchedJobTypes) && !fetchedJobTypes.some(jt => jt.name === 'Walk-in Interview')) {
-                const highestId = fetchedJobTypes.reduce((maxId, item) => Math.max(item.id, maxId), 0);
-                fetchedJobTypes.push({ id: highestId + 1, name: 'Walk-in Interview' });
-            }
-            setJobTypes(fetchedJobTypes);
             setWorkplaceTypes(await workplaceTypesRes.json());
             setLocations(await locationsRes.json());
+            setCompanySizes(await companySizesRes.json());
+            
+            const fetchedJobTypes = await jobTypesRes.json();
+            setJobTypes(fetchedJobTypes);
             
             const skillsRes = await fetch('/api/skills');
             if (skillsRes.ok) setMasterSkills(await skillsRes.json());
+
+            const benefitsRes = await fetch('/api/benefits');
+            if (benefitsRes.ok) setMasterBenefits(await benefitsRes.json());
         } catch (error) {
             console.error("Failed to fetch form select data", error);
             toast({
@@ -152,38 +161,35 @@ export function JobForm({ job }: JobFormProps) {
     fetchSelectData();
   }, [toast]);
 
-  // Convert legacy flat arrays to sections when editing old jobs
-  const legacySections = useMemo(() => {
-    if (!job) return [];
-    const built: { title: string; items: { value: string }[] }[] = [];
-    if (job.requirements?.length) built.push({ title: "Requirements", items: job.requirements.map(v => ({ value: v })) });
-    if ((job as any).responsibilities?.length) built.push({ title: "Key Responsibilities", items: (job as any).responsibilities.map((v: string) => ({ value: v })) });
-    if ((job as any).qualifications?.length) built.push({ title: "Qualifications", items: (job as any).qualifications.map((v: string) => ({ value: v })) });
-    return built;
-  }, [job]);
+
 
   const form = useForm<JobFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       jobTitle: job?.title || "",
-      companyName: job?.companyName || "",
-      locationIds: job?.locationIds || (job?.locationId ? [String(job.locationId)] : []),
-      role: job?.role || "",
+      companyName: job?.companyName || (user?.role === 'Recruiter' ? user.companyName : "") || "",
+      locationIds: job?.locationIds || (job?.locationId ? [job.locationId] : []),
+      job_role: job?.job_role || "",
       jobDescription: job?.description || "",
       vacancies: job?.vacancies ?? undefined,
-      companyOverview: (job as any)?.companyOverview || "",
-      companyWebsite: (job as any)?.companyWebsite || "",
-      address: (job as any)?.address || "",
-      salary: job?.salary || "",
+      companyOverview: (job as any)?.companyOverview || (user?.role === 'Recruiter' ? user.companyOverview : "") || "",
+      companyWebsite: (job as any)?.companyWebsite || (user?.role === 'Recruiter' ? user.companyWebsite : "") || "",
+      companySizeId: job?.companySizeId || (user?.role === 'Employee' ? user.companySizeId : (user?.role === 'Recruiter' ? user.companySizeId : "")) || "",
+      companyLinkedinUrl: job?.companyLinkedinUrl || (user?.role === 'Employee' ? user.companyLinkedinUrl : (user?.role === 'Recruiter' ? user.companyLinkedinUrl : "")) || "",
+      address: (job as any)?.address || (user?.role === 'Recruiter' ? user.companyAddress : "") || "",
+      salaryMin: job?.salaryMin ?? undefined,
+      salaryMax: job?.salaryMax ?? undefined,
       jobLink: job?.jobLink || "",
       minExperience: job?.minExperience ?? 0,
       maxExperience: job?.maxExperience ?? 0,
-      jobTypeId: String(job?.jobTypeId || ''),
-      workplaceTypeId: String(job?.workplaceTypeId || ''),
-      domainId: String(job?.domainId || ''),
+      jobTypeId: job?.jobTypeId || "",
+      workplaceTypeId: job?.workplaceTypeId || "",
+      domainId: job?.domainId || "",
       skillIds: job?.skillIds || [],
-      sections: job?.sections?.map(s => ({ title: s.title, items: s.items.map(v => ({ value: v })) })) || legacySections,
-      benefits: job?.benefits?.map(b => ({ value: b })) || [],
+      benefitIds: job?.benefitIds || [],
+      
+      sections: job?.sections?.map(s => ({ title: s.title, items: s.items.map(v => ({ value: v })) })) ,
+      isConsultancy: job?.isConsultancy ?? false,
     },
   });
 
@@ -193,46 +199,48 @@ export function JobForm({ job }: JobFormProps) {
     name: "sections",
   });
 
-  // Benefits field array
-  const { fields: benefitFields, append: appendBenefit, remove: removeBenefit } = useFieldArray({
-    control: form.control,
-    name: "benefits",
-  });
-
    useEffect(() => {
     if (job) {
-      const builtSections = job?.sections?.map(s => ({ title: s.title, items: s.items.map(v => ({ value: v })) })) || legacySections;
+      const builtSections = job?.sections?.map(s => ({ title: s.title, items: s.items.map(v => ({ value: v })) }));
       form.reset({
         jobTitle: job.title || "",
         companyName: job.companyName || "",
-        locationIds: job.locationIds || (job.locationId ? [String(job.locationId)] : []),
-        role: job.role || "",
+        locationIds: job.locationIds || (job.locationId ? [job.locationId] : []),
+        job_role: job.job_role || "",
         jobDescription: job.description || "",
         vacancies: job.vacancies ?? undefined,
         companyOverview: (job as any)?.companyOverview || "",
         companyWebsite: (job as any)?.companyWebsite || "",
+        companySizeId: job.companySizeId || (user?.role === 'Employee' ? user.companySizeId : (user?.role === 'Recruiter' ? user.companySizeId : "")) || "",
+        companyLinkedinUrl: job.companyLinkedinUrl || (user?.role === 'Employee' ? user.companyLinkedinUrl : (user?.role === 'Recruiter' ? user.companyLinkedinUrl : "")) || "",
         address: (job as any)?.address || "",
-        salary: job.salary || "",
-        jobLink: job.jobLink || "",
+        salaryMin: job.salaryMin ?? undefined,
+        salaryMax: job.salaryMax ?? undefined,
+        jobLink: job.id ? String(job.jobLink || "") : "",
         minExperience: job.minExperience ?? 0,
         maxExperience: job.maxExperience ?? 0,
-        jobTypeId: String(job.jobTypeId || ''),
-        workplaceTypeId: String(job.workplaceTypeId || ''),
-        domainId: String(job.domainId || ''),
+        jobTypeId: job.jobTypeId || "",
+        workplaceTypeId: job.workplaceTypeId || "",
+        domainId: job.domainId || "",
         skillIds: job.skillIds || [],
+        benefitIds: job.benefitIds || [],
         sections: builtSections,
-        benefits: job.benefits?.map(b => ({ value: b })) || [],
+        isConsultancy: job.isConsultancy ?? false,
       });
     }
-  }, [job, form, legacySections]);
+  }, [job, form, user]);
 
   const locationOptions = useMemo(() => 
-    locations.map(loc => ({ value: String(loc.id), label: `${loc.name}, ${loc.country}` })), 
+    locations.map(loc => ({ value: loc.uuid || String(loc.id), label: `${loc.name}, ${loc.country}` })), 
   [locations]);
 
   const skillOptions = useMemo(() =>
-    masterSkills.map(s => ({ value: s.id, label: s.name })),
+    masterSkills.map(s => ({ value: s.uuid || String(s.id), label: s.name })),
   [masterSkills]);
+
+  const benefitOptions = useMemo(() =>
+    masterBenefits.map(b => ({ value: (b as any).uuid || String(b.id), label: b.name })),
+  [masterBenefits]);
 
   const onSubmit = async (data: JobFormValues) => {
     if (!user) {
@@ -248,15 +256,20 @@ export function JobForm({ job }: JobFormProps) {
         ...data,
         title: data.jobTitle,
         description: data.jobDescription,
+        job_role: data.job_role,
         isReferral: false,
-        recruiterId: user.id,
+        recruiterId: user.role === 'Recruiter' ? user.uuid : undefined,
+        employeeId: user.role === 'Employee' ? user.uuid : undefined,
         postedAt: job?.postedAt || new Date().toISOString(),
         sections: data.sections?.map(s => ({ title: s.title, items: s.items.map(i => i.value) })) || [],
-        benefits: data.benefits?.map(b => b.value),
+        benefitIds: data.benefitIds || [],
         skillIds: data.skillIds || [],
         companyOverview: data.companyOverview,
         companyWebsite: data.companyWebsite,
+        companySizeId: data.companySizeId === '' ? null : data.companySizeId,
+        companyLinkedinUrl: data.companyLinkedinUrl,
         address: data.address,
+        isConsultancy: data.isConsultancy,
       };
 
       const response = await fetch(url, {
@@ -304,17 +317,153 @@ export function JobForm({ job }: JobFormProps) {
         />
         <FormField
           control={form.control}
-          name="companyName"
+          name="job_role"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Company Name</FormLabel>
+              <FormLabel>Role</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. Acme Inc." {...field} />
+                <Input placeholder="e.g. Full Stack Developer" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="isConsultancy"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-muted/50">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">Post as Consultancy Recruiter</FormLabel>
+                <div className="text-sm text-muted-foreground">
+                  Enable this to provide custom company details for this specific job post.
+                </div>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        {form.watch("isConsultancy") && (
+          <div className="space-y-4 border rounded-xl p-6 bg-slate-50/30">
+            <h3 className="font-semibold text-lg flex items-center gap-2">
+              <Briefcase className="h-5 w-5 text-primary" />
+              Custom Company Details
+            </h3>
+            
+            <FormField
+              control={form.control}
+              name="companyName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Acme Inc." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="companyWebsite"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Website</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <LinkIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input className="pl-10" placeholder="https://example.com" {...field} />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="companyLinkedinUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company LinkedIn URL</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <LinkIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input className="pl-10" placeholder="https://linkedin.com/company/..." {...field} />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="companySizeId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company Size</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select company size" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {companySizes.map((size) => (
+                        <SelectItem key={size.uuid || size.id} value={size.uuid || String(size.id)}>
+                          {size.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="companyOverview"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company Overview</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Tell us about the company..." 
+                      className="min-h-[100px]" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Office Address</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. 123 Business Park, City" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        )}
          <FormField
             control={form.control}
             name="locationIds"
@@ -333,19 +482,6 @@ export function JobForm({ job }: JobFormProps) {
               </FormItem>
             )}
           />
-        <FormField
-            control={form.control}
-            name="role"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Role</FormLabel>
-                <FormControl>
-                    <Input placeholder="e.g. Software Engineer" {...field} />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-        />
         <FormField
           control={form.control}
           name="jobDescription"
@@ -444,33 +580,24 @@ export function JobForm({ job }: JobFormProps) {
         </div>
 
         {/* Benefits */}
-        <div>
-          <FormLabel>Benefits</FormLabel>
-          <div className="space-y-2 mt-2">
-            {benefitFields.map((field, index) => (
-              <FormField
-                key={field.id}
-                control={form.control}
-                name={`benefits.${index}.value`}
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-2">
-                    <FormControl>
-                      <Input {...field} placeholder={`Benefit ${index + 1}`} />
-                    </FormControl>
-                    <Button type="button" variant="ghost" size="icon" onClick={() => removeBenefit(index)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ))}
-          </div>
-          <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => appendBenefit({ value: "" })}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Benefit
-          </Button>
-        </div>
+        <FormField
+          control={form.control}
+          name="benefitIds"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Job Benefits (Optional)</FormLabel>
+              <FormControl>
+                <MultiSelectFilter
+                  title="Benefits"
+                  options={benefitOptions}
+                  selectedValues={field.value || []}
+                  onChange={field.onChange}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
            <FormField
@@ -486,7 +613,7 @@ export function JobForm({ job }: JobFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {Array.isArray(jobTypes) && jobTypes.map(jt => <SelectItem key={jt.id} value={String(jt.id)}>{jt.name}</SelectItem>)}
+                    {Array.isArray(jobTypes) && jobTypes.map(jt => <SelectItem key={jt.uuid || jt.id} value={jt.uuid || String(jt.id)}>{jt.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -506,7 +633,7 @@ export function JobForm({ job }: JobFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                     {Array.isArray(workplaceTypes) && workplaceTypes.map(wt => <SelectItem key={wt.id} value={String(wt.id)}>{wt.name}</SelectItem>)}
+                     {Array.isArray(workplaceTypes) && workplaceTypes.map(wt => <SelectItem key={wt.uuid || wt.id} value={wt.uuid || String(wt.id)}>{wt.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -556,7 +683,7 @@ export function JobForm({ job }: JobFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {Array.isArray(domains) && domains.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    {Array.isArray(domains) && domains.map(d => <SelectItem key={d.uuid || d.id} value={d.uuid || String(d.id)}>{d.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -578,19 +705,34 @@ export function JobForm({ job }: JobFormProps) {
           />
         </div>
          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-           <FormField
-            control={form.control}
-            name="salary"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Salary (Optional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. $100,000 - $120,000" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="salaryMin"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Min Salary (Optional)</FormLabel>
+                  <FormControl>
+                    <Input type="number" min="0" placeholder="e.g. 50000" {...field} value={field.value || ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="salaryMax"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Max Salary (Optional)</FormLabel>
+                  <FormControl>
+                    <Input type="number" min="0" placeholder="e.g. 80000" {...field} value={field.value || ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <FormField
             control={form.control}
             name="jobLink"
@@ -602,51 +744,6 @@ export function JobForm({ job }: JobFormProps) {
                     <LinkIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input placeholder="https://company.com/careers/job-id" className="pl-8" {...field} />
                   </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <FormField
-          control={form.control}
-          name="companyOverview"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Company Overview (Optional)</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Brief description of your company, culture, and mission..." className="min-h-[80px]" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="companyWebsite"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Company Website (Optional)</FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <LinkIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="https://yourcompany.com" className="pl-8" {...field} />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="address"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Office Address (Optional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. 42 MG Road, Bengaluru, KA 560001" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

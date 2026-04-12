@@ -1,6 +1,5 @@
-
 import { NextResponse } from 'next/server';
-import { db } from '@/firebase/admin-config';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -10,19 +9,19 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    const levelsRef = db.collection('experience_levels');
-    const snapshot = await levelsRef.where('id', '==', parseInt(id)).limit(1).get();
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+    const { data: updatedLevel, error } = await supabaseAdmin
+        .from('experience_levels')
+        .update({ name })
+        .eq(isUUID ? 'uuid' : 'id', id)
+        .select()
+        .single();
 
-    if (snapshot.empty) {
+    if (error || !updatedLevel) {
       return NextResponse.json({ error: 'Experience level not found' }, { status: 404 });
     }
 
-    const docRef = snapshot.docs[0].ref;
-    await docRef.update({ name });
-
-    const updatedDoc = await docRef.get();
-
-    return NextResponse.json({ id: updatedDoc.id, ...updatedDoc.data() }, { status: 200 });
+    return NextResponse.json(updatedLevel, { status: 200 });
   } catch (e: any) {
     console.error(e);
     return NextResponse.json({ error: 'Failed to update experience level', details: e.message }, { status: 500 });
@@ -32,15 +31,16 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
     try {
         const { id } = params;
-        const levelsRef = db.collection('experience_levels');
-        const snapshot = await levelsRef.where('id', '==', parseInt(id)).limit(1).get();
+        
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+        const { error } = await supabaseAdmin
+            .from('experience_levels')
+            .delete()
+            .eq(isUUID ? 'uuid' : 'id', id);
 
-        if (snapshot.empty) {
+        if (error) {
           return NextResponse.json({ error: 'Experience level not found' }, { status: 404 });
         }
-
-        const docRef = snapshot.docs[0].ref;
-        await docRef.delete();
         
         return NextResponse.json({ message: 'Experience level deleted successfully' }, { status: 200 });
     } catch (e: any) {

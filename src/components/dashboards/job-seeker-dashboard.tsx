@@ -33,10 +33,10 @@ export default function JobSeekerDashboard() {
   const { toast } = useToast();
   const [isAutoApplying, setIsAutoApplying] = useState(false);
 
-  const { applications: userApplications } = useApplications(user ? { userId: user.id } : undefined);
+  const { applications: userApplications } = useApplications(user ? { userId: user.uuid } : undefined);
 
   const { data: jobData, isLoading, isError } = useDashboardJobs(
-    user?.domainId ? { domain: user.domainId, dashboard: "true" } : { dashboard: "true" }
+    user ? { domain: user.domainId, dashboard: "true", userId: user.uuid } : undefined
   );
 
   // Search functions removed to declutter dashboard as per user request
@@ -48,7 +48,7 @@ export default function JobSeekerDashboard() {
       // Formulate the customized search URL based on the user's profile
       const keyword = user.headline || 'Software Engineer';
       const userLocation = user.location || 'Remote';
-      const linkedinUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(keyword)}&location=${encodeURIComponent(userLocation)}&f_AL=true&autoApply=true&userId=${user.id}`;
+      const linkedinUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(keyword)}&location=${encodeURIComponent(userLocation)}&f_AL=true&autoApply=true&userId=${user.uuid}`;
       
       window.open(linkedinUrl, '_blank');
       
@@ -64,9 +64,8 @@ export default function JobSeekerDashboard() {
   };
 
 
-  const appliedJobIds = useMemo(() => new Set(userApplications.map((app) => app.jobId)), [userApplications]);
-  const recommendedJobs = useMemo(() => jobData?.recommended?.filter((job) => !appliedJobIds.has(job.id)).slice(0, 5) || [], [jobData, appliedJobIds]);
-  const referralJobs = useMemo(() => jobData?.referral?.filter((job) => !appliedJobIds.has(job.id)).slice(0, 5) || [], [jobData, appliedJobIds]);
+  const recommendedJobs = useMemo(() => jobData?.recommended?.slice(0, 5) || [], [jobData]);
+  const referralJobs = useMemo(() => jobData?.referral?.slice(0, 5) || [], [jobData]);
 
   const firstName = user?.name?.split(" ")[0] || "there";
 
@@ -197,7 +196,7 @@ export default function JobSeekerDashboard() {
                 {recommendedJobs.map((job) => (
                   <CarouselItem key={job.id} className="pl-2 basis-[85%] sm:basis-1/2 lg:basis-1/3">
                     <div className="p-1 h-full">
-                      <JobCard job={job} isApplied={appliedJobIds.has(job.id)} hideDetails={false} />
+                      <JobCard job={job} isApplied={false} hideDetails={false} />
                     </div>
                   </CarouselItem>
                 ))}
@@ -243,7 +242,7 @@ export default function JobSeekerDashboard() {
                 {referralJobs.map((job) => (
                   <CarouselItem key={job.id} className="pl-2 basis-[85%] sm:basis-1/2 lg:basis-1/3">
                     <div className="p-1 h-full">
-                      <JobCard job={job} isApplied={appliedJobIds.has(job.id)} hideDetails={false} />
+                      <JobCard job={job} isApplied={false} hideDetails={false} />
                     </div>
                   </CarouselItem>
                 ))}

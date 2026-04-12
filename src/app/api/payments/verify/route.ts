@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { db, auth } from '@/firebase/admin-config';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function POST(request: Request) {
   try {
@@ -19,87 +19,152 @@ export async function POST(request: Request) {
 
     if (razorpay_signature === expectedSign) {
       // Signature verified
-      const userRecord = await auth.getUser(userId);
-      const role = userRecord.customClaims?.role;
-
-      let collectionName = 'recruiters';
-      if (role === 'Employee') collectionName = 'employees';
-      else if (role === 'Job Seeker') collectionName = 'users';
-      else if (role !== 'Recruiter') {
-          return NextResponse.json({ error: 'Invalid user role for payment' }, { status: 403 });
-      }
 
       const now = new Date();
-      const expirationDate = new Date();
-      expirationDate.setDate(now.getDate() + 30); // 1-month validity for all plans
-      const isoExpiration = expirationDate.toISOString();
-
       const updateData: any = {
-          isPaid: true,
-          planType: planId,
-          lastPaymentAt: now.toISOString(),
-          paymentHistory: (await db.collection(collectionName).doc(userId).get()).data()?.paymentHistory || []
+          is_paid: true,
+          plan_type: planId,
+          updated_at: now.toISOString(),
       };
 
-      // Handle specific plan effects
-      if (planId === 'basic' || planId === 'premium' || planId === 'pro') {
-          const validityDays = planId === 'pro' ? 90 : 30;
-          const proExpiration = new Date();
-          proExpiration.setDate(now.getDate() + validityDays);
-          updateData.planExpiresAt = proExpiration.toISOString();
+      // Map Plan Details based on User Request
+      switch (planId) {
+          case 'basic':
+              updateData.job_post_limit = 1;
+              updateData.job_post_validity = 30;
+              updateData.app_access_days = 30;
+              updateData.max_applies_limit = 300;
+              updateData.is_verified = true;
+              break;
+              
+          case 'premium':
+              updateData.job_post_limit = 10;
+              updateData.job_post_validity = 30;
+              updateData.app_access_days = 90;
+              updateData.max_applies_limit = -1; // Unlimited
+              // Premium includes 1 month Talent Search
+              const premTalentExp = new Date();
+              premTalentExp.setDate(now.getDate() + 30);
+              updateData.talent_search_expires_at = premTalentExp.toISOString();
+              break;
+              
+          case 'pro':
+              updateData.job_post_limit = 50;
+              updateData.job_post_validity = 90;
+              updateData.app_access_days = 180;
+              updateData.max_applies_limit = -1; // Unlimited
+              updateData.is_verified = true;
+              // Pro includes full Talent Search (e.g., 90 days)
+              const proTalentExp = new Date();
+              proTalentExp.setDate(now.getDate() + 90);
+              updateData.talent_search_expires_at = proTalentExp.toISOString();
+              break;
+              
+          case 'talent':
+              // Talent Search plan only extends database access
+              const talentExp = new Date();
+              talentExp.setDate(now.getDate() + 30);
+              updateData.talent_search_expires_at = talentExp.toISOString();
+              break;
+              
+          case 'jobseeker_premium':
+              const jsExpiration = new Date();
+              jsExpiration.setMonth(jsExpiration.getMonth() + 4);
+              updateData.plan_expires_at = jsExpiration.toISOString();
+              break;
       }
+
+      // Add plan expiry date for all recruiter plans
+      if (['basic', 'premium', 'pro'].includes(planId)) {
+        const validityDays = planId === 'pro' ? 90 : 30;
+        const planExp = new Date();
+        planExp.setDate(now.getDate() + validityDays);
+        updateData.plan_expires_at = planExp.toISOString();
+      }
+
+      let finalAmount = 0;
+      const basePrices: Record<string, number> = {
+          'basic': 199,
+          'premium': 1499,
+          'pro': 4999,
+          'talent': 499,
+          'jobseeker_premium': 199
+      };
       
-      if (planId === 'talent' || planId === 'premium' || planId === 'pro') {
-          const talentDays = planId === 'pro' ? 90 : 30;
-          const talentExp = new Date();
-          talentExp.setDate(now.getDate() + talentDays);
-          updateData.talentSearchExpiresAt = talentExp.toISOString();
-      }
-
-      if (planId === 'jobseeker_premium') {
-          const jsExpiration = new Date();
-          jsExpiration.setMonth(jsExpiration.getMonth() + 4);
-          updateData.planExpiresAt = jsExpiration.toISOString();
-      }
-
-      let finalAmount = planId === 'jobseeker_premium' ? 199 : 
-                        (planId === 'basic' ? 199 : 
-                         planId === 'premium' ? 1499 : 
-                         planId === 'pro' ? 4999 : 499);
-      let appliedCouponString = undefined;
+      finalAmount = basePrices[planId] || 0;
+      let appliedCouponCode = null;
 
       if (couponCode) {
-         const snapshot = await db.collection('coupons')
-                                  .where('code', '==', couponCode.toUpperCase().trim())
-                                  .get();
-         if (!snapshot.empty) {
-             const couponDoc = snapshot.docs[0];
-             const coupon = couponDoc.data();
-             const isValid = coupon.applicablePlan === 'all' || coupon.applicablePlan === planId || !coupon.applicablePlan;
-             
+         const { data: coupon, error: couponError } = await supabaseAdmin
+            .from('coupons')
+            .select('*')
+            .eq('code', couponCode.toUpperCase().trim())
+            .maybeSingle();
+
+         if (coupon) {
+             const isValid = coupon.applicable_plan === 'all' || coupon.applicable_plan === planId || !coupon.applicable_plan;
              if (isValid) {
-                 finalAmount = Math.max(0, Math.round(finalAmount * (1 - coupon.discountPercent / 100)));
-                 appliedCouponString = coupon.code;
+                 finalAmount = Math.max(0, Math.round(finalAmount * (1 - coupon.discount_percent / 100)));
+                 appliedCouponCode = coupon.code;
                  
-                 // Increment coupon usage natively
-                 await db.collection('coupons').doc(couponDoc.id).update({
-                     currentUses: coupon.currentUses + 1
-                 });
+                 // Increment coupon usage
+                 await supabaseAdmin.rpc('increment_coupon_usage', { coupon_code: coupon.code });
+                 // NOTE: If RPC is not preferred, we could do 
+                 // await supabaseAdmin.from('coupons').update({ current_uses: coupon.current_uses + 1 }).eq('id', coupon.id);
              }
          }
       }
 
-      // Record the transaction
-      updateData.paymentHistory.push({
-          orderId: razorpay_order_id,
-          paymentId: razorpay_payment_id,
-          amount: finalAmount,
-          planId: planId,
-          couponCode: appliedCouponString,
-          timestamp: now.toISOString()
-      });
+      // 1. Identify the user table dynamically
+      let targetTable = 'jobseekers';
+      
+      const { data: jobseeker } = await supabaseAdmin
+          .from('jobseekers')
+          .select('id')
+          .eq('uuid', userId)
+          .maybeSingle();
+      
+      if (!jobseeker) {
+          const { data: recruiter } = await supabaseAdmin
+              .from('recruiters')
+              .select('id')
+              .eq('uuid', userId)
+              .maybeSingle();
+          if (recruiter) targetTable = 'recruiters';
+          else {
+              const { data: employee } = await supabaseAdmin
+                  .from('employees')
+                  .select('id')
+                  .eq('uuid', userId)
+                  .maybeSingle();
+              if (employee) targetTable = 'employees';
+          }
+      }
 
-      await db.collection(collectionName).doc(userId).update(updateData);
+      console.log(`[PAYMENT_VERIFY] Updating plan for user ${userId} in table ${targetTable}`);
+
+      // Perform transaction updates on the identified table
+      const { error: profileError } = await supabaseAdmin
+          .from(targetTable)
+          .update(updateData)
+          .eq('uuid', userId);
+
+      if (profileError) throw profileError;
+
+      // Record the transaction
+      const { error: paymentError } = await supabaseAdmin
+          .from('payments')
+          .insert([{
+              user_id: userId,
+              order_id: razorpay_order_id,
+              payment_id: razorpay_payment_id,
+              amount: finalAmount,
+              plan_id: planId,
+              coupon_code: appliedCouponCode,
+              timestamp: now.toISOString()
+          }]);
+
+      if (paymentError) throw paymentError;
 
       return NextResponse.json({ success: true, message: `Payment verified. ${planId} plan is now active.` }, { status: 200 });
     } else {

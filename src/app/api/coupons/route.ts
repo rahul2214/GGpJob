@@ -1,5 +1,21 @@
 import { NextResponse } from 'next/server';
-import { db, auth } from '@/firebase/admin-config';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { checkAdmin } from '@/lib/check-admin';
+
+// Maps Supabase snake_case fields to camelCase for the frontend
+function mapCoupon(c: any) {
+    return {
+        id:              c.id,
+        code:            c.code,
+        discountPercent: c.discount_percent,
+        expiresAt:       c.expires_at,
+        maxUses:         c.max_uses,
+        currentUses:     c.current_uses,
+        applicablePlan:  c.applicable_plan,
+        isActive:        c.is_active,
+        createdAt:       c.created_at,
+    };
+}
 
 export async function GET(request: Request) {
   try {
@@ -7,20 +23,24 @@ export async function GET(request: Request) {
     const userId = searchParams.get('userId');
 
     if (!userId) {
-       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userRecord = await auth.getUser(userId);
-    if (!['Admin', 'Super Admin'].includes(userRecord.customClaims?.role)) {
-       return NextResponse.json({ error: 'Forbidden. Admin access required.' }, { status: 403 });
+    if (!(await checkAdmin(userId))) {
+        return NextResponse.json({ error: 'Forbidden. Admin access required.' }, { status: 403 });
     }
 
-    const snapshot = await db.collection('coupons').orderBy('createdAt', 'desc').get();
-    const coupons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    return NextResponse.json(coupons);
+    const { data: coupons, error } = await supabaseAdmin
+        .from('coupons')
+        .select('*')
+        .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    return NextResponse.json((coupons ?? []).map(mapCoupon));
   } catch (error: any) {
-    console.error('[GET_COUPONS]', error);
-    return NextResponse.json({ error: 'Failed to fetch coupons.' }, { status: 500 });
+    console.error('[GET_COUPONS] Error:', error);
+    return NextResponse.json({ error: 'Failed to fetch coupons.', details: error.message }, { status: 500 });
   }
 }
 
@@ -30,40 +50,52 @@ export async function POST(request: Request) {
     const { userId, code, discountPercent, expiresAt, maxUses, applicablePlan } = data;
 
     if (!userId) {
-       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userRecord = await auth.getUser(userId);
-    if (!['Admin', 'Super Admin'].includes(userRecord.customClaims?.role)) {
-       return NextResponse.json({ error: 'Forbidden. Admin access required.' }, { status: 403 });
+    if (!(await checkAdmin(userId))) {
+        return NextResponse.json({ error: 'Forbidden. Admin access required.' }, { status: 403 });
     }
 
     if (!code || discountPercent === undefined || !expiresAt || maxUses === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    const formattedCode = code.toUpperCase().trim();
+
     // Check if code already exists
-    const existing = await db.collection('coupons').where('code', '==', code.toUpperCase().trim()).get();
-    if (!existing.empty) {
+    const { data: existing, error: checkError } = await supabaseAdmin
+        .from('coupons')
+        .select('id')
+        .eq('code', formattedCode)
+        .maybeSingle();
+
+    if (existing) {
         return NextResponse.json({ error: 'Coupon code already exists' }, { status: 400 });
     }
 
     const newCoupon = {
-      code: code.toUpperCase().trim(),
-      discountPercent: Number(discountPercent),
-      expiresAt: new Date(expiresAt).toISOString(),
-      maxUses: Number(maxUses),
-      currentUses: 0,
-      applicablePlan: applicablePlan || 'all',
-      isActive: true,
-      createdAt: new Date().toISOString()
+      code: formattedCode,
+      discount_percent: Number(discountPercent),
+      expires_at: new Date(expiresAt).toISOString(),
+      max_uses: Number(maxUses),
+      current_uses: 0,
+      applicable_plan: applicablePlan || 'all',
+      is_active: true,
+      created_at: new Date().toISOString()
     };
 
-    const docRef = await db.collection('coupons').add(newCoupon);
+    const { data: createdCoupon, error: insertError } = await supabaseAdmin
+        .from('coupons')
+        .insert([newCoupon])
+        .select()
+        .single();
 
-    return NextResponse.json({ success: true, id: docRef.id, ...newCoupon });
+    if (insertError) throw insertError;
+
+    return NextResponse.json({ success: true, ...mapCoupon(createdCoupon) });
   } catch (error: any) {
-    console.error('[POST_COUPON]', error);
+    console.error('[POST_COUPON] Error:', error);
     return NextResponse.json({ error: 'Failed to create coupon', details: error.message }, { status: 500 });
   }
 }

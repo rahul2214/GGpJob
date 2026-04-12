@@ -3,14 +3,15 @@
 import { useUser } from "@/contexts/user-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { ProfileForm } from "@/components/profile-form";
+import { Button } from "@/components/ui/button";
 import { ChangePasswordForm } from "@/components/change-password-form";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { format } from "date-fns";
 import { ProfileSections } from "@/components/profile-sections";
 import { ResumeForm } from "@/components/resume-form";
 import { SummaryForm } from "@/components/summary-form";
-import { PersonalDetailsForm } from "@/components/personal-details-form";
-import { DiversityInclusionForm } from "@/components/diversity-inclusion-form";
+import { PersonalInfoFormCombined } from "@/components/personal-info-form-combined";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserCog, ShieldCheck, FileText, Briefcase, Link2, Users, HeartHandshake, Mail, Phone, LayoutDashboard } from "lucide-react";
@@ -18,7 +19,7 @@ import { UserCog, ShieldCheck, FileText, Briefcase, Link2, Users, HeartHandshake
 export default function ProfilePage() {
     const { user, loading } = useUser();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'overview' | 'professional' | 'details' | 'security'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'professional' | 'details' | 'security' | 'edit-details'>('overview');
 
     useEffect(() => {
         if (!loading && !user) {
@@ -188,21 +189,80 @@ export default function ProfilePage() {
                                                     <Briefcase className="w-6 h-6 text-fuchsia-500" />
                                                     Experience & Education
                                                 </h3>
-                                                <ProfileSections userId={user.id} isEditable={true} />
+                                                <ProfileSections userId={user.uuid} isEditable={true} />
                                             </div>
                                         </motion.div>
                                     </>
                                 )}
 
                                 {activeTab === 'details' && user.role === 'Job Seeker' && (
-                                    <>
-                                        <ConfigCard index={1} title="Personal Details" subtitle="Additional background information." icon={Users} color="emerald">
-                                            <PersonalDetailsForm user={user} />
-                                        </ConfigCard>
-                                        <ConfigCard index={2} title="Diversity and Inclusion" subtitle="Help us build an inclusive workplace." icon={HeartHandshake} color="rose">
-                                            <DiversityInclusionForm user={user} />
-                                        </ConfigCard>
-                                    </>
+                                    <ConfigCard index={1} title="Personal & Diversity Information" subtitle="Manage your background and diversity details." icon={Users} color="emerald">
+                                        <div className="lg:block hidden">
+                                            {/* Desktop: Show full form */}
+                                            <PersonalInfoFormCombined user={user} />
+                                        </div>
+                                        <div className="lg:hidden block space-y-6">
+                                            {/* Mobile: Show Summary View with Edit Button */}
+                                            <div className="bg-slate-50/50 rounded-2xl border border-slate-100 p-5 space-y-4">
+                                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                                    <div>
+                                                        <p className="text-slate-400 mb-1">Gender</p>
+                                                        <p className="font-bold text-slate-700">{user.gender || 'Not specified'}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-slate-400 mb-1">Marital Status</p>
+                                                        <p className="font-bold text-slate-700">{user.maritalStatus || 'Not specified'}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-slate-400 mb-1">Date of Birth</p>
+                                                        <p className="font-bold text-slate-700">{user.dateOfBirth ? format(new Date(user.dateOfBirth), 'PPP') : 'Not specified'}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-slate-400 mb-1">Category</p>
+                                                        <p className="font-bold text-slate-700">{user.category || 'Not specified'}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="pt-4 border-t border-slate-200/60">
+                                                    <p className="text-slate-400 mb-2 text-xs font-bold uppercase tracking-wider">Diversity & Inclusion</p>
+                                                    <div className="grid grid-cols-1 gap-3 text-sm">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-slate-500">Disability Status</span>
+                                                            <span className="font-bold text-slate-700">{user.disabilityStatus || 'No'}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-slate-500">Military Experience</span>
+                                                            <span className="font-bold text-slate-700">{user.militaryExperience || 'No'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <Button 
+                                                onClick={() => setActiveTab('edit-details')}
+                                                className="w-full py-6 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-100 font-bold transition-all active:scale-95"
+                                            >
+                                                Edit Profile Details
+                                            </Button>
+                                        </div>
+                                    </ConfigCard>
+                                )}
+
+                                {activeTab === 'edit-details' && user.role === 'Job Seeker' && (
+                                    <ConfigCard index={1} title="Edit Personal Details" subtitle="Complete the form below to update your information." icon={UserCog} color="indigo">
+                                        <div className="mb-6 lg:hidden">
+                                            <Button 
+                                                variant="ghost" 
+                                                onClick={() => setActiveTab('details')}
+                                                className="text-slate-500 font-bold pl-0 hover:bg-transparent"
+                                            >
+                                                ← Back to Personal Info
+                                            </Button>
+                                        </div>
+                                        <PersonalInfoFormCombined 
+                                            user={user} 
+                                            onSuccess={() => setActiveTab('details')} 
+                                        />
+                                    </ConfigCard>
                                 )}
 
                                 {activeTab === 'security' && (

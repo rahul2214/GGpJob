@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/firebase/admin-config';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function POST(request: Request) {
   try {
@@ -9,33 +9,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Coupon code is required' }, { status: 400 });
     }
 
-    const snapshot = await db.collection('coupons')
-                             .where('code', '==', code.toUpperCase().trim())
-                             .get();
+    const { data: coupon, error: fetchError } = await supabaseAdmin
+        .from('coupons')
+        .select('*')
+        .eq('code', code.toUpperCase().trim())
+        .eq('is_active', true)
+        .single();
 
-    if (snapshot.empty) {
-        return NextResponse.json({ error: 'Invalid coupon code' }, { status: 404 });
+    if (fetchError || !coupon) {
+        return NextResponse.json({ error: 'Invalid or inactive coupon code' }, { status: 404 });
     }
 
-    const coupon = snapshot.docs[0].data();
-    
     // Validate Expiration
-    if (new Date(coupon.expiresAt) < new Date()) {
+    if (new Date(coupon.expires_at) < new Date()) {
         return NextResponse.json({ error: 'Coupon code has expired' }, { status: 400 });
     }
 
     // Validate Usage Limits
-    if (coupon.currentUses >= coupon.maxUses) {
+    if (coupon.current_uses >= coupon.max_uses) {
         return NextResponse.json({ error: 'Coupon code usage limit reached' }, { status: 400 });
     }
 
-    // Validate Active Status
-    if (!coupon.isActive) {
-         return NextResponse.json({ error: 'Coupon code is no longer active' }, { status: 400 });
-    }
-
     // Validate Applicable Plan
-    if (coupon.applicablePlan && coupon.applicablePlan !== 'all' && coupon.applicablePlan !== planId) {
+    if (coupon.applicable_plan && coupon.applicable_plan !== 'all' && coupon.applicable_plan !== planId) {
          const planNames: Record<string, string> = {
              'basic': 'Basic Plan',
              'premium': 'Premium Plan',
@@ -44,13 +40,13 @@ export async function POST(request: Request) {
              'jobseeker_premium': 'Job Seeker Premium'
          };
          return NextResponse.json({ 
-             error: `This coupon is only valid for the ${planNames[coupon.applicablePlan] || 'specified'} plan.` 
+             error: `This coupon is only valid for the ${planNames[coupon.applicable_plan] || 'specified'} plan.` 
          }, { status: 400 });
     }
 
     return NextResponse.json({ 
         success: true, 
-        discountPercent: coupon.discountPercent,
+        discountPercent: coupon.discount_percent,
         code: coupon.code
     }, { status: 200 });
 

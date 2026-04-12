@@ -25,7 +25,7 @@ interface Notification {
 export default function NotificationsPage() {
     const { user, setUser, loading: userLoading } = useUser();
     const router = useRouter();
-    const { notifications, isLoading: notificationsLoading } = useNotifications(user?.id);
+    const { notifications, isLoading: notificationsLoading } = useNotifications(user?.uuid);
 
     useEffect(() => {
         if (!userLoading && !user) {
@@ -42,7 +42,7 @@ export default function NotificationsPage() {
             if (!user.notificationLastViewedAt || new Date(latestTimestamp).getTime() > new Date(user.notificationLastViewedAt).getTime()) {
                 const updateNotificationViewed = async () => {
                     try {
-                        const updatedUser = await axiosInstance.put(`/users/${user.id}`, {
+                        const updatedUser = await axiosInstance.put(`/users/${user.uuid}`, {
                             ...user,
                             notificationLastViewedAt: latestTimestamp,
                         });
@@ -108,11 +108,11 @@ export default function NotificationsPage() {
                 <CardContent className="pt-6 md:pt-0">
                     {notifications && notifications.length > 0 ? (
                         <div className="space-y-2">
-                            {notifications.map((notif: Notification) => (
-                                <Link key={notif.id} href={`/jobs/${notif.jobId}`} className="block">
-                                    <div className="flex items-start space-x-4 p-4 rounded-lg hover:bg-muted/50 border-b">
+                            {notifications.map((notif: Notification) => {
+                                const content = (
+                                    <div className="flex items-start space-x-4 p-4 rounded-lg hover:bg-muted/50 border-b transition-colors cursor-default">
                                         <div className="bg-muted p-2 rounded-full mt-1">
-                                            {renderIcon(notif.statusName)}
+                                            {renderIcon(notif.statusName || (notif.message.includes('Profile Viewed') ? 'Profile Viewed' : ''))}
                                         </div>
                                         <div className="flex-1">
                                             <p className="font-medium text-sm sm:text-base">
@@ -123,8 +123,18 @@ export default function NotificationsPage() {
                                             </p>
                                         </div>
                                     </div>
-                                </Link>
-                            ))}
+                                );
+
+                                if (notif.jobId) {
+                                    return (
+                                        <Link key={notif.id} href={`/jobs/${notif.jobId}`} className="block">
+                                            {content}
+                                        </Link>
+                                    );
+                                }
+
+                                return <div key={notif.id}>{content}</div>;
+                            })}
                         </div>
                     ) : (
                          <div className="text-center py-12">

@@ -3,9 +3,8 @@
 
 import { createContext, useState, useContext, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import type { User } from '@/lib/types';
-import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
-import { firebaseApp } from '@/firebase/config';
+import { User } from '@/lib/types';
+import { supabase } from '@/lib/supabase-client';
 
 interface UserContextType {
   user: User | null;
@@ -13,7 +12,7 @@ interface UserContextType {
   loading: boolean;
   logout: () => Promise<void>;
   fetchUserProfile: (uid: string) => Promise<User | null>;
-  createNewUserProfile: (firebaseUser: FirebaseUser) => Promise<User | null>;
+  createNewUserProfile: (supabaseUser: any) => Promise<User | null>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -56,16 +55,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, []);
   
-  const createNewUserProfile = async (firebaseUser: FirebaseUser): Promise<User | null> => {
-      const { uid, email, displayName, phoneNumber } = firebaseUser;
+  const createNewUserProfile = async (supabaseUser: any): Promise<User | null> => {
+      const { id, email, user_metadata } = supabaseUser;
       
-      const role = "Job Seeker";
+      const role = user_metadata?.role || "Job Seeker";
 
       const profileData = {
-        id: uid,
-        name: displayName || email?.split('@')[0] || 'New User',
+        id: id,
+        name: user_metadata?.name || email?.split('@')[0] || 'New User',
         email: email!,
-        phone: phoneNumber || '',
+        phone: user_metadata?.phone || '',
         role: role,
       };
 
@@ -89,33 +88,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
 
   useEffect(() => {
-    if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
-        console.error("Firebase config not found.");
-        setLoading(false);
-        return;
-    }
-      
-    const auth = getAuth(firebaseApp);
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setLoading(true);
-      if (firebaseUser) {
-        // Only consider email verified users
-        if (firebaseUser.emailVerified) {
-            const userProfile = await fetchUserProfile(firebaseUser.uid);
-            // We no longer auto-create profiles here to avoid race conditions 
-            // during standard signup. Profile creation is now handled explicitly 
-            // by signup pages or social login handlers.
-            setUserState(userProfile);
-        } else {
-            setUserState(null);
-        }
+      if (session?.user) {
+        // In Supabase, email verification is handled via settings, 
+        // but we can check if the user is confirmed.
+        const userProfile = await fetchUserProfile(session.user.id);
+        setUserState(userProfile);
       } else {
         setUserState(null);
       }
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [fetchUserProfile]);
 
   const setUser = (user: User | null) => {
@@ -123,9 +111,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    const auth = getAuth(firebaseApp);
-    await auth.signOut();
+    await supabase.auth.signOut();
     setUserState(null);
+    router.replace('/');
   }
   
   return (

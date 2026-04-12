@@ -59,7 +59,7 @@ export function DiversityInclusionForm({ user }: DiversityInclusionFormProps) {
 
   const onSubmit = async (data: DiversityInclusionFormValues) => {
     try {
-      const response = await fetch(`/api/users/${user.id}`, {
+      const response = await fetch(`/api/users/${user.uuid}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...user, ...data }),

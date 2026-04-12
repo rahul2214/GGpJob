@@ -1,33 +1,46 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
-import useSWR from 'swr';
-import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db } from "@/firebase/config";
+import useSWR from "swr";
+import { supabase } from "@/lib/supabase-client";
 import type { Job } from '@/lib/types';
 import axiosInstance from "@/lib/axios";
+
 
 // Axios-based fetcher with explicit typing for SWR
 const fetcher = (url: string) => axiosInstance.get(url) as any;
 
 export function useJobs(params?: Record<string, any>) {
-  const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
-  const { data, error, isLoading } = useSWR<Job[]>(`/jobs${queryString}`, fetcher, {
+  const { data, error, isLoading } = useSWR<Job[]>(() => {
+    if (!params) return '/jobs';
+    
+    // Skip fetching recommended or referral jobs if userId isn't available yet
+    if ((params.view === 'recommended' || params.isReferral === 'true') && !params.userId) return null;
+    
+    const queryString = new URLSearchParams(params).toString();
+    return `/jobs?${queryString}`;
+  }, fetcher, {
     revalidateOnFocus: false,
-    dedupingInterval: 60000, // 1 minute
+    dedupingInterval: 60000, 
   });
 
   return {
     jobs: data,
     isLoading,
     isError: error
-  }
+  };
 }
 
 export function useDashboardJobs(params?: Record<string, any>) {
-  const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
-  const { data, error, isLoading } = useSWR<{ recommended: Job[], referral: Job[] }>(`/jobs${queryString}`, fetcher, {
+  const { data, error, isLoading } = useSWR<{ recommended: Job[], referral: Job[] }>(() => {
+    if (!params) return null; // Dashboard always needs params
+    
+    // Dashboard requires userId to filter applied jobs and provide recommendations
+    if (params.dashboard === 'true' && !params.userId) return null;
+    
+    const queryString = new URLSearchParams(params).toString();
+    return `/jobs?${queryString}`;
+  }, fetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 60000,
   });
@@ -36,7 +49,7 @@ export function useDashboardJobs(params?: Record<string, any>) {
     data: data,
     isLoading,
     isError: error
-  }
+  };
 }
 
 
@@ -61,69 +74,86 @@ export function useApplications(params?: Record<string, any>) {
 
 
 
-export function useNotifications(userId?: string) {
+export function useNotifications(userId?: string, options: { skip?: boolean } = {}) {
     const [notifications, setNotifications] = useState<any[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
-        if (!userId) {
+        if (!userId || options.skip) {
             setNotifications(null);
             setIsLoading(false);
             return;
         }
 
         setIsLoading(true);
-        const q = query(
-            collection(db, "notifications"),
-            where("userId", "==", userId)
-            // Temporarily removing orderBy to test if it's an index issue
-            // orderBy("createdAt", "desc")
-        );
 
-
-        const unsubscribe = onSnapshot(q, 
-            (snapshot) => {
-                const notificationsData = snapshot.docs.map(doc => {
-                    const data = doc.data();
-                    // Convert Firestore Timestamp to Date/String
-                    let timestamp = new Date().toISOString();
-                    if (data.createdAt && typeof data.createdAt.toDate === 'function') {
-                        timestamp = data.createdAt.toDate().toISOString();
-                    } else if (data.timestamp) {
-                        // Handle legacy timestamp format or if already a string
-                        timestamp = data.timestamp;
-                    }
-
-                    return {
-                        id: doc.id,
-                        ...data,
-                        timestamp: timestamp
-                    };
-                });
-
-                // Manually sort since we removed orderBy
-                notificationsData.sort((a: any, b: any) => {
-                    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-                });
-                setNotifications(notificationsData);
+        // 1. Initial Fetch
+        const fetchInitialNotifications = async () => {
+            try {
+                // Use backend API to resolve complex IDs and bypass RLS
+                const res = await fetch(`/api/notifications?userId=${userId}`);
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Failed to fetch notifications');
+                }
+                const data = await res.json();
+                
+                setNotifications(data);
                 setIsLoading(false);
-            },
-            (err) => {
-                console.error("Firestore notification listener error:", err);
-                setError(err as Error);
+            } catch (err: any) {
+                console.error("Supabase initial notifications fetch error:", err);
+                setError(err);
                 setIsLoading(false);
             }
-        );
+        };
 
-        return () => unsubscribe();
-    }, [userId]);
+        fetchInitialNotifications();
+
+        // 2. Real-time Subscription - Use a unique ID to avoid collisions
+        const channelName = `notifications_${userId}_${Date.now()}`;
+        const channel = supabase
+            .channel(channelName)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'notifications',
+                    filter: `${/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId) ? 'user_id' : 'user_pk'}=eq.${userId}`,
+                },
+                (payload) => {
+                    if (payload.eventType === 'INSERT') {
+                        setNotifications(prev => {
+                            const newNotif = {
+                                id: payload.new.id,
+                                ...payload.new,
+                                timestamp: payload.new.created_at
+                            };
+                            return [newNotif, ...(prev || [])];
+                        });
+                    } else if (payload.eventType === 'UPDATE') {
+                        setNotifications(prev => 
+                            (prev || []).map(n => n.id === payload.new.id ? { ...n, ...payload.new } : n)
+                        );
+                    } else if (payload.eventType === 'DELETE') {
+                        setNotifications(prev => 
+                            (prev || []).filter(n => n.id !== payload.old.id)
+                        );
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [userId, options.skip]);
 
     return {
         notifications,
         isLoading,
         isError: error,
-        // No longer need manual mutate with real-time listener
         mutateNotifications: () => {} 
     };
 }

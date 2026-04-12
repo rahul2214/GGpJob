@@ -1,48 +1,59 @@
 
 import { NextResponse } from 'next/server';
-import { db, auth } from '@/firebase/admin-config';
-import { User } from '@/lib/types';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { checkSuperAdmin } from '@/lib/check-admin';
 
 export async function POST(request: Request) {
     try {
-        const { name, email, phone, password } = await request.json();
+        const { name, email, phone, password, requestedBy } = await request.json();
 
         if (!name || !email || !phone || !password) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
-        
-        // 1. Create user in Firebase Auth
-        const userRecord = await auth.createUser({
+
+        // Only super admins can create new admins
+        if (requestedBy && !(await checkSuperAdmin(requestedBy))) {
+            return NextResponse.json({ error: 'Only Super Admins can create admin accounts.' }, { status: 403 });
+        }
+
+        // 1. Create user in Supabase Auth
+        const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password,
-            displayName: name,
+            email_confirm: true,
+            user_metadata: { name, role: 'Admin' }
         });
 
-        // 2. Set custom claim for Admin role
-        await auth.setCustomUserClaims(userRecord.uid, { role: 'Admin' });
+        if (authError) throw authError;
 
-        // 3. Create user profile in Firestore (Dedicated admins collection)
-        const userProfile: Omit<User, 'id'> = {
-            name,
-            email,
-            phone,
-            role: 'Admin',
-            headline: 'Administrator',
-        };
+        // 2. Insert into the admins table
+        const { error: adminError } = await supabaseAdmin
+            .from('admins')
+            .insert([{
+                id: authUser.user.id,
+                name,
+                email,
+                phone,
+                designation: 'Administrator',
+                is_super_admin: false,
+                can_manage_jobs: true,
+                can_manage_users: true,
+                can_manage_coupons: true,
+                can_view_analytics: true,
+                can_manage_admins: false,
+                role_id: 4,
+            }]);
 
-        await db.collection('admins').doc(userRecord.uid).set(userProfile);
+        if (adminError) throw adminError;
 
-        return NextResponse.json({ uid: userRecord.uid, ...userProfile }, { status: 201 });
+        return NextResponse.json({ uid: authUser.user.id, name, email, role: 'Admin' }, { status: 201 });
 
     } catch (error: any) {
         console.error('Admin Creation Error:', error);
-        let errorMessage = 'Failed to create admin user.';
-        if (error.code === 'auth/email-already-exists') {
+        let errorMessage = error.message || 'Failed to create admin user.';
+        if (error.status === 422 && error.message?.includes('already registered')) {
             errorMessage = 'An account with this email address already exists.';
-        } else if (error.code === 'auth/invalid-password') {
-            errorMessage = error.message;
         }
-
         return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }

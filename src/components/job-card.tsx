@@ -1,9 +1,8 @@
-
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Job } from "@/lib/types";
-import { MapPin, Briefcase, Clock, Star, CheckCircle, BadgeDollarSign } from 'lucide-react';
+import { MapPin, Briefcase, Clock, Star, CheckCircle, BadgeDollarSign, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface JobCardProps {
@@ -16,20 +15,30 @@ interface JobCardProps {
 export default function JobCard({ job, isApplied = false, hideDetails = false }: JobCardProps) {
 
   return (
-    <Link href={`/jobs/${job.id}`} className="block hover:shadow-lg transition-shadow duration-300 rounded-lg h-full">
+    <Link href={`/jobs/${job.uuid || job.id}`} className="block hover:shadow-lg transition-shadow duration-300 rounded-lg h-full">
       <Card className="h-full flex flex-col md:border relative">
         <CardHeader>
           <div className="flex justify-between items-start">
             <div className="flex-1 min-w-0 pr-10">
               <CardTitle className="text-lg truncate">{job.title}</CardTitle>
-              <CardDescription className="truncate">{job.companyName}</CardDescription>
+              <div className="flex items-center gap-2 text-sm text-blue-600 font-medium">
+                <CardDescription className="truncate">{job.companyName}</CardDescription>
+                {job.job_role && (
+                  <>
+                    <span className="text-gray-300">•</span>
+                    <span className="truncate">{job.job_role}</span>
+                  </>
+                )}
+              </div>
             </div>
-            {job.isReferral && (
-              <Badge variant="outline" className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200 ml-2 shrink-0">
-                <Star className="h-3 w-3" />
-                Referral
-              </Badge>
-            )}
+            <div className="flex flex-col gap-2">
+              {job.isReferral && (
+                <Badge variant="outline" className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200 ml-2 shrink-0">
+                  <Star className="h-3 w-3" />
+                  Referral
+                </Badge>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="flex-grow">
@@ -46,7 +55,15 @@ export default function JobCard({ job, isApplied = false, hideDetails = false }:
                 </div>
                 <div className="flex items-center gap-2">
                   <BadgeDollarSign className="h-4 w-4 text-primary" />
-                  <span className="font-semibold text-foreground">{job.salary || 'Not Disclosed'}</span>
+                  <span className="font-semibold text-foreground">
+                    {job.salaryMin && job.salaryMax 
+                      ? `₹ ${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()}`
+                      : job.salaryMin 
+                        ? `From ₹ ${job.salaryMin.toLocaleString()}`
+                        : job.salaryMax 
+                          ? `Up to ₹ ${job.salaryMax.toLocaleString()}`
+                          : 'Not Disclosed'}
+                  </span>
                 </div>
               </>
             )}

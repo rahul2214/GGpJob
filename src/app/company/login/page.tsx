@@ -30,8 +30,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { useEffect, useState } from "react";
-import { getAuth, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } from "firebase/auth";
-import { firebaseApp } from "@/firebase/config";
+import { supabase } from "@/lib/supabase-client";
 import { motion } from "framer-motion";
 import RecruiterPricingGrid from "@/components/recruiter-pricing-grid";
 
@@ -72,26 +71,15 @@ export default function CompanyLoginPage() {
   const handleResendVerification = async (email: string) => {
     setIsResending(true);
     try {
-      const auth = getAuth(firebaseApp);
-      const { password } = form.getValues();
-      if (!password) {
-        toast({ title: 'Password Required', description: 'Please enter your password to resend the verification email.', variant: 'destructive' });
-        return;
-      }
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-      if (firebaseUser && !firebaseUser.emailVerified) {
-        const actionCodeSettings = { url: window.location.origin + "/company/login", handleCodeInApp: true };
-        await sendEmailVerification(firebaseUser, actionCodeSettings);
-        toast({ title: 'Verification Email Sent', description: 'A new verification link has been sent. Please check your inbox and spam folder.' });
-      } else if (firebaseUser?.emailVerified) {
-        toast({ title: 'Already Verified', description: 'Your email is already verified. You can log in normally.' });
-      }
-      await auth.signOut();
+      const res = await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, redirectUrl: window.location.origin + '/company/login' }),
+      });
+      if (!res.ok) throw new Error('Failed to resend');
+      toast({ title: 'Verification Email Sent', description: 'A new verification link has been sent via Firebase. Please check your inbox.' });
     } catch (error: any) {
-      let msg = "Failed to resend verification. Please check your credentials.";
-      if (error.code === 'auth/too-many-requests') msg = "Too many attempts. Please try again later.";
-      toast({ title: 'Error', description: msg, variant: 'destructive' });
+      toast({ title: 'Error', description: error.message || 'Failed to resend verification.', variant: 'destructive' });
     } finally {
       setIsResending(false);
     }
@@ -99,41 +87,50 @@ export default function CompanyLoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      const auth = getAuth(firebaseApp);
-      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      const firebaseUser = userCredential.user;
-      if (!firebaseUser.emailVerified) {
-        await auth.signOut();
-        toast({
-          title: "Email Not Verified",
-          description: "Please verify your email address before logging in.",
-          variant: "destructive",
-          duration: 10000,
-          action: (
-            <Button variant="outline" size="sm" onClick={() => handleResendVerification(data.email)} disabled={isResending}>
-              {isResending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : "Resend Email"}
-            </Button>
-          )
-        });
-        return;
-      }
-      const res = await fetch(`/api/users?uid=${firebaseUser.uid}`);
-      if (res.ok) {
-        const profile = await res.json();
-        if (profile.role === 'Recruiter' || profile.role === 'Employee') {
-          if (!profile.isPaid) {
-            router.push("/company/payment");
-            return;
-          }
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (error) {
+        if (error.message.includes("Email not confirmed")) {
+          toast({
+            title: "Email Not Verified",
+            description: "Please verify your email address before logging in.",
+            variant: "destructive",
+            duration: 10000,
+            action: (
+              <Button variant="outline" size="sm" onClick={() => handleResendVerification(data.email)} disabled={isResending}>
+                {isResending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : "Resend Email"}
+              </Button>
+            )
+          });
+          return;
         }
-      } else {
-        await auth.signOut();
-        toast({ title: "Access Denied", description: "Company profile not found.", variant: "destructive" });
-        return;
+        throw error;
+      }
+
+      if (authData.user) {
+        const res = await fetch(`/api/users?uid=${authData.user.id}`);
+        if (res.ok) {
+          const profile = await res.json();
+          // Only Recruiters (account owners) need a paid plan.
+          // Employees are added by the company and use the company's plan.
+          if (profile.role === 'Recruiter') {
+            if (!profile.isPaid) {
+              router.push("/company/payment");
+              return;
+            }
+          }
+        } else {
+          await supabase.auth.signOut();
+          toast({ title: "Access Denied", description: "Company profile not found in Supabase.", variant: "destructive" });
+          return;
+        }
       }
       router.push("/");
     } catch (error: any) {
-      toast({ title: "Login Failed", description: "Invalid email or password.", variant: "destructive" });
+      toast({ title: "Login Failed", description: error.message || "Invalid email or password.", variant: "destructive" });
     }
   };
 
@@ -145,9 +142,17 @@ export default function CompanyLoginPage() {
     }
     setIsResettingPassword(true);
     try {
-      const auth = getAuth(firebaseApp);
-      await sendPasswordResetEmail(auth, email);
-      toast({ title: "Password Reset Email Sent", description: "Check your inbox for a link to reset your password." });
+      // Use Firebase to send password reset — bypasses Supabase email rate limits
+      const res = await fetch('/api/auth/password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, redirectUrl: window.location.origin + '/reset-password' }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to send password reset email.');
+      }
+      toast({ title: "Password Reset Email Sent", description: "Check your inbox for a link from Firebase to reset your password." });
       return true;
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to send password reset email.", variant: "destructive" });

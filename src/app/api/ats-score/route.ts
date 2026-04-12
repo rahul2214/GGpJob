@@ -31,6 +31,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
     }
 
+    // Enforce 2MB limit
+    if (file.size > 2 * 1024 * 1024) {
+      return NextResponse.json({ error: "File size exceeds 2MB limit." }, { status: 413 })
+    }
+
     if (!process.env.GROK_API_KEY) {
       return NextResponse.json({ error: "Grok API Key is missing. Please configure GROK_API_KEY." }, { status: 500 })
     }

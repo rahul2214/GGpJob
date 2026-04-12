@@ -1,258 +1,346 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { db } from '@/firebase/admin-config';
-import type { Job, Application } from '@/lib/types';
-import type { firestore as adminFirestore } from 'firebase-admin';
-import { apiCache } from '@/lib/cache';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import type { Job } from '@/lib/types';
 
-// Helper function to create a map from an array of documents
-const createMap = (docs: any[], key = 'id') => {
-    const map = new Map();
-    for (const doc of docs) {
-        // Map by the requested key
-        if (doc[key] !== undefined) {
-            map.set(String(doc[key]), doc);
-        }
-        // Fallback: map by internal 'id'
-        if (doc.id !== undefined) {
-            map.set(String(doc.id), doc);
-        }
-        // Fallback: map by firestore document string ID
-        if (doc._docId !== undefined) {
-            map.set(String(doc._docId), doc);
-        }
-    }
-    return map;
-};
+// Helper to map Supabase snake_case job to camelCase Job type
+function mapJobToFrontend(job: any): any {
+    return {
+        id: job.id,           // Numeric PK (BIGINT)
+        uuid: job.uuid,       // Public identifier (UUID string)
+        title: job.title,
+        description: job.description,
+        companyName: job.company_name,
+        companyLogo: job.company_logo,
+        domainId: job.domains?.uuid || null,
+        domainPk: job.domain_pk,
+        jobTypeId: job.job_types?.uuid || null,
+        jobTypePk: job.job_type_pk,
+        workplaceTypeId: job.workplace_types?.uuid || null,
+        workplaceTypePk: job.workplace_type_pk,
+        locationIds: job.location_uuids || [], // Resolved UUIDs
+        locationPks: job.location_pks || [],
+        salaryMin: job.salary_min,
+        salaryMax: job.salary_max,
+        job_role: job.job_role,
+        minExperience: job.experience_min,
+        maxExperience: job.experience_max,
+        isReferral: job.is_referral,
+        recruiterId: job.recruiter_pk || job.recruiter_id,
+        employeeId: job.employee_pk || job.employee_id,
+        postedAt: job.posted_at,
+        expiresAt: job.expires_at,
+        appExpiresAt: job.app_expires_at,
+        maxApplies: job.max_applies,
+        planTypeAtPosting: job.plan_type_at_posting,
+        status: job.status,
+        vacancies: job.vacancies,
+        jobLink: job.job_link,
+        sections: job.sections || [],
+        skillIds: job.skill_uuids || [],     // Resolved UUIDs
+        benefitIds: job.benefit_uuids || [], // Resolved UUIDs
+        benefits: job.benefit_names || [],
+        domain: job.domains?.name || 'N/A',
+        type: job.job_types?.name || 'N/A',
+        workplaceType: job.workplace_types?.name || 'N/A',
+        companySizeId: job.company_sizes?.uuid || null, // Map to UUID
+        companySize: job.company_sizes?.name || 'N/A',
+        companyLinkedinUrl: job.company_linkedin_url,
+        companyOverview: job.company_overview,
+        companyWebsite: job.company_website,
+        address: job.address,
+        isConsultancy: job.is_consultancy,
+        // Support for labels
+        location: job.location_names ? job.location_names.join(', ') : 'N/A',
+        locations: job.location_names || [],
+        experienceLevel: job.experience_min === job.experience_max ? `${job.experience_min} Years` : `${job.experience_min} - ${job.experience_max} Years`,
+        applicantCount: job.applicantCount ?? job.applications_count?.[0]?.count ?? 0,
+        selectedApplicantCount: job.selectedApplicantCount ?? job.selected_applications_count?.[0]?.count ?? 0
+    };
+}
 
-async function getCachedCollection(collectionName: string) {
-    // Check cache first
-    // const cached = apiCache.get<any[]>(collectionName);
-    // if (cached) return cached;
-    
-    const snapshot = await db.collection(collectionName).get();
-    const data = snapshot.docs.map(doc => {
-        const docData = doc.data();
-        return {
-            ...docData,
-            _docId: doc.id // Store Firestore document ID separately, preserve internal 'id'
-        };
+// Helper to resolve location and benefit names for a list of jobs
+async function resolveJobNames(jobs: any[]): Promise<any[]> {
+    if (!jobs || jobs.length === 0) return [];
+
+    const allLocationPks = Array.from(new Set(jobs.flatMap(j => j.location_pks || [])));
+    const allBenefitPks = Array.from(new Set(jobs.flatMap(j => j.benefit_ids || [])));
+    const allSkillPks = Array.from(new Set(jobs.flatMap(j => j.skill_pks || [])));
+
+    const [
+        { data: locations },
+        { data: benefits },
+        { data: skills }
+    ] = await Promise.all([
+        allLocationPks.length > 0 ? supabaseAdmin.from('locations').select('id, uuid, name').in('id', allLocationPks) : { data: [] },
+        allBenefitPks.length > 0 ? supabaseAdmin.from('benefits').select('id, uuid, name').in('id', allBenefitPks) : { data: [] },
+        allSkillPks.length > 0 ? supabaseAdmin.from('skills').select('id, uuid, name').in('id', allSkillPks) : { data: [] }
+    ]);
+
+    const locationMap = new Map(locations?.map(l => [String(l.id), { name: l.name, uuid: l.uuid }]) || []);
+    const benefitMap = new Map(benefits?.map(b => [String(b.id), { name: b.name, uuid: b.uuid }]) || []);
+    const skillMap = new Map(skills?.map(s => [String(s.id), { name: s.name, uuid: s.uuid }]) || []);
+
+    // ── Bulk Resolve Application Counts ────────────────────────────────────
+    const jobPks = jobs.map(j => j.id);
+    const { data: apps } = await supabaseAdmin
+        .from('applications')
+        .select('job_pk, status_id')
+        .in('job_pk', jobPks);
+
+    const appCountMap = new Map<number, { total: number, selected: number }>();
+    apps?.forEach(app => {
+        const counts = appCountMap.get(app.job_pk) || { total: 0, selected: 0 };
+        counts.total++;
+        if (app.status_id === 4) counts.selected++;
+        appCountMap.set(app.job_pk, counts);
     });
-    apiCache.set(collectionName, data, 5 * 60 * 1000); // 5 minutes cache
-    return data;
+
+    return jobs.map(job => {
+        const mappedLocations = (job.location_pks || []).map((id: number) => locationMap.get(String(id))).filter(Boolean);
+        const mappedBenefits = (job.benefit_ids || []).map((id: number) => benefitMap.get(String(id))).filter(Boolean);
+        const mappedSkills = (job.skill_pks || []).map((id: number) => skillMap.get(String(id))).filter(Boolean);
+        
+        const counts = appCountMap.get(job.id) || { total: 0, selected: 0 };
+        
+        return mapJobToFrontend({ 
+            ...job, 
+            location_names: mappedLocations.map((l: any) => l.name),
+            location_uuids: mappedLocations.map((l: any) => l.uuid),
+            benefit_names: mappedBenefits.map((b: any) => b.name),
+            benefit_uuids: mappedBenefits.map((b: any) => b.uuid),
+            skill_uuids: mappedSkills.map((s: any) => s.uuid),
+            applicantCount: counts.total,
+            selectedApplicantCount: counts.selected
+        });
+    });
 }
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
-    const jobsRef = db.collection('jobs');
     
-    // 1. Fetch all metadata collections upfront
-    const [
-        locationsData,
-        domainsData,
-        jobTypesData,
-        workplaceTypesData,
-    ] = await Promise.all([
-        getCachedCollection('locations'),
-        getCachedCollection('domains'),
-        getCachedCollection('job_types'),
-        getCachedCollection('workplace_types'),
-    ]);
-    
-    const locationMap = createMap(locationsData, 'id');
-    const domainMap = createMap(domainsData, 'id');
-    const jobTypeMap = createMap(jobTypesData, 'id');
-    const workplaceTypeMap = createMap(workplaceTypesData, 'id');
+    const userId = searchParams.get('userId');
+    let appliedJobPks: number[] = [];
+    let userDomainId: any = null;
 
-    // 2. Define a unified job processing function
-    const processJobsWithLabels = (jobs: (Job & {id: string})[]) => {
-        return jobs.map(jobData => {
-            const locIds = jobData.locationIds || (jobData.locationId ? [jobData.locationId] : []);
-            const locNames = locIds.map(id => {
-                const stringId = typeof id === 'object' && (id as any)?.id ? String((id as any).id) : String(id);
-                return locationMap.get(stringId)?.name;
-            }).filter(Boolean);
+    if (userId) {
+        const isUuid = userId.includes('-');
+        
+        // Robust lookup across tables
+        let { data: user } = await supabaseAdmin
+            .from('jobseekers')
+            .select('id, domain_id')
+            .eq(isUuid ? 'uuid' : 'id', userId)
+            .maybeSingle();
             
-            const domain = domainMap.get(String(jobData.domainId));
-            const jobType = jobTypeMap.get(String(jobData.jobTypeId));
-            const workplaceType = jobData.workplaceTypeId ? workplaceTypeMap.get(String(jobData.workplaceTypeId)) : null;
-            
-            const minExp = jobData.minExperience ?? 0;
-            const maxExp = jobData.maxExperience ?? minExp;
+        if (!user && isUuid) {
+            const { data: employee } = await supabaseAdmin
+                .from('employees')
+                .select('id, domain_id')
+                .eq('uuid', userId)
+                .maybeSingle();
+            user = employee as any;
+        }
 
-            return {
-                ...jobData,
-                location: locNames.length > 0 ? locNames.join(', ') : (jobData.location || 'N/A'),
-                locations: locNames,
-                domain: domain?.name || 'N/A',
-                type: jobType?.name || (jobData.type as any) || 'N/A',
-                workplaceType: workplaceType?.name || 'N/A',
-                experienceLevel: minExp === maxExp ? `${minExp} Years` : `${minExp} - ${maxExp} Years`,
-            };
-        });
-    };
+        if (user) {
+            userDomainId = user.domain_id;
+            const { data: apps } = await supabaseAdmin.from('applications').select('job_pk').eq('user_pk', user.id);
+            if (apps && apps.length > 0) {
+                appliedJobPks = apps.map(ap => ap.job_pk).filter(Boolean);
+            }
+        }
+    }
 
-    // --- Start Dashboard-specific Logic ---
+    // Base Select with Joins
+    let query = supabaseAdmin
+        .from('jobs')
+        .select(`
+            *,
+            domains!domain_pk(uuid, name),
+            job_types!job_type_pk(uuid, name),
+            workplace_types!workplace_type_pk(uuid, name),
+            company_sizes!company_size_id(uuid, name),
+            applications_count:applications(count)
+        `)
+        .eq('status', 'active')
+        .gt('expires_at', new Date().toISOString());
+
+    // Build exclusion list
+    if (appliedJobPks.length > 0) {
+        query = query.not('id', 'in', `(${appliedJobPks.join(',')})`);
+    }
+
+    // Dashboard View Logic
     if (searchParams.get('dashboard') === 'true') {
-        const domainId = searchParams.get('domain');
+        
+    const domainIdParam = searchParams.get('domain');
+    let domainPk = null;
+    if (domainIdParam) {
+        if (/^\d+$/.test(domainIdParam)) {
+            domainPk = parseInt(domainIdParam);
+        } else {
+            const { data: d } = await supabaseAdmin.from('domains').select('id').eq('uuid', domainIdParam).single();
+            if (d) domainPk = d.id;
+        }
+    }
+
         const postedDays = searchParams.get('posted');
 
-        let recQuery: adminFirestore.Query = jobsRef.where('isReferral', '==', false).limit(50);
-        let refQuery: adminFirestore.Query = jobsRef.where('isReferral', '==', true).limit(50);
+        let recQuery = supabaseAdmin.from('jobs').select('*, domains!domain_pk(uuid, name), job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name)').eq('is_referral', false).limit(10).order('posted_at', { ascending: false });
+        let refQuery = supabaseAdmin.from('jobs').select('*, domains!domain_pk(uuid, name), job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name)').eq('is_referral', true).limit(10).order('posted_at', { ascending: false });
 
-        if (domainId) {
-            recQuery = recQuery.where('domainId', '==', domainId);
-            refQuery = refQuery.where('domainId', '==', domainId);
+        if (appliedJobPks.length > 0) {
+            recQuery = recQuery.not('id', 'in', `(${appliedJobPks.join(',')})`);
+            refQuery = refQuery.not('id', 'in', `(${appliedJobPks.join(',')})`);
         }
 
-        const [recSnap, refSnap] = await Promise.all([recQuery.get(), refQuery.get()]);
+        // Apply Domain Filter (Targeted Dashboard View)
+        let dashboardDomainPk = domainPk;
         
-        const filterProcessSort = (snap: adminFirestore.QuerySnapshot) => {
-            let jobs = snap.docs.map(doc => ({ ...(doc.data() as Job), id: doc.id }));
-            
-            if (postedDays && postedDays !== 'all') {
-                const days = parseInt(postedDays, 10);
-                const limitDate = new Date();
-                limitDate.setDate(limitDate.getDate() - days);
-                const limitIso = limitDate.toISOString();
-                jobs = jobs.filter(job => String(job.postedAt) >= limitIso);
+        // If no explicit domain param, use the user's profile domain
+        if (!dashboardDomainPk && userDomainId) {
+            if (/^\d+$/.test(String(userDomainId))) {
+                dashboardDomainPk = parseInt(userDomainId);
+            } else {
+                const { data: d } = await supabaseAdmin.from('domains').select('id').eq('uuid', userDomainId).single();
+                if (d) dashboardDomainPk = d.id;
             }
+        }
 
-            return processJobsWithLabels(jobs)
-                .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime())
-                .slice(0, 10);
-        };
+        if (dashboardDomainPk) {
+            recQuery = recQuery.eq('domain_pk', dashboardDomainPk);
+            refQuery = refQuery.eq('domain_pk', dashboardDomainPk);
+        }
+
+        if (postedDays && postedDays !== 'all') {
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - parseInt(postedDays));
+            recQuery = recQuery.gte('posted_at', cutoff.toISOString());
+            refQuery = refQuery.gte('posted_at', cutoff.toISOString());
+        }
+
+        const [recSnap, refSnap] = await Promise.all([recQuery, refQuery]);
+        
+        const [recommended, referral] = await Promise.all([
+            resolveJobNames(recSnap.data || []),
+            resolveJobNames(refSnap.data || [])
+        ]);
 
         return NextResponse.json({
-            recommended: filterProcessSort(recSnap),
-            referral: filterProcessSort(refSnap),
+            recommended,
+            referral,
         });
     }
 
-    // --- Start General Search/Listing Logic ---
-    let query: adminFirestore.Query = jobsRef;
-    
-    // const now = new Date().toISOString();
-    // query = query.where('expiresAt', '>', now); // This requires a composite index with orderBy. Moved to in-memory filter.
-    
-    let hasComplexFilters = false;
-
+    // General Filters
     const isRecommended = searchParams.get('view') === 'recommended';
-    const userId = searchParams.get('userId');
 
     if (searchParams.get('isReferral') !== null) {
-      query = query.where('isReferral', '==', searchParams.get('isReferral') === 'true');
-      hasComplexFilters = true;
+      query = query.eq('is_referral', searchParams.get('isReferral') === 'true');
     }
 
-    if (isRecommended && userId) {
-        const userDoc = await db.collection('users').doc(userId).get();
-        if (userDoc.exists && userDoc.data()?.domainId) {
-            query = query.where('domainId', '==', userDoc.data()!.domainId);
-            hasComplexFilters = true;
+    const isReferralParam = searchParams.get('isReferral') === 'true';
+    // Handle Similar Jobs, Recommended Jobs, and Referral Lists
+    const isSimilar = searchParams.get('similar') === 'true';
+    const currentJobId = searchParams.get('currentJobId');
+    if (currentJobId) {
+        if (/^\d+$/.test(currentJobId)) {
+            query = query.neq('id', parseInt(currentJobId));
+        } else {
+            query = query.neq('uuid', currentJobId);
         }
     }
 
-    const recruiterId = searchParams.get('recruiterId');
-    if (recruiterId) {
-      query = query.where('recruiterId', '==', recruiterId);
-      hasComplexFilters = true; 
+    if ((isRecommended || isReferralParam || isSimilar) && userDomainId) {
+        if (/^\d+$/.test(String(userDomainId))) {
+            query = query.eq('domain_pk', parseInt(userDomainId));
+        } else {
+            const { data: domain } = await supabaseAdmin.from('domains').select('id').eq('uuid', userDomainId).single();
+            if (domain) {
+                query = query.eq('domain_pk', domain.id);
+            }
+        }
     }
-    const employeeId = searchParams.get('employeeId');
-    if (employeeId) {
-      query = query.where('employeeId', '==', employeeId);
-      hasComplexFilters = true;
-    }
+
     
-    const locationsParams = searchParams.getAll('location').filter(l => l && l !== 'all');
+    const recruiterId = searchParams.get('recruiterId');
+    let recruiterPk = null;
+    const isValidRecruiterId = recruiterId && recruiterId !== 'undefined' && recruiterId !== 'null';
+    if (isValidRecruiterId) {
+        const { data: r } = await supabaseAdmin.from('recruiters').select('id').eq('uuid', recruiterId).single();
+        if (r) recruiterPk = r.id;
+    }
+
+    if (isValidRecruiterId && recruiterPk !== null) query = query.eq('recruiter_pk', recruiterPk);
+
+    
+    const employeeId = searchParams.get('employeeId');
+    let employeePk = null;
+    const isValidEmployeeId = employeeId && employeeId !== 'undefined' && employeeId !== 'null';
+    if (isValidEmployeeId) {
+        const { data: e } = await supabaseAdmin.from('employees').select('id').eq('uuid', employeeId).single();
+        if (e) employeePk = e.id;
+    }
+
+    if (isValidEmployeeId && employeePk !== null) query = query.eq('employee_pk', employeePk);
+    
+    // Helper to resolve IDs (UUID or Numeric) to PKs
+    const resolveToPks = async (table: string, inputs: string[]) => {
+        const uuidInputs = inputs.filter(i => i.includes('-'));
+        const numericInputs = inputs.filter(i => /^\d+$/.test(i)).map(i => parseInt(i));
+        
+        const finalPks = [...numericInputs];
+        if (uuidInputs.length > 0) {
+            const { data } = await supabaseAdmin.from(table).select('id').in('uuid', uuidInputs);
+            if (data) finalPks.push(...data.map(d => d.id));
+        }
+        return Array.from(new Set(finalPks));
+    };
+
+    const locationsParams = searchParams.getAll('location').flatMap(l => l.split(',')).filter(l => l && l !== 'all');
     if (locationsParams.length > 0) {
-        query = query.where('locationIds', 'array-contains-any', locationsParams);
-        hasComplexFilters = true;
+        const lpks = await resolveToPks('locations', locationsParams);
+        if (lpks.length > 0) query = query.overlaps('location_pks', lpks);
     } 
 
     const domainsParams = searchParams.getAll('domain').flatMap(d => d.split(',')).filter(d => d && d !== 'all');
     if (domainsParams.length > 0 && !isRecommended) {
-        query = query.where('domainId', 'in', domainsParams);
-        hasComplexFilters = true;
+        const dpks = await resolveToPks('domains', domainsParams);
+        if (dpks.length > 0) query = query.in('domain_pk', dpks);
     }
 
-    const jobTypesParams = searchParams.getAll('jobType').filter(jt => jt && jt !== 'all');
+    const jobTypesParams = searchParams.getAll('jobType').flatMap(jt => jt.split(',')).filter(jt => jt && jt !== 'all');
     if (jobTypesParams.length > 0) {
-        query = query.where('jobTypeId', 'in', jobTypesParams);
-        hasComplexFilters = true;
+        const jtpks = await resolveToPks('job_types', jobTypesParams);
+        if (jtpks.length > 0) query = query.in('job_type_pk', jtpks);
     }
 
-    if (!searchParams.get('search') && !hasComplexFilters) {
-        query = query.orderBy('postedAt', 'desc');
-    }
-    
-    if (hasComplexFilters || searchParams.get('search')) {
-        query = query.limit(500);
-    } else if (searchParams.get('limit')) {
-        // Fetch slightly more than needed to account for in-memory filtering of expired jobs
-        const requestedLimit = parseInt(searchParams.get('limit')!, 10);
-        query = query.limit(Math.max(50, requestedLimit * 2));
+    // Search term (ILike for PostgreSQL)
+    const searchTerm = searchParams.get('search');
+    if (searchTerm) {
+        query = query.ilike('title', `%${searchTerm}%`);
     }
 
-    const jobsSnapshot = await query.get();
-    
-    // Fetch applications counts separately for these jobs
-    let applications: Application[] = [];
-    if (!jobsSnapshot.empty) {
-        const jobIds = jobsSnapshot.docs.map(doc => doc.id);
-        const chunkSize = 30;
-        const appPromises = [];
-        for (let i = 0; i < jobIds.length; i += chunkSize) {
-            appPromises.push(db.collection('applications').where('jobId', 'in', jobIds.slice(i, i + chunkSize)).get());
-        }
-        const appSnaps = await Promise.all(appPromises);
-        applications = appSnaps.flatMap(snap => snap.docs.map(doc => doc.data() as Application));
-    }
-
-    const applicationCounts = applications.reduce((acc, app) => {
-        if (!acc[app.jobId]) acc[app.jobId] = { total: 0, selected: 0 };
-        acc[app.jobId].total++;
-        if (app.statusId === 4) acc[app.jobId].selected++;
-        return acc;
-    }, {} as Record<string, { total: number; selected: number }>);
-
-    let jobs = jobsSnapshot.docs.map(doc => ({ ...(doc.data() as Job), id: doc.id }));
-
-    // In-memory filters
-    const now = new Date().toISOString();
-    jobs = jobs.filter(job => String(job.expiresAt) > now);
-
+    // Timing
     const postedParam = searchParams.get('posted');
     if (postedParam && postedParam !== 'all') {
-        const days = parseInt(postedParam, 10);
         const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - days);
-        const cutoffIso = cutoff.toISOString();
-        jobs = jobs.filter(job => String(job.postedAt) >= cutoffIso);
+        cutoff.setDate(cutoff.getDate() - parseInt(postedParam));
+        query = query.gte('posted_at', cutoff.toISOString());
     }
 
-    const searchTerm = searchParams.get('search')?.toLowerCase();
-    if (searchTerm) {
-        jobs = jobs.filter(job => job.title.toLowerCase().includes(searchTerm));
-    }
-
-    // Apply labels and counts
-    const finalJobs = processJobsWithLabels(jobs).map(job => {
-        const counts = applicationCounts[job.id] || { total: 0, selected: 0 };
-        return {
-            ...job,
-            applicantCount: counts.total,
-            selectedApplicantCount: counts.selected,
-        };
-    });
-
-    finalJobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
-
-    // Apply limit if specified
+    // Order and Limit
+    query = query.order('posted_at', { ascending: false });
     const limit = searchParams.get('limit');
-    const finalResult = limit ? finalJobs.slice(0, parseInt(limit, 10)) : finalJobs;
+    if (limit) query = query.limit(parseInt(limit));
+    else query = query.limit(100);
 
-    const response = NextResponse.json(finalResult);
+    const { data: jobs, error } = await query;
+    if (error) throw error;
+
+    const finalJobs = await resolveJobNames(jobs || []);
+
+    const response = NextResponse.json(finalJobs);
     if (!recruiterId && !employeeId) {
         response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
     }
@@ -274,32 +362,174 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Recruiter ID or Employee ID is required' }, { status: 400 });
     }
 
-    // Check user plan and limits
-    const userDoc = await db.collection(recruiterId ? 'recruiters' : 'employees').doc(userId).get();
-    if (!userDoc.exists) {
-        return NextResponse.json({ error: 'Recruiter profile not found' }, { status: 404 });
+    // ── Robust User Resolution ─────────────────────────────────────────────
+    let user: any = null;
+    let userTable: 'recruiters' | 'employees' | 'jobseekers' | null = null;
+    const isNumericUserId = /^\d+$/.test(userId);
+    const lookupId = isNumericUserId ? parseInt(userId) : userId;
+
+    // Ordered search: Recruiters -> Employees -> Jobseekers
+    const profileTables = [
+        { name: 'recruiters', roleLabel: 'Recruiter' },
+        { name: 'employees', roleLabel: 'Employee' },
+        { name: 'jobseekers', roleLabel: 'Job Seeker' },
+        { name: 'admins', roleLabel: 'Admin' }
+    ];
+
+    console.log(`[API_JOBS_POST] Starting robust user resolution for: ${userId} (lookUpId: ${lookupId})`);
+
+    for (const table of profileTables) {
+        // Search by 'id' (UUID PK)
+        let { data: profile, error } = await supabaseAdmin
+            .from(table.name)
+            .select('*')
+            .eq('id', lookupId)
+            .maybeSingle();
+
+        if (error) {
+            console.warn(`[API_JOBS_POST] Search error in ${table.name} (id):`, error.message);
+        }
+
+        // Fallback: Check 'uuid' column if search by 'id' failed
+        if (!profile && !isNumericUserId) {
+            const { data: fallbackProfile, error: fallbackError } = await supabaseAdmin
+                .from(table.name)
+                .select('*')
+                .eq('uuid', lookupId)
+                .maybeSingle();
+            profile = fallbackProfile;
+            if (fallbackError) {
+                console.warn(`[API_JOBS_POST] Search error in ${table.name} (uuid):`, fallbackError.message);
+            }
+        }
+
+        if (profile) {
+            console.log(`[API_JOBS_POST] FOUND user in table: ${table.name}`);
+            user = profile;
+            // If it's a jobseeker, we rely on their 'role' column to determine their actual function
+            if (table.name === 'jobseekers') {
+                const role = profile.role?.toLowerCase() || '';
+                if (role.includes('recruiter')) userTable = 'recruiters';
+                else if (role.includes('employee')) userTable = 'employees';
+                else userTable = 'jobseekers';
+            } else {
+                userTable = table.name as any;
+            }
+            break;
+        }
     }
 
-    const user = userDoc.data()!;
-    const planType = user.planType || 'none';
-    const planExpiresAt = user.planExpiresAt ? new Date(user.planExpiresAt) : null;
+    // ── Self-Healing: Auth Check & Auto-Provisioning ────────────────────────
+    if (!user) {
+        console.warn(`[API_JOBS_POST] Profile for ${userId} not found in DB tables. Checking Auth...`);
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.getUserById(lookupId as string);
+        const authUser = authData?.user;
+
+        if (authUser) {
+            console.log(`[API_JOBS_POST] User found in Auth. Provisioning database profile...`);
+            const meta = authUser.user_metadata || {};
+            const roleName = meta.role || 'Job Seeker';
+            
+            const tableMap: Record<string, string> = {
+                'Recruiter': 'recruiters',
+                'Employee': 'employees',
+                'Admin': 'admins',
+                'Super Admin': 'admins',
+                'Job Seeker': 'jobseekers'
+            };
+            const targetTable = tableMap[roleName as keyof typeof tableMap] || 'jobseekers';
+            
+            const profileToCreate: any = {
+                id: authUser.id,
+                name: meta.name || authUser.email?.split('@')[0] || 'Unknown User',
+                email: authUser.email,
+                phone: meta.phone || ''
+            };
+
+            if (targetTable === 'recruiters' || targetTable === 'employees') {
+                profileToCreate.company_name = meta.companyName || null;
+                profileToCreate.role_id = targetTable === 'recruiters' ? 2 : 3;
+            } else if (targetTable === 'jobseekers') {
+                profileToCreate.role = roleName;
+                profileToCreate.role_id = 1;
+            }
+
+            const { data: newProfile, error: createError } = await supabaseAdmin
+                .from(targetTable)
+                .insert(profileToCreate)
+                .select('*')
+                .single();
+
+            if (createError) {
+                console.error(`[API_JOBS_POST] Failed to auto-provision profile in ${targetTable}:`, createError.message);
+            } else {
+                console.log(`[API_JOBS_POST] Successfully auto-provisioned profile in ${targetTable}`);
+                user = newProfile;
+                userTable = targetTable as any;
+            }
+        }
+    }
+
+    if (!user) {
+        return NextResponse.json({ 
+            error: 'Recruiter or Employee profile not found',
+            details: `Search failed for ID: ${userId} across tables: recruiters, employees, jobseekers, admins and Auth.`,
+            passedId: userId
+        }, { status: 404 });
+    }
+
+    const planType = user.plan_type || 'none';
+    const planExpiresAt = user.plan_expires_at ? new Date(user.plan_expires_at) : null;
     const now = new Date();
 
-    if (planType === 'none' || (planExpiresAt && planExpiresAt < now)) {
-        return NextResponse.json({ error: 'Active subscription required to post jobs' }, { status: 403 });
+    // Check user plan and limits - support both UUID and numeric pk (Employees may have plan_type 'none')
+    if (userTable === 'recruiters' && (planType === 'none' || (planExpiresAt && planExpiresAt < now))) {
+        return NextResponse.json({ error: 'Active subscription required for Recruiter to post jobs' }, { status: 403 });
     }
 
-    // Check active job count
-    const activeJobsSnap = await db.collection('jobs')
-        .where(recruiterId ? 'recruiterId' : 'employeeId', '==', userId)
-        .where('expiresAt', '>', now.toISOString())
-        .get();
-    
-    const maxJobs = planType === 'pro' ? 50 : (planType === 'premium' ? 10 : 1);
-    if (activeJobsSnap.size >= maxJobs) {
-        return NextResponse.json({ 
-            error: `Job limit reached. ${planType === 'pro' ? 'Pro' : (planType === 'premium' ? 'Premium' : 'Basic')} plan allows only ${maxJobs} active jobs.` 
+    // ── Job count check ────────────────────────────────────────────────────
+    // For Employees: enforce MONTHLY limit (5 jobs per calendar month)
+    // For Recruiters: enforce ACTIVE job limit based on plan
+    let count: number | null = null;
+
+    if (userTable === 'employees') {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const { count: monthlyCount, error: countError } = await supabaseAdmin
+        .from('jobs')
+        .select('*', { count: 'exact', head: true })
+        .eq('employee_pk', user.id)
+        .gte('posted_at', startOfMonth.toISOString());
+
+      if (countError) throw countError;
+      count = monthlyCount;
+
+      const EMPLOYEE_MONTHLY_LIMIT = user.job_post_limit ?? 5;
+      if (count !== null && count >= EMPLOYEE_MONTHLY_LIMIT) {
+        return NextResponse.json({
+          error: `Monthly job posting limit reached. Employees can post up to ${EMPLOYEE_MONTHLY_LIMIT} jobs per month. Resets on the 1st of next month.`,
         }, { status: 403 });
+      }
+    } else {
+      // Recruiter: count active jobs
+      const { count: activeCount, error: countError } = await supabaseAdmin
+        .from('jobs')
+        .select('*', { count: 'exact', head: true })
+        .eq('recruiter_pk', user.id)
+        .gt('expires_at', now.toISOString())
+        .eq('status', 'active');
+
+      if (countError) throw countError;
+      count = activeCount;
+
+      const maxJobs = planType === 'pro' ? 50 : (planType === 'premium' ? 10 : 1);
+      if (count !== null && count >= maxJobs) {
+        return NextResponse.json({
+          error: `Job limit reached. Your current plan allows only ${maxJobs} active jobs.`,
+        }, { status: 403 });
+      }
     }
 
     // Calculate expiry dates
@@ -311,20 +541,113 @@ export async function POST(request: Request) {
     const appAccessDays = planType === 'pro' ? 180 : (planType === 'premium' ? 90 : 30);
     appExpiry.setDate(now.getDate() + appAccessDays);
 
-    const jobToCreate: Partial<Job> = {
-        ...data,
-        locationId: (data.locationIds && data.locationIds.length > 0) ? data.locationIds[0] : (data.locationId || ''),
-        postedAt: now.toISOString(),
-        expiresAt: jobExpiry.toISOString(),
-        appExpiresAt: appExpiry.toISOString(),
-        maxApplies: (planType === 'premium' || planType === 'pro') ? -1 : 300,
-        planTypeAtPosting: planType
+
+    // SAFE RESOLUTION HELPER
+    const safeResolveMetadata = async (table: string, idOrIds: any | any[]) => {
+      if (!idOrIds) return Array.isArray(idOrIds) ? [] : null;
+      const inputs = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
+      if (inputs.length === 0) return Array.isArray(idOrIds) ? [] : null;
+
+      // Filter by type to avoid PostgREST cast errors
+      const numericIds = inputs.map(id => Number(id)).filter(id => !isNaN(id));
+      const uuidIds = inputs.filter(id => isNaN(Number(id)) && String(id).includes('-'));
+
+      let orClauses = [];
+      if (numericIds.length > 0) orClauses.push(`id.in.(${numericIds.join(',')})`);
+      if (uuidIds.length > 0) orClauses.push(`uuid.in.(${uuidIds.map(u => `"${u}"`).join(',')})`);
+
+      if (orClauses.length === 0) return Array.isArray(idOrIds) ? [] : null;
+
+      const { data: results, error: resError } = await supabaseAdmin
+        .from(table)
+        .select('id')
+        .or(orClauses.join(','));
+
+      if (resError) {
+        console.error(`[API_JOBS_POST] Error resolving ${table}:`, resError);
+        return Array.isArray(idOrIds) ? [] : null;
+      }
+
+      if (Array.isArray(idOrIds)) {
+        return results ? results.map((r: any) => r.id) : [];
+      } else {
+        return results && results.length > 0 ? results[0].id : null;
+      }
+    };
+
+    // RESOLVE PKs using the robust helper
+    const domainPk = await safeResolveMetadata('domains', data.domainId);
+    const jobTypePk = await safeResolveMetadata('job_types', data.jobTypeId);
+    const workplaceTypePk = await safeResolveMetadata('workplace_types', data.workplaceTypeId);
+    
+    // Resolve Company Size
+    const companySizeIdToResolve = user.company_size_id || data.companySizeId;
+    const companySizePk = await safeResolveMetadata('company_sizes', companySizeIdToResolve);
+
+    // Resolve List fields
+    const locationPks = await safeResolveMetadata('locations', data.locationIds || (data.locationId ? [data.locationId] : []));
+    const skillPks = await safeResolveMetadata('skills', data.skillIds);
+    const benefitPks = await safeResolveMetadata('benefits', data.benefitIds);
+
+    // Resolve Authenticated User UUID to BigInt ID (PK) for the Jobs table
+    const userNumericPk = user.id;
+
+    const jobToCreate = {
+      title: data.title,
+      description: data.description,
+      // Primary fallback logic: favor form data (especially for referrals), then user profile.
+      company_name: data.companyName || user.company_name || null,
+      company_logo: data.companyLogo || user.company_logo || null,
+      domain_pk: domainPk,
+      job_type_pk: jobTypePk,
+      workplace_type_pk: workplaceTypePk,
+      location_pks: locationPks,
+      salary_min: data.salaryMin ?? null,
+      salary_max: data.salaryMax ?? null,
+      job_role: data.job_role || data.role || data.title,
+      experience_min: typeof data.minExperience === 'number' ? data.minExperience : 0,
+      experience_max: typeof data.maxExperience === 'number' ? data.maxExperience : 0,
+      is_referral: !!data.isReferral,
+      recruiter_pk: userTable === 'recruiters' ? userNumericPk : null,
+      employee_pk: userTable === 'employees' ? userNumericPk : null,
+      posted_at: now.toISOString(),
+      expires_at: jobExpiry.toISOString(),
+      app_expires_at: appExpiry.toISOString(),
+      max_applies: user.max_applies_limit,
+      plan_type_at_posting: planType,
+      vacancies: data.vacancies || 1,
+      sections: data.sections || [],
+      skill_pks: skillPks,
+      benefit_ids: benefitPks,
+      status: 'active',
+      company_size_id: companySizePk,
+      max_applies: user.max_applies_limit || 100,
+      company_linkedin_url: user.company_linkedin_url || data.companyLinkedinUrl || null,
+      company_overview: user.company_overview || data.companyOverview || null,
+      company_website: user.company_website || data.companyWebsite || null,
+      address: user.company_address || data.address || null,
+      job_link: data.jobLink || null,
+      is_consultancy: !!data.isConsultancy
     };
     
-    const docRef = await db.collection('jobs').add(jobToCreate);
-    return NextResponse.json({ id: docRef.id, ...jobToCreate }, { status: 201 });
+    const { data: newJob, error: insertError } = await supabaseAdmin
+        .from('jobs')
+        .insert([jobToCreate])
+        .select()
+        .single();
+
+    if (insertError) {
+        console.error('[API_JOBS_POST] Insert Error:', insertError);
+        return NextResponse.json({ 
+            error: 'Failed to create job', 
+            details: insertError.message,
+            code: insertError.code 
+        }, { status: 500 });
+    }
+
+    return NextResponse.json(mapJobToFrontend(newJob), { status: 201 });
   } catch (e: any) {
-    console.error('[API_JOBS_POST] Error:', e);
+    console.error('[API_JOBS_POST] Unexpected Error:', e);
     return NextResponse.json({ error: 'Failed to create job', details: e.message }, { status: 500 });
   }
 }

@@ -1,7 +1,5 @@
-
 import { NextResponse } from 'next/server';
-import { db } from '@/firebase/admin-config';
-import { FieldValue } from 'firebase-admin/firestore';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -11,35 +9,31 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return NextResponse.json({ error: 'Application ID is required' }, { status: 400 });
     }
     
-    const applicationRef = db.collection('applications').doc(id);
-
     // Update status to 'Profile Viewed' (statusId: 2)
-    await applicationRef.update({ 
-      statusId: 2,
-      viewedAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    });
+    const { data: app, error: updateError } = await supabaseAdmin
+      .from('applications')
+      .update({ 
+        status_id: 2,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select('*, jobs(title)')
+      .single();
+
+    if (updateError || !app) {
+        return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+    }
 
     // Create a notification for the job seeker
-    const appDoc = await applicationRef.get();
-    const appData = appDoc.data();
-    if (appData) {
-      let jobTitle = 'a job';
-      if (appData.jobId) {
-        const jobDoc = await db.collection('jobs').doc(appData.jobId).get();
-        if (jobDoc.exists) {
-          jobTitle = jobDoc.data()?.title || 'a job';
-        }
-      }
+    const jobTitle = app.jobs?.title || 'a job';
 
-      await db.collection('notifications').add({
-        userId: appData.userId,
-        message: `Your profile was viewed for the ${jobTitle} position.`,
-        type: 'application_status',
-        jobId: appData.jobId,
-        createdAt: FieldValue.serverTimestamp(),
-      });
-    }
+    await supabaseAdmin.from('notifications').insert({
+      user_pk: app.user_pk,
+      message: `Your profile was viewed for the ${jobTitle} position.`,
+      type: 'application_status',
+      job_pk: app.job_pk,
+      created_at: new Date().toISOString(),
+    });
 
     return NextResponse.json({ success: true, message: 'Application status updated to "Profile Viewed"' }, { status: 200 });
 

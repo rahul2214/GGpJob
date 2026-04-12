@@ -44,7 +44,7 @@ export default function ApplicationsPage() {
     if (!userLoading && !user) router.push("/login");
   }, [user, userLoading, router]);
 
-  const { applications, isLoading: loading } = useApplications(user ? { userId: user.id } : undefined);
+  const { applications, isLoading: loading } = useApplications(user ? { userId: user.uuid } : undefined);
 
   return (
     <div className="min-h-screen bg-slate-50">

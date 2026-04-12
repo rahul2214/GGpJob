@@ -1,7 +1,5 @@
-
-
 import { NextResponse } from 'next/server';
-import { db } from '@/firebase/admin-config';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -11,18 +9,20 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: 'Name and country are required' }, { status: 400 });
     }
 
-    const locationsRef = db.collection('locations');
-    const snapshot = await locationsRef.where('id', '==', parseInt(id)).limit(1).get();
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+    const { data: location, error } = await supabaseAdmin
+      .from('locations')
+      .update({ name, country })
+      .eq(isUUID ? 'uuid' : 'id', id)
+      .select()
+      .single();
 
-    if (snapshot.empty) {
-        return NextResponse.json({ error: 'Location not found' }, { status: 404 });
+    if (error) {
+      if (error.code === 'PGRST116') return NextResponse.json({ error: 'Location not found' }, { status: 404 });
+      throw error;
     }
-    const docRef = snapshot.docs[0].ref;
-    await docRef.update({ name, country });
 
-    const updatedDoc = await docRef.get();
-
-    return NextResponse.json({ id: updatedDoc.id, ...updatedDoc.data() }, { status: 200 });
+    return NextResponse.json(location, { status: 200 });
   } catch (e: any) {
     console.error(e);
     return NextResponse.json({ error: 'Failed to update location', details: e.message }, { status: 500 });
@@ -33,15 +33,13 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     try {
         const { id } = params;
         
-        const locationsRef = db.collection('locations');
-        const snapshot = await locationsRef.where('id', '==', parseInt(id)).limit(1).get();
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+        const { error } = await supabaseAdmin
+            .from('locations')
+            .delete()
+            .eq(isUUID ? 'uuid' : 'id', id);
 
-        if (snapshot.empty) {
-            return NextResponse.json({ error: 'Location not found' }, { status: 404 });
-        }
-        
-        const docRef = snapshot.docs[0].ref;
-        await docRef.delete();
+        if (error) throw error;
 
         return NextResponse.json({ message: 'Location deleted successfully' }, { status: 200 });
     } catch (e: any) {

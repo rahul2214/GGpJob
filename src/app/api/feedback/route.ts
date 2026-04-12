@@ -1,40 +1,27 @@
-
 import { NextResponse } from 'next/server';
-import { db } from '@/firebase/admin-config';
-import { FieldValue } from 'firebase-admin/firestore';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function GET(request: Request) {
     try {
-        const feedbackSnapshot = await db.collection('portal_feedback').orderBy('submittedAt', 'desc').get();
+        const { data: feedbackData, error } = await supabaseAdmin
+            .from('portal_feedback')
+            .select(`
+                *,
+                jobseekers:user_pk(uuid, name, email)
+            `)
+            .order('created_at', { ascending: false });
         
-        // Note: Firestore doesn't perform SQL-like JOINs.
-        // We'll fetch users separately or denormalize data if needed.
-        // For now, we fetch feedback and user details separately for simplicity.
-        const feedbackList = await Promise.all(feedbackSnapshot.docs.map(async (doc) => {
-            const feedbackData = doc.data();
-            let userName = 'Anonymous';
-            let userEmail = '';
+        if (error) throw error;
 
-            if (feedbackData.userId) {
-                try {
-                    const userDoc = await db.collection('users').doc(feedbackData.userId).get();
-                    if (userDoc.exists) {
-                        userName = userDoc.data()?.name || 'Anonymous';
-                        userEmail = userDoc.data()?.email || '';
-                    }
-                } catch (userError) {
-                    console.error(`Failed to fetch user ${feedbackData.userId}`, userError);
-                }
-            }
-
-            return {
-                id: doc.id,
-                ...feedbackData,
-                userName,
-                userEmail,
-                // Ensure submittedAt is a string
-                submittedAt: feedbackData.submittedAt?.toDate ? feedbackData.submittedAt.toDate().toISOString() : new Date().toISOString(),
-            };
+        const feedbackList = (feedbackData || []).map(item => ({
+            id: item.id,
+            userId: (item as any).jobseekers?.uuid,
+            userPk: item.user_pk,
+            rating: item.rating,
+            feedback: item.feedback,
+            submittedAt: item.created_at,
+            userName: (item as any).jobseekers?.name || 'Anonymous',
+            userEmail: (item as any).jobseekers?.email || ''
         }));
         
         return NextResponse.json(feedbackList);
@@ -53,16 +40,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const newFeedback = {
-      userId,
-      rating,
-      feedback: feedback || '',
-      submittedAt: FieldValue.serverTimestamp(),
-    };
+    // 1. Resolve internal numeric PK
+    const { data: userProfile } = await supabaseAdmin
+        .from('jobseekers')
+        .select('id')
+        .eq('uuid', userId)
+        .single();
+
+    const { data: newFeedback, error } = await supabaseAdmin
+        .from('portal_feedback')
+        .insert([{
+            user_pk: userProfile?.id || null, // Internal BIGINT
+            rating,
+            feedback: feedback || '',
+            created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
     
-    const docRef = await db.collection('portal_feedback').add(newFeedback);
+    if (error) throw error;
     
-    return NextResponse.json({ id: docRef.id, ...newFeedback }, { status: 201 });
+    return NextResponse.json(newFeedback, { status: 201 });
   } catch (e: any) {
     console.error('[API_FEEDBACK_POST] Error:', e);
     return NextResponse.json({ error: 'Failed to submit feedback', details: e.message }, { status: 500 });

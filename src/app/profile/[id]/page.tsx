@@ -9,7 +9,9 @@ import type { User as UserType } from "@/lib/types";
 import {
   MapPin, Linkedin, FileText, User as UserIcon,
   Calendar, HeartHandshake, Phone, AtSign,
-  Edit3, Sparkles, ExternalLink, CheckCircle2
+  Edit3, Sparkles, ExternalLink, CheckCircle2,
+  Briefcase, Globe, Users, MapPin as MapPinIcon,
+  Building2, Info
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -34,9 +36,9 @@ export default function PublicProfilePage() {
       setLoading(true);
       try {
         const data = await axiosInstance.get(`/users/${id}`);
+        
         setProfileUser(data);
       } catch (error) {
-        console.error("Failed to fetch user data", error);
         setProfileUser(null);
       } finally {
         setLoading(false);
@@ -65,9 +67,9 @@ export default function PublicProfilePage() {
             type: 'profile_view',
             viewerId: currentUser.id
           });
+          
           setHasNotified(true);
         } catch (error) {
-          console.error("Failed to send profile view notification", error);
         }
       }
     };
@@ -76,6 +78,7 @@ export default function PublicProfilePage() {
 
   useEffect(() => {
     fetchUser();
+   
   }, [fetchUser]);
 
   const getInitials = (name: string) => {
@@ -270,6 +273,171 @@ export default function PublicProfilePage() {
         {profileUser.role === 'Job Seeker' && (
           <div className="space-y-5">
             <ProfileSections userId={profileUser.id} isEditable={isOwnProfile} />
+          </div>
+        )}
+        
+        {/* ── Company Details (For Recruiters/Employees) ─────────── */}
+        {(profileUser.role === 'Recruiter' || profileUser.role === 'Employee') && (
+          <div className="space-y-5">
+            {/* Overview Card */}
+            {profileUser.companyOverview && (
+              <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 border-l-4 border-indigo-500 overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-4 opacity-5">
+                    <Building2 className="w-24 h-24" />
+                </div>
+                <h2 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <Info className="w-4 h-4 text-indigo-500" />
+                  About {profileUser.companyName || 'the Company'}
+                </h2>
+                <p className="text-slate-600 leading-relaxed text-sm whitespace-pre-wrap relative z-10">
+                  {profileUser.companyOverview}
+                </p>
+              </div>
+            )}
+
+            {/* Company Info Card */}
+            <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8">
+              <h2 className="text-base font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-slate-500" />
+                Company Details
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {profileUser.companyName && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+                      <Building2 className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">Company Name</span>
+                      <p className="font-semibold text-slate-800">{profileUser.companyName}</p>
+                    </div>
+                  </div>
+                )}
+                {profileUser.companySize && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+                      <Users className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">Company Size</span>
+                      <p className="font-semibold text-slate-800">{profileUser.companySize} employees</p>
+                    </div>
+                  </div>
+                )}
+                {profileUser.companyAddress && (
+                  <div className="flex items-start gap-3 sm:col-span-2">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+                      <MapPinIcon className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">Location</span>
+                      <p className="font-semibold text-slate-800">{profileUser.companyAddress}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Company Action Links */}
+              {(profileUser.companyWebsite || profileUser.companyLinkedinUrl) && (
+                <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t border-slate-50">
+                  {profileUser.companyWebsite && (
+                    <Link
+                      href={profileUser.companyWebsite}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 px-5 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md"
+                    >
+                      <Globe className="w-4 h-4" />
+                      Visit Website
+                      <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                    </Link>
+                  )}
+                  {profileUser.companyLinkedinUrl && (
+                    <Link
+                      href={profileUser.companyLinkedinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm font-semibold bg-[#0A66C2] text-white hover:bg-[#0A66C2]/90 px-5 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md"
+                    >
+                      <Linkedin className="w-4 h-4" />
+                      Company LinkedIn
+                      <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Job Preferences ─────────────────────────────────── */}
+        {profileUser.role === 'Job Seeker' && (profileUser.workStatus || profileUser.annualSalary || profileUser.expectedSalary) && (
+          <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8">
+            <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
+              <Briefcase className="w-4 h-4 text-slate-500" />
+              Job Preferences & Status
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+                  <Edit3 className="w-4 h-4 text-indigo-600" />
+                </div>
+                <div>
+                  <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">Work Status</span>
+                  <p className="font-semibold text-slate-800">{profileUser.workStatus || 'Fresher'}</p>
+                </div>
+              </div>
+              {profileUser.workStatus === 'Experienced' && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+                    <Calendar className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">Total Experience</span>
+                    <p className="font-semibold text-slate-800">
+                      {profileUser.experienceYears || 0} Years {profileUser.experienceMonths || 0} Months
+                    </p>
+                  </div>
+                </div>
+              )}
+              {profileUser.annualSalary !== undefined && profileUser.annualSalary !== null && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+                    <span className="text-indigo-600 font-bold text-sm">₹</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">Current Salary</span>
+                    <p className="font-semibold text-slate-800">
+                      ₹ {profileUser.annualSalary.toLocaleString()} / Year
+                    </p>
+                  </div>
+                </div>
+              )}
+              {profileUser.expectedSalary !== undefined && profileUser.expectedSalary !== null && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                    <span className="text-emerald-600 font-bold text-sm">₹</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">Expected Salary</span>
+                    <p className="font-semibold text-slate-800">
+                      ₹ {profileUser.expectedSalary.toLocaleString()} / Year
+                    </p>
+                  </div>
+                </div>
+              )}
+              {profileUser.noticePeriod && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                    <Info className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">Notice Period</span>
+                    <p className="font-semibold text-slate-800">{profileUser.noticePeriod}</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

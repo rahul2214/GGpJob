@@ -36,7 +36,7 @@ export function ProfileSectionFormPage({ section, itemId }: ProfileSectionFormPa
         if (user) {
             setLoading(true);
             try {
-                const res = await fetch(`/api/users/${user.id}/profile?section=${section}`);
+                const res = await fetch(`/api/users/${user.uuid}/profile?section=${section}`);
                 const items = await res.json();
                 
                 setExistingData({ [section]: items });
@@ -66,7 +66,7 @@ export function ProfileSectionFormPage({ section, itemId }: ProfileSectionFormPa
     const handleFormSubmit = async (values: any) => {
         if (!user) return;
 
-        const url = `/api/users/${user.id}/profile?section=${section}`;
+        const url = `/api/users/${user.uuid}/profile?section=${section}`;
         const method = isEditing ? 'PUT' : 'POST';
 
         let bodyData = { ...values };

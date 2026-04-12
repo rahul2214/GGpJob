@@ -1,14 +1,15 @@
-
 import { NextResponse } from 'next/server';
-import { db } from '@/firebase/admin-config';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function GET() {
   try {
-    const levelsCol = db.collection('experience_levels');
-    const q = levelsCol.orderBy('id');
-    const levelSnapshot = await q.get();
-    const experienceLevels = levelSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    return NextResponse.json(experienceLevels);
+    const { data: levels, error } = await supabaseAdmin
+        .from('experience_levels')
+        .select('*')
+        .order('id', { ascending: true });
+    
+    if (error) throw error;
+    return NextResponse.json(levels);
   } catch (e: any) {
     console.error(e);
     return NextResponse.json({ error: 'Failed to fetch experience levels', details: e.message }, { status: 500 });
@@ -22,17 +23,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
     
-    const snapshot = await db.collection('experience_levels').orderBy('id', 'desc').limit(1).get();
-    let newId = 1;
-    if (!snapshot.empty) {
-      newId = snapshot.docs[0].data().id + 1;
+    // Get max numeric ID
+    const { data: maxLevel, error: maxError } = await supabaseAdmin
+        .from('experience_levels')
+        .select('id')
+        .order('id', { ascending: false })
+        .limit(1)
+        .single();
+    
+    let newNumericId = 1;
+    if (maxLevel) {
+        newNumericId = maxLevel.id + 1;
     }
     
-    // Firestore generates the document ID, but we store our own numeric `id` field.
-    const docRef = db.collection("experience_levels").doc();
-    await docRef.set({ id: newId, name });
+    const { data: newLevel, error: insertError } = await supabaseAdmin
+        .from('experience_levels')
+        .insert([{ id: newNumericId, name }])
+        .select()
+        .single();
     
-    return NextResponse.json({ id: docRef.id, name, newId }, { status: 201 });
+    if (insertError) throw insertError;
+    
+    return NextResponse.json(newLevel, { status: 201 });
   } catch (e: any) {
     console.error(e);
     return NextResponse.json({ error: 'Failed to create experience level', details: e.message }, { status: 500 });

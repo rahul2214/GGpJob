@@ -1,10 +1,6 @@
-
 import { NextResponse } from 'next/server';
-import { collection, query, where, getDocs, addDoc, serverTimestamp, DocumentData } from 'firebase/firestore';
-import { db } from '@/firebase/admin-config';
-import { FieldValue } from 'firebase-admin/firestore';
-import type { Application, User, Job, Skill } from '@/lib/types';
-
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { resolveResumeUrl } from '@/lib/resolve-resume';
 
 const statusMap: { [key: number]: string } = {
     1: 'Applied',
@@ -13,90 +9,124 @@ const statusMap: { [key: number]: string } = {
     4: 'Selected',
 };
 
+// Map Supabase application to frontend structure
+async function mapApplicationToFrontend(app: any, skillMap?: Map<string, string>): Promise<any> {
+    const profile = app.jobseekers || {};
+    const job = app.jobs || {};
+    
+    // Resolve skill names: Priority: jobseeker_skills (junction table) -> jobseekers.skills (JSONB) -> jobseekers.skill_ids (resolution) -> metadata fallback
+    let applicantSkills = '';
+    
+    // 1. Check Junction Table (Preferred source of truth)
+    if (profile.jobseeker_skills && Array.isArray(profile.jobseeker_skills) && profile.jobseeker_skills.length > 0) {
+        applicantSkills = profile.jobseeker_skills
+            .map((js: any) => js.skills?.name)
+            .filter(Boolean)
+            .join(', ');
+    } 
+    // 2. Original JSONB array fallback
+    else if (profile.skills && Array.isArray(profile.skills) && profile.skills.length > 0) {
+        applicantSkills = profile.skills
+            .map((s: any) => typeof s === 'string' ? s : (s.name || s.label))
+            .filter(Boolean)
+            .join(', ');
+    } 
+    // 3. skill_ids resolution fallback
+    else if (skillMap && profile.skill_ids && profile.skill_ids.length > 0) {
+        applicantSkills = profile.skill_ids
+            .map((id: string) => skillMap.get(id))
+            .filter(Boolean)
+            .join(', ');
+    } 
+    // 4. Metadata fallback
+    else {
+        applicantSkills = profile.metadata?.skills?.map((s: any) => s.name || s.label).join(', ') || '';
+    }
+
+    return {
+        id: app.id,           // BIGINT primary key
+        uuid: app.uuid,       // Public UUID
+        jobId: app.jobs?.uuid,    // Compatibility UUID shifted to JOIN
+        userId: app.jobseekers?.uuid,  // Compatibility UUID shifted to JOIN
+        statusId: app.status_id,
+        statusName: statusMap[app.status_id] || 'Applied',
+        appliedAt: app.applied_at,
+        rating: app.rating,
+        feedback: app.feedback,
+        
+        // Applicant details (Joined from profiles)
+        applicantName: profile.name,
+        applicantEmail: profile.email,
+        applicantHeadline: profile.headline,
+        applicantId: profile.uuid,
+        applicantSkills: applicantSkills,
+        applicantResumeUrl: await resolveResumeUrl(profile.resume_url),
+        
+        // Job details (Joined from jobs)
+        jobTitle: job.title,
+        companyName: job.company_name,
+    };
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const jobId = searchParams.get('jobId');
 
-    const applicationsRef = db.collection('applications');
-    let q: FirebaseFirestore.Query<DocumentData> = applicationsRef;
+    let query = supabaseAdmin
+        .from('applications')
+        .select(`
+            *,
+            jobseekers(*, jobseeker_skills(skills(id, name))),
+            jobs(*)
+        `);
 
     if (userId) {
-      q = q.where('userId', '==', userId);
+      const isNumericUser = /^\d+$/.test(userId);
+      if (isNumericUser) {
+        query = query.eq('user_pk', parseInt(userId));
+      } else if (userId.includes('-')) {
+        const { data: u } = await supabaseAdmin.from('jobseekers').select('id').eq('uuid', userId).maybeSingle();
+        if(u) query = query.eq('user_pk', u.id);
+        else return NextResponse.json([]);
+      } else {
+        return NextResponse.json([]);
+      }
     }
     if (jobId) {
-      q = q.where('jobId', '==', jobId);
+      const isNumericJobId = /^\d+$/.test(jobId);
+      if (isNumericJobId) {
+        query = query.eq('job_pk', parseInt(jobId));
+      } else {
+        const { data: j } = await supabaseAdmin.from('jobs').select('id').eq('uuid', jobId).single();
+        if (j) query = query.eq('job_pk', j.id);
+        else return NextResponse.json([]);
+      }
     }
 
-    const querySnapshot = await q.get();
+    const { data: appDocs, error } = await query.order('applied_at', { ascending: false });
 
-    const appDocs = querySnapshot.docs.map(doc => ({ ...(doc.data() as Application), id: doc.id }));
+    if (error) throw error;
+
+    // Resolve skill names for applicants in bulk
+    const allSkillIds = Array.from(new Set(appDocs.flatMap(app => app.jobseekers?.skill_ids || [])));
+    const { data: skillsData } = await supabaseAdmin
+        .from('skills')
+        .select('id, name')
+        .in('id', allSkillIds);
     
-    // 1. Gather distinct user and job IDs
-    const uniqueUserIds = [...new Set(appDocs.map(app => app.userId).filter(Boolean))];
-    const uniqueJobIds = [...new Set(appDocs.map(app => app.jobId).filter(Boolean))];
+    const skillMap = new Map(skillsData?.map(s => [s.id, s.name]) || []);
 
-    // 2. Fetch Users and Jobs in bulk (eliminates N roundtrips)
-    const usersMap = new Map<string, User>();
-    const jobsMap = new Map<string, Job>();
-    
-    if (uniqueUserIds.length > 0) {
-        const userRefs = uniqueUserIds.map(id => db.collection('users').doc(id as string));
-        const userDocs = await db.getAll(...userRefs);
-        userDocs.forEach(doc => {
-            if (doc.exists) usersMap.set(doc.id, { id: doc.id, ...doc.data() } as User);
-        });
-    }
-
-    if (uniqueJobIds.length > 0) {
-        const jobRefs = uniqueJobIds.map(id => db.collection('jobs').doc(id as string));
-        const jobDocs = await db.getAll(...jobRefs);
-        jobDocs.forEach(doc => {
-            if (doc.exists) jobsMap.set(doc.id, { id: doc.id, ...doc.data() } as Job);
-        });
-    }
-
-    // 3. Fetch Skills in bulk for unique users
-    const skillsPromises = uniqueUserIds.map(async (userId) => {
-        const skillsSnap = await db.collection('users').doc(userId as string).collection('skills').get();
-        if (!skillsSnap.empty) {
-            return { userId, skills: skillsSnap.docs.map(doc => (doc.data() as Skill).name).join(', ') };
-        }
-        return { userId, skills: '' };
-    });
-    const skillsResults = await Promise.all(skillsPromises);
-    const skillsMap = new Map(skillsResults.map(s => [s.userId, s.skills]));
-
-    // 4. Construct final payload and filter expired ones
     const now = new Date();
-    const applications = appDocs.map(appData => {
-        const applicant = appData.userId ? usersMap.get(appData.userId) : null;
-        const job = appData.jobId ? jobsMap.get(appData.jobId) : null;
-        
-        // Check if application is expired for this recruiter view
-        if (jobId && job?.appExpiresAt) {
-            const expiry = new Date(job.appExpiresAt);
+    const applications = (await Promise.all(appDocs.map(async app => {
+        // Check if application view is expired for this recruiter view
+        if (jobId && app.jobs?.app_expires_at) {
+            const expiry = new Date(app.jobs.app_expires_at);
             if (expiry < now) return null;
         }
-
-        const skills = appData.userId ? skillsMap.get(appData.userId) || '' : '';
-        const statusName = statusMap[appData.statusId] || 'Applied';
-        
-        return {
-          ...appData,
-          appliedAt: (appData.appliedAt as any).toDate ? (appData.appliedAt as any).toDate().toISOString() : new Date(appData.appliedAt).toISOString(),
-          applicantName: applicant?.name,
-          applicantEmail: applicant?.email,
-          applicantHeadline: applicant?.headline,
-          applicantId: applicant?.id,
-          applicantSkills: skills,
-          applicantResumeUrl: applicant?.resumeUrl,
-          jobTitle: job?.title,
-          companyName: job?.companyName,
-          statusName,
-        };
-    }).filter(Boolean);
+        return await mapApplicationToFrontend(app, skillMap);
+    }))).filter(Boolean);
 
     return NextResponse.json(applications);
 
@@ -114,50 +144,126 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const applicationsRef = db.collection('applications');
-        const q = applicationsRef.where('jobId', '==', jobId).where('userId', '==', userId);
-        const existingApplication = await q.get();
+        // 1. Check job validity and resolve internal job_pk
+        const isNumericJob = typeof jobId === 'string' ? /^\d+$/.test(jobId) : typeof jobId === 'number';
+        let jobQuery = supabaseAdmin.from('jobs').select('id, uuid, app_expires_at, max_applies, employee_pk');
 
-        if (!existingApplication.empty) {
-            return NextResponse.json({ error: 'You have already applied for this job' }, { status: 409 });
+        
+        if (isNumericJob) {
+            jobQuery = jobQuery.eq('id', parseInt(jobId as string));
+        } else if (typeof jobId === 'string' && jobId.includes('-')) {
+            jobQuery = jobQuery.eq('uuid', jobId);
+        } else {
+            return NextResponse.json({ error: 'Invalid Job ID format' }, { status: 400 });
         }
 
-        // Check job validity and limits
-        const jobDoc = await db.collection('jobs').doc(jobId).get();
-        if (!jobDoc.exists) {
+        const { data: job, error: jobError } = await jobQuery.maybeSingle();
+
+        if (jobError || !job) {
             return NextResponse.json({ error: 'Job not found' }, { status: 404 });
         }
 
-        const job = jobDoc.data() as Job;
         const now = new Date();
-        
-        if (job.appExpiresAt && new Date(job.appExpiresAt) < now) {
+        if (job.app_expires_at && new Date(job.app_expires_at) < now) {
             return NextResponse.json({ error: 'This job is no longer accepting applications (Link expired)' }, { status: 403 });
         }
 
-        if (job.maxApplies && job.maxApplies > 0) {
-            const currentAppCountSnap = await db.collection('applications').where('jobId', '==', jobId).get();
-            if (currentAppCountSnap.size >= job.maxApplies) {
+        if (job.max_applies && job.max_applies > 0) {
+            const { count } = await supabaseAdmin
+                .from('applications')
+                .select('*', { count: 'exact', head: true })
+                .eq('job_pk', job.id);
+
+            if (count !== null && count >= job.max_applies) {
                 return NextResponse.json({ error: 'This job has reached its maximum application limit' }, { status: 403 });
             }
         }
-        
-        const applicationStatuses = await db.collection('application_statuses').where('name', '==', 'Applied').limit(1).get();
-        const appliedStatus = applicationStatuses.docs[0];
 
+        // ── Employee total applications limit ─────────────────────────────────
+        // If this job was posted by an employee, check their overall max_applies_limit
+        // (total applications received across ALL their jobs this makes sure the
+        //  employee doesn't exceed e.g. 100 total applications)
+        if (job.employee_pk) {
+            const { data: emp } = await supabaseAdmin
+                .from('employees')
+                .select('id, max_applies_limit')
+                .eq('id', job.employee_pk)
+                .maybeSingle();
+
+            if (emp && emp.max_applies_limit && emp.max_applies_limit > 0) {
+                // Count all apps across every job this employee has posted
+                const empJobIds = await supabaseAdmin
+                    .from('jobs')
+                    .select('id')
+                    .eq('employee_pk', emp.id);
+
+                const jobPks = (empJobIds.data || []).map((j: any) => j.id);
+
+                if (jobPks.length > 0) {
+                    const { count: totalApps } = await supabaseAdmin
+                        .from('applications')
+                        .select('*', { count: 'exact', head: true })
+                        .in('job_pk', jobPks);
+
+                    if (totalApps !== null && totalApps >= emp.max_applies_limit) {
+                        return NextResponse.json({
+                            error: `This employer has reached their total application limit of ${emp.max_applies_limit}.`,
+                        }, { status: 403 });
+                    }
+                }
+            }
+        }
+
+
+        // 2. Resolve user_pk
+        const isNumericUser = typeof userId === 'string' ? /^\d+$/.test(userId) : typeof userId === 'number';
+        let userQuery = supabaseAdmin.from('jobseekers').select('id');
+        
+        if (isNumericUser) {
+            userQuery = userQuery.eq('id', parseInt(userId as string));
+        } else if (typeof userId === 'string' && userId.includes('-')) {
+            userQuery = userQuery.eq('uuid', userId);
+        } else {
+            return NextResponse.json({ error: 'Invalid User ID format' }, { status: 400 });
+        }
+
+        const { data: userProfile } = await userQuery.maybeSingle();
+
+        if (!userProfile) {
+            return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
+        }
+
+        // 3. Check for existing application
+        const { data: existing, error: checkError } = await supabaseAdmin
+            .from('applications')
+            .select('id')
+            .eq('job_pk', job.id)
+            .eq('user_pk', userProfile.id)
+            .maybeSingle();
+
+        if (existing) {
+            return NextResponse.json({ error: 'You have already applied for this job' }, { status: 409 });
+        }
+        
         const newApplication = {
-            jobId,
-            userId,
-            statusId: appliedStatus ? appliedStatus.data().id : 1, // Default to 1 'Applied'
-            appliedAt: FieldValue.serverTimestamp(),
+            job_pk: job.id,         // Internal BIGINT
+            user_pk: userProfile.id, // Internal BIGINT
+            status_id: 1, // Default to 1 'Applied'
+            applied_at: new Date().toISOString()
         };
 
-        const docRef = await db.collection('applications').add(newApplication);
+        const { data: createdApp, error: insertError } = await supabaseAdmin
+            .from('applications')
+            .insert([newApplication])
+            .select()
+            .single();
 
-        return NextResponse.json({ id: docRef.id, ...newApplication }, { status: 201 });
+        if (insertError) throw insertError;
+
+        return NextResponse.json(createdApp, { status: 201 });
 
     } catch (e: any) {
-        console.error(e);
-        return NextResponse.json({ error: 'Failed to submit application' }, { status: 500 });
+        console.error('[API_APPLICATIONS_POST] Error:', e);
+        return NextResponse.json({ error: 'Failed to submit application', details: e.message }, { status: 500 });
     }
 }
