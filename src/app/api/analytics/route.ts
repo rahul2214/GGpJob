@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkAdmin } from '@/lib/check-admin';
 
+export const dynamic = 'force-dynamic';
+
 const statusMap: { [key: number]: string } = {
     1: 'Applied',
     2: 'Profile Viewed',

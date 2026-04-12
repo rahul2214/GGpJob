@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { LoaderCircle, CheckCircle2, XCircle, Eye, EyeOff, KeyRound } from "lucide-react";
@@ -11,7 +11,7 @@ import Link from "next/link";
 type Mode = "resetPassword" | "verifyEmail" | "unknown";
 type Status = "loading" | "ready" | "submitting" | "success" | "error";
 
-export default function AuthActionPage() {
+function AuthActionContent() {
   const searchParams = useSearchParams();
 
   const mode = (searchParams.get("mode") || "unknown") as Mode;
@@ -258,4 +258,19 @@ export default function AuthActionPage() {
   }
 
   return null;
+}
+
+export default function AuthActionPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50/40 to-purple-50/20 px-4 py-12">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center">
+          <LoaderCircle className="w-10 h-10 animate-spin text-indigo-600 mx-auto mb-4" />
+          <p className="text-slate-600 font-medium">Loading security context...</p>
+        </div>
+      </div>
+    }>
+      <AuthActionContent />
+    </Suspense>
+  );
 }
