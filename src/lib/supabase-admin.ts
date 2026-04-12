@@ -11,9 +11,12 @@ if (!supabaseUrl || !supabaseServiceKey) {
  * Supabase Admin client for server-side use only.
  * Bypasses Row Level Security (RLS).
  */
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
+export const supabaseAdmin = (supabaseUrl && supabaseUrl.startsWith('http')) 
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  : null as any; // Cast to any to avoid type issues, but handle null checks in usage if needed.
+

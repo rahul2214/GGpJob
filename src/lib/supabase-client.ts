@@ -11,4 +11,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
  * Standard Supabase client for client-side use.
  * Respects Row Level Security (RLS).
  */
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = (supabaseUrl && supabaseUrl.startsWith('http'))
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null as any;
+

@@ -17,23 +17,6 @@ const r2Client = new S3Client({
   },
 });
 
-/**
- * Uploads a buffer to Cloudflare R2
- * @returns Internal URI string (r2://bucket/key)
- */
-export async function uploadToR2(key: string, body: Buffer, contentType: string) {
-  if (!R2_BUCKET_NAME) throw new Error("R2_BUCKET_NAME is not configured");
-
-  const command = new PutObjectCommand({
-    Bucket: R2_BUCKET_NAME,
-    Key: key,
-    Body: body,
-    ContentType: contentType,
-  });
-
-  await r2Client.send(command);
-  return `r2://${R2_BUCKET_NAME}/${key}`;
-}
 
 /**
  * Deletes an object from Cloudflare R2
