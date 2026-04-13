@@ -86,10 +86,10 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/send-verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, redirectUrl: window.location.origin + '/login' }),
+        body: JSON.stringify({ email, redirectUrl: window.location.origin + '/auth/callback?role=Job+Seeker' }),
       });
       if (!res.ok) throw new Error('Failed to resend');
-      toast({ title: 'Verification Email Sent', description: 'A new verification link has been sent via Firebase. Please check your inbox.' });
+      toast({ title: 'Verification Email Sent', description: 'A new verification link has been sent via Firebase. Please check your inbox and click the link to verify.' });
     } catch (error: any) {
       toast({ title: 'Error', description: error.message || 'Failed to resend verification.', variant: 'destructive' });
     } finally {

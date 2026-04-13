@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { firebaseAdminAuth } from '@/lib/firebase-admin';
 
 const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY!;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.jobsdart.in';
 
 export async function POST(request: Request) {
   try {
@@ -56,8 +55,8 @@ export async function POST(request: Request) {
         body: JSON.stringify({
           requestType: 'VERIFY_EMAIL',
           idToken,
-          // Firebase will use the continue URL you set in your Firebase console 
-          // under Authentication > Email Templates > Action URL
+          // continueUrl is where the user goes AFTER the Firebase verification page finishes
+          continueUrl: redirectUrl || undefined 
         }),
       }
     );

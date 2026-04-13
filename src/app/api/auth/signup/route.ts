@@ -79,7 +79,7 @@ export async function POST(request: Request) {
 
     // Trigger Firebase email verification
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9002';
       const redirectUrl = role === 'Job Seeker'
         ? `${process.env.NEXT_PUBLIC_APP_URL || baseUrl}/login`
         : `${process.env.NEXT_PUBLIC_APP_URL || baseUrl}/company/login`;
