@@ -318,18 +318,51 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     try {
         const { id } = params;
         
-        // Support both numeric BIGINT id and UUID
+        // 1. Resolve the internal numeric PK (BIGINT) first.
+        // We need this because foreign keys in target tables (notifications, applications) usually use the BIGINT 'id'.
         const isNumericId = /^\d+$/.test(id);
-        
-        // Supabase ON DELETE CASCADE on applications table will handle the cleanup
+        let jobPk = isNumericId ? parseInt(id) : null;
+
+        if (!isNumericId) {
+            const { data: jobData } = await supabaseAdmin
+                .from('jobs')
+                .select('id')
+                .eq('uuid', id)
+                .single();
+            if (jobData) jobPk = jobData.id;
+        }
+
+        if (jobPk) {
+            console.log(`[API_JOB_ID_DELETE] Cleaning dependencies for Job PK: ${jobPk}`);
+            
+            // 2. Manually delete notifications linked to this job
+            // This prevents: "violates foreign key constraint notifications_job_pk_fkey"
+            const { error: notifError } = await supabaseAdmin
+                .from('notifications')
+                .delete()
+                .eq('job_pk', jobPk);
+            
+            if (notifError) console.warn('[API_JOB_ID_DELETE] Non-fatal notification cleanup error:', notifError);
+
+            // 3. Manually delete applications (Safety step)
+            // Even if CASCADE is enabled, explicit deletion ensures no constraints are missed.
+            const { error: appError } = await supabaseAdmin
+                .from('applications')
+                .delete()
+                .eq('job_pk', jobPk);
+
+            if (appError) console.warn('[API_JOB_ID_DELETE] Non-fatal application cleanup error:', appError);
+        }
+
+        // 4. Finally delete the job itself
         const { error } = await supabaseAdmin
             .from('jobs')
             .delete()
-            .eq(isNumericId ? 'id' : 'uuid', id);
+            .eq(jobPk ? 'id' : 'uuid', jobPk || id);
 
         if (error) throw error;
 
-        return NextResponse.json({ message: 'Job and related applications deleted successfully' }, { status: 200 });
+        return NextResponse.json({ message: 'Job and related records deleted successfully' }, { status: 200 });
     } catch (e: any) {
         console.error('[API_JOB_ID_DELETE] Error:', e);
         return NextResponse.json({ error: 'Failed to delete job', details: e.message }, { status: 500 });
