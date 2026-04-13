@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { sendFirebaseVerificationEmail } from '@/lib/auth-utils';
 
 const DISALLOWED_DOMAINS = [
   'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com',
@@ -84,11 +85,7 @@ export async function POST(request: Request) {
         ? `${process.env.NEXT_PUBLIC_APP_URL || baseUrl}/login`
         : `${process.env.NEXT_PUBLIC_APP_URL || baseUrl}/company/login`;
 
-      await fetch(`${baseUrl}/api/auth/send-verification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name, redirectUrl }),
-      });
+      await sendFirebaseVerificationEmail(email, name, redirectUrl);
     } catch (emailErr) {
       console.error('[signup] Firebase verification email failed (non-fatal):', emailErr);
     }
