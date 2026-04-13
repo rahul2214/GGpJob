@@ -10,13 +10,21 @@ export async function POST(request: Request) {
     }
 
     let profile: { id: string | number, role: string, uuid?: string } | null = null;
-    let userIdValue = userId;
+    const isNumericUser = typeof userId === 'string' ? /^\d+$/.test(userId) : typeof userId === 'number';
+    const isValidUuid = typeof userId === 'string' && userId.includes('-');
+    
+    if (!isNumericUser && !isValidUuid) {
+        return NextResponse.json({ error: 'Invalid User ID format' }, { status: 400 });
+    }
+
+    const column = isNumericUser ? 'id' : 'uuid';
+    const queryValue = isNumericUser ? parseInt(userId as string) : userId;
 
     // 1. Check jobseekers
     let { data: jobseeker, error: profileError } = await supabaseAdmin
         .from('jobseekers')
         .select('id, uuid, roles(name)')
-        .or(`id.eq."${userId}",uuid.eq."${userId}"`)
+        .eq(column, queryValue)
         .maybeSingle();
     
     if (jobseeker) {
@@ -32,7 +40,7 @@ export async function POST(request: Request) {
         const { data: recruiter } = await supabaseAdmin
             .from('recruiters')
             .select('id, uuid, roles(name)')
-            .or(`id.eq."${userId}",uuid.eq."${userId}"`)
+            .eq(column, queryValue)
             .maybeSingle();
         
         if (recruiter) {
@@ -49,7 +57,7 @@ export async function POST(request: Request) {
         const { data: employee } = await supabaseAdmin
             .from('employees')
             .select('id, uuid, roles(name)')
-            .or(`id.eq."${userId}",uuid.eq."${userId}"`)
+            .eq(column, queryValue)
             .maybeSingle();
         
         if (employee) {
@@ -70,11 +78,13 @@ export async function POST(request: Request) {
     }
 
     const now = new Date();
+    const expiryDate = new Date();
+    expiryDate.setFullYear(expiryDate.getFullYear() + 5); // 5 years validity for free tier
     
-    // We don't set an expiration for the Free tier to keep it simple, or we can just set it far in the future
     const updateData = {
         is_paid: true,
         plan_type: 'free',
+        plan_expires_at: expiryDate.toISOString(),
         updated_at: now.toISOString(),
     };
 

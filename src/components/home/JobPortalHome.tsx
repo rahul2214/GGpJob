@@ -358,7 +358,7 @@ const JobPortalHome = () => {
                     <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
                         {[
                             { logo: "https://cdn.simpleicons.org/google/4285F4", name: "Google", roles: "120+", bg: "bg-blue-50" },
-                            { logo: "https://cdn.simpleicons.org/microsoft/00A4EF", name: "Microsoft", roles: "95+", bg: "bg-sky-50" },
+                            { logo: "https://cdn.simpleicons.org/microsoft", name: "Microsoft", roles: "95+", bg: "bg-sky-50" },
                             { logo: "https://cdn.simpleicons.org/amazon/FF9900", name: "Amazon", roles: "150+", bg: "bg-orange-50" },
                             { logo: "https://cdn.simpleicons.org/meta/0866FF", name: "Meta", roles: "80+", bg: "bg-blue-50" },
                             { logo: "https://cdn.simpleicons.org/apple/1d1d1f", name: "Apple", roles: "65+", bg: "bg-slate-100" },

@@ -14,7 +14,8 @@ import { SummaryForm } from "@/components/summary-form";
 import { PersonalInfoFormCombined } from "@/components/personal-info-form-combined";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserCog, ShieldCheck, FileText, Briefcase, Link2, Users, HeartHandshake, Mail, Phone, LayoutDashboard } from "lucide-react";
+import { UserCog, ShieldCheck, FileText, Briefcase, Link2, Users, HeartHandshake, Mail, Phone, LayoutDashboard, Trash2 } from "lucide-react";
+import { DeleteAccountButton } from "@/components/delete-account-button";
 
 export default function ProfilePage() {
     const { user, loading } = useUser();
@@ -266,9 +267,15 @@ export default function ProfilePage() {
                                 )}
 
                                 {activeTab === 'security' && (
-                                    <ConfigCard index={1} title="Account Security" subtitle="Update your password to keep your account safe." icon={ShieldCheck} color="slate">
-                                        <ChangePasswordForm />
-                                    </ConfigCard>
+                                    <div className="space-y-6">
+                                        <ConfigCard index={1} title="Account Security" subtitle="Update your password to keep your account safe." icon={ShieldCheck} color="slate">
+                                            <ChangePasswordForm />
+                                        </ConfigCard>
+
+                                        <ConfigCard index={2} title="Danger Zone" subtitle="Permanently delete your account and all your data." icon={Trash2} color="rose">
+                                            <DeleteAccountButton />
+                                        </ConfigCard>
+                                    </div>
                                 )}
                             </motion.div>
                         </AnimatePresence>

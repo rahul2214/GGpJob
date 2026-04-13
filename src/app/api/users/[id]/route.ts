@@ -518,24 +518,33 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
     try {
         const { id } = params;
-        const { searchParams } = new URL(request.url);
-        const role = searchParams.get('role') || 'jobseekers';
         
-        let table = 'jobseekers';
-        if (role === 'Recruiter') table = 'recruiters';
-        else if (role === 'Employee') table = 'employees';
-        else if (['Admin', 'Super Admin'].includes(role)) table = 'admins';
+        if (!id) {
+            return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+        }
 
-        const { error } = await supabaseAdmin
-            .from(table)
-            .delete()
-            .eq('uuid', id);
+        // We use the admin API to delete the user from auth.users.
+        // This triggers the ON DELETE CASCADE in the database to remove profile and related data.
+        const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
 
-        if (error) throw error;
+        if (error) {
+            console.error(`Error deleting user ${id}:`, error);
+            return NextResponse.json({ 
+                error: 'Failed to delete user account', 
+                details: error.message,
+                code: (error as any).code || 'SUPABASE_ERROR'
+            }, { status: 500 });
+        }
 
-        return NextResponse.json({ message: 'User profile deleted successfully' }, { status: 200 });
-    } catch (e) {
-        console.error(e);
-        return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
+        return NextResponse.json({ message: 'Account and associated data deleted successfully' }, { status: 200 });
+    } catch (e: any) {
+        console.error('Delete User Error:', e);
+        // Extract a clean message if this is a Supabase error
+        const errorMessage = e.message || 'Unknown database error';
+        return NextResponse.json({ 
+            error: 'Failed to delete user account', 
+            details: errorMessage,
+            code: e.code // Postgres error codes are helpful (e.g. 23503 for FK violations)
+        }, { status: 500 });
     }
 }

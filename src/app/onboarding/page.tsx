@@ -103,23 +103,38 @@ export default function OnboardingPage() {
             let currentResumeUrl = user.resumeUrl || "";
             if (!user.resumeUrl && resumeFile) {
                 setUploadProgress(30);
-                const fileExt = resumeFile.name.split('.').pop();
-                const fileName = `${user.uuid}-${Date.now()}.${fileExt}`;
-                const filePath = `resumes/${user.uuid}/${fileName}`;
                 
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('Resumes')
-                    .upload(filePath, resumeFile);
-                
-                if (uploadError) throw uploadError;
-                
-                setUploadProgress(60);
-                
-                const { data: { publicUrl } } = supabase.storage
-                    .from('Resumes')
-                    .getPublicUrl(filePath);
+                // 1. Get presigned upload URL from our API
+                const presignedResponse = await fetch(`/api/users/${user.uuid}/resume/presigned`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        fileName: resumeFile.name, 
+                        contentType: resumeFile.type || 'application/pdf'
+                    }),
+                });
 
-                currentResumeUrl = publicUrl;
+                if (!presignedResponse.ok) throw new Error("Failed to get upload authorization.");
+                const { url, r2Uri } = await presignedResponse.json();
+                
+                setUploadProgress(50);
+
+                // 2. Upload directly to Cloudflare R2
+                const uploadResponse = await fetch(url, {
+                    method: "PUT",
+                    body: resumeFile,
+                    headers: {
+                        "Content-Type": resumeFile.type || 'application/pdf',
+                    },
+                });
+
+                if (!uploadResponse.ok) {
+                    const errorText = await uploadResponse.text();
+                    console.error("R2 Upload Error:", errorText);
+                    throw new Error("Direct upload to Cloudflare failed.");
+                }
+                
+                currentResumeUrl = r2Uri;
 
                 const resumeRes = await fetch(`/api/users/${user.uuid}/resume`, {
                     method: "PUT",
