@@ -11,30 +11,49 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  // if "next" is in param, use it as the redirect destination
-  const next = searchParams.get('next') ?? '/';
+  const roleRequest = searchParams.get('role') || 'Job Seeker'; // Get role from query param
+  const next = searchParams.get('next') ?? (roleRequest === 'Recruiter' ? '/company' : '/');
 
   if (code) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-    // Initialize a temporary client to perform the code exchange
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error && data?.user) {
       const user = data.user;
       
-      // 1. Check if user profile already exists in any table
-      // We check API endpoint logic: Job Seeker is default for OAuth
-      const { data: existingProfile } = await supabaseAdmin
-        .from('jobseekers')
-        .select('id')
-        .eq('uuid', user.id)
-        .maybeSingle();
+      // 1. Search across all tables to see if the profile already exists
+      const tables = ['jobseekers', 'recruiters', 'employees', 'admins'];
+      let foundProfile = null;
 
-      if (!existingProfile) {
-        // 2. Automated Profile Creation for First-Time OAuth Users
+      for (const t of tables) {
+        const { data: profile } = await supabaseAdmin
+            .from(t)
+            .select('id, uuid')
+            .eq('uuid', user.id)
+            .maybeSingle();
+        
+        if (profile) {
+            foundProfile = { ...profile, table: t };
+            break;
+        }
+      }
+
+      if (!foundProfile) {
+        // 2. Map role to target table and role ID
+        let targetTable = 'jobseekers';
+        let roleId = 1;
+
+        if (roleRequest === 'Recruiter') {
+            targetTable = 'recruiters';
+            roleId = 2;
+        } else if (roleRequest === 'Employee') {
+            targetTable = 'employees';
+            roleId = 3;
+        }
+
         const metadata = user.user_metadata;
         const name = metadata?.full_name || metadata?.name || user.email?.split('@')[0] || 'New User';
         
@@ -42,8 +61,7 @@ export async function GET(request: Request) {
           uuid: user.id,
           name: name,
           email: user.email!,
-          role_id: 1, // Job Seeker
-          role: 'Job Seeker',
+          role_id: roleId,
           phone: '',
           metadata: {
             auth_provider: 'google',
@@ -51,19 +69,24 @@ export async function GET(request: Request) {
           }
         };
 
+        // Add role string for jobseekers legacy compatibility
+        if (targetTable === 'jobseekers') {
+            (profileData as any).role = 'Job Seeker';
+        }
+
         const { error: insertError } = await supabaseAdmin
-          .from('jobseekers')
+          .from(targetTable)
           .insert(profileData);
 
         if (insertError) {
-          console.error('[AUTH_CALLBACK] Profile creation error:', insertError);
-          // We continue anyway, as the auth session is valid
+          console.error(`[AUTH_CALLBACK] Failed to create ${targetTable} profile:`, insertError);
         } else {
-            console.log(`[AUTH_CALLBACK] Created new profile for ${user.email}`);
+            console.log(`[AUTH_CALLBACK] Created new ${targetTable} profile for ${user.email}`);
         }
         
-        // If it's a new user, force them to onboarding
-        return NextResponse.redirect(`${origin}/onboarding`);
+        // Redirect to onboarding for new users
+        const onboardingPath = targetTable === 'recruiters' ? '/company/onboarding' : '/onboarding';
+        return NextResponse.redirect(`${origin}${onboardingPath}`);
       }
     }
   }

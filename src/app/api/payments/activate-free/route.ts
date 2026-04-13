@@ -10,17 +10,19 @@ export async function POST(request: Request) {
     }
 
     // Verify user profile and role
-    const { data: profile, error: profileError } = await supabaseAdmin
+    const { data: jobseeker, error: profileError } = await supabaseAdmin
         .from('jobseekers')
-        .select('role')
+        .select('id, roles(name)')
         .eq('uuid', userId)
-        .single();
+        .maybeSingle();
 
-    if (profileError || !profile) {
+    if (profileError || !jobseeker) {
         return NextResponse.json({ error: 'User profile not found. Please log in again.' }, { status: 404 });
     }
 
-    if (profile.role !== 'Job Seeker') {
+    const role = (jobseeker as any).roles?.name || 'Job Seeker';
+
+    if (role !== 'Job Seeker') {
         return NextResponse.json({ error: 'Only Job Seekers can activate the free plan' }, { status: 403 });
     }
 

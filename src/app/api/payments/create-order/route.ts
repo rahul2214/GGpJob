@@ -15,29 +15,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User ID, Plan ID, and Amount are required' }, { status: 400 });
     }
 
-    console.log(`[PAYMENT_ORDER_CREATE] Checking profile for userId: ${userId}`);
-    
+    let profile: { id: string | number, role: string } | null = null;
+
     // 1. Check jobseekers
-    let { data: profile, error: profileError } = await supabaseAdmin
+    let { data: jobseeker, error: profileError } = await supabaseAdmin
         .from('jobseekers')
-        .select('id, role')
+        .select('id, roles(name)')
         .eq('uuid', userId)
         .maybeSingle();
     
-    if (profile) console.log(`[PAYMENT_ORDER_CREATE] Found in jobseekers: ${profile.role}`);
+    if (jobseeker) {
+        profile = { 
+            id: jobseeker.id, 
+            role: (jobseeker as any).roles?.name || 'Job Seeker' 
+        };
+        console.log(`[PAYMENT_ORDER_CREATE] Found in jobseekers: ${profile.role}`);
+    }
 
     // 2. Check recruiters if not found
     if (!profile) {
         const { data: recruiter, error: recError } = await supabaseAdmin
             .from('recruiters')
-            .select('id')
+            .select('id, roles(name)')
             .eq('uuid', userId)
             .maybeSingle();
         
         if (recError) console.error(`[PAYMENT_ORDER_CREATE] Recruiter lookup error:`, recError);
         if (recruiter) {
+            profile = { 
+                id: recruiter.id, 
+                role: (recruiter as any).roles?.name || 'Recruiter' 
+            };
             console.log(`[PAYMENT_ORDER_CREATE] Found in recruiters table`);
-            profile = { role: 'Recruiter' } as any;
         }
     }
 
@@ -45,14 +54,17 @@ export async function POST(request: Request) {
     if (!profile) {
         const { data: employee, error: empError } = await supabaseAdmin
             .from('employees')
-            .select('id')
+            .select('id, roles(name)')
             .eq('uuid', userId)
             .maybeSingle();
         
         if (empError) console.error(`[PAYMENT_ORDER_CREATE] Employee lookup error:`, empError);
         if (employee) {
+            profile = { 
+                id: employee.id, 
+                role: (employee as any).roles?.name || 'Employee' 
+            };
             console.log(`[PAYMENT_ORDER_CREATE] Found in employees table`);
-            profile = { role: 'Employee' } as any;
         }
     }
 

@@ -154,9 +154,6 @@ export default function CompanyLoginPage() {
       }
       toast({ title: "Password Reset Email Sent", description: "Check your inbox for a link from Firebase to reset your password." });
       return true;
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to send password reset email.", variant: "destructive" });
-      return false;
     } finally {
       setIsResettingPassword(false);
     }

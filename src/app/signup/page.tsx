@@ -122,7 +122,7 @@ export default function SignupPage() {
             access_type: 'offline',
             prompt: 'consent',
           },
-          redirectTo: window.location.origin + '/auth/callback',
+          redirectTo: window.location.origin + '/auth/callback?role=Job+Seeker',
         }
       });
       if (error) throw error;

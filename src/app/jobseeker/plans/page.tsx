@@ -102,7 +102,7 @@ export default function JobSeekerPlansPage() {
              toast({ title: "Plan Activated!", description: "Your free plan is now active." });
             const updatedProfile = await fetchUserProfile(user.uuid);
              setUser(updatedProfile);
-             router.push("/");
+             router.push("/onboarding");
          } catch (error: any) {
              toast({ title: "Error", description: error.message, variant: "destructive" });
              setProcessing(null);
@@ -158,7 +158,7 @@ export default function JobSeekerPlansPage() {
                 toast({ title: "Activated Successfully!", description: `The ${selectedPlan.name} is now active on your account.` });
                const updatedProfile = await fetchUserProfile(user.uuid);
                 setUser(updatedProfile);
-                router.push("/");
+                router.push("/onboarding");
             } else {
                 throw new Error("Verification failed.");
             }
@@ -189,7 +189,7 @@ export default function JobSeekerPlansPage() {
                 toast({ title: "Activated Successfully!", description: `The ${selectedPlan.name} is now active on your account.` });
                const updatedProfile = await fetchUserProfile(user.uuid);
                 setUser(updatedProfile);
-                router.push("/");
+                router.push("/onboarding");
                 } else {
                 throw new Error("Verification failed.");
                 }

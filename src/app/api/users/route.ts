@@ -261,7 +261,60 @@ export async function GET(request: Request) {
             });
         }
 
-        // Not found in any table
+
+        // 5. SELF-HEALING: If not found in any table, check Supabase Auth
+        const { data: { user: authUser }, error: authError } = await supabaseAdmin.auth.admin.getUserById(uid);
+        
+        if (!authError && authUser) {
+            console.log(`[API_USERS_GET] Self-healing profile for ${authUser.email}`);
+            const metadata = authUser.user_metadata;
+            const role = metadata?.role || 'Job Seeker';
+            const name = metadata?.full_name || metadata?.name || authUser.email?.split('@')[0] || 'New User';
+            
+            let targetTable = 'jobseekers';
+            let roleId = 1;
+
+            if (role === 'Recruiter') {
+                targetTable = 'recruiters';
+                roleId = 2;
+            } else if (role === 'Employee') {
+                targetTable = 'employees';
+                roleId = 3;
+            } else if (role === 'Admin') {
+                targetTable = 'admins';
+                roleId = 4;
+            }
+
+            const { data: newProfile, error: createError } = await supabaseAdmin
+                .from(targetTable)
+                .insert({
+                    uuid: authUser.id,
+                    name: name,
+                    email: authUser.email,
+                    role_id: roleId,
+                    phone: metadata?.phone || '',
+                    ...(targetTable === 'admins' ? { is_super_admin: false } : {})
+                })
+                .select()
+                .single();
+            
+            if (!createError && newProfile) {
+                // Return success immediately
+                return NextResponse.json({
+                    id: newProfile.id,
+                    uuid: newProfile.uuid,
+                    name: newProfile.name,
+                    email: newProfile.email,
+                    role: role,
+                    roleId: roleId,
+                    phone: newProfile.phone
+                });
+            } else {
+                console.error(`[API_USERS_GET] Failed to self-heal ${targetTable} profile:`, createError);
+            }
+        }
+
+        // Not found in any table (and self-healing failed/wasn't applicable)
         return NextResponse.json({ error: 'User profile not found.' }, { status: 404 });
     }
 
@@ -328,24 +381,19 @@ export async function POST(request: Request) {
         email,
         phone: phone || '',
         role_id: roleId,
+        uuid: id, // Every table (seekers, recruiters, employees, admins) has a uuid column for Auth UID
     };
 
-    let conflictField = 'id';
+    let conflictField = 'uuid';
 
-    // Table-specific fields
+    // Table-specific compatibility/metadata
     if (table === 'jobseekers') {
-        dataToSave.id = id;
         dataToSave.role = role; // Compatibility until role column is fully dropped
         if (domainId) {
             dataToSave.metadata = { domainId };
         }
-    } else {
-        // recruiters, employees, admins use bigint id and uuid uuid
-        dataToSave.uuid = id;
-        conflictField = 'uuid';
-        if (table === 'admins') {
-            dataToSave.is_super_admin = (role === 'Super Admin');
-        }
+    } else if (table === 'admins') {
+        dataToSave.is_super_admin = (role === 'Super Admin');
     }
 
     const { error: upsertErr } = await supabaseAdmin

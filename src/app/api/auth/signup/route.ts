@@ -25,7 +25,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // ✅ Use Admin API to create user — this does NOT trigger Supabase's own verification email
     const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -38,7 +37,6 @@ export async function POST(request: Request) {
     });
 
     if (createError) {
-      // Handle duplicate email gracefully
       if (createError.message?.toLowerCase().includes('already registered') ||
           createError.message?.toLowerCase().includes('already exists')) {
         return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 });
@@ -46,7 +44,40 @@ export async function POST(request: Request) {
       throw createError;
     }
 
-    // Trigger Firebase email verification (non-blocking — don't fail signup if this fails)
+    // ✅ AUTOMATED PROFILE CREATION
+    // Determine the correct table and role_id
+    let table = 'jobseekers';
+    let roleId = 1; 
+    
+    if (role === 'Recruiter') {
+        table = 'recruiters';
+        roleId = 2;
+    } else if (role === 'Employee') {
+        table = 'employees';
+        roleId = 3;
+    } else if (role === 'Admin') {
+        table = 'admins';
+        roleId = 4;
+    }
+
+    const { error: profileError } = await supabaseAdmin
+        .from(table)
+        .insert({
+            uuid: authData.user.id,
+            name,
+            email,
+            phone: phone ? `+91${phone}` : '',
+            role_id: roleId,
+            ...(table === 'admins' ? { is_super_admin: false } : {})
+        });
+
+    if (profileError) {
+        console.error(`[signup] Failed to create ${table} profile:`, profileError);
+        // We don't throw here to avoid failing the whole signup if just the profile row fails,
+        // but we log it so it can be fixed. The Self-Healing GET will handle it later.
+    }
+
+    // Trigger Firebase email verification
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
       const redirectUrl = role === 'Job Seeker'
