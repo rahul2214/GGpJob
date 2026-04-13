@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { isOnboardingComplete } from "@/lib/onboarding";
 
 declare global {
   interface Window {
@@ -71,8 +72,9 @@ export default function JobSeekerPlansPage() {
         router.push('/');
         return;
     }
-    // Only redirect if they already have an active plan and aren't returning
-    if (!loading && user?.planType && user.planType !== 'none') {
+    // Only redirect to dashboard if they have an active plan AND have completed onboarding
+    // If they have a plan but incomplete onboarding, they should proceed to /onboarding
+    if (!loading && user?.planType && user.planType !== 'none' && isOnboardingComplete(user)) {
         router.push('/');
         return;
     }

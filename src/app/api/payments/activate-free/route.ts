@@ -9,20 +9,63 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // Verify user profile and role
-    const { data: jobseeker, error: profileError } = await supabaseAdmin
-        .from('jobseekers')
-        .select('id, roles(name)')
-        .eq('uuid', userId)
-        .maybeSingle();
+    let profile: { id: string | number, role: string, uuid?: string } | null = null;
+    let userIdValue = userId;
 
-    if (profileError || !jobseeker) {
+    // 1. Check jobseekers
+    let { data: jobseeker, error: profileError } = await supabaseAdmin
+        .from('jobseekers')
+        .select('id, uuid, roles(name)')
+        .or(`id.eq."${userId}",uuid.eq."${userId}"`)
+        .maybeSingle();
+    
+    if (jobseeker) {
+        profile = { 
+            id: jobseeker.id, 
+            uuid: jobseeker.uuid,
+            role: (jobseeker as any).roles?.name || 'Job Seeker' 
+        };
+    }
+
+    // 2. Check recruiters if not found
+    if (!profile) {
+        const { data: recruiter } = await supabaseAdmin
+            .from('recruiters')
+            .select('id, uuid, roles(name)')
+            .or(`id.eq."${userId}",uuid.eq."${userId}"`)
+            .maybeSingle();
+        
+        if (recruiter) {
+            profile = { 
+                id: recruiter.id, 
+                uuid: recruiter.uuid,
+                role: (recruiter as any).roles?.name || 'Recruiter' 
+            };
+        }
+    }
+
+    // 3. Check employees if still not found
+    if (!profile) {
+        const { data: employee } = await supabaseAdmin
+            .from('employees')
+            .select('id, uuid, roles(name)')
+            .or(`id.eq."${userId}",uuid.eq."${userId}"`)
+            .maybeSingle();
+        
+        if (employee) {
+            profile = { 
+                id: employee.id, 
+                uuid: employee.uuid,
+                role: (employee as any).roles?.name || 'Employee' 
+            };
+        }
+    }
+
+    if (!profile) {
         return NextResponse.json({ error: 'User profile not found. Please log in again.' }, { status: 404 });
     }
 
-    const role = (jobseeker as any).roles?.name || 'Job Seeker';
-
-    if (role !== 'Job Seeker') {
+    if (profile.role !== 'Job Seeker') {
         return NextResponse.json({ error: 'Only Job Seekers can activate the free plan' }, { status: 403 });
     }
 
@@ -38,7 +81,7 @@ export async function POST(request: Request) {
     const { error: updateError } = await supabaseAdmin
         .from('jobseekers')
         .update(updateData)
-        .eq('uuid', userId);
+        .eq('id', profile.id);
 
     if (updateError) throw updateError;
 

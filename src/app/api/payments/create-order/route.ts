@@ -20,8 +20,8 @@ export async function POST(request: Request) {
     // 1. Check jobseekers
     let { data: jobseeker, error: profileError } = await supabaseAdmin
         .from('jobseekers')
-        .select('id, roles(name)')
-        .eq('uuid', userId)
+        .select('id, uuid, roles(name)')
+        .or(`id.eq."${userId}",uuid.eq."${userId}"`)
         .maybeSingle();
     
     if (jobseeker) {
@@ -36,8 +36,8 @@ export async function POST(request: Request) {
     if (!profile) {
         const { data: recruiter, error: recError } = await supabaseAdmin
             .from('recruiters')
-            .select('id, roles(name)')
-            .eq('uuid', userId)
+            .select('id, uuid, roles(name)')
+            .or(`id.eq."${userId}",uuid.eq."${userId}"`)
             .maybeSingle();
         
         if (recError) console.error(`[PAYMENT_ORDER_CREATE] Recruiter lookup error:`, recError);
@@ -54,8 +54,8 @@ export async function POST(request: Request) {
     if (!profile) {
         const { data: employee, error: empError } = await supabaseAdmin
             .from('employees')
-            .select('id, roles(name)')
-            .eq('uuid', userId)
+            .select('id, uuid, roles(name)')
+            .or(`id.eq."${userId}",uuid.eq."${userId}"`)
             .maybeSingle();
         
         if (empError) console.error(`[PAYMENT_ORDER_CREATE] Employee lookup error:`, empError);

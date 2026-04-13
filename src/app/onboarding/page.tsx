@@ -13,17 +13,8 @@ import { supabase } from "@/lib/supabase-client";
 import type { Domain, MasterSkill } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { isOnboardingComplete } from "@/lib/onboarding";
 
-// Helper: check if onboarding is complete
-export function isOnboardingComplete(user: any): boolean {
-    return !!(
-        user?.domainId &&
-        user?.resumeUrl &&
-        user?.phone &&
-        user?.phone.length >= 10 &&
-        user?.profileStats?.hasSkills
-    );
-}
 
 export default function OnboardingPage() {
     const { user, loading, setUser } = useUser();

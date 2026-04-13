@@ -117,27 +117,35 @@ export async function POST(request: Request) {
 
       // 1. Identify the user table dynamically
       let targetTable = 'jobseekers';
+      let profileId = userId; // Default fallback to input userId
       
       const { data: jobseeker } = await supabaseAdmin
           .from('jobseekers')
           .select('id')
-          .eq('uuid', userId)
+          .or(`id.eq."${userId}",uuid.eq."${userId}"`)
           .maybeSingle();
       
-      if (!jobseeker) {
+      if (jobseeker) {
+          profileId = jobseeker.id;
+      } else {
           const { data: recruiter } = await supabaseAdmin
               .from('recruiters')
               .select('id')
-              .eq('uuid', userId)
+              .or(`id.eq."${userId}",uuid.eq."${userId}"`)
               .maybeSingle();
-          if (recruiter) targetTable = 'recruiters';
-          else {
+          if (recruiter) {
+              targetTable = 'recruiters';
+              profileId = recruiter.id;
+          } else {
               const { data: employee } = await supabaseAdmin
                   .from('employees')
                   .select('id')
-                  .eq('uuid', userId)
+                  .or(`id.eq."${userId}",uuid.eq."${userId}"`)
                   .maybeSingle();
-              if (employee) targetTable = 'employees';
+              if (employee) {
+                  targetTable = 'employees';
+                  profileId = employee.id;
+              }
           }
       }
 
@@ -147,7 +155,7 @@ export async function POST(request: Request) {
       const { error: profileError } = await supabaseAdmin
           .from(targetTable)
           .update(updateData)
-          .eq('uuid', userId);
+          .eq('id', profileId); // Using the ID we found earlier
 
       if (profileError) throw profileError;
 
