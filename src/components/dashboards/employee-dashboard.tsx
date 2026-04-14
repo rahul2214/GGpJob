@@ -43,7 +43,8 @@ function StatCard({
   color: string;
   delay?: number;
 }) {
-  const showLimit = limit > 1;
+  const isUnlimited = limit === -1;
+  const showLimit = limit > 0;
   const pct = showLimit ? Math.min((used / limit) * 100, 100) : 0;
   const isWarning = showLimit && pct >= 80;
   const isFull = showLimit && pct >= 100;
@@ -76,9 +77,11 @@ function StatCard({
               <span className="text-4xl font-extrabold text-slate-900 tracking-tighter transition-all group-hover:scale-105 origin-left">
                 {used}
               </span>
-              {showLimit && (
+              {showLimit ? (
                 <span className="text-slate-300 text-lg font-medium">/ {limit}</span>
-              )}
+              ) : isUnlimited ? (
+                <span className="text-emerald-500 text-lg font-bold ml-2">Unlimited</span>
+              ) : null}
             </div>
           </div>
 
@@ -218,8 +221,8 @@ export default function EmployeeDashboard() {
           const totalApplicants = referralJobs.reduce((s, j) => s + (j.applicantCount || 0), 0);
           
           // User-specific limits
-          const appLimitPerJob = (user as any)?.max_applies_limit ?? 100;
-          const totalAppQuota = referralJobs.length > 0 ? referralJobs.length * appLimitPerJob : appLimitPerJob;
+          const appLimitPerJob = (user as any)?.max_applies_limit ?? -1;
+          const totalAppQuota = referralJobs.length > 0 && appLimitPerJob !== -1 ? referralJobs.length * appLimitPerJob : appLimitPerJob;
           
           return (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

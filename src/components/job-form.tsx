@@ -32,36 +32,9 @@ const sectionSchema = z.object({
   items: z.array(z.object({ value: z.string().min(1, "Point cannot be empty.") })),
 });
 
-const formSchema = z.object({
-  jobTitle: z.string().min(5, "Job title must be at least 5 characters long."),
-  companyName: z.string().min(2, "Company name must be at least 2 characters long."),
-  locationIds: z.array(z.string()).min(1, "At least one location is required."),
-  job_role: z.string().min(2, "Role must be at least 2 characters long."),
-  jobDescription: z.string().min(50, "Job description must be at least 50 characters long."),
-  minExperience: z.coerce.number().min(0, "Min experience must be 0 or more."),
-  maxExperience: z.coerce.number().min(0, "Max experience must be 0 or more."),
-  jobTypeId: z.string().min(1, "Please select a job type."),
-  workplaceTypeId: z.string().min(1, "Please select a workplace type."),
-  domainId: z.string().min(1, "Please select a domain."),
-  vacancies: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().min(1, "Vacancies must be at least 1.").optional()),
-  companyOverview: z.string().optional(),
-  companyWebsite: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
-  companySizeId: z.string().optional().or(z.literal('')),
-  companyLinkedinUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
-  address: z.string().optional(),
-  salaryMin: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().min(0, "Min salary must be 0 or more.").optional()),
-  salaryMax: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().min(0, "Max salary must be 0 or more.").optional()),
-  jobLink: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
-  skillIds: z.array(z.string()).optional(),
-  benefitIds: z.array(z.string()).optional(),
-  sections: z.array(sectionSchema).optional(),
-  isConsultancy: z.boolean().default(false),
-}).refine(data => data.maxExperience >= data.minExperience, {
-    message: "Max experience cannot be less than min experience",
-    path: ["maxExperience"]
-});
+// We'll define the dynamic schema inside the component or via a function
 
-type JobFormValues = z.infer<typeof formSchema>;
+type JobFormValues = any; // We'll use the type from the schema inside
 
 // ─── Nested Section Items ──────────────────────────────────────────────────
 
@@ -114,6 +87,42 @@ interface JobFormProps {
 
 export function JobForm({ job }: JobFormProps) {
   const { user } = useUser();
+  const isAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
+
+  const formSchema = useMemo(() => z.object({
+    jobTitle: z.string().min(5, "Job title must be at least 5 characters long."),
+    jobId: z.string().optional(),
+    companyName: z.string().min(2, "Company name must be at least 2 characters long."),
+    locationIds: z.array(z.string()).min(1, "At least one location is required."),
+    job_role: z.string().min(2, "Role must be at least 2 characters long."),
+    jobDescription: z.string().min(50, "Job description must be at least 50 characters long."),
+    minExperience: z.coerce.number().min(0, "Min experience must be 0 or more."),
+    maxExperience: z.coerce.number().min(0, "Max experience must be 0 or more."),
+    jobTypeId: z.string().min(1, "Please select a job type."),
+    workplaceTypeId: z.string().min(1, "Please select a workplace type."),
+    domainId: z.string().min(1, "Please select a domain."),
+    vacancies: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().min(1, "Vacancies must be at least 1.").optional()),
+    companyOverview: z.string().optional(),
+    companyWebsite: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
+    companySizeId: z.string().optional().or(z.literal('')),
+    companyLinkedinUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
+    address: z.string().optional(),
+    salaryMin: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().min(0, "Min salary must be 0 or more.").optional()),
+    salaryMax: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().min(0, "Max salary must be 0 or more.").optional()),
+    jobLink: isAdmin 
+      ? z.string().min(1, "Job link is required for Admins.").url("Please enter a valid URL.")
+      : z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
+    skillIds: z.array(z.string()).optional(),
+    benefitIds: z.array(z.string()).optional(),
+    sections: z.array(sectionSchema).optional(),
+    isConsultancy: z.boolean().default(false),
+  }).refine(data => data.maxExperience >= data.minExperience, {
+      message: "Max experience cannot be less than min experience",
+      path: ["maxExperience"]
+  }), [isAdmin]);
+
+  type JobFormValues = z.infer<typeof formSchema>;
+
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -166,7 +175,8 @@ export function JobForm({ job }: JobFormProps) {
   const form = useForm<JobFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      jobTitle: job?.title || "",
+      jobTitle: job?.jobId ? job.title : "",
+      jobId: job?.jobId || "",
       companyName: job?.companyName || (user?.role === 'Recruiter' ? user.companyName : "") || "",
       locationIds: job?.locationIds || (job?.locationId ? [job.locationId] : []),
       job_role: job?.job_role || "",
@@ -189,7 +199,7 @@ export function JobForm({ job }: JobFormProps) {
       benefitIds: job?.benefitIds || [],
       
       sections: job?.sections?.map(s => ({ title: s.title, items: s.items.map(v => ({ value: v })) })) ,
-      isConsultancy: job?.isConsultancy ?? false,
+      isConsultancy: job?.isConsultancy ?? (isAdmin ? true : false),
     },
   });
 
@@ -204,6 +214,7 @@ export function JobForm({ job }: JobFormProps) {
       const builtSections = job?.sections?.map(s => ({ title: s.title, items: s.items.map(v => ({ value: v })) }));
       form.reset({
         jobTitle: job.title || "",
+        jobId: job.jobId || "",
         companyName: job.companyName || "",
         locationIds: job.locationIds || (job.locationId ? [job.locationId] : []),
         job_role: job.job_role || "",
@@ -225,7 +236,7 @@ export function JobForm({ job }: JobFormProps) {
         skillIds: job.skillIds || [],
         benefitIds: job.benefitIds || [],
         sections: builtSections,
-        isConsultancy: job.isConsultancy ?? false,
+        isConsultancy: job.isConsultancy ?? (isAdmin ? true : false),
       });
     }
   }, [job, form, user]);
@@ -254,12 +265,14 @@ export function JobForm({ job }: JobFormProps) {
       
       const payload = {
         ...data,
+        jobId: data.jobId,
         title: data.jobTitle,
         description: data.jobDescription,
         job_role: data.job_role,
         isReferral: false,
         recruiterId: user.role === 'Recruiter' ? user.uuid : undefined,
         employeeId: user.role === 'Employee' ? user.uuid : undefined,
+        adminId: (user.role === 'Admin' || user.role === 'Super Admin') ? user.uuid : undefined,
         postedAt: job?.postedAt || new Date().toISOString(),
         sections: data.sections?.map(s => ({ title: s.title, items: s.items.map(i => i.value) })) || [],
         benefitIds: data.benefitIds || [],
@@ -317,6 +330,19 @@ export function JobForm({ job }: JobFormProps) {
         />
         <FormField
           control={form.control}
+          name="jobId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Job ID (Optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g. JOB-1234" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="job_role"
           render={({ field }) => (
             <FormItem>
@@ -329,26 +355,28 @@ export function JobForm({ job }: JobFormProps) {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="isConsultancy"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-muted/50">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base">Post as Consultancy Recruiter</FormLabel>
-                <div className="text-sm text-muted-foreground">
-                  Enable this to provide custom company details for this specific job post.
+        {!isAdmin && (
+          <FormField
+            control={form.control}
+            name="isConsultancy"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-muted/50">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Post as Consultancy Recruiter</FormLabel>
+                  <div className="text-sm text-muted-foreground">
+                    Enable this to provide custom company details for this specific job post.
+                  </div>
                 </div>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        )}
 
         {form.watch("isConsultancy") && (
           <div className="space-y-4 border rounded-xl p-6 bg-slate-50/30">
@@ -738,7 +766,7 @@ export function JobForm({ job }: JobFormProps) {
             name="jobLink"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>External Job Link (Optional)</FormLabel>
+                <FormLabel>External Job Link {isAdmin && <span className="text-destructive">*</span>}</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <LinkIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

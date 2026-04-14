@@ -146,6 +146,7 @@ export default function Header() {
 
   const adminNavItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
+    { href: "/jobs/post", label: "Post Job", icon: PlusCircle },
     { href: "/admin/users", label: "Manage Users", icon: UserCog },
     { href: "/admin/jobs", label: "Manage Jobs", icon: BriefcaseBusiness },
     { href: "/admin/domains", label: "Manage Domains", icon: Layers },
@@ -270,7 +271,7 @@ export default function Header() {
                              {isClient && !userLoading && user && (user.role === 'Recruiter' || user.role === 'Employee') && !isPlanSelectionPage && (
                                   (!(user.planType === 'basic' && jobCount >= 1)) && (
                                      <SheetClose asChild>
-                                        <Link href={user.role === 'Recruiter' ? '/jobs/post' : '/referrals/post'} className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                        <Link href={user.role === 'Employee' ? '/referrals/post' : '/jobs/post'} className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
                                             <PlusCircle className="h-5 w-5" />
                                             Post Job
                                         </Link>
@@ -436,7 +437,7 @@ export default function Header() {
             )}
             {isClient && !userLoading && user && (user.role === 'Recruiter' || user.role === 'Employee') && !isPlanSelectionPage && (
               (!(user.planType === 'basic' && jobCount >= 1)) && (
-                <Link href={user.role === 'Recruiter' ? '/jobs/post' : '/referrals/post'} className={`transition-colors hover:text-foreground ${pathname === '/jobs/post' || pathname === '/referrals/post' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                <Link href={user.role === 'Employee' ? '/referrals/post' : '/jobs/post'} className={`transition-colors hover:text-foreground ${pathname === '/jobs/post' || pathname === '/referrals/post' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
                     Post Job
                 </Link>
               )

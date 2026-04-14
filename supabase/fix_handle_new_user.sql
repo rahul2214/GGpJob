@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS public.employees (
     plan_expires_at TIMESTAMPTZ,
     is_paid BOOLEAN DEFAULT FALSE,
     talent_search_expires_at TIMESTAMPTZ,
-    max_applies_limit INTEGER DEFAULT 100
+    max_applies_limit INTEGER DEFAULT -1
 );
 
 -- 3. Robust handle_new_user() trigger function

@@ -7,6 +7,7 @@ function mapJobToFrontend(job: any): any {
     return {
         id: job.id,           // Numeric PK (BIGINT)
         uuid: job.uuid,       // Public identifier (UUID string)
+        jobId: job.job_id,    // Custom Job ID
         title: job.title,
         description: job.description,
         companyName: job.company_name,
@@ -27,6 +28,7 @@ function mapJobToFrontend(job: any): any {
         isReferral: job.is_referral,
         recruiterId: job.recruiter_pk || job.recruiter_id,
         employeeId: job.employee_pk || job.employee_id,
+        adminId: job.admin_pk || job.admin_id,
         postedAt: job.posted_at,
         expiresAt: job.expires_at,
         appExpiresAt: job.app_expires_at,
@@ -355,8 +357,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    const { recruiterId, employeeId } = data;
-    const userId = recruiterId || employeeId;
+    const { recruiterId, employeeId, adminId } = data;
+    const userId = recruiterId || employeeId || adminId;
 
     if (!userId) {
         return NextResponse.json({ error: 'Recruiter ID or Employee ID is required' }, { status: 400 });
@@ -483,16 +485,28 @@ export async function POST(request: Request) {
     const now = new Date();
 
     // Check user plan and limits - support both UUID and numeric pk (Employees may have plan_type 'none')
+    // BYPASS plan checks for Admins
     if (userTable === 'recruiters' && (planType === 'none' || (planExpiresAt && planExpiresAt < now))) {
         return NextResponse.json({ error: 'Active subscription required for Recruiter to post jobs' }, { status: 403 });
     }
 
     // ── Job count check ────────────────────────────────────────────────────
-    // For Employees: enforce MONTHLY limit (5 jobs per calendar month)
-    // For Recruiters: enforce ACTIVE job limit based on plan
+    // BYPASS count checks for Admins
     let count: number | null = null;
 
-    if (userTable === 'employees') {
+    if (userTable === 'admins') {
+        const { count: adminCount, error: countError } = await supabaseAdmin
+            .from('jobs')
+            .select('*', { count: 'exact', head: true })
+            .eq('admin_pk', user.id);
+        if (countError) throw countError;
+        count = adminCount;
+        // Admins have no specific limit enforced here, but we set a high logical limit just in case
+        const ADMIN_LIMIT = 5000;
+        if (count !== null && count >= ADMIN_LIMIT) {
+            return NextResponse.json({ error: 'System safety limit reached for Admin posts.' }, { status: 403 });
+        }
+    } else if (userTable === 'employees') {
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
@@ -594,6 +608,7 @@ export async function POST(request: Request) {
 
     const jobToCreate = {
       title: data.title,
+      job_id: data.jobId || null,
       description: data.description,
       // Primary fallback logic: favor form data (especially for referrals), then user profile.
       company_name: data.companyName || user.company_name || null,
@@ -610,10 +625,11 @@ export async function POST(request: Request) {
       is_referral: !!data.isReferral,
       recruiter_pk: userTable === 'recruiters' ? userNumericPk : null,
       employee_pk: userTable === 'employees' ? userNumericPk : null,
+      admin_pk: userTable === 'admins' ? userNumericPk : null,
       posted_at: now.toISOString(),
       expires_at: jobExpiry.toISOString(),
       app_expires_at: appExpiry.toISOString(),
-      max_applies: user.max_applies_limit,
+      max_applies: user.max_applies_limit ?? -1,
       plan_type_at_posting: planType,
       vacancies: data.vacancies || 1,
       sections: data.sections || [],
@@ -621,7 +637,6 @@ export async function POST(request: Request) {
       benefit_ids: benefitPks,
       status: 'active',
       company_size_id: companySizePk,
-      max_applies: user.max_applies_limit || 100,
       company_linkedin_url: user.company_linkedin_url || data.companyLinkedinUrl || null,
       company_overview: user.company_overview || data.companyOverview || null,
       company_website: user.company_website || data.companyWebsite || null,

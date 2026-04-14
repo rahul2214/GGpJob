@@ -48,6 +48,7 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
     return {
         id: job.id,
         uuid: job.uuid,
+        jobId: job.job_id,
         pk: job.id,
         recruiterPk: job.recruiter_pk,
         employeePk: job.employee_pk,
@@ -265,6 +266,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
         const dataToUpdate: any = {
             title: body.title,
+            job_id: body.jobId || null,
             description: body.description,
             // Priority: form data (if consultancy/referral), then profile
             company_name: (isConsultancy || isReferral) ? body.companyName : (user?.company_name || body.companyName),

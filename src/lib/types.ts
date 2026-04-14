@@ -98,6 +98,7 @@ export interface Job {
   id: number;
   uuid: string;
   pk?: number;
+  jobId?: string;
   title: string;
   companyName: string;
   locationId?: string; // Legacy single field (UUID)

@@ -16,9 +16,11 @@ END $$;
 -- 2. Add numeric PK columns for Performance Joins (Hybrid ID System)
 ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS recruiter_pk BIGINT REFERENCES public.recruiters(id);
 ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS employee_pk BIGINT REFERENCES public.employees(id);
+ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS admin_pk BIGINT REFERENCES public.admins(id);
 
 -- 3. Add Referral and Meta fields
 ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS job_link TEXT;
+ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS job_id TEXT;
 ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS vacancies INTEGER DEFAULT 1;
 
 -- 4. Ensure array PK columns exist (From Phase 2 fallback)

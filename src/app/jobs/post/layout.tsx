@@ -16,13 +16,13 @@ export default function PostJobLayout({
     if (!loading) {
         if (!user) {
             router.push('/login');
-        } else if (user.role !== 'Recruiter') {
+        } else if (user.role !== 'Recruiter' && user.role !== 'Admin' && user.role !== 'Super Admin') {
             router.push('/');
         }
     }
   }, [user, loading, router]);
 
-  if (loading || !user || user.role !== 'Recruiter') {
+  if (loading || !user || (user.role !== 'Recruiter' && user.role !== 'Admin' && user.role !== 'Super Admin')) {
     return null; 
   }
 

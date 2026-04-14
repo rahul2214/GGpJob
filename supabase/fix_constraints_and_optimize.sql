@@ -104,7 +104,7 @@ ALTER TABLE public.recruiters
 ALTER TABLE public.recruiters DROP CONSTRAINT IF EXISTS recruiters_max_applies_nonneg;
 ALTER TABLE public.recruiters
   ADD CONSTRAINT recruiters_max_applies_nonneg
-    CHECK (max_applies_limit >= 0);
+    CHECK (max_applies_limit >= -1);
 
 ALTER TABLE public.recruiters DROP CONSTRAINT IF EXISTS recruiters_plan_type_consistency;
 ALTER TABLE public.recruiters

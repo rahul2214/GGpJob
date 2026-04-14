@@ -249,6 +249,12 @@ function JobDetailsContent() {
                                                     <span className="text-blue-600 font-medium text-sm">{job.job_role}</span>
                                                 </>
                                             )}
+                                            {job.jobId && (
+                                                <>
+                                                    <div className="w-1 h-1 rounded-full bg-gray-300" />
+                                                    <span className="text-gray-500 font-medium text-sm">ID: {job.jobId}</span>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                     
