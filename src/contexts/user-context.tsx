@@ -101,7 +101,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       if (session?.user) {
         const userProfile = await fetchUserProfile(session.user.id);
-        setUserState(userProfile);
+        
+        // Stability check: Only update state if data has actually changed
+        // This prevents object reference changes that trigger form resets
+        if (JSON.stringify(userProfile) !== JSON.stringify(user)) {
+            setUserState(userProfile);
+        }
       } else {
         setUserState(null);
       }

@@ -56,13 +56,17 @@ export function PersonalDetailsForm({ user }: PersonalDetailsFormProps) {
   const dobValue = watch("dateOfBirth");
 
   useEffect(() => {
-    reset({
-      gender: user.gender || "",
-      maritalStatus: user.maritalStatus || "",
-      dateOfBirth: user.dateOfBirth || "",
-      category: user.category || "",
-    });
-  }, [user, reset]);
+    // Only reset if the user ID has actually changed (prevents focus-reset issues)
+    // If it's the same user, we don't want to reset while they are typing.
+    if (user?.uuid) {
+      reset({
+        gender: user.gender || "",
+        maritalStatus: user.maritalStatus || "",
+        dateOfBirth: user.dateOfBirth || "",
+        category: user.category || "",
+      });
+    }
+  }, [user?.uuid, reset]); // Removed 'user' object as dependency to keep reference stable
 
 
   const onSubmit = async (data: PersonalDetailsFormValues) => {

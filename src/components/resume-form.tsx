@@ -44,8 +44,12 @@ export function ResumeForm({ user: initialUser }: ResumeFormProps) {
   const selectedFile = watch("resumeFile");
   
   useEffect(() => {
-    reset();
-  }, [user, reset]);
+    // Only reset if the actual user identity changes (login/logout)
+    // Avoid resetting on every user object update to preserve unsaved file selections
+    if (user?.uuid !== initialUser?.uuid) {
+        reset();
+    }
+  }, [user?.uuid, initialUser?.uuid, reset]);
 
 
   const onSubmit = async (data: ResumeFormValues) => {

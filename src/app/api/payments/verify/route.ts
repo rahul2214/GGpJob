@@ -107,44 +107,52 @@ export async function POST(request: Request) {
                  finalAmount = Math.max(0, Math.round(finalAmount * (1 - coupon.discount_percent / 100)));
                  appliedCouponCode = coupon.code;
                  
-                 // Increment coupon usage
-                 await supabaseAdmin.rpc('increment_coupon_usage', { coupon_code: coupon.code });
-                 // NOTE: If RPC is not preferred, we could do 
-                 // await supabaseAdmin.from('coupons').update({ current_uses: coupon.current_uses + 1 }).eq('id', coupon.id);
-             }
+                  // Increment coupon usage directly for better visibility and reliability
+                  const { error: usageError } = await supabaseAdmin
+                    .from('coupons')
+                    .update({ current_uses: (coupon.current_uses || 0) + 1 })
+                    .eq('id', coupon.id);
+                  
+                  if (usageError) {
+                    console.error('[PAYMENT_VERIFY] Failed to increment coupon usage:', usageError);
+                  }
+              }
          }
       }
 
       // 1. Identify the user table dynamically using standardized ID resolution
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
-      const lookupField = isUUID ? 'uuid' : 'id';
-      const lookupId = isUUID ? userId : parseInt(userId, 10);
-
-      let targetTable = 'jobseekers';
-      let profileId = userId; // Default fallback to input userId
       
+      // We first try to find the user in any of the potential roles
+      let targetTable = 'jobseekers';
+      let profileId: string | number | null = null;
+      
+      // Try Jobseekers first
       const { data: jobseeker } = await supabaseAdmin
           .from('jobseekers')
           .select('id')
-          .eq(lookupField, lookupId)
+          .eq(isUUID ? 'uuid' : 'id', isUUID ? userId : parseInt(userId, 10))
           .maybeSingle();
       
       if (jobseeker) {
           profileId = jobseeker.id;
+          targetTable = 'jobseekers';
       } else {
+          // Try Recruiters
           const { data: recruiter } = await supabaseAdmin
               .from('recruiters')
               .select('id')
-              .eq(lookupField, lookupId)
+              .eq(isUUID ? 'uuid' : 'id', isUUID ? userId : parseInt(userId, 10))
               .maybeSingle();
           if (recruiter) {
               targetTable = 'recruiters';
               profileId = recruiter.id;
           } else {
+              // Try Employees
               const { data: employee } = await supabaseAdmin
                   .from('employees')
                   .select('id')
-                  .eq(lookupField, lookupId)
+                  .eq(isUUID ? 'uuid' : 'id', isUUID ? userId : parseInt(userId, 10))
                   .maybeSingle();
               if (employee) {
                   targetTable = 'employees';
@@ -153,13 +161,17 @@ export async function POST(request: Request) {
           }
       }
 
-      console.log(`[PAYMENT_VERIFY] Updating plan for user ${userId} in table ${targetTable}`);
+      if (!profileId) {
+          throw new Error(`Profile not found for user ${userId}`);
+      }
 
-      // Perform transaction updates on the identified table
+      console.log(`[PAYMENT_VERIFY] Updating plan for user ${userId} (ID: ${profileId}) in table ${targetTable}`);
+
+      // Perform updates on the identified table
       const { error: profileError } = await supabaseAdmin
           .from(targetTable)
           .update(updateData)
-          .eq('id', profileId); // Using the ID we found earlier
+          .eq('id', profileId); 
 
       if (profileError) throw profileError;
 
