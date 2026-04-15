@@ -89,15 +89,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setLoading(true);
+      // Background events like TOKEN_REFRESHED (often triggered by tab focus) 
+      // shouldn't show a global loading spinner if we already have a user.
+      const isInitial = event === 'INITIAL_SESSION';
+      const isSignEvent = event === 'SIGNED_IN' || event === 'SIGNED_OUT';
+      
+      // Only show global loading on the very first check or during significant auth transitions
+      if (isInitial || (isSignEvent && !user)) {
+          setLoading(true);
+      }
+
       if (session?.user) {
-        // In Supabase, email verification is handled via settings, 
-        // but we can check if the user is confirmed.
         const userProfile = await fetchUserProfile(session.user.id);
         setUserState(userProfile);
       } else {
         setUserState(null);
       }
+      
       setLoading(false);
     });
 
