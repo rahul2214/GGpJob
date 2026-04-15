@@ -126,11 +126,15 @@ export default function AdminDashboardPage() {
         if (date?.from) params.append('from', date.from.toISOString());
         if (date?.to) params.append('to', date.to.toISOString());
 
+        if (user?.id) params.append('userId', user.id);
+
         const res = await fetch(`/api/analytics?${params.toString()}`);
+        if (!res.ok) throw new Error("Failed to fetch analytics");
         const data = await res.json();
         setAnalytics(data);
       } catch (error) {
         console.error("Failed to fetch analytics", error);
+        setAnalytics(null);
       } finally {
         setLoading(false);
       }
@@ -139,7 +143,7 @@ export default function AdminDashboardPage() {
     fetchAnalytics();
   }, [user, date, isAdminOrSuperAdmin]);
 
-  if (loading && !analytics) {
+  if (loading || !analytics || !analytics.directJobsByDomain) {
     return (
       <div className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -330,7 +334,7 @@ export default function AdminDashboardPage() {
                             dataKey="value"
                             nameKey="name"
                         >
-                            {analytics.directJobsByDomain.map((entry, index) => (
+                            {(analytics.directJobsByDomain || []).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                         </Pie>
@@ -358,7 +362,7 @@ export default function AdminDashboardPage() {
                             dataKey="value"
                             nameKey="name"
                         >
-                            {analytics.referralJobsByDomain.map((entry, index) => (
+                            {(analytics.referralJobsByDomain || []).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                         </Pie>
@@ -386,7 +390,7 @@ export default function AdminDashboardPage() {
                             dataKey="value"
                             nameKey="name"
                         >
-                            {analytics.usersByDomain.map((entry, index) => (
+                            {(analytics.usersByDomain || []).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                         </Pie>
@@ -414,7 +418,7 @@ export default function AdminDashboardPage() {
                             dataKey="value"
                             nameKey="name"
                         >
-                            {analytics.applicationsByDomain.map((entry, index) => (
+                            {(analytics.applicationsByDomain || []).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                         </Pie>
@@ -442,7 +446,7 @@ export default function AdminDashboardPage() {
                             dataKey="value"
                             nameKey="name"
                         >
-                            {analytics.applicationsByStatus.map((entry, index) => (
+                            {(analytics.applicationsByStatus || []).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                         </Pie>

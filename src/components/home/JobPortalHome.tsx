@@ -95,7 +95,7 @@ const JobPortalHome = () => {
                                         <p className="text-sm text-slate-500">Tech Co • Remote</p>
                                     </div>
                                 </div>
-                                <p className="text-sm font-semibold text-indigo-600 bg-indigo-50 inline-block px-2 py-1 rounded">₹90k - ₹120k / yr</p>
+                                <p className="text-sm font-semibold text-indigo-600 bg-indigo-50 inline-block px-2 py-1 rounded">₹19L - ₹21L / yr</p>
                             </motion.div>
 
                             <motion.div animate={{ y: [15, -15, 15] }} transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }} className="absolute top-1/2 right-0 z-30 bg-gradient-to-br from-purple-600 to-indigo-700 p-5 rounded-2xl shadow-xl shadow-purple-200/50 border border-purple-500/50 max-w-[280px] text-white">
@@ -108,7 +108,7 @@ const JobPortalHome = () => {
                                         <p className="text-sm text-purple-200">Creative Agency</p>
                                     </div>
                                 </div>
-                                <p className="text-sm font-semibold text-purple-100 bg-black/20 inline-block px-2 py-1 rounded">₹75k - ₹95k / yr</p>
+                                <p className="text-sm font-semibold text-purple-100 bg-black/20 inline-block px-2 py-1 rounded">₹9L - ₹12L / yr</p>
                             </motion.div>
                             
                             <motion.div animate={{ y: [-5, 5, -5] }} transition={{ repeat: Infinity, duration: 4, ease: "easeInOut", delay: 1 }} className="absolute bottom-10 left-1/4 z-10 bg-white/90 backdrop-blur-sm p-5 rounded-2xl shadow-2xl border border-white max-w-[280px]">
@@ -121,7 +121,7 @@ const JobPortalHome = () => {
                                         <p className="text-sm text-slate-500">Startup • Hybrid</p>
                                     </div>
                                 </div>
-                                <p className="text-sm font-semibold text-pink-600 bg-pink-50 inline-block px-2 py-1 rounded">₹80k - ₹110k / yr</p>
+                                <p className="text-sm font-semibold text-pink-600 bg-pink-50 inline-block px-2 py-1 rounded">₹11L - ₹20L / yr</p>
                             </motion.div>
                         </motion.div>
                     </div>
@@ -544,30 +544,6 @@ const JobPortalHome = () => {
                                 </AnimatePresence>
                             </motion.div>
                         ))}
-                    </motion.div>
-                </div>
-            </section>
-
-            {/* Final CTA */}
-            <section className="py-24 relative overflow-hidden bg-slate-900 text-white">
-                <div className="absolute inset-0 bg-gradient-to-tr from-indigo-900 to-slate-900"></div>
-                <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 mix-blend-overlay"></div>
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl aspect-square bg-indigo-500/20 rounded-full blur-[100px]"></div>
-                
-                <div className="container px-4 md:px-6 mx-auto relative z-10 text-center max-w-4xl mx-auto">
-                    <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer}>
-                        <motion.h2 variants={fadeInUp} className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight">Ready to Find Your Next Opportunity?</motion.h2>
-                        <motion.p variants={fadeInUp} className="text-xl text-indigo-100 mb-10 max-w-2xl mx-auto font-medium">
-                            Join thousands of employers and job seekers who have already found success with Job Portal.
-                        </motion.p>
-                        <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row justify-center gap-4">
-                            <Button asChild size="lg" className="bg-white hover:bg-indigo-50 text-indigo-900 rounded-full px-8 h-14 text-lg border-0 shadow-xl shadow-white/10 font-bold transition-transform hover:scale-105">
-                                <Link href="/company/signup">Post a Job for Free <ArrowRight className="ml-2 w-5 h-5"/></Link>
-                            </Button>
-                            <Button asChild size="lg" variant="outline" className="bg-transparent border-2 border-indigo-400/30 hover:border-white hover:bg-white/10 text-white rounded-full px-8 h-14 text-lg font-bold backdrop-blur-sm transition-transform hover:scale-105">
-                                <Link href="/jobs">Browse Jobs</Link>
-                            </Button>
-                        </motion.div>
                     </motion.div>
                 </div>
             </section>

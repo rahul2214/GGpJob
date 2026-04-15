@@ -115,14 +115,18 @@ export async function POST(request: Request) {
          }
       }
 
-      // 1. Identify the user table dynamically
+      // 1. Identify the user table dynamically using standardized ID resolution
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+      const lookupField = isUUID ? 'uuid' : 'id';
+      const lookupId = isUUID ? userId : parseInt(userId, 10);
+
       let targetTable = 'jobseekers';
       let profileId = userId; // Default fallback to input userId
       
       const { data: jobseeker } = await supabaseAdmin
           .from('jobseekers')
           .select('id')
-          .or(`id.eq."${userId}",uuid.eq."${userId}"`)
+          .eq(lookupField, lookupId)
           .maybeSingle();
       
       if (jobseeker) {
@@ -131,7 +135,7 @@ export async function POST(request: Request) {
           const { data: recruiter } = await supabaseAdmin
               .from('recruiters')
               .select('id')
-              .or(`id.eq."${userId}",uuid.eq."${userId}"`)
+              .eq(lookupField, lookupId)
               .maybeSingle();
           if (recruiter) {
               targetTable = 'recruiters';
@@ -140,7 +144,7 @@ export async function POST(request: Request) {
               const { data: employee } = await supabaseAdmin
                   .from('employees')
                   .select('id')
-                  .or(`id.eq."${userId}",uuid.eq."${userId}"`)
+                  .eq(lookupField, lookupId)
                   .maybeSingle();
               if (employee) {
                   targetTable = 'employees';

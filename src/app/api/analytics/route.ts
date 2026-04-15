@@ -1,117 +1,165 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkAdmin } from '@/lib/check-admin';
 
 export const dynamic = 'force-dynamic';
 
-const statusMap: { [key: number]: string } = {
-    1: 'Applied',
-    2: 'Profile Viewed',
-    3: 'Not Suitable',
-    4: 'Selected',
-};
-
-async function getCount(table: string, filter?: any) {
-    let query = supabaseAdmin.from(table).select('*', { count: 'exact', head: true });
-    if (filter) {
-        Object.entries(filter).forEach(([key, val]) => {
-            query = query.eq(key, val);
-        });
+async function getCount(table: string, from?: string | null, to?: string | null, dateField: string = 'created_at') {
+    let query = supabaseAdmin
+        .from(table)
+        .select('*', { count: 'exact', head: true });
+    
+    if (from) query = query.gte(dateField, from);
+    if (to) query = query.lte(dateField, to);
+    
+    const { count, error } = await query;
+    if (error) {
+        console.error(`Error counting ${table}:`, error);
+        throw error;
     }
-    const { count } = await query;
     return count || 0;
 }
 
-export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const fromDate = searchParams.get('from');
-    const toDate = searchParams.get('to');
+export async function GET(request: NextRequest) {
+    try {
+        const { searchParams } = new URL(request.url);
+        const from = searchParams.get('from');
+        const to = searchParams.get('to');
+        const userId = searchParams.get('userId');
 
-    // 1. Parallel Count Queries
-    const [
-        jobSeekersCount,
-        recruitersCount,
-        employeesCount,
-        directJobsCount,
-        referralJobsCount,
-        totalApplications
-    ] = await Promise.all([
-        getCount('jobseekers'),
-        getCount('recruiters'),
-        getCount('employees'),
-        getCount('jobs', { is_referral: false }),
-        getCount('jobs', { is_referral: true }),
-        getCount('applications')
-    ]);
+        // Security: If userId is provided, verify it. 
+        // Note: For now, we skip if userId is missing to remain compatible with old frontend, 
+        // but we recommend the frontend always sends it.
+        if (userId) {
+            const isAdmin = await checkAdmin(userId);
+            if (!isAdmin) {
+                return NextResponse.json({ error: 'Unauthorized access' }, { status: 403 });
+            }
+        }
 
-    // 2. Group By Domain Queries (using RPC or complex selects)
-    // For simplicity and robustness, we use a custom query or multiple parallel grouping fetches
-    
-    // Jobs by Domain
-    const { data: jobsByDomainRaw } = await supabaseAdmin
-        .from('jobs')
-        .select('is_referral, domains(name)');
-    
-    const directJobsByDomainMap: Record<string, number> = {};
-    const referralJobsByDomainMap: Record<string, number> = {};
-    
-    jobsByDomainRaw?.forEach((j: any) => {
-        const name = j.domains?.name || 'Other';
-        if (j.is_referral) referralJobsByDomainMap[name] = (referralJobsByDomainMap[name] || 0) + 1;
-        else directJobsByDomainMap[name] = (directJobsByDomainMap[name] || 0) + 1;
-    });
+        // 1. Fetch Summary Counts
+        // Note: Schema uses 'created_at' for profiles/jobs and 'applied_at' for applications.
+        const [
+            totalJobSeekers,
+            totalRecruiters,
+            totalEmployees,
+            totalApplications,
+            totalReferralJobs,
+            totalDirectJobsResult
+        ] = await Promise.all([
+            getCount('jobseekers', from, to, 'created_at'),
+            getCount('recruiters', from, to, 'created_at'),
+            getCount('employees', from, to, 'created_at'),
+            getCount('applications', from, to, 'applied_at'),
+            // Referral Jobs
+            (async () => {
+                let q = supabaseAdmin.from('jobs').select('*', { count: 'exact', head: true }).eq('is_referral', true);
+                if (from) q = q.gte('created_at', from);
+                if (to) q = q.lte('created_at', to);
+                const { count } = await q;
+                return count || 0;
+            })(),
+            // Direct Jobs
+            (async () => {
+                let q = supabaseAdmin.from('jobs').select('*', { count: 'exact', head: true }).eq('is_referral', false);
+                if (from) q = q.gte('created_at', from);
+                if (to) q = q.lte('created_at', to);
+                const { count } = await q;
+                return count || 0;
+            })()
+        ]);
 
-    // Users by Domain (only job seekers have domain_id)
-    const { data: usersByDomainRaw } = await supabaseAdmin
-        .from('jobseekers')
-        .select('domains(name)');
+        // 2. Fetch Grouped Data for Charts
+        
+        // Jobs Grouping
+        let jobsQuery = supabaseAdmin
+            .from('jobs')
+            .select('is_referral, domains!domain_id(name)'); // Schema says domain_id
+        if (from) jobsQuery = jobsQuery.gte('created_at', from);
+        if (to) jobsQuery = jobsQuery.lte('created_at', to);
+        const { data: jobsByDomainRaw } = await jobsQuery;
 
-    const usersByDomainMap: Record<string, number> = {};
-    usersByDomainRaw?.forEach((u: any) => {
-        const name = u.domains?.name || 'Other';
-        usersByDomainMap[name] = (usersByDomainMap[name] || 0) + 1;
-    });
+        const directJobsByDomainMap: Record<string, number> = {};
+        const referralJobsByDomainMap: Record<string, number> = {};
+        jobsByDomainRaw?.forEach((j: any) => {
+            const name = j.domains?.name || 'Other';
+            if (j.is_referral) referralJobsByDomainMap[name] = (referralJobsByDomainMap[name] || 0) + 1;
+            else directJobsByDomainMap[name] = (directJobsByDomainMap[name] || 0) + 1;
+        });
 
-    // Applications by Domain
-    const { data: appsByDomainRaw } = await supabaseAdmin
-        .from('applications')
-        .select('jobs(domains(name))');
+        // Users Grouping (Job Seekers)
+        let usersQuery = supabaseAdmin
+            .from('jobseekers')
+            .select('domains!domain_id(name)');
+        if (from) usersQuery = usersQuery.gte('created_at', from);
+        if (to) usersQuery = usersQuery.lte('created_at', to);
+        const { data: usersByDomainRaw } = await usersQuery;
 
-    const appsByDomainMap: Record<string, number> = {};
-    appsByDomainRaw?.forEach((a: any) => {
-        const name = a.jobs?.domains?.name || 'Other';
-        appsByDomainMap[name] = (appsByDomainMap[name] || 0) + 1;
-    });
+        const usersByDomainMap: Record<string, number> = {};
+        usersByDomainRaw?.forEach((u: any) => {
+            const name = u.domains?.name || 'Other';
+            usersByDomainMap[name] = (usersByDomainMap[name] || 0) + 1;
+        });
 
-    // Applications by Status
-    const { data: statusCountsRaw } = await supabaseAdmin
-        .from('applications')
-        .select('status_id');
+        // Applications Grouping
+        let appsByDomainQuery = supabaseAdmin
+            .from('applications')
+            .select('jobs!job_id(domains!domain_id(name))'); // Schema says job_id and domain_id
+        if (from) appsByDomainQuery = appsByDomainQuery.gte('applied_at', from);
+        if (to) appsByDomainQuery = appsByDomainQuery.lte('applied_at', to);
+        const { data: appsByDomainRaw } = await appsByDomainQuery;
 
-    const statusCountsMap: Record<string, number> = {};
-    statusCountsRaw?.forEach((a: any) => {
-        const name = statusMap[a.status_id] || 'Unknown';
-        statusCountsMap[name] = (statusCountsMap[name] || 0) + 1;
-    });
+        const appsByDomainMap: Record<string, number> = {};
+        appsByDomainRaw?.forEach((a: any) => {
+            const name = (a.jobs as any)?.domains?.name || 'Other';
+            appsByDomainMap[name] = (appsByDomainMap[name] || 0) + 1;
+        });
 
-    const analyticsData = {
-      totalJobSeekers: jobSeekersCount,
-      totalRecruiters: recruitersCount,
-      totalEmployees: employeesCount,
-      totalDirectJobs: directJobsCount,
-      totalReferralJobs: referralJobsCount,
-      totalApplications: totalApplications,
-      directJobsByDomain: Object.entries(directJobsByDomainMap).map(([name, value]) => ({ name, value })),
-      referralJobsByDomain: Object.entries(referralJobsByDomainMap).map(([name, value]) => ({ name, value })),
-      usersByDomain: Object.entries(usersByDomainMap).map(([name, value]) => ({ name, value })),
-      applicationsByDomain: Object.entries(appsByDomainMap).map(([name, value]) => ({ name, value })),
-      applicationsByStatus: Object.entries(statusCountsMap).map(([name, value]) => ({ name, value })),
-    };
-    
-    return NextResponse.json(analyticsData);
-  } catch (e: any) {
-    console.error('[API_ANALYTICS] Error:', e);
-    return NextResponse.json({ error: 'Failed to fetch analytics data', details: e.message }, { status: 500 });
-  }
+        // Status Grouping
+        let appsByStatusQuery = supabaseAdmin
+            .from('applications')
+            .select('status_id'); // Select numeric status_id
+        if (from) appsByStatusQuery = appsByStatusQuery.gte('applied_at', from);
+        if (to) appsByStatusQuery = appsByStatusQuery.lte('applied_at', to);
+        const { data: appsByStatusRaw } = await appsByStatusQuery;
+
+        // Fallback Status Map
+        const statusMap: Record<number, string> = {
+            1: 'Applied',
+            2: 'Profile Viewed',
+            3: 'Not Suitable',
+            4: 'Selected',
+        };
+
+        const appsByStatusMap: Record<string, number> = {};
+        appsByStatusRaw?.forEach((a: any) => {
+            const name = statusMap[a.status_id] || 'Other';
+            appsByStatusMap[name] = (appsByStatusMap[name] || 0) + 1;
+        });
+
+        const formatMap = (map: Record<string, number>) => 
+            Object.entries(map).map(([name, value]) => ({ name, value }))
+                .sort((a, b) => b.value - a.value);
+
+        return NextResponse.json({
+            totalJobSeekers,
+            totalRecruiters,
+            totalEmployees,
+            totalDirectJobs: totalDirectJobsResult,
+            totalReferralJobs,
+            totalApplications,
+            directJobsByDomain: formatMap(directJobsByDomainMap),
+            referralJobsByDomain: formatMap(referralJobsByDomainMap),
+            usersByDomain: formatMap(usersByDomainMap),
+            applicationsByDomain: formatMap(appsByDomainMap),
+            applicationsByStatus: formatMap(appsByStatusMap)
+        });
+
+    } catch (e: any) {
+        console.error('[API_ANALYTICS_GET] Error:', e);
+        return NextResponse.json({ 
+            error: 'Failed to fetch analytics', 
+            details: e.message 
+        }, { status: 500 });
+    }
 }

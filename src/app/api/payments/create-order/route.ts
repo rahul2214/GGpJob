@@ -15,65 +15,66 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User ID, Plan ID, and Amount are required' }, { status: 400 });
     }
 
+    // Helper to resolve profile across tables with standardized ID logic
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+    const lookupId = isUUID ? userId : parseInt(userId, 10);
+    const lookupField = isUUID ? 'uuid' : 'id';
+
     let profile: { id: string | number, role: string } | null = null;
 
-    // 1. Check jobseekers
-    let { data: jobseeker, error: profileError } = await supabaseAdmin
+    // 1. Check jobseekers (schema confirms id, uuid, role_id)
+    const { data: jobseeker } = await supabaseAdmin
         .from('jobseekers')
-        .select('id, uuid, roles(name)')
-        .or(`id.eq."${userId}",uuid.eq."${userId}"`)
+        .select('id, uuid, role_id')
+        .eq(lookupField, lookupId)
         .maybeSingle();
     
     if (jobseeker) {
         profile = { 
             id: jobseeker.id, 
-            role: (jobseeker as any).roles?.name || 'Job Seeker' 
+            role: 'Job Seeker' 
         };
-        console.log(`[PAYMENT_ORDER_CREATE] Found in jobseekers: ${profile.role}`);
+        console.log(`[PAYMENT_ORDER_CREATE] Found in jobseekers table using ${lookupField}=${lookupId}`);
     }
 
     // 2. Check recruiters if not found
     if (!profile) {
-        const { data: recruiter, error: recError } = await supabaseAdmin
+        const { data: recruiter } = await supabaseAdmin
             .from('recruiters')
-            .select('id, uuid, roles(name)')
-            .or(`id.eq."${userId}",uuid.eq."${userId}"`)
+            .select('id, uuid, role_id')
+            .eq(lookupField, lookupId)
             .maybeSingle();
         
-        if (recError) console.error(`[PAYMENT_ORDER_CREATE] Recruiter lookup error:`, recError);
         if (recruiter) {
             profile = { 
                 id: recruiter.id, 
-                role: (recruiter as any).roles?.name || 'Recruiter' 
+                role: 'Recruiter' 
             };
-            console.log(`[PAYMENT_ORDER_CREATE] Found in recruiters table`);
+            console.log(`[PAYMENT_ORDER_CREATE] Found in recruiters table using ${lookupField}=${lookupId}`);
         }
     }
 
     // 3. Check employees if still not found
     if (!profile) {
-        const { data: employee, error: empError } = await supabaseAdmin
+        const { data: employee } = await supabaseAdmin
             .from('employees')
-            .select('id, uuid, roles(name)')
-            .or(`id.eq."${userId}",uuid.eq."${userId}"`)
+            .select('id, uuid, role_id')
+            .eq(lookupField, lookupId)
             .maybeSingle();
         
-        if (empError) console.error(`[PAYMENT_ORDER_CREATE] Employee lookup error:`, empError);
         if (employee) {
             profile = { 
                 id: employee.id, 
-                role: (employee as any).roles?.name || 'Employee' 
+                role: 'Employee' 
             };
-            console.log(`[PAYMENT_ORDER_CREATE] Found in employees table`);
+            console.log(`[PAYMENT_ORDER_CREATE] Found in employees table using ${lookupField}=${lookupId}`);
         }
     }
 
     if (!profile) {
-        console.error(`[PAYMENT_ORDER_CREATE] No profile found in any table for userId: ${userId}`);
+        console.error(`[PAYMENT_ORDER_CREATE] No profile found in any table for userId: ${userId} (${lookupField})`);
         return NextResponse.json({ error: 'User profile not found. Please log in again.' }, { status: 404 });
     }
-
-    const { role } = profile;
 
     // Validate amount based on planId (Backend Security)
     const validPlans: Record<string, number> = {
@@ -132,7 +133,7 @@ export async function POST(request: Request) {
       currency: "INR",
       receipt: `rcpt_${Date.now()}`,
       notes: {
-        userId,
+        userId: String(userId),
         planId
       }
     };
