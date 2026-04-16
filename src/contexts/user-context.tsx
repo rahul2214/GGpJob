@@ -1,7 +1,7 @@
 
 "use client";
 
-import { createContext, useState, useContext, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useState, useContext, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { User } from '@/lib/types';
 import { supabase } from '@/lib/supabase-client';
@@ -87,24 +87,31 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }
 
 
+  const userRef = useContext(UserContext)?.user; // This won't work inside provider
+  // Actually, I'll just use a local ref inside the provider
+  const currentUserRef = useRef<User | null>(null);
+
+  // Sync ref with state
+  useEffect(() => {
+    currentUserRef.current = user;
+  }, [user]);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Background events like TOKEN_REFRESHED (often triggered by tab focus) 
-      // shouldn't show a global loading spinner if we already have a user.
       const isInitial = event === 'INITIAL_SESSION';
       const isSignEvent = event === 'SIGNED_IN' || event === 'SIGNED_OUT';
       
-      // Only show global loading on the very first check or during significant auth transitions
-      if (isInitial || (isSignEvent && !user)) {
+      // Only set loading for initial mount or if we're explicitly signing in/out and don't have a user yet
+      // This prevents the "refresh" flicker on mobile during background TOKEN_REFRESHED events
+      if (isInitial || (isSignEvent && !currentUserRef.current)) {
           setLoading(true);
       }
 
       if (session?.user) {
         const userProfile = await fetchUserProfile(session.user.id);
         
-        // Stability check: Only update state if data has actually changed
-        // This prevents object reference changes that trigger form resets
-        if (JSON.stringify(userProfile) !== JSON.stringify(user)) {
+        // Stability check using ref to ensure comparison against latest state
+        if (JSON.stringify(userProfile) !== JSON.stringify(currentUserRef.current)) {
             setUserState(userProfile);
         }
       } else {

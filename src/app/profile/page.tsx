@@ -39,7 +39,7 @@ export default function ProfilePage() {
         exit: { opacity: 0, x: 10, transition: { duration: 0.2 } }
     };
 
-    if (loading || !user) {
+    if (loading && !user) {
         return (
             <div className="min-h-screen bg-slate-50 p-4 md:p-8">
                 <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-6">
