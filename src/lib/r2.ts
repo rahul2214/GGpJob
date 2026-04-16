@@ -9,7 +9,7 @@ const R2_ENDPOINT = process.env.R2_ENDPOINT?.trim() || (R2_ACCOUNT_ID ? `https:/
 
 // Single client instance
 const r2Client = new S3Client({
-  region: "us-east-1", // Changed from "auto" to solve signature mismatch
+  region: "auto",
   endpoint: R2_ENDPOINT,
   forcePathStyle: true, // Use path-style for better compatibility with R2 endpoints
   credentials: {
