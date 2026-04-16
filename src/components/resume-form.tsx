@@ -68,6 +68,8 @@ export function ResumeForm({ user: initialUser }: ResumeFormProps) {
 
       setUploadProgress(30);
 
+      if (!user.uuid) throw new Error("User ID is missing. Please refresh and try again.");
+
       // Upload via Server Proxy to bypass mobile CORS issues
       const response = await fetch(`/api/users/${user.uuid}/resume/upload`, {
           method: "POST",
@@ -75,8 +77,10 @@ export function ResumeForm({ user: initialUser }: ResumeFormProps) {
       });
 
       if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to upload resume.");
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage = errorData.error || response.statusText || "Failed to upload resume.";
+          const errorDetails = errorData.details ? `: ${errorData.details}` : "";
+          throw new Error(`${errorMessage}${errorDetails}`);
       }
       
       const { resumeUrl } = await response.json();

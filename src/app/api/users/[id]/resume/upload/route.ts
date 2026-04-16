@@ -112,13 +112,22 @@ export async function POST(
     return NextResponse.json({
       success: true,
       resumeUrl: resolvedUrl,
-      r2Uri: profile.resume_url
+      r2Uri: updatedProfile.resume_url
     });
 
   } catch (error: any) {
     console.error('[API_RESUME_UPLOAD_ERROR]:', error);
+    
+    // Categorize common errors
+    let userMessage = 'Failed to upload resume';
+    if (error.code === 'P0001' || error.message?.includes('Database')) {
+        userMessage = 'Database update error';
+    } else if (error.$metadata) {
+        userMessage = 'Storage provider error (R2)';
+    }
+
     return NextResponse.json(
-      { error: 'Failed to upload resume', details: error.message },
+      { error: userMessage, details: error.message },
       { status: 500 }
     );
   }
