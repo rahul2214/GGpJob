@@ -56,6 +56,8 @@ export default function ProfilePage() {
         );
     }
 
+    if (!user) return null;
+
     const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'U';
 
     const tabs = [

@@ -79,7 +79,7 @@ export async function POST(
     // 4. Convert File to Buffer for Upload
     const buffer = Buffer.from(await file.arrayBuffer());
     const contentType = file.type || 'application/pdf'; // Default to PDF if browser doesn't provide
-    console.log(`[API_RESUME_UPLOAD] File converted. Size: ${buffer.length} bytes, Type: ${contentType}`);
+    console.log(`[API_RESUME_UPLOAD] Final Buffer check. Size: ${buffer.length} bytes, Type: ${contentType}`);
 
     // 5. Upload to R2 (Server-Side Proxy)
     console.log(`[API_RESUME_UPLOAD] Sending PutObjectCommand: Key=${key}, Type=${contentType}`);
