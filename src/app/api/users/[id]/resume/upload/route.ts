@@ -78,10 +78,12 @@ export async function POST(
 
     // 4. Convert File to Buffer for Upload
     const buffer = Buffer.from(await file.arrayBuffer());
-    console.log(`[API_RESUME_UPLOAD] File converted to buffer. Size: ${buffer.length} bytes`);
+    const contentType = file.type || 'application/pdf'; // Default to PDF if browser doesn't provide
+    console.log(`[API_RESUME_UPLOAD] File converted. Size: ${buffer.length} bytes, Type: ${contentType}`);
 
     // 5. Upload to R2 (Server-Side Proxy)
-    const { r2Uri } = await uploadToR2(key, buffer, file.type);
+    console.log(`[API_RESUME_UPLOAD] Sending PutObjectCommand: Key=${key}, Type=${contentType}`);
+    const { r2Uri } = await uploadToR2(key, buffer, contentType);
     console.log(`[API_RESUME_UPLOAD] R2 Upload successful: ${r2Uri}`);
 
     // 6. Database Cleanup & Update

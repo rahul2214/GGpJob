@@ -17,6 +17,12 @@ const r2Client = new S3Client({
   },
 });
 
+// Diagnostic logs (safe info only)
+console.log(`[R2_INIT] Bucket: ${R2_BUCKET_NAME || 'MISSING'}`);
+console.log(`[R2_INIT] Endpoint: ${R2_ENDPOINT || 'MISSING'}`);
+console.log(`[R2_INIT] AccessKeyID length: ${R2_ACCESS_KEY_ID?.length || 0}`);
+console.log(`[R2_INIT] SecretKey length: ${R2_SECRET_ACCESS_KEY?.length || 0}`);
+
 
 /**
  * Deletes an object from Cloudflare R2
