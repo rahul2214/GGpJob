@@ -107,7 +107,7 @@ export async function POST(
     }
 
     // 6. Resolve final URL for frontend (Signed HTTPS)
-    const resolvedUrl = await resolveResumeUrl(profile.resume_url);
+    const resolvedUrl = await resolveResumeUrl(updatedProfile.resume_url);
 
     return NextResponse.json({
       success: true,
