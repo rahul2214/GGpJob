@@ -60,70 +60,34 @@ export function ResumeForm({ user: initialUser }: ResumeFormProps) {
     }
     
     const file = data.resumeFile;
-    
-    // Check file size (2MB)
-    if (file.size > 2 * 1024 * 1024) {
-        toast({ 
-            title: "File too large", 
-            description: "The selected resume exceeds the 2MB limit. Please upload a smaller file.", 
-            variant: "destructive" 
-        });
-        return;
-    }
-
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.uuid}-${Date.now()}.${fileExt}`;
-    const filePath = `resumes/${user.uuid}/${fileName}`;
-    
     setUploadProgress(10); // Start progress
     
     try {
-      // 1. Get presigned upload URL from our API
-      const presignedResponse = await fetch(`/api/users/${user.uuid}/resume/presigned`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-              fileName: file.name, 
-              contentType: file.type 
-          }),
-      });
+      const formData = new FormData();
+      formData.append('file', file);
 
-      if (!presignedResponse.ok) throw new Error("Failed to get upload authorization.");
-      const { url, r2Uri } = await presignedResponse.json();
-      
       setUploadProgress(30);
 
-      // 2. Upload directly to Cloudflare R2
-      const uploadResponse = await fetch(url, {
-          method: "PUT",
-          body: file,
-          headers: {
-              "Content-Type": file.type,
-          },
+      // Upload via Server Proxy to bypass mobile CORS issues
+      const response = await fetch(`/api/users/${user.uuid}/resume/upload`, {
+          method: "POST",
+          body: formData,
       });
 
-      if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          console.error("R2 Upload Error:", errorText);
-          throw new Error("Direct upload to Cloudflare failed. Please check CORS settings.");
+      if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to upload resume.");
       }
       
-      setUploadProgress(70);
-
-      // 3. Save R2 URI to profile via existing API
-      const response = await fetch(`/api/users/${user.uuid}/resume`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ resumeUrl: r2Uri }),
-      });
-
-      if (!response.ok) throw new Error("Failed to save resume pointer to database.");
+      const { resumeUrl } = await response.json();
       
-      const updatedData = await response.json();
-      setUser({ ...user, resumeUrl: updatedData.resume_url || updatedData.resumeUrl });
+      setUploadProgress(90);
+      
+      // Update local state
+      setUser({ ...user, resumeUrl: resumeUrl });
 
       setUploadProgress(100);
-      toast({ title: "Resume Uploaded!", description: "Your resume was uploaded directly to secure storage." });
+      toast({ title: "Resume Uploaded!", description: "Your resume was uploaded successfully." });
       
     } catch (error: any) {
       console.error("Upload failed:", error);

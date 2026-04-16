@@ -58,9 +58,41 @@ export async function getPresignedUploadUrl(key: string, contentType: string, ex
     ContentType: contentType,
   });
 
+/**
+ * Uploads a file buffer directly to Cloudflare R2 from the server.
+ */
+export async function uploadToR2(key: string, body: Buffer | Uint8Array, contentType: string) {
+  if (!R2_BUCKET_NAME) throw new Error("R2_BUCKET_NAME is not configured");
+
+  const command = new PutObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+  });
+
   const url = await getSignedUrl(r2Client, command, { expiresIn });
   return {
     url,
+    r2Uri: `r2://${R2_BUCKET_NAME}/${key}`
+  };
+}
+
+/**
+ * Uploads a file buffer directly to Cloudflare R2 from the server.
+ */
+export async function uploadToR2(key: string, body: Buffer | Uint8Array, contentType: string) {
+  if (!R2_BUCKET_NAME) throw new Error("R2_BUCKET_NAME is not configured");
+
+  const command = new PutObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+  });
+
+  await r2Client.send(command);
+  return {
     r2Uri: `r2://${R2_BUCKET_NAME}/${key}`
   };
 }
