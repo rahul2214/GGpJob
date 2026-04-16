@@ -91,7 +91,11 @@ export function ResumeForm({ user: initialUser }: ResumeFormProps) {
       
     } catch (error: any) {
       console.error("Upload failed:", error);
-      toast({ title: "Upload Failed", description: error.message || "Your resume could not be uploaded. Please try again.", variant: "destructive" });
+      toast({ 
+        title: "Upload Failed", 
+        description: error.message || "Your resume could not be uploaded. Please try again.", 
+        variant: "destructive" 
+      });
     } finally {
       setTimeout(() => setUploadProgress(null), 500);
       reset();
