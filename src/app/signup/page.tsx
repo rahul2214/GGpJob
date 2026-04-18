@@ -42,6 +42,7 @@ const benefits = [
 const formSchema = z.object({
   name: z.string().min(2, "Full name must be at least 2 characters."),
   email: z.string().email("Please enter a valid email address."),
+  phone: z.string().min(10, "Phone number must be at least 10 digits."),
   password: z.string()
     .min(8, "Password must be at least 8 characters.")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter.")
@@ -75,7 +76,7 @@ export default function SignupPage() {
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
+    defaultValues: { name: "", email: "", phone: "", password: "", confirmPassword: "" },
   });
 
   const { isSubmitting } = form.formState;
@@ -94,6 +95,7 @@ export default function SignupPage() {
           email: data.email,
           password: data.password,
           role: 'Job Seeker',
+          phone: data.phone,
         }),
       });
 
@@ -105,7 +107,7 @@ export default function SignupPage() {
 
       toast({
         title: "Account Created!",
-        description: "A verification email has been sent from Firebase. Please check your inbox and verify before logging in.",
+        description: "A verification email has been sent. Please check your inbox and verify before logging in.",
       });
       router.push("/login");
     } catch (error: any) {
@@ -139,9 +141,6 @@ export default function SignupPage() {
       <div className="hidden lg:flex lg:w-[42%] relative overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 flex-col justify-between p-12">
         <div className="absolute top-0 -left-20 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 -right-20 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl" />
-
-       
-
         <div className="relative z-10 space-y-8">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.2 }}>
             <h1 className="text-4xl xl:text-5xl font-extrabold text-white leading-tight mb-4">
@@ -256,6 +255,22 @@ export default function SignupPage() {
                   </FormItem>
                 )} />
               </div>
+
+              {/* Phone Number Field */}
+              <FormField control={form.control} name="phone" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-slate-700 font-semibold text-sm">Phone Number</FormLabel>
+                  <FormControl>
+                    <div className="flex gap-2">
+                      <div className="flex items-center justify-center px-4 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-bold text-sm select-none">
+                        +91
+                      </div>
+                      <Input placeholder="9876543210" className="h-11 rounded-xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors flex-1" {...field} />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
 
               {/* Password + Confirm */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

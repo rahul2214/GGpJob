@@ -128,21 +128,16 @@ export async function GET(request: NextRequest) {
     if (userId) {
         const isUuid = userId.includes('-');
         
-        // Robust lookup across tables
-        let { data: user } = await supabaseAdmin
-            .from('jobseekers')
-            .select('id, domain_id')
-            .eq(isUuid ? 'uuid' : 'id', userId)
-            .maybeSingle();
+        // Robust lookup across tables in PARALLEL
+        const [
+            { data: jobseeker },
+            { data: employee }
+        ] = await Promise.all([
+            supabaseAdmin.from('jobseekers').select('id, domain_id').eq(isUuid ? 'uuid' : 'id', userId).maybeSingle(),
+            isUuid ? supabaseAdmin.from('employees').select('id, domain_id').eq('uuid', userId).maybeSingle() : Promise.resolve({ data: null })
+        ]);
             
-        if (!user && isUuid) {
-            const { data: employee } = await supabaseAdmin
-                .from('employees')
-                .select('id, domain_id')
-                .eq('uuid', userId)
-                .maybeSingle();
-            user = employee as any;
-        }
+        const user = (jobseeker || employee) as any;
 
         if (user) {
             userDomainId = user.domain_id;
@@ -380,7 +375,8 @@ export async function POST(request: Request) {
 
     console.log(`[API_JOBS_POST] Starting robust user resolution for: ${userId} (lookUpId: ${lookupId})`);
 
-    for (const table of profileTables) {
+    // Parallel search across all potential role tables
+    const results = await Promise.all(profileTables.map(async (table) => {
         // Search by 'id' (UUID PK)
         let { data: profile, error } = await supabaseAdmin
             .from(table.name)
@@ -404,20 +400,23 @@ export async function POST(request: Request) {
                 console.warn(`[API_JOBS_POST] Search error in ${table.name} (uuid):`, fallbackError.message);
             }
         }
+        return { profile, tableName: table.name };
+    }));
 
-        if (profile) {
-            console.log(`[API_JOBS_POST] FOUND user in table: ${table.name}`);
-            user = profile;
-            // If it's a jobseeker, we rely on their 'role' column to determine their actual function
-            if (table.name === 'jobseekers') {
-                const role = profile.role?.toLowerCase() || '';
-                if (role.includes('recruiter')) userTable = 'recruiters';
-                else if (role.includes('employee')) userTable = 'employees';
-                else userTable = 'jobseekers';
-            } else {
-                userTable = table.name as any;
-            }
-            break;
+    const found = results.find(r => r.profile);
+    if (found) {
+        const profile = found.profile;
+        const tableName = found.tableName;
+        console.log(`[API_JOBS_POST] FOUND user in table: ${tableName}`);
+        user = profile;
+        
+        if (tableName === 'jobseekers') {
+            const role = profile.role?.toLowerCase() || '';
+            if (role.includes('recruiter')) userTable = 'recruiters';
+            else if (role.includes('employee')) userTable = 'employees';
+            else userTable = 'jobseekers';
+        } else {
+            userTable = tableName as any;
         }
     }
 

@@ -109,9 +109,7 @@ export function JobForm({ job }: JobFormProps) {
     address: z.string().optional(),
     salaryMin: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().min(0, "Min salary must be 0 or more.").optional()),
     salaryMax: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().min(0, "Max salary must be 0 or more.").optional()),
-    jobLink: isAdmin 
-      ? z.string().min(1, "Job link is required for Admins.").url("Please enter a valid URL.")
-      : z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
+    jobLink: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
     skillIds: z.array(z.string()).optional(),
     benefitIds: z.array(z.string()).optional(),
     sections: z.array(sectionSchema).optional(),
@@ -766,7 +764,7 @@ export function JobForm({ job }: JobFormProps) {
             name="jobLink"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>External Job Link {isAdmin && <span className="text-destructive">*</span>}</FormLabel>
+                <FormLabel>External Job Link (Optional)</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <LinkIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

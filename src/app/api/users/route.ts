@@ -10,24 +10,22 @@ export async function GET(request: Request) {
     const uid = searchParams.get('uid');
 
     if (uid) {
-        // Search all role tables in sequence until a match is found
-        
-        // 1. Check jobseekers
-        const { data: jobseeker, error: jobseekerError } = await supabaseAdmin
-            .from('jobseekers')
-            .select(`
-                *, 
-                roles(name),
-                domains!domain_id(uuid, name),
-                education(*),
-                experience(*),
-                projects(*),
-                languages(*),
-                jobseeker_personal_details(*),
-                jobseeker_skills(proficiency_level, years_experience, skills(id, uuid, name))
-            `)
-            .eq('uuid', uid)
-            .maybeSingle();
+        // 1-4. Search all role tables in PARALLEL to avoid sequential timeout
+        const [
+            { data: jobseeker, error: jobseekerError },
+            { data: recruiter, error: recruiterError },
+            { data: employee, error: employeeError },
+            { data: admin, error: adminError }
+        ] = await Promise.all([
+            // Jobseekers (heavy query)
+            supabaseAdmin.from('jobseekers').select('*, roles(name), domains!domain_id(uuid, name), education(*), experience(*), projects(*), languages(*), jobseeker_personal_details(*), jobseeker_skills(proficiency_level, years_experience, skills(id, uuid, name))').eq('uuid', uid).maybeSingle(),
+            // Recruiters
+            supabaseAdmin.from('recruiters').select('*, roles(name)').eq('uuid', uid).maybeSingle(),
+            // Employees
+            supabaseAdmin.from('employees').select('*, roles(name)').eq('uuid', uid).maybeSingle(),
+            // Admins
+            supabaseAdmin.from('admins').select('*, roles(name)').eq('uuid', uid).maybeSingle()
+        ]);
 
         if (jobseekerError && jobseekerError.code !== 'PGRST116') {
             console.error(`Error fetching jobseeker ${uid}:`, jobseekerError);
@@ -118,13 +116,6 @@ export async function GET(request: Request) {
             return NextResponse.json(user);
         }
 
-        // 2. Check recruiters
-        const { data: recruiter, error: recruiterError } = await supabaseAdmin
-            .from('recruiters')
-            .select('*, roles(name)')
-            .eq('uuid', uid)
-            .maybeSingle();
-
         if (recruiterError) {
             console.log(`Recruiter fetch error for ${uid}:`, recruiterError.message);
         }
@@ -173,13 +164,6 @@ export async function GET(request: Request) {
             });
         }
 
-        // 3. Check employees
-        const { data: employee, error: employeeError } = await supabaseAdmin
-            .from('employees')
-            .select('*, roles(name)')
-            .eq('uuid', uid)
-            .maybeSingle();
-
         if (employeeError && employeeError.code !== 'PGRST116') {
             console.error(`Error fetching employee ${uid}:`, employeeError);
         }
@@ -227,13 +211,6 @@ export async function GET(request: Request) {
 
             });
         }
-
-        // 4. Check admins
-        const { data: admin, error: adminError } = await supabaseAdmin
-            .from('admins')
-            .select('*, roles(name)')
-            .eq('uuid', uid)
-            .maybeSingle();
 
         if (adminError && adminError.code !== 'PGRST116') {
             console.error(`Error fetching admin ${uid}:`, adminError);
@@ -285,16 +262,17 @@ export async function GET(request: Request) {
                 roleId = 4;
             }
 
+            // AVOID DUPLICATE KEY: Use UPSERT with 'email' context to handle existing emails gracefully
             const { data: newProfile, error: createError } = await supabaseAdmin
                 .from(targetTable)
-                .insert({
+                .upsert({
                     uuid: authUser.id,
                     name: name,
                     email: authUser.email,
                     role_id: roleId,
                     phone: metadata?.phone || '',
                     ...(targetTable === 'admins' ? { is_super_admin: false } : {})
-                })
+                }, { onConflict: 'email' })
                 .select()
                 .single();
             

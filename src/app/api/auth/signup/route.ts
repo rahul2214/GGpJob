@@ -29,7 +29,9 @@ export async function POST(request: Request) {
     const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
+      phone: phone ? `+91${phone}` : undefined,
       email_confirm: false, // Do not auto-confirm; Firebase will send the verification
+      phone_confirm: false, // Do not auto-confirm phone; stored for record only
       user_metadata: {
         name,
         role,
