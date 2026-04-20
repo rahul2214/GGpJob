@@ -297,18 +297,45 @@ export async function GET(request: Request) {
     }
 
     // Admin view: get all users
-    const { data: profiles, error: listErr } = await supabaseAdmin
-        .from('jobseekers')
-        .select('*');
+    // Admin view: get all users across ALL role tables in parallel
+    const [
+        { data: seekers, error: seekersErr },
+        { data: recruiters, error: recruitersErr },
+        { data: employees, error: employeesErr },
+        { data: admins, error: adminsErr }
+    ] = await Promise.all([
+        supabaseAdmin.from('jobseekers').select('*, roles(name)').order('created_at', { ascending: false }),
+        supabaseAdmin.from('recruiters').select('*, roles(name)').order('created_at', { ascending: false }),
+        supabaseAdmin.from('employees').select('*, roles(name)').order('created_at', { ascending: false }),
+        supabaseAdmin.from('admins').select('*, roles(name)').order('created_at', { ascending: false })
+    ]);
     
-    if (listErr) throw listErr;
+    if (seekersErr) console.error("Error fetching seekers:", seekersErr);
+    if (recruitersErr) console.error("Error fetching recruiters:", recruitersErr);
+    if (employeesErr) console.error("Error fetching employees:", employeesErr);
+    if (adminsErr) console.error("Error fetching admins:", adminsErr);
 
-    const resolvedProfiles = await Promise.all((profiles || []).map(async p => ({
-        ...p,
-        resume_url: await resolveResumeUrl(p.resume_url)
+    // Combine and map to a unified format
+    const allUsers = [
+        ...(seekers || []).map(u => ({ ...u, role: (u as any).roles?.name || u.role || 'Job Seeker', table: 'jobseekers' })),
+        ...(recruiters || []).map(u => ({ ...u, role: (u as any).roles?.name || 'Recruiter', table: 'recruiters' })),
+        ...(employees || []).map(u => ({ ...u, role: (u as any).roles?.name || 'Employee', table: 'employees' })),
+        ...(admins || []).map(u => ({ ...u, role: (u as any).roles?.name || (u.is_super_admin ? 'Super Admin' : 'Admin'), table: 'admins' }))
+    ];
+
+    // Sort by created_at desc
+    allUsers.sort((a, b) => {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return dateB - dateA;
+    });
+
+    const resolvedUsers = await Promise.all(allUsers.map(async u => ({
+        ...u,
+        resume_url: await resolveResumeUrl((u as any).resume_url)
     })));
 
-    return NextResponse.json(resolvedProfiles);
+    return NextResponse.json(resolvedUsers);
   } catch (e: any) {
     console.error("[API_USERS_GET] Error:", e.message);
     return NextResponse.json({ error: 'Failed to fetch users', details: e.message }, { status: 500 });

@@ -315,7 +315,7 @@ function JobDetailsContent() {
                                                 Apply
                                             </Button>
                                         ) : (
-                                            <ApplyButton job={job} variant="desktop" />
+                                            <ApplyButton job={job} variant="desktop" isApplied={appliedJobIds.has(id)} />
                                         )}
                                     </div>
                                 </div>
@@ -397,13 +397,13 @@ function JobDetailsContent() {
                                     </div>
 
                                     {/* Required Skills Section */}
-                                    {job.requirements && job.requirements.length > 0 && (
+                                    {(job.requiredSkills || job.requirements) && ((job.requiredSkills?.length || 0) > 0 || (job.requirements?.length || 0) > 0) && (
                                         <div>
                                             <h3 className="text-lg font-bold text-slate-900">
-                                                Requirements
+                                                Required Skills
                                             </h3>
                                             <p className="text-sm text-gray-600 leading-relaxed font-medium">
-                                                {job.requirements.join(', ')}
+                                                {(job.requiredSkills || job.requirements || []).join(', ')}
                                             </p>
                                         </div>
                                     )}
@@ -468,7 +468,7 @@ function JobDetailsContent() {
                                                 Apply on Website
                                             </Button>
                                         ) : (
-                                            <ApplyButton job={job} />
+                                            <ApplyButton job={job} isApplied={appliedJobIds.has(id)} />
                                         )}
                                     </div>
                                 </div>
@@ -612,7 +612,7 @@ function JobDetailsContent() {
                             Apply on Website
                         </Button>
                     ) : (
-                        <ApplyButton job={job} />
+                        <ApplyButton job={job} isApplied={appliedJobIds.has(id)} />
                     )}
                 </div>
             </div>

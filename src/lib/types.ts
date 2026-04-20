@@ -135,6 +135,7 @@ export interface Job {
   contactPhone?: string;
   isConsultancy?: boolean;
   requirements?: string[];
+  requiredSkills?: string[];
   responsibilities?: string[];
   qualifications?: string[];
   sections?: { title: string; items: string[] }[];

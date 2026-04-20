@@ -74,10 +74,11 @@ export async function GET(request: NextRequest) {
         // Jobs Grouping
         let jobsQuery = supabaseAdmin
             .from('jobs')
-            .select('is_referral, domains!domain_id(name)'); // Schema says domain_id
+            .select('is_referral, domains!domain_pk(name)'); // Corrected to domain_pk
         if (from) jobsQuery = jobsQuery.gte('created_at', from);
         if (to) jobsQuery = jobsQuery.lte('created_at', to);
-        const { data: jobsByDomainRaw } = await jobsQuery;
+        const { data: jobsByDomainRaw, error: jobsErr } = await jobsQuery;
+        if (jobsErr) console.error('[API_ANALYTICS] Jobs query error:', jobsErr);
 
         const directJobsByDomainMap: Record<string, number> = {};
         const referralJobsByDomainMap: Record<string, number> = {};
@@ -101,13 +102,16 @@ export async function GET(request: NextRequest) {
             usersByDomainMap[name] = (usersByDomainMap[name] || 0) + 1;
         });
 
+        if (usersByDomainRaw === null) console.warn('[API_ANALYTICS] Jobseekers query returned null. Check RLS or schema.');
+
         // Applications Grouping
         let appsByDomainQuery = supabaseAdmin
             .from('applications')
-            .select('jobs!job_id(domains!domain_id(name))'); // Schema says job_id and domain_id
+            .select('jobs!job_pk(domains!domain_pk(name))'); // Corrected to job_pk and domain_pk
         if (from) appsByDomainQuery = appsByDomainQuery.gte('applied_at', from);
         if (to) appsByDomainQuery = appsByDomainQuery.lte('applied_at', to);
-        const { data: appsByDomainRaw } = await appsByDomainQuery;
+        const { data: appsByDomainRaw, error: appsErr } = await appsByDomainQuery;
+        if (appsErr) console.error('[API_ANALYTICS] Applications query error:', appsErr);
 
         const appsByDomainMap: Record<string, number> = {};
         appsByDomainRaw?.forEach((a: any) => {

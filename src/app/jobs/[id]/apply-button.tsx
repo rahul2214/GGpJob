@@ -13,43 +13,24 @@ import { cn } from '@/lib/utils';
 interface ApplyButtonProps {
     job: Job;
     variant?: 'default' | 'desktop';
+    isApplied?: boolean;
 }
 
-export function ApplyButton({ job, variant = 'default' }: ApplyButtonProps) {
+export function ApplyButton({ job, variant = 'default', isApplied: propIsApplied = false }: ApplyButtonProps) {
     const { user } = useUser();
     const { toast } = useToast();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
-    const [isApplied, setIsApplied] = useState(false);
-    const [isJobOwner, setIsJobOwner] = useState(false);
-    const [loadingState, setLoadingState] = useState(true);
+    const [isApplied, setIsApplied] = useState(propIsApplied);
 
     useEffect(() => {
-        const checkApplicationStatus = async () => {
-            if (user && job) {
-                setLoadingState(true);
-                try {
-                    const res = await fetch(`/api/applications?userId=${user.uuid}`);
-                    if (res.ok) {
-                        const userApplications: Application[] = await res.json();
-                        const alreadyApplied = userApplications.some(app => app.jobId === job.uuid);
-                        setIsApplied(alreadyApplied);
-                    }
-                } catch (error) {
-                    console.error("Failed to check application status", error);
-                }
+        setIsApplied(propIsApplied);
+    }, [propIsApplied]);
 
-                const isOwner = (user.role === 'Recruiter' || user.role === 'Employee' || user.role === 'Admin') && 
-                                (job.recruiterId === user.uuid || job.employeeId === user.uuid || job.recruiterPk === user.id || job.employeePk === user.id);
-                setIsJobOwner(isOwner);
-                setLoadingState(false);
-            } else {
-                setLoadingState(false);
-            }
-        };
+    // Calculate ownership synchronously
+    const isJobOwner = (user && job) && (user.role === 'Recruiter' || user.role === 'Employee' || user.role === 'Admin') && 
+                       (job.recruiterId === user.uuid || job.employeeId === user.uuid || job.recruiterPk === user.id || job.employeePk === user.id);
 
-        checkApplicationStatus();
-    }, [user, job]);
 
 
     const handleApply = async () => {
@@ -101,15 +82,6 @@ export function ApplyButton({ job, variant = 'default' }: ApplyButtonProps) {
         }
     };
     
-    if (loadingState) {
-        return (
-             <Button disabled className={cn("w-full rounded-full", variant === 'desktop' && "h-11 font-bold text-base px-10")} size={variant === 'desktop' ? 'default' : 'lg'}>
-                <LoaderCircle className="animate-spin mr-2" />
-                Loading...
-            </Button>
-        )
-    }
-
     if (isJobOwner) {
         return (
             <Button disabled className={cn("w-full rounded-full", variant === 'desktop' && "h-11 font-bold text-base px-10")} size={variant === 'desktop' ? 'default' : 'lg'}>
