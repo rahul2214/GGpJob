@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { isOnboardingComplete } from "@/lib/onboarding";
+import { JOB_SEEKER_PLANS } from "@/lib/pricing-constants";
 
 declare global {
   interface Window {
@@ -19,39 +20,6 @@ declare global {
   }
 }
 
-const PLANS = [
-  {
-    id: "free",
-    name: "Free Plan",
-    price: 0,
-    description: "Get started and apply to jobs instantly.",
-    icon: Star,
-    color: "slate",
-    features: [
-      "Standard profile visibility",
-      "Apply to jobs",
-      "Basic email alerts",
-      "Track application status"
-    ]
-  },
-  {
-    id: "jobseeker_premium",
-    name: "4-Months Premium Plan",
-    price: 199,
-    originalPrice: 799,
-    description: "Boost your profile visibility to top recruiters and access premium tools.",
-    icon: Crown,
-    color: "amber",
-    popular: true,
-    features: [
-      "Highlighted Profile to Recruiters",
-      "Priority Application Sorting",
-      "Contact recruiters directly",
-      "Premium candidate badge",
-      "Advanced interview resources"
-    ]
-  }
-];
 
 export default function JobSeekerPlansPage() {
   const { user, loading, fetchUserProfile, setUser } = useUser();
@@ -64,7 +32,7 @@ export default function JobSeekerPlansPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<{code: string, discount: number} | null>(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   
-  const [selectedPlan, setSelectedPlan] = useState<typeof PLANS[0] | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<typeof JOB_SEEKER_PLANS[0] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -72,12 +40,8 @@ export default function JobSeekerPlansPage() {
         router.push('/');
         return;
     }
-    // Only redirect to dashboard if they have an active plan AND have completed onboarding
-    // If they have a plan but incomplete onboarding, they should proceed to /onboarding
-    if (!loading && user?.planType && user.planType !== 'none' && isOnboardingComplete(user)) {
-        router.push('/');
-        return;
-    }
+    // Remove the redirect that prevents users with plans from upgrading/topping up
+    // This allows the page to be used for both initial selection and upgrades
   }, [user, loading, router]);
 
   useEffect(() => {
@@ -89,7 +53,7 @@ export default function JobSeekerPlansPage() {
     return () => { if (document.body.contains(script)) document.body.removeChild(script); };
   }, []);
 
-  const handlePlanSelect = async (plan: typeof PLANS[0]) => {
+  const handlePlanSelect = async (plan: typeof JOB_SEEKER_PLANS[0]) => {
      if (plan.id === "free") {
          if (!user) return;
          setProcessing(plan.id);
@@ -232,7 +196,7 @@ export default function JobSeekerPlansPage() {
       <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-indigo-100/30 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-amber-100/30 rounded-full blur-[100px] translate-x-1/3 translate-y-1/2 pointer-events-none" />
 
-      <div className="max-w-4xl mx-auto relative z-10">
+      <div className="max-w-6xl mx-auto relative z-10">
         <div className="text-center mb-16 space-y-4">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <h1 className="text-5xl font-black text-slate-900 tracking-tight sm:text-6xl">
@@ -246,8 +210,8 @@ export default function JobSeekerPlansPage() {
 
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {PLANS.map((plan, idx) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {JOB_SEEKER_PLANS.map((plan, idx) => (
             <motion.div
               key={plan.id}
               initial={{ opacity: 0, y: 30 }}
@@ -267,18 +231,17 @@ export default function JobSeekerPlansPage() {
                 )}
                 
                 <div className={cn(
-                  "p-8",
-                  plan.color === 'slate' && "bg-slate-50 border-b border-slate-100",
-                  plan.color === 'amber' && "bg-gradient-to-br from-amber-500 to-orange-600 text-white"
+                  "p-8 text-white",
+                  plan.color === 'emerald' && "bg-gradient-to-br from-emerald-600 to-teal-700",
+                  plan.color === 'amber' && "bg-gradient-to-br from-amber-500 to-orange-600",
+                  plan.color === 'sky' && "bg-gradient-to-br from-sky-500 to-blue-600",
+                  plan.color === 'indigo' && "bg-gradient-to-br from-indigo-600 to-purple-700"
                 )}>
-                  <div className={cn(
-                    "w-12 h-12 rounded-2xl flex items-center justify-center mb-6",
-                    plan.color === 'slate' ? "bg-slate-200/50" : "bg-white/20 backdrop-blur-md"
-                  )}>
-                    <plan.icon className={cn("w-6 h-6", plan.color === 'slate' ? "text-slate-600" : "text-white")} />
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6">
+                    <plan.icon className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className={cn("text-2xl font-bold mb-1", plan.color === 'slate' ? "text-slate-900" : "text-white")}>{plan.name}</h3>
-                  <p className={cn("text-sm leading-relaxed mb-6", plan.color === 'slate' ? "text-slate-500" : "text-white/80")}>{plan.description}</p>
+                  <h3 className="text-2xl font-bold mb-1 text-white">{plan.name}</h3>
+                  <p className="text-white/80 text-sm leading-relaxed mb-6">{plan.description}</p>
                   
                   <div className="flex items-center flex-wrap gap-2.5 mb-2">
                     {plan.originalPrice && plan.price > 0 && (
@@ -289,7 +252,7 @@ export default function JobSeekerPlansPage() {
                         </span>
                       </>
                     )}
-                    <span className={cn("text-4xl font-black tracking-tighter pt-1 ml-auto", plan.color === 'slate' ? "text-slate-900" : "text-white")}>
+                    <span className="text-4xl font-black tracking-tighter pt-1 ml-auto text-white">
                       ₹{plan.price}
                     </span>
                   </div>
@@ -303,8 +266,10 @@ export default function JobSeekerPlansPage() {
                         <li key={fIdx} className="flex items-start gap-3">
                           <CheckCircle2 className={cn(
                             "w-5 h-5 mt-0.5 shrink-0",
-                            plan.color === 'slate' && "text-slate-400",
-                            plan.color === 'amber' && "text-amber-500"
+                            plan.color === 'emerald' && "text-emerald-500",
+                            plan.color === 'amber' && "text-amber-500",
+                            plan.color === 'sky' && "text-sky-500",
+                            plan.color === 'indigo' && "text-indigo-500"
                           )} />
                           <span className="text-slate-600 text-sm font-medium leading-snug">{feature}</span>
                         </li>
@@ -320,15 +285,16 @@ export default function JobSeekerPlansPage() {
                     variant={plan.id === 'free' ? "outline" : "default"}
                     className={cn(
                       "w-full h-14 rounded-2xl font-bold text-lg transition-all group",
-                      plan.id === 'free' && "border-slate-300 text-slate-700 hover:bg-slate-50",
-                      plan.id !== 'free' && "bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-200",
+                      plan.id === 'free' && "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200",
+                      plan.id === 'jobseeker_premium' && "bg-sky-500 hover:bg-sky-600 text-white shadow-lg shadow-sky-200",
+                      plan.id === 'jobseeker_pro' && "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200",
                     )}
                   >
                     {processing === plan.id ? (
                       <LoaderCircle className="w-6 h-6 animate-spin" />
                     ) : (
                       <span className="flex items-center gap-2">
-                        {plan.id === 'free' ? "Start for Free" : "Upgrade to Premium"} 
+                        {plan.id === 'free' ? "Activate Free Plan" : `Upgrade to ${plan.name}`} 
                         {plan.id !== 'free' && <Zap className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />}
                       </span>
                     )}
@@ -363,7 +329,9 @@ export default function JobSeekerPlansPage() {
             <div className="bg-slate-50 border rounded-xl overflow-hidden mt-2">
                <div className="p-4 bg-white border-b flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                     <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", selectedPlan.color === 'slate' ? "bg-slate-100 text-slate-600" : "bg-indigo-100 text-indigo-600")}>
+                     <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", 
+                        selectedPlan.color === 'emerald' ? "bg-emerald-100 text-emerald-600" : 
+                        selectedPlan.color === 'sky' ? "bg-sky-100 text-sky-600" : "bg-indigo-100 text-indigo-600")}>
                         <selectedPlan.icon className="w-5 h-5" />
                      </div>
                      <div>
@@ -445,7 +413,7 @@ export default function JobSeekerPlansPage() {
                 className={"text-white bg-indigo-600 hover:bg-indigo-700"}
              >
                 <Lock className="w-4 h-4 mr-2 opacity-70" />
-                Confirm & Pay
+                Confirm & Activate
              </Button>
           </DialogFooter>
         </DialogContent>

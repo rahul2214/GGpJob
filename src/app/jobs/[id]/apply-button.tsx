@@ -14,9 +14,10 @@ interface ApplyButtonProps {
     job: Job;
     variant?: 'default' | 'desktop';
     isApplied?: boolean;
+    onSuccess?: () => void;
 }
 
-export function ApplyButton({ job, variant = 'default', isApplied: propIsApplied = false }: ApplyButtonProps) {
+export function ApplyButton({ job, variant = 'default', isApplied: propIsApplied = false, onSuccess }: ApplyButtonProps) {
     const { user } = useUser();
     const { toast } = useToast();
     const router = useRouter();
@@ -61,6 +62,7 @@ export function ApplyButton({ job, variant = 'default', isApplied: propIsApplied
             }
             
             setIsApplied(true);
+            onSuccess?.();
             toast({
                 title: "Application Submitted!",
                 description: "Your application has been successfully submitted.",
@@ -103,7 +105,14 @@ export function ApplyButton({ job, variant = 'default', isApplied: propIsApplied
         >
             {isLoading && <LoaderCircle className="animate-spin mr-2 h-4 w-4" />}
             {isApplied && <CheckCircle className="mr-2 h-4 w-4" />}
-            {isApplied ? 'Applied' : 'Apply'}
+            <div className="flex flex-col items-center">
+                <span>{isApplied ? 'Applied' : (job.isReferral ? 'Get Referral' : 'Apply Now')}</span>
+                {!isApplied && job.isReferral && (
+                    <span className="text-[9px] opacity-80 font-medium leading-none mt-0.5">
+                        (Requires 2 credits to unlock later)
+                    </span>
+                )}
+            </div>
         </Button>
     );
 }

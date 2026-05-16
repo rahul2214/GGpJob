@@ -32,7 +32,9 @@ import {
   ThumbsUp,
   ClipboardList,
   Users,
-  Wrench
+  Wrench,
+  ShieldCheck,
+  Coins
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -64,9 +66,8 @@ export default function Header() {
   const [isClient, setIsClient] = useState(false);
   const isMobile = useIsMobile();
 
-  // Only fetch notifications on Dashboard or Notifications page for a cleaner experience
-  const shouldFetchNotifications = pathname === '/' || pathname === '/notifications';
-  const { notifications } = useNotifications(user?.uuid, { skip: !shouldFetchNotifications });
+  // Fetch notifications globally to keep the bell updated
+  const { notifications } = useNotifications(user?.uuid);
   const [jobCount, setJobCount] = useState<number>(0);
   
   const notificationCount = useMemo(() => {
@@ -109,6 +110,7 @@ export default function Header() {
   const isAdminAddPage = /^\/admin\/(users|domains|locations)\/add$/.test(pathname);
   const isAdminEditPage = /^\/admin\/(domains|locations)\/edit\/[^/]+$/.test(pathname);
   const isPlanSelectionPage = pathname === '/jobseeker/plans' || pathname === '/company/payment';
+  const isRedeemPage = pathname === '/rewards/redeem';
 
   // Link active states
   const isReferralActive = isJobSearchPage && searchParams.get('isReferral') === 'true';
@@ -149,6 +151,7 @@ export default function Header() {
     { href: "/jobs/post", label: "Post Job", icon: PlusCircle },
     { href: "/admin/users", label: "Manage Users", icon: UserCog },
     { href: "/admin/jobs", label: "Manage Jobs", icon: BriefcaseBusiness },
+    { href: "/admin/disputes", label: "Hiring Disputes", icon: ShieldCheck },
     { href: "/admin/domains", label: "Manage Domains", icon: Layers },
     { href: "/admin/skills", label: "Manage Skills", icon: Wrench },
     { href: "/admin/locations", label: "Manage Locations", icon: MapPin },
@@ -173,6 +176,7 @@ export default function Header() {
         if(pathname.includes('/domains')) return 'Edit Domain';
         if(pathname.includes('/locations')) return 'Edit Location';
     }
+    if (isRedeemPage) return 'Redemption Hub';
     return '';
   }
 
@@ -184,7 +188,8 @@ export default function Header() {
                           isProfileSectionEditPage || 
                           showRecruiterBack || 
                           (isMobile && (isAdminAddPage || isAdminEditPage)) ||
-                          isNotificationsPage;
+                          isNotificationsPage ||
+                          isRedeemPage;
 
     if (isClient && showBackButton) {
       return (
@@ -251,6 +256,15 @@ export default function Header() {
                                         Referral Jobs
                                     </Link>
                                 </SheetClose>
+                                
+                                {user.role === 'Employee' && (
+                                    <SheetClose asChild>
+                                        <Link href="/referrals/active" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/referrals/active' && "text-foreground font-bold")}>
+                                            <Briefcase className="h-5 w-5" />
+                                            Active Jobs
+                                        </Link>
+                                    </SheetClose>
+                                )}
                                
                                 {user.domainId && (
                                     <SheetClose asChild>
@@ -400,7 +414,10 @@ export default function Header() {
   }
 
   return (
-    <header className={cn("sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-2 sm:px-6", isJobDetailsPage && "hidden md:flex")}>
+    <header className={cn(
+      "sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-2 sm:px-6", 
+      isJobDetailsPage && "hidden md:flex"
+    )}>
        <div className="flex items-center gap-2">
         {renderMobileLeftButton()}
         <Link href="/" className="hidden md:flex items-center gap-2 font-bold whitespace-nowrap py-1">
@@ -433,6 +450,11 @@ export default function Header() {
             {isClient && !userLoading && user?.role === 'Recruiter' && !isPlanSelectionPage && user.planType !== 'basic' && (
               <Link href="/company/talent" className={`transition-colors hover:text-foreground ${pathname === '/company/talent' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
                 Talent Search
+              </Link>
+            )}
+            {isClient && !userLoading && user?.role === 'Employee' && !isPlanSelectionPage && (
+              <Link href="/referrals/active" className={`transition-colors hover:text-foreground ${pathname === '/referrals/active' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                Active Jobs
               </Link>
             )}
             {isClient && !userLoading && user && (user.role === 'Recruiter' || user.role === 'Employee') && !isPlanSelectionPage && (
@@ -472,24 +494,37 @@ export default function Header() {
             </Suspense>
         )}
         <div className="ml-auto flex items-center gap-2">
+           {isClient && !userLoading && user?.role === 'Job Seeker' && (
+               <Link href="/jobseeker/credits" className={cn(
+                 "hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all",
+                 (((user as any).subscriptionCredits || 0) + ((user as any).purchasedCredits || 0)) < 1 
+                   ? "bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100" 
+                   : "bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+               )}>
+                 <Coins className="h-4 w-4" />
+                 <span className="text-xs font-bold">{((user as any).subscriptionCredits || 0) + ((user as any).purchasedCredits || 0)} Credits</span>
+               </Link>
+           )}
            {renderMobileRightButton()}
            {isClient && !userLoading && user ? (
             <div className="flex items-center gap-4">
-                {user.role === 'Job Seeker' && pathname === '/' && (
+                {(user.role === 'Job Seeker' || user.role === 'Recruiter' || user.role === 'Employee') && (
                     <>
-                        <Button asChild variant="ghost" size="icon" className="md:hidden">
-                            <Link href="/notifications">
-                                <div className="relative">
-                                  <Bell className="h-5 w-5" />
-                                  {notificationCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                                      {notificationCount > 9 ? '9+' : notificationCount}
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="sr-only">Notifications</span>
-                            </Link>
-                        </Button>
+                        {pathname === '/' && (
+                            <Button asChild variant="ghost" size="icon" className="md:hidden">
+                                <Link href="/notifications">
+                                    <div className="relative">
+                                    <Bell className="h-5 w-5" />
+                                    {notificationCount > 0 && (
+                                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                                        {notificationCount > 9 ? '9+' : notificationCount}
+                                        </span>
+                                    )}
+                                    </div>
+                                    <span className="sr-only">Notifications</span>
+                                </Link>
+                            </Button>
+                        )}
                         <Button asChild variant="ghost" size="icon" className="hidden md:flex">
                              <Link href="/notifications">
                                 <div className="relative">

@@ -1,38 +1,212 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { Resend } from 'resend';
+import { awardXP } from '@/lib/gamification-logic';
+import { checkForFraud } from '@/lib/fraud-detection';
+import { updateTrustScore } from '@/lib/trust-logic';
 
 // Initialize but handle missing keys gracefully later
 const resend = new Resend(process.env.RESEND_API_KEY || 'missing_key');
 
 const statusMap: { [key: number]: string } = {
     1: 'Applied',
-    2: 'Profile Viewed',
-    3: 'Not Suitable',
-    4: 'Selected',
+    2: 'Under Review',
+    3: 'Accepted',
+    4: 'Referral Unlocked',
+    5: 'Referred',
+    6: 'Interviewing',
+    7: 'Offer Received',
+    8: 'Pending Confirmation',
+    9: 'Joined Company',
+    10: 'Completed',
+    11: 'Disputed',
+    12: 'Rejected'
 };
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = params;
-    const { statusId } = await request.json();
+    const body = await request.json();
+    const { statusId, proofUrl, internalReferralId, requesterRole } = body;
 
     if (!statusId) {
       return NextResponse.json({ error: 'Status ID is required' }, { status: 400 });
     }
 
+    const sId = Number(statusId);
+
+    // 0. Resolve the numeric PK if a UUID is provided
+    let targetPk = params.id;
+    if (params.id.includes('-')) {
+        const { data: resolvedApp } = await supabaseAdmin
+            .from('applications')
+            .select('id')
+            .eq('uuid', params.id)
+            .maybeSingle();
+        if (resolvedApp) targetPk = resolvedApp.id.toString();
+    }
+
+    // 0.1 Fetch application data
+    const { data: appData } = await supabaseAdmin
+        .from('applications')
+        .select('job_pk, status_id, is_unlocked, user_pk')
+        .eq('id', targetPk)
+        .single();
+
+    if (!appData) {
+        return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+    }
+
+    // 0.15 Disallow rejection if unlocked
+    if (sId === 12 && (appData.is_unlocked || appData.status_id >= 4)) {
+        const isEmployee = requesterRole === 'Employee' || requesterRole === 'employee' || !requesterRole;
+        if (isEmployee) {
+            return NextResponse.json({ error: 'You cannot reject a candidate after they have unlocked the job referral.' }, { status: 403 });
+        }
+    }
+
+    // 0.2 Enforce Selection/Referral Limits
+    let needsCreditDeduction = false;
+    if (sId === 3 || sId === 4 || sId === 5) {
+        if (appData) {
+            if (sId === 3) {
+                // Limit for selection interest: 5
+                const { count: selectedCount } = await supabaseAdmin
+                  .from('applications')
+                  .select('id', { count: 'exact', head: true })
+                  .eq('job_pk', appData.job_pk)
+                  .in('status_id', [3, 4, 5, 6, 7, 8, 9, 10]);
+
+                if ((selectedCount || 0) >= 5) {
+                  return NextResponse.json({ error: 'Selection Capacity Reached! You can only select up to 5 candidates for this role.' }, { status: 403 });
+                }
+            } else if (sId === 4) {
+                // Limit for candidate acceptance: FIRST 3 (First come first served)
+                // We count those who have already unlocked or are referred/joined
+                const { count: acceptedCount } = await supabaseAdmin
+                    .from('applications')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('job_pk', appData.job_pk)
+                    .in('status_id', [4, 5, 6, 7, 8, 9, 10]);
+
+                if ((acceptedCount || 0) >= 3) {
+                    return NextResponse.json({ error: 'Sorry! The referral slots for this job have already been filled by other candidates. Only the first 3 to accept are eligible.' }, { status: 403 });
+                }
+
+                // Jobseeker Monthly Unlock Limit & Credit Deductions
+                const { data: jobseekerProfile } = await supabaseAdmin
+                    .from('jobseekers')
+                    .select('id, credits, plan_type')
+                    .eq('id', appData.user_pk)
+                    .single();
+
+                if (jobseekerProfile) {
+                    const { getPlanLimits } = await import('@/lib/plan-limits');
+                    const limits = getPlanLimits(jobseekerProfile.plan_type);
+
+                    const startOfMonth = new Date();
+                    startOfMonth.setDate(1);
+                    startOfMonth.setHours(0, 0, 0, 0);
+
+                    const { count: monthlyUnlocks } = await supabaseAdmin
+                        .from('applications')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('user_pk', appData.user_pk)
+                        .gte('unlocked_at', startOfMonth.toISOString());
+
+                    const unlocksUsed = monthlyUnlocks || 0;
+                    
+                    if (unlocksUsed >= limits.referralUnlocksPerMonth) {
+                        if ((jobseekerProfile.credits || 0) < 2) {
+                             return NextResponse.json({ 
+                                error: `You have exhausted your ${limits.referralUnlocksPerMonth} monthly free unlocks and have 0 credits. Upgrade your plan or buy credits to unlock more.` 
+                             }, { status: 403 });
+                        } else {
+                            needsCreditDeduction = true;
+                        }
+                    }
+                }
+            } else if (sId === 5) {
+                // Limit for formal referral: 3
+                if (!appData.is_unlocked) {
+                    return NextResponse.json({ error: 'You can only refer candidates after they have accepted/unlocked the referral.' }, { status: 403 });
+                }
+
+                const { count: referredCount } = await supabaseAdmin
+                  .from('applications')
+                  .select('id', { count: 'exact', head: true })
+                  .eq('job_pk', appData.job_pk)
+                  .in('status_id', [5, 6, 7, 8, 9, 10]);
+
+                if ((referredCount || 0) >= 3) {
+                  return NextResponse.json({ error: 'Referral Limit Reached! You can only refer up to 3 candidates for this role.' }, { status: 403 });
+                }
+            }
+        }
+    }
+
+    // ── Status Verification & Payload ──────────────────────────────────────────
+    let updatePayload: any = {
+        status_id: sId,
+        updated_at: new Date().toISOString(),
+    };
+
+    if (sId === 4) {
+        updatePayload.is_unlocked = true;
+        updatePayload.unlocked_at = new Date().toISOString();
+    }
+
+    let needsCreditRefund = false;
+    if (sId === 12 && appData.is_unlocked) {
+        updatePayload.is_unlocked = false;
+        needsCreditRefund = true;
+    }
+
+    if (sId === 5 || sId === 9) { // 5: Referred, 9: Joined Company
+        if (!proofUrl) {
+            return NextResponse.json({ error: 'Proof of action (screenshot/email) is required to proceed' }, { status: 400 });
+        }
+        updatePayload.proof_url = proofUrl;
+        
+        // If Employee marks as Referred/Joined, it's pending for Jobseeker to verify
+        // If Jobseeker marks (unlikely for 5/9 but handled), it's pending for Employee
+        const isJobseeker = requesterRole === 'Job Seeker' || requesterRole === 'jobseeker';
+        updatePayload.verification_status = isJobseeker ? 'pending_employee' : 'pending_jobseeker';
+        
+        updatePayload.proof_uploaded_at = new Date().toISOString();
+        
+        if (internalReferralId) {
+            updatePayload.internal_referral_id = internalReferralId;
+        }
+
+        // Set expiry for 7 days from now for admin verification fallback
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + 7);
+        updatePayload.verification_expires_at = expiry.toISOString();
+    }
+    
+    if (sId === 6 || sId === 7) {
+        const isJobseeker = requesterRole === 'Job Seeker' || requesterRole === 'jobseeker';
+        updatePayload.verification_status = isJobseeker ? 'pending_employee' : 'pending_jobseeker';
+        
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + 7);
+        updatePayload.verification_expires_at = expiry.toISOString();
+    }
+
     // 1. Update the application status
     const { data: app, error: updateError } = await supabaseAdmin
       .from('applications')
-      .update({ 
-        status_id: statusId,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select('*, jobs(title), jobseekers(id, name, email)')
+      .update(updatePayload)
+      .eq('id', targetPk)
+      .select('*, jobs(title, employee_pk), jobseekers(id, name, email)')
       .single();
 
-    if (updateError || !app) {
+    if (updateError) {
+        console.error('[API_APP_STATUS] Update Error:', updateError);
+        return NextResponse.json({ error: updateError.message || 'Failed to update application' }, { status: 400 });
+    }
+    
+    if (!app) {
         return NextResponse.json({ error: 'Application not found' }, { status: 404 });
     }
     
@@ -42,22 +216,142 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const jobTitle = app.jobs?.title || 'a job';
 
     let message = '';
-    const sId = Number(statusId);
     switch (sId) {
-      case 2: message = `Your profile was viewed for the ${jobTitle} position.`; break;
-      case 3: message = `Your application for ${jobTitle} was reviewed. The company decided to move forward with other candidates at this time.`; break;
-      case 4: message = `Congratulations! You have been selected for the ${jobTitle} position.`; break;
-      default: message = `Your application status for ${jobTitle} has been updated.`;
+      case 2: message = `Your profile is now under review for ${jobTitle}.`; break;
+      case 3: message = `Great news! An employee from the company is interested in referring you for ${jobTitle}. Check your dashboard to unlock this referral.`; break;
+      case 4: message = `Referral unlocked! Your contact details are now visible to the referring employee.`; break;
+      case 5: message = `Your referral for ${jobTitle} has been submitted internally!`; break;
+      case 6: message = `You've been invited for an interview for ${jobTitle}. Good luck!`; break;
+      case 7: message = `Congratulations! You've received an offer for ${jobTitle}!`; break;
+      case 8: message = `Please confirm if you have joined the company for ${jobTitle}.`; break;
+      case 9: message = `Welcome to the team! Your hire for ${jobTitle} is being verified.`; break;
+      case 11: message = `There is a dispute regarding your referral for ${jobTitle}. Admin is reviewing.`; break;
+      case 12: message = `Your application for ${jobTitle} decided to move forward with other candidates.`; break;
+      default: message = `Your application status for ${jobTitle} has been updated to ${statusMap[sId] || 'a new stage'}.`;
     }
 
-    // 3. Create a notification in Supabase
-    await supabaseAdmin.from('notifications').insert({
-      user_pk: applicantPk,
-      message: message,
-      type: 'application_status',
-      job_pk: app.job_pk,
-      created_at: new Date().toISOString(),
+    // 3. Create a notification for the OTHER party
+    const employeePk = app.jobs?.employee_pk;
+    const isJobseekerAction = requesterRole === 'Job Seeker' || requesterRole === 'jobseeker';
+
+    if (isJobseekerAction && employeePk) {
+        // Notify Employee if Jobseeker initiated
+        await supabaseAdmin.from('notifications').insert({
+          user_pk: employeePk,
+          message: `Candidate ${applicant?.name || 'User'} marked the application for ${jobTitle} as ${statusMap[sId] || 'updated'}. Please verify.`,
+          type: 'application_status',
+          job_pk: app.job_pk,
+          created_at: new Date().toISOString(),
+        });
+    } else if (!isJobseekerAction && applicantPk) {
+        // Notify Jobseeker if Employee initiated (original behavior)
+        await supabaseAdmin.from('notifications').insert({
+          user_pk: applicantPk,
+          message: message,
+          type: 'application_status',
+          job_pk: app.job_pk,
+          created_at: new Date().toISOString(),
+        });
+    }
+
+async function deductCredits(jobseekerId: string, amount: number, jobPk?: number) {
+    if (!jobseekerId) {
+        console.error('[API_APP_STATUS] Cannot deduct credits: jobseekerId is undefined');
+        return;
+    }
+    
+    // Use the RPC for consistent dual-credit handling
+    const { data: consumeResult, error: deductError } = await supabaseAdmin.rpc('consume_credits', {
+        p_user_id: jobseekerId,
+        p_amount: amount
     });
+
+    if (deductError || !consumeResult?.success) {
+        console.error('[API_APP_STATUS] Credit deduction error:', deductError || consumeResult?.error);
+        return;
+    }
+            
+    await supabaseAdmin.from('notifications').insert({
+        user_pk: jobseekerId,
+        message: `Spent ${amount} credit(s) to unlock your referral for this job.`,
+        type: 'credit_deduction',
+        job_pk: jobPk,
+        created_at: new Date().toISOString()
+    });
+}
+
+async function refundCredits(jobseekerId: string | number, amount: number, jobPk?: number) {
+    if (!jobseekerId) {
+        console.error('[API_APP_STATUS] Cannot refund credits: jobseekerId is undefined');
+        return;
+    }
+    
+    console.log(`[API_APP_STATUS] Refunding ${amount} credits to jobseeker ${jobseekerId}`);
+    const { error: rpcError } = await supabaseAdmin.rpc('add_purchased_credits', {
+        p_user_id: Number(jobseekerId),
+        p_amount: amount
+    });
+
+    if (rpcError) {
+        console.error('[API_APP_STATUS] RPC add_purchased_credits failed during refund, falling back to manual update:', rpcError);
+        const { data: currentData } = await supabaseAdmin
+            .from('jobseekers')
+            .select('purchased_credits')
+            .eq('id', jobseekerId)
+            .single();
+
+        await supabaseAdmin
+            .from('jobseekers')
+            .update({
+                purchased_credits: (currentData?.purchased_credits || 0) + amount,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', jobseekerId);
+    }
+            
+    await supabaseAdmin.from('notifications').insert({
+        user_pk: jobseekerId,
+        message: `Refunded ${amount} credit(s) because your unlocked application was not shortlisted by the referrer.`,
+        type: 'credit_refund',
+        job_pk: jobPk,
+        created_at: new Date().toISOString()
+    });
+}
+
+    // ── Employee Rewards & Penalties ─────────────────────────────────────
+    if (app.jobs?.employee_pk) {
+        const empId = app.jobs.employee_pk;
+        const jobPk = app.job_pk;
+        
+        try {
+            if (sId === 4) { // Referral Unlocked (Candidate accepted selection)
+                await checkForFraud(empId, applicantPk, jobPk);
+                await awardXP(empId, 'CANDIDATE_ACCEPTED', jobPk);
+                if (needsCreditDeduction) {
+                    await deductCredits(applicantPk, 2, jobPk);
+                }
+            } else if (sId === 10) { // Completed (Verified by Admin)
+                await awardXP(empId, 'REFERRAL_VERIFIED', jobPk);
+            } else if (sId === 11) { // Disputed (Penalty)
+                // Penalties: Use Trust System
+                await updateTrustScore(empId, 'FAKE_ACTIVITY', 'Submission disputed by Admin');
+                
+                await supabaseAdmin.from('notifications').insert({
+                    user_pk: empId,
+                    message: `Verification Failed. Submission disputed by Admin. Trust score reduced.`,
+                    type: 'penalty',
+                    job_pk: jobPk,
+                    created_at: new Date().toISOString(),
+                });
+            }
+        } catch (gamifyErr) {
+            console.error('[API_APP_STATUS] Gamification Error:', gamifyErr);
+        }
+    }
+
+    if (needsCreditRefund && applicantPk) {
+        await refundCredits(applicantPk, 2, app.job_pk);
+    }
 
     // 4. Send Resend Email (only for meaningful status changes: Selected or Not Suitable)
     if (applicant?.email && process.env.RESEND_API_KEY && (sId === 3 || sId === 4)) {
@@ -168,7 +462,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         }
     }
 
-    return NextResponse.json({ ...app, statusName: statusMap[statusId] || 'N/A' }, { status: 200 });
+    return NextResponse.json({ 
+        ...app, 
+        statusId: sId,
+        statusName: statusMap[sId] || 'N/A',
+        isUnlocked: app.is_unlocked,
+        verificationStatus: app.verification_status
+    }, { status: 200 });
   } catch (e: any) {
     console.error('[API_APP_STATUS] Error:', e);
     return NextResponse.json({ error: 'Failed to update application status', details: e.message }, { status: 500 });

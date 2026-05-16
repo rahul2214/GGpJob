@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Job } from "@/lib/types";
-import { MapPin, Briefcase, Clock, Star, CheckCircle, BadgeDollarSign, Users } from 'lucide-react';
+import { MapPin, Briefcase, Clock, Star, CheckCircle, BadgeDollarSign, Users, ShieldCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { TrustScoreBadge } from "./trust-score-badge";
 
 interface JobCardProps {
   job: Job;
@@ -13,6 +14,13 @@ interface JobCardProps {
 }
 
 export default function JobCard({ job, isApplied = false, hideDetails = false }: JobCardProps) {
+
+  const isCorporateEmail = (email?: string | null) => {
+    if (!email) return false;
+    const lower = email.toLowerCase();
+    const publicDomains = ['@gmail.', '@yahoo.', '@outlook.', '@hotmail.', '@live.', '@icloud.', '@aol.', '@ymail.', '@rocketmail.'];
+    return !publicDomains.some(d => lower.includes(d));
+  };
 
   return (
     <Link href={`/jobs/${job.uuid || job.id}`} className="block hover:shadow-lg transition-shadow duration-300 rounded-lg h-full">
@@ -33,55 +41,58 @@ export default function JobCard({ job, isApplied = false, hideDetails = false }:
             </div>
             <div className="flex flex-col gap-2">
               {job.isReferral && (
-                <Badge variant="outline" className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200 ml-2 shrink-0">
-                  <Star className="h-3 w-3" />
-                  Referral
-                </Badge>
+                <div className="flex flex-col items-end gap-1.5">
+                    <Badge variant="outline" className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200 ml-2 shrink-0">
+                      <Star className="h-3 w-3" />
+                      Referral
+                    </Badge>
+                    {job.isReferral && (job as any).employeeTrustScore >= 90 && isCorporateEmail((job as any).employeeEmail) && (
+                        <div className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-100 text-[10px] font-bold uppercase tracking-tight">
+                            <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                            Verified Hire
+                        </div>
+                    )}
+                </div>
               )}
             </div>
           </div>
         </CardHeader>
         <CardContent className="flex-grow">
-          <div className="flex flex-col space-y-2 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-primary" />
-              <span>{job.location}</span>
+          <div className="flex flex-col space-y-3 text-sm text-muted-foreground">
+            <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    <span className="truncate">{job.location}</span>
+                </div>
+                 <div className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 text-primary" />
+                    <span>{job.type}</span>
+                </div>
             </div>
-            {!hideDetails && (
-              <>
-                <div className="flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-primary" />
-                  <span>{job.type}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <BadgeDollarSign className="h-4 w-4 text-primary" />
-                  <span className="font-semibold text-foreground">
-                    {job.salaryMin && job.salaryMax 
-                      ? `₹ ${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()}`
-                      : job.salaryMin 
-                        ? `From ₹ ${job.salaryMin.toLocaleString()}`
-                        : job.salaryMax 
-                          ? `Up to ₹ ${job.salaryMax.toLocaleString()}`
-                          : 'Not Disclosed'}
-                  </span>
-                </div>
-              </>
-            )}
+            
+            <div className="flex items-center gap-2">
+                <BadgeDollarSign className="h-4 w-4 text-primary" />
+                <span className="font-semibold text-foreground">
+                {job.salaryMin && job.salaryMax 
+                    ? `₹ ${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()}`
+                    : 'Not Disclosed'}
+                </span>
+            </div>
+
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between items-center">
-          <div className="text-xs text-muted-foreground flex items-center gap-1">
-            <Clock className="h-3 w-3" />
+        <CardFooter className="flex justify-between items-center border-t border-slate-50 pt-4">
+          <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1 tracking-wider">
+            <Clock className="h-4 w-4" />
             {formatDistanceToNow(new Date(job.postedAt), { addSuffix: true })}
           </div>
           <div className="flex items-center gap-2">
             {isApplied && (
-              <Badge variant="secondary" className="flex items-center gap-1.5 border-green-300 bg-green-50 text-green-800">
-                <CheckCircle className="h-4 w-4" />
+              <Badge variant="secondary" className="flex items-center gap-1.5 border-green-300 bg-green-50 text-green-800 text-[10px]">
+                <CheckCircle className="h-3 w-3" />
                 Applied
               </Badge>
             )}
-
           </div>
         </CardFooter>
       </Card>

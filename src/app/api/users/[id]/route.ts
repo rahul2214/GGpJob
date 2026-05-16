@@ -12,31 +12,90 @@ function normalizeDate(dateStr: string | null | undefined): string | null | unde
 }
 
 // Helper to map Supabase snake_case profile to camelCase User type
+function calculateProfileStats(profile: any, resolvedSkills?: any[]) {
+    return {
+        hasEducation: Array.isArray(profile.education) && profile.education.length > 0,
+        hasEmployment: Array.isArray(profile.experience) && profile.experience.length > 0,
+        hasSkills: (Array.isArray(profile.skill_ids) && profile.skill_ids.length > 0) || 
+                   (Array.isArray(profile.jobseeker_skills) && profile.jobseeker_skills.length > 0) ||
+                   (Array.isArray(resolvedSkills) && resolvedSkills.length > 0) ||
+                   (Array.isArray(profile.skills) && profile.skills.length > 0),
+        hasProjects: Array.isArray(profile.projects) && profile.projects.length > 0,
+        hasLanguages: Array.isArray(profile.languages) && profile.languages.length > 0,
+        hasSummary: !!profile.summary
+    };
+}
+
 // Helper to map Supabase snake_case profile to camelCase User type
 async function mapProfileToUser(profile: any): Promise<User> {
+    const resolvedResume = profile.resume_url ? await resolveResumeUrl(profile.resume_url) : undefined;
+    
+    // Determine role and counts based on table/data present
+    const role = profile.roles?.name || profile.role || 'Job Seeker';
+    
+    // Robustly resolve skills if jobseeker_skills is joined
+    let resolvedSkills = profile.skills || [];
+    if (profile.jobseeker_skills && Array.isArray(profile.jobseeker_skills) && profile.jobseeker_skills.length > 0) {
+        resolvedSkills = profile.jobseeker_skills.map((jsk: any) => ({
+            id: jsk.skills?.uuid || jsk.skills?.id,
+            uuid: jsk.skills?.uuid,
+            name: jsk.skills?.name || '',
+            proficiencyLevel: jsk.proficiency_level,
+            yearsExperience: jsk.years_experience
+        })).filter((s: any) => s.id);
+    }
+
+    let profileStats: any = undefined;
+    if (role === 'Job Seeker' || role === 'jobseeker') {
+        profileStats = calculateProfileStats(profile, resolvedSkills);
+    }
+    
+    let totalRewards = 0;
+    let pendingRewards = 0;
+    
+    if (role === 'Employee') {
+        // Fetch payout aggregates
+        const { data: payouts } = await supabaseAdmin
+            .from('payouts')
+            .select('amount, status, method')
+            .eq('employee_id', profile.id);
+            
+        if (payouts) {
+            // Lifetime rewards: sum of all earnings that are not blocked or rejected
+            totalRewards = payouts
+                .filter(p => p.method === 'system' && p.status !== 'blocked' && p.status !== 'rejected')
+                .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+                
+            // Pending rewards: earnings currently held for review
+            pendingRewards = payouts
+                .filter(p => p.method === 'system' && (p.status === 'held' || p.status === 'delayed' || p.status === 'pending'))
+                .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+        }
+    }
+
     return {
         id: profile.id,       // BIGINT primary key
         uuid: profile.uuid,   // Public UUID
         name: profile.name,
         email: profile.email,
         phone: profile.phone,
-        role: profile.roles?.name || profile.role || 'Job Seeker',
+        role: role as any,
         roleId: profile.role_id,
         headline: profile.headline,
         summary: profile.summary,
         domainId: profile.domains?.uuid || profile.domain_id,
-        resumeUrl: await resolveResumeUrl(profile.resume_url),
+        resumeUrl: resolvedResume,
         linkedinUrl: profile.linkedin_url,
         githubUrl: profile.github_url,
         portfolioUrl: profile.portfolio_url,
         notificationLastViewedAt: profile.notification_last_viewed_at,
-        gender: profile.jobseeker_personal_details?.gender || profile.gender,
-        maritalStatus: profile.jobseeker_personal_details?.marital_status || profile.marital_status,
-        dateOfBirth: profile.jobseeker_personal_details?.date_of_birth || profile.date_of_birth,
-        category: profile.jobseeker_personal_details?.category || profile.category,
-        disabilityStatus: profile.jobseeker_personal_details?.disability_status || profile.disability_status,
-        militaryExperience: profile.jobseeker_personal_details?.military_experience || profile.military_experience,
-        careerBreak: profile.jobseeker_personal_details?.career_break || profile.career_break,
+        gender: profile.jobseeker_personal_details?.gender || (profile.jobseeker_personal_details?.[0]?.gender) || profile.gender,
+        maritalStatus: profile.jobseeker_personal_details?.marital_status || (profile.jobseeker_personal_details?.[0]?.marital_status) || profile.marital_status,
+        dateOfBirth: profile.jobseeker_personal_details?.date_of_birth || (profile.jobseeker_personal_details?.[0]?.date_of_birth) || profile.date_of_birth,
+        category: profile.jobseeker_personal_details?.category || (profile.jobseeker_personal_details?.[0]?.category) || profile.category,
+        disabilityStatus: profile.jobseeker_personal_details?.disability_status || (profile.jobseeker_personal_details?.[0]?.disability_status) || profile.disability_status,
+        militaryExperience: profile.jobseeker_personal_details?.military_experience || (profile.jobseeker_personal_details?.[0]?.military_experience) || profile.military_experience,
+        careerBreak: profile.jobseeker_personal_details?.career_break || (profile.jobseeker_personal_details?.[0]?.career_break) || profile.career_break,
         workStatus: profile.work_status,
         experienceYears: profile.experience_years,
         experienceMonths: profile.experience_months,
@@ -81,21 +140,31 @@ async function mapProfileToUser(profile: any): Promise<User> {
             endDate: p.end_date
         })),
         languages: profile.languages || [],
-        skills: profile.skills || [],
-        skillIds: profile.skill_ids || []
-    } as User;
-}
+        skills: resolvedSkills,
+        skillIds: profile.skill_ids || [],
+        profileStats,
+        
+        // Credits (Job Seekers)
+        credits: (profile.subscription_credits || 0) + (profile.purchased_credits || 0),
+        subscriptionCredits: profile.subscription_credits || 0,
+        purchasedCredits: profile.purchased_credits || 0,
+        subscriptionAllowance: profile.subscription_allowance || 0,
+        nextCreditResetAt: profile.next_credit_reset_at,
 
-function calculateProfileStats(profile: any) {
-    return {
-        hasEducation: Array.isArray(profile.education) && profile.education.length > 0,
-        hasEmployment: Array.isArray(profile.experience) && profile.experience.length > 0,
-        hasSkills: (Array.isArray(profile.skill_ids) && profile.skill_ids.length > 0) || 
-                  (Array.isArray(profile.jobseeker_skills) && profile.jobseeker_skills.length > 0),
-        hasProjects: Array.isArray(profile.projects) && profile.projects.length > 0,
-        hasLanguages: Array.isArray(profile.languages) && profile.languages.length > 0,
-        hasSummary: !!profile.summary
-    };
+        // Employee & Gamification
+        rewards: profile.rewards ?? 0,
+        trustScore: profile.trust_score ?? 100,
+        xp: profile.xp ?? 0,
+        level: profile.level ?? 1,
+        rewardsBalance: profile.rewards_balance ?? 0,
+        totalRewards: totalRewards,
+        pendingRewards: pendingRewards,
+        verifiedReferralsCount: profile.verified_referrals_count ?? 0,
+        interviewsCount: profile.interviews_count ?? 0,
+        offersCount: profile.offers_count ?? 0,
+        hiresCount: profile.hires_count ?? 0,
+        jobPostLimit: profile.job_post_limit ?? (role === 'Employee' ? 5 : undefined),
+    } as User;
 }
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
@@ -131,34 +200,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         }
 
         if (jobseeker) {
-            // Resolve skills
-            if (jobseeker.jobseeker_skills && jobseeker.jobseeker_skills.length > 0) {
-                jobseeker.skills = jobseeker.jobseeker_skills.map((jsk: any) => ({
-                    id: jsk.skills?.uuid || jsk.skills?.id,
-                    uuid: jsk.skills?.uuid,
-                    name: jsk.skills?.name || '',
-                    proficiencyLevel: jsk.proficiency_level,
-                    yearsExperience: jsk.years_experience
-                })).filter((s:any) => s.id);
-            } else if (jobseeker.skills && Array.isArray(jobseeker.skills) && jobseeker.skills.length > 0) {
-                // Already have skills as JSONB
-            } else if (jobseeker.skill_ids && jobseeker.skill_ids.length > 0) {
-                const validUuids = jobseeker.skill_ids.filter((id: string) => typeof id === 'string' && id.includes('-'));
-                if (validUuids.length > 0) {
-                    const { data: skillsData } = await supabaseAdmin
-                        .from('skills')
-                        .select('id, uuid, name')
-                        .in('uuid', validUuids);
-                    jobseeker.skills = skillsData?.map(s => ({ id: s.uuid, name: s.name })) || [];
-                } else {
-                    jobseeker.skills = [];
-                }
-            } else {
-                jobseeker.skills = [];
-            }
-
             const user = await mapProfileToUser(jobseeker);
-            user.profileStats = calculateProfileStats(jobseeker);
             return NextResponse.json(user);
         }
 
@@ -176,7 +218,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         // 3. Check employees
         const { data: employee } = await supabaseAdmin
             .from('employees')
-            .select('*, roles(name), company_sizes(uuid, name)')
+            .select('*, roles(name)')
             .eq(column, idValue)
             .maybeSingle();
 
@@ -252,7 +294,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
         if (table === 'recruiters' || table === 'employees') {
             let numericCompanySizeId = null;
-            if (rest.companySizeId) {
+            if (table === 'recruiters' && rest.companySizeId) {
                 const isUuid = typeof rest.companySizeId === 'string' && rest.companySizeId.includes('-');
                 if (isUuid) {
                     const { data: sizeData } = await supabaseAdmin
@@ -270,7 +312,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             Object.assign(updateData, {
                 company_name: rest.companyName,
                 company_website: rest.companyWebsite,
-                company_size_id: numericCompanySizeId, 
+                ...(table === 'recruiters' && { company_size_id: numericCompanySizeId }),
                 company_overview: rest.companyOverview,
                 company_address: rest.companyAddress,
                 company_linkedin_url: rest.companyLinkedinUrl,
@@ -335,15 +377,30 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 education(*),
                 experience(*),
                 projects(*),
-                languages(*)
+                languages(*),
+                jobseeker_personal_details(*),
+                jobseeker_skills(skills(id, uuid, name))
             `;
+        } else if (table === 'recruiters') {
+            selectString = '*, roles(name), company_sizes(uuid, name)';
+        } else if (table === 'employees') {
+            selectString = '*, roles(name)';
+        }
+
+        let finalSelect = selectString;
+        if (table === 'jobseekers') {
+            finalSelect = selectString.includes('jobseeker_personal_details') 
+                ? selectString 
+                : selectString.replace('languages(*)', 'languages(*), jobseeker_personal_details(*)');
+        } else if (table === 'recruiters') {
+            finalSelect = '*, roles(name), company_sizes(uuid, name)';
         }
 
         const { data: profile, error } = await supabaseAdmin
             .from(table)
             .update(updateData)
             .eq(column, idValue)
-            .select(table === 'jobseekers' ? (selectString.includes('jobseeker_personal_details') ? selectString : selectString.replace('languages(*)', 'languages(*), jobseeker_personal_details(*)')) : '*, roles(name), company_sizes(uuid, name)')
+            .select(finalSelect)
             .single();
 
         if (error) throw error;
@@ -486,6 +543,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                     experience(*),
                     projects(*),
                     languages(*),
+                    jobseeker_personal_details(*),
                     jobseeker_skills(skills(id, uuid, name))
                 `)
                 .eq(column, idValue)
@@ -506,11 +564,89 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             return NextResponse.json(await mapProfileToUser(finalProfile), { status: 200 });
         }
 
-        return NextResponse.json(await mapProfileToUser(profile), { status: 200 });
+        // Handle profile mapping for non-jobseekers
+        const resolvedProfile = await mapProfileToUser(profile);
+        return NextResponse.json(resolvedProfile, { status: 200 });
 
     } catch (e: any) {
         console.error(e);
         return NextResponse.json({ error: 'Failed to update user', details: e.message }, { status: 500 });
+    }
+}
+
+export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+    try {
+        const { id } = params;
+        const body = await request.json();
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        const column = isUuid ? 'uuid' : 'id';
+        const idValue = isUuid ? id : parseInt(id);
+
+        if (!isUuid && isNaN(idValue as number)) {
+            return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
+        }
+
+        // Determine table based on role or by trying tables sequentially (more robust for patch)
+        let table = '';
+        if (body.role === 'Recruiter') table = 'recruiters';
+        else if (body.role === 'Employee') table = 'employees';
+        else if (body.role === 'Job Seeker') table = 'jobseekers';
+        else {
+            // Fallback: try to find the user in any table
+            const tables = ['jobseekers', 'recruiters', 'employees', 'admins'];
+            for (const t of tables) {
+                const { data } = await supabaseAdmin.from(t).select('id').eq(column, idValue).maybeSingle();
+                if (data) {
+                    table = t;
+                    break;
+                }
+            }
+        }
+
+        if (!table) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+        // Normalize keys (snake_case)
+        const updateData: any = {};
+        if (body.notificationLastViewedAt) updateData.notification_last_viewed_at = body.notificationLastViewedAt;
+        if (body.name) updateData.name = body.name;
+        if (body.email) updateData.email = body.email;
+        if (body.phone) updateData.phone = body.phone;
+        
+        updateData.updated_at = new Date().toISOString();
+
+        let patchSelect = '*, roles(name)';
+        if (table === 'jobseekers') {
+            patchSelect = `
+                *, 
+                roles(name),
+                education(*),
+                experience(*),
+                projects(*),
+                languages(*),
+                jobseeker_personal_details(*),
+                jobseeker_skills(skills(id, uuid, name))
+            `;
+        } else if (table === 'recruiters') {
+            patchSelect = '*, roles(name), company_sizes(uuid, name)';
+        } else if (table === 'employees') {
+            patchSelect = '*, roles(name)';
+        }
+
+
+        const { data: profile, error } = await supabaseAdmin
+            .from(table)
+            .update(updateData)
+            .eq(column, idValue)
+            .select(patchSelect)
+            .single();
+
+        if (error) throw error;
+
+        return NextResponse.json(await mapProfileToUser(profile), { status: 200 });
+
+    } catch (e: any) {
+        console.error(e);
+        return NextResponse.json({ error: 'Failed to patch user', details: e.message }, { status: 500 });
     }
 }
 

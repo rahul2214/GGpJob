@@ -133,6 +133,11 @@ export async function GET(request: NextRequest) {
             2: 'Profile Viewed',
             3: 'Not Suitable',
             4: 'Selected',
+            5: 'Accepted',
+            6: 'Referred',
+            7: 'Interviewing',
+            8: 'Offer Received',
+            9: 'Hired'
         };
 
         const appsByStatusMap: Record<string, number> = {};

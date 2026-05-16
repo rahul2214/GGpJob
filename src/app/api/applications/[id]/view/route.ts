@@ -9,19 +9,44 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return NextResponse.json({ error: 'Application ID is required' }, { status: 400 });
     }
     
-    // Update status to 'Profile Viewed' (statusId: 2)
+    // 0. Resolve the numeric PK if a UUID is provided
+    let targetPk = id;
+    if (id.includes('-')) {
+        const { data: resolvedApp } = await supabaseAdmin
+            .from('applications')
+            .select('id')
+            .eq('uuid', id)
+            .maybeSingle();
+        if (resolvedApp) targetPk = resolvedApp.id.toString();
+    }
+
+    // 1. Check current status to avoid downgrading
+    const { data: currentApp } = await supabaseAdmin
+        .from('applications')
+        .select('status_id')
+        .eq('id', targetPk)
+        .single();
+
+    if (currentApp && currentApp.status_id > 1) {
+        return NextResponse.json({ success: true, message: 'Status already advanced' });
+    }
+
+    // 2. Update status only if it was 'Applied' (1)
     const { data: app, error: updateError } = await supabaseAdmin
       .from('applications')
       .update({ 
         status_id: 2,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id)
+      .eq('id', targetPk)
+      .eq('status_id', 1) // Crucial: only if still applied
       .select('*, jobs(title)')
       .single();
 
     if (updateError || !app) {
-        return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+        // If it's not found because of the eq('status_id', 1) filter, that's fine
+        if (!app && currentApp) return NextResponse.json({ success: true });
+        return NextResponse.json({ error: 'Application not found or already viewed' }, { status: 404 });
     }
 
     // Create a notification for the job seeker

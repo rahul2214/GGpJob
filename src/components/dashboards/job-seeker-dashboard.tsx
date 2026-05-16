@@ -1,294 +1,224 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import type { Job, Application } from "@/lib/types";
 import JobCard from "../job-card";
 import { Button } from "../ui/button";
-import { Search, ArrowRight, BriefcaseBusiness, Star, ThumbsUp, Bell, TrendingUp, Zap, Bot, Loader2 } from "lucide-react";
+import { Search, ArrowRight, BriefcaseBusiness, Star, ThumbsUp, Bell, Zap, Loader2, ShieldCheck, CheckCircle, MessageSquare, Trophy, AlertCircle, Clock, Coins } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Link from "next/link";
 import { Skeleton } from "../ui/skeleton";
+import { Badge } from "../ui/badge";
 import { ProfileStrength } from "../profile-strength";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
 import { useDashboardJobs, useApplications } from "@/hooks/use-jobs";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
-import { motion } from "framer-motion";
-import { Card, CardContent } from "../ui/card";
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.5 } }),
-};
-
-// Removed quickSearchTerms as the search section is removed from the dashboard
+import { cn } from "@/lib/utils";
 
 export default function JobSeekerDashboard() {
   const { user } = useUser();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const { toast } = useToast();
-  const [isAutoApplying, setIsAutoApplying] = useState(false);
 
-  const { applications: userApplications } = useApplications(user ? { userId: user.uuid } : undefined);
+  const { applications: userApplications, mutateApplications } = useApplications(
+    user ? { userId: user.uuid, requesterId: user.uuid } : undefined
+  );
 
   const { data: jobData, isLoading, isError } = useDashboardJobs(
     user ? { domain: user.domainId, dashboard: "true", userId: user.uuid } : undefined
   );
 
-  // Search functions removed to declutter dashboard as per user request
-
-  const handleAutoApply = async () => {
-    if (!user) return;
-    setIsAutoApplying(true);
+  const handleVerifyAction = async (appId: string, action: 'confirm' | 'dispute') => {
     try {
-      // Formulate the customized search URL based on the user's profile
-      const keyword = user.headline || 'Software Engineer';
-      const userLocation = user.location || 'Remote';
-      const linkedinUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(keyword)}&location=${encodeURIComponent(userLocation)}&f_AL=true&autoApply=true&userId=${user.uuid}`;
-      
-      window.open(linkedinUrl, '_blank');
-      
-      toast({ 
-        title: 'LinkedIn Auto Apply', 
-        description: 'A new tab opened. If the Chrome extension is active, it will start applying.' 
-      });
+        const response = await fetch(`/api/applications/${appId}/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action })
+        });
+        if (!response.ok) throw new Error('Failed to update verification status');
+        toast({ title: action === 'confirm' ? "Hiring Confirmed!" : "Dispute Submitted" });
+        mutateApplications();
     } catch (error: any) {
-      toast({ title: 'Automation Error', description: error.message, variant: 'destructive' });
-    } finally {
-      setIsAutoApplying(false);
+        toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
+  const actionRequiredItems = useMemo(() => {
+    if (!userApplications) return [];
+    const items: any[] = [];
+    
+    // Verifications
+    userApplications.filter(app => app.verificationStatus === 'pending' || app.verificationStatus === 'pending_jobseeker').forEach(app => {
+      items.push({
+        id: `verify-${app.id}`,
+        priority: 1,
+        title: "Verify Your Hiring",
+        description: `Confirm hiring at ${app.companyName}`,
+        actionLabel: "Confirm Hire",
+        icon: CheckCircle,
+        color: "emerald",
+        onAction: () => handleVerifyAction(app.id.toString(), 'confirm'),
+        appId: app.id
+      });
+    });
+
+    // Chat
+    userApplications.filter(app => app.unreadChatCount > 0).forEach(app => {
+      items.push({
+        id: `chat-${app.id}`,
+        priority: 2,
+        title: "New Message",
+        description: `Unread messages for ${app.jobTitle}`,
+        actionLabel: "Open Chat",
+        href: `/applications?chat=${app.id}`,
+        icon: MessageSquare,
+        color: "indigo",
+        appId: app.id
+      });
+    });
+
+    // Status Updates
+    userApplications.forEach(app => {
+      if (app.statusId === 7) {
+        items.push({ id: `offer-${app.id}`, priority: 1, title: "Offer Received!", description: `Offer from ${app.companyName}`, actionLabel: "View Details", href: "/applications", icon: Trophy, color: "amber", appId: app.id });
+      }
+      else if (app.statusId === 6) {
+        items.push({ id: `interview-${app.id}`, priority: 3, title: "Interview Stage", description: `Interviewing with ${app.companyName}`, actionLabel: "View Status", href: "/applications", icon: Clock, color: "blue", appId: app.id });
+      }
+    });
+
+    // Credits
+    const totalCredits = ((user as any).subscriptionCredits || 0) + ((user as any).purchasedCredits || 0);
+    if (user && totalCredits < 2) {
+      items.push({
+        id: "low-credits",
+        priority: 0,
+        title: totalCredits === 0 ? "Out of Credits" : "Low Credit Balance",
+        description: totalCredits === 0 
+          ? "You need credits to unlock referrals and continue conversations." 
+          : "Your credit balance is low. Upgrade your plan to avoid interruptions.",
+        actionLabel: "Top Up Now",
+        href: "/jobseeker/credits",
+        icon: Coins,
+        color: "rose"
+      });
+    }
+
+    return items.sort((a, b) => a.priority - b.priority);
+  }, [userApplications, user]);
 
   const recommendedJobs = useMemo(() => jobData?.recommended?.slice(0, 5) || [], [jobData]);
-  const referralJobs = useMemo(() => jobData?.referral?.slice(0, 5) || [], [jobData]);
+  const referralJobs = useMemo(() => jobData?.referral || [], [jobData]);
+  const firstName = user?.name?.split(" ")[0] || "User";
 
-  const firstName = user?.name?.split(" ")[0] || "there";
-
-  const stats = [
-    { label: "Applications", value: userApplications.length, icon: BriefcaseBusiness, color: "from-indigo-500 to-violet-600", bg: "bg-indigo-50", text: "text-indigo-600", href: "/applications" },
-    { label: "Referrals Available", value: referralJobs.length, icon: ThumbsUp, color: "from-amber-500 to-orange-500", bg: "bg-amber-50", text: "text-amber-600", href: user?.domainId ? `/jobs?domain=${user.domainId}&isReferral=true` : "/jobs?isReferral=true" },
-    { label: "Recommended", value: recommendedJobs.length, icon: Star, color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50", text: "text-emerald-600", href: user?.domainId ? `/jobs?domain=${user.domainId}&view=recommended` : "/jobs?view=recommended" },
-  ];
+  // Safeguard for Action Required Item
+  const topActionItem = actionRequiredItems[0];
+  const ActionIcon = topActionItem?.icon || AlertCircle;
 
   return (
     <div className="space-y-8 py-4 pb-12">
-
       {/* Welcome Banner */}
-      <motion.div
-        initial={{ opacity: 0, y: -16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 px-6 py-8 md:py-10 md:px-10 shadow-lg"
-      >
-        {/* Decorative blobs */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 px-6 py-8 md:py-10 md:px-10 shadow-lg">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-1/4 w-48 h-48 bg-purple-400/20 rounded-full blur-2xl" />
-
         <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
           <div className="flex-1">
-            <div className="inline-flex items-center gap-2 bg-white/15 border border-white/20 text-white text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-3">
-              <Zap className="w-3 h-3" /> Your Dashboard
-            </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-2">
-              Welcome back, {firstName}! 👋
-            </h1>
-            <p className="text-indigo-200 text-sm md:text-base">
-              You have <span className="text-white font-bold">{recommendedJobs.length} new jobs</span> waiting for you today.
-            </p>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-2">Welcome back, {firstName}!</h1>
+            <p className="text-indigo-200 text-sm md:text-base">You have {recommendedJobs.length} new jobs waiting.</p>
           </div>
-
-          {/* Quick action buttons */}
           <div className="flex flex-wrap gap-3">
-            <Link href="/jobs" className="hidden md:block">
-              <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-                className="flex items-center gap-2 bg-white text-indigo-700 font-bold px-4 py-2.5 rounded-xl text-sm shadow-md hover:bg-indigo-50 transition-colors w-full md:w-auto">
-                <Search className="w-4 h-4" /> Browse Jobs
-              </motion.button>
-            </Link>
-            <Link href="/notifications" className="hidden md:block">
-              <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-                className="flex items-center gap-2 bg-white/15 border border-white/30 text-white font-bold px-4 py-2.5 rounded-xl text-sm hover:bg-white/25 transition-colors w-full md:w-auto">
-                <Bell className="w-4 h-4" /> Alerts
-              </motion.button>
-            </Link>
-            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-              onClick={handleAutoApply}
-              disabled={isAutoApplying}
-              className="hidden md:flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-colors disabled:opacity-70 disabled:cursor-not-allowed border border-emerald-300/50">
-              {isAutoApplying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
-              {isAutoApplying ? "Starting Bot..." : "LinkedIn Auto Apply"}
-            </motion.button>
+            <Link href="/jobs" className="bg-white text-indigo-700 font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-transform hover:scale-105 active:scale-95">Browse Jobs</Link>
           </div>
         </div>
-      </motion.div>
+      </div>
 
-
-
-      {/* Profile Strength */}
-      <motion.div custom={4} initial="hidden" animate="visible" variants={fadeUp}>
-        <div className="rounded-2xl border border-slate-100 bg-white shadow-sm p-5">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Profile Strength */}
+        <div className="lg:col-span-8 rounded-2xl border border-slate-100 bg-white shadow-sm p-5 h-full">
           {user && <ProfileStrength user={user} />}
         </div>
-      </motion.div>
 
-      {/* Search Section Removed */}
-
-      {/* Domain prompt */}
-      {user && !user.domainId && (
-        <motion.div custom={6} initial="hidden" animate="visible" variants={fadeUp}
-          className="rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4"
-        >
-          <div className="w-10 h-10 shrink-0 bg-amber-100 rounded-xl flex items-center justify-center">
-            <Star className="w-5 h-5 text-amber-600" />
-          </div>
-          <div className="flex-1">
-            <p className="font-bold text-slate-800 text-sm">Get Personalized Recommendations</p>
-            <p className="text-slate-500 text-xs mt-0.5">Select your preferred job domain in your profile to see jobs tailored just for you.</p>
-          </div>
-          <Button asChild size="sm" className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
-            <Link href="/profile">Update Profile</Link>
-          </Button>
-        </motion.div>
-      )}
-
-      {/* Loading skeletons */}
-      {isLoading && (
-        <div className="space-y-6">
-          <div className="rounded-2xl bg-white border border-slate-100 p-5 space-y-4">
-            <Skeleton className="h-7 w-48" />
-            <div className="flex gap-4">
-              <Skeleton className="h-48 flex-1 rounded-xl" />
-              <Skeleton className="h-48 flex-1 rounded-xl" />
-              <Skeleton className="h-48 flex-1 hidden md:block rounded-xl" />
+        {/* Action Required */}
+        {/* {topActionItem && (
+          <div className="lg:col-span-4 rounded-2xl border-2 border-indigo-100 bg-white shadow-md p-5 h-full relative overflow-hidden flex flex-col">
+            <div className="relative z-10 flex-1">
+              <div className="flex items-center gap-2 text-indigo-700 font-bold mb-4">
+                <AlertCircle className="w-5 h-5" />
+                Action Required ({actionRequiredItems.length})
+              </div>
+              <div className="space-y-4">
+                <div className={cn(
+                  "w-12 h-12 rounded-2xl flex items-center justify-center", 
+                  topActionItem.color === 'emerald' ? "bg-emerald-100 text-emerald-600" : 
+                  topActionItem.color === 'rose' ? "bg-rose-100 text-rose-600" :
+                  "bg-indigo-100 text-indigo-600"
+                )}>
+                   <ActionIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-base">{topActionItem.title}</h3>
+                  <p className="text-sm text-slate-600 mt-1">{topActionItem.description}</p>
+                </div>
+                {topActionItem.href ? (
+                  <Button asChild className="w-full bg-indigo-600 text-white rounded-xl font-bold shadow-md hover:bg-indigo-700 transition-all">
+                    <Link href={topActionItem.href}>{topActionItem.actionLabel}</Link>
+                  </Button>
+                ) : (
+                  <Button onClick={topActionItem.onAction} className="w-full bg-indigo-600 text-white rounded-xl font-bold shadow-md hover:bg-indigo-700 transition-all">
+                    {topActionItem.actionLabel}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {isError && (
-        <div className="rounded-2xl bg-rose-50 border border-rose-200 p-5 text-rose-700 text-sm font-medium">
-          Failed to load jobs. Please refresh the page.
-        </div>
-      )}
+        )} */}
+      </div>
 
       {/* Recommended Jobs */}
       {!isLoading && user?.domainId && recommendedJobs.length > 0 && (
-        <motion.div custom={7} initial="hidden" animate="visible" variants={fadeUp} className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 pt-5 pb-3">
-            <div>
-              <h2 className="font-bold text-slate-800 text-lg">Recommended For You</h2>
-              <p className="text-slate-400 text-xs">Curated based on your domain and profile</p>
-            </div>
-            {user?.domainId && (
-              <Link href="/jobs?view=recommended" className="flex items-center gap-1 text-indigo-600 hover:text-indigo-700 text-sm font-semibold transition-colors">
-                View All <ArrowRight className="w-4 h-4" />
-              </Link>
-            )}
+        <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-slate-800 text-lg">Recommended For You</h2>
+            <Link href="/jobs" className="text-sm font-bold text-indigo-600 hover:underline">View All</Link>
           </div>
-          <div className="px-4 pb-5">
-            <Carousel opts={{ align: "start", loop: false }} className="w-full">
-              <CarouselContent className="-ml-2">
-                {recommendedJobs.map((job) => (
-                  <CarouselItem key={job.id} className="pl-2 basis-[85%] sm:basis-1/2 lg:basis-1/3">
-                    <div className="p-1 h-full">
-                      <JobCard job={job} isApplied={false} hideDetails={false} />
-                    </div>
-                  </CarouselItem>
-                ))}
-                {recommendedJobs.length === 5 && (
-                  <CarouselItem className="pl-2 basis-[85%] sm:basis-1/2 lg:basis-1/3">
-                    <div className="p-1 h-full">
-                      <Link href="/jobs?view=recommended" className="block h-full">
-                        <div className="h-full min-h-[180px] flex flex-col items-center justify-center border-2 border-dashed border-indigo-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50/50 transition-all group py-10">
-                          <div className="w-12 h-12 bg-indigo-100 group-hover:bg-indigo-200 rounded-full flex items-center justify-center mb-3 transition-colors">
-                            <ArrowRight className="w-6 h-6 text-indigo-600" />
-                          </div>
-                          <span className="font-bold text-slate-700 text-sm">View All Recommended</span>
-                        </div>
-                      </Link>
-                    </div>
-                  </CarouselItem>
-                )}
-              </CarouselContent>
-              <CarouselPrevious className="hidden md:flex" />
-              <CarouselNext className="hidden md:flex" />
-            </Carousel>
-          </div>
-        </motion.div>
+          <Carousel className="w-full">
+            <CarouselContent className="-ml-2">
+              {recommendedJobs.map((job) => (
+                <CarouselItem key={job.id} className="pl-2 basis-[85%] sm:basis-1/2 lg:basis-1/3">
+                  <JobCard job={job} isApplied={false} hideDetails={false} />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="hidden sm:flex" />
+            <CarouselNext className="hidden sm:flex" />
+          </Carousel>
+        </div>
       )}
 
-      {/* Referral Jobs */}
+      {/* Referral Opportunities */}
       {!isLoading && referralJobs.length > 0 && (
-        <motion.div custom={8} initial="hidden" animate="visible" variants={fadeUp} className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 pt-5 pb-3">
-            <div>
-              <h2 className="font-bold text-slate-800 text-lg">Referrals For You</h2>
-              <p className="text-slate-400 text-xs">Get hired 5x faster through employee referrals</p>
+        <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+                <h2 className="font-bold text-slate-800 text-lg">Referral Opportunities</h2>
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] uppercase font-bold px-2 py-0.5">High Success Rate</Badge>
             </div>
-            {user?.domainId && (
-              <Link href="/jobs?isReferral=true" className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700 text-sm font-semibold transition-colors">
-                View All <ArrowRight className="w-4 h-4" />
-              </Link>
-            )}
+            <Link href="/jobs?type=referral" className="text-sm font-bold text-indigo-600 hover:underline">Explore More</Link>
           </div>
-          <div className="px-4 pb-5">
-            <Carousel opts={{ align: "start", loop: false }} className="w-full">
-              <CarouselContent className="-ml-2">
-                {referralJobs.map((job) => (
-                  <CarouselItem key={job.id} className="pl-2 basis-[85%] sm:basis-1/2 lg:basis-1/3">
-                    <div className="p-1 h-full">
-                      <JobCard job={job} isApplied={false} hideDetails={false} />
-                    </div>
-                  </CarouselItem>
-                ))}
-                {referralJobs.length === 5 && (
-                  <CarouselItem className="pl-2 basis-[85%] sm:basis-1/2 lg:basis-1/3">
-                    <div className="p-1 h-full">
-                      <Link href="/jobs?isReferral=true" className="block h-full">
-                        <div className="h-full min-h-[180px] flex flex-col items-center justify-center border-2 border-dashed border-emerald-200 rounded-xl hover:border-emerald-400 hover:bg-emerald-50/50 transition-all group py-10">
-                          <div className="w-12 h-12 bg-emerald-100 group-hover:bg-emerald-200 rounded-full flex items-center justify-center mb-3 transition-colors">
-                            <ArrowRight className="w-6 h-6 text-emerald-600" />
-                          </div>
-                          <span className="font-bold text-slate-700 text-sm">View All Referrals</span>
-                        </div>
-                      </Link>
-                    </div>
-                  </CarouselItem>
-                )}
-              </CarouselContent>
-              <CarouselPrevious className="hidden md:flex" />
-              <CarouselNext className="hidden md:flex" />
-            </Carousel>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Empty state */}
-      {!isLoading && !isError && recommendedJobs.length === 0 && referralJobs.length === 0 && (
-        <motion.div custom={7} initial="hidden" animate="visible" variants={fadeUp}
-          className="rounded-2xl bg-white border-2 border-dashed border-slate-200 p-12 text-center"
-        >
-          <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <BriefcaseBusiness className="w-8 h-8 text-indigo-500" />
-          </div>
-          <h3 className="text-slate-700 font-bold text-lg mb-2">No Jobs Found Yet</h3>
-          <p className="text-slate-400 text-sm max-w-xs mx-auto mb-6">
-            Complete your profile and set your domain to get personalized job recommendations.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">
-              <Link href="/profile">Complete Profile</Link>
-            </Button>
-            <Button asChild variant="outline" className="rounded-xl">
-              <Link href="/jobs">Browse All Jobs</Link>
-            </Button>
-          </div>
-        </motion.div>
+          <Carousel className="w-full">
+            <CarouselContent className="-ml-2">
+              {referralJobs.map((job: any) => (
+                <CarouselItem key={job.id} className="pl-2 basis-[85%] sm:basis-1/2 lg:basis-1/3">
+                  <JobCard job={job} isApplied={false} hideDetails={false} />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="hidden sm:flex" />
+            <CarouselNext className="hidden sm:flex" />
+          </Carousel>
+        </div>
       )}
     </div>
   );

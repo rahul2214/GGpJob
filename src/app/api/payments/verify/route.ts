@@ -68,9 +68,38 @@ export async function POST(request: Request) {
               break;
               
           case 'jobseeker_premium':
-              const jsExpiration = new Date();
-              jsExpiration.setMonth(jsExpiration.getMonth() + 4);
-              updateData.plan_expires_at = jsExpiration.toISOString();
+              const jsPremExp = new Date();
+              jsPremExp.setMonth(jsPremExp.getMonth() + 4); // 4 Months
+              updateData.plan_expires_at = jsPremExp.toISOString();
+              updateData.subscription_allowance = 20;
+              updateData.subscription_credits = 20;
+              const nextResetPrem = new Date();
+              nextResetPrem.setMonth(nextResetPrem.getMonth() + 1);
+              updateData.next_credit_reset_at = nextResetPrem.toISOString();
+              break;
+              
+          case 'jobseeker_pro':
+              const jsProExp = new Date();
+              jsProExp.setFullYear(jsProExp.getFullYear() + 1); // 1 Year
+              updateData.plan_expires_at = jsProExp.toISOString();
+              updateData.subscription_allowance = 60;
+              updateData.subscription_credits = 60;
+              const nextResetPro = new Date();
+              nextResetPro.setMonth(nextResetPro.getMonth() + 1);
+              updateData.next_credit_reset_at = nextResetPro.toISOString();
+              break;
+              
+          case 'mini':
+              updateData.credits_to_add = 10;
+              break;
+          case 'basic_pack':
+              updateData.credits_to_add = 25;
+              break;
+          case 'popular_pack':
+              updateData.credits_to_add = 60;
+              break;
+          case 'pro_pack':
+              updateData.credits_to_add = 150;
               break;
       }
 
@@ -88,7 +117,12 @@ export async function POST(request: Request) {
           'premium': 1499,
           'pro': 4999,
           'talent': 499,
-          'jobseeker_premium': 199
+          'jobseeker_premium': 499,
+          'jobseeker_pro': 999,
+          'mini': 149,
+          'basic_pack': 299,
+          'popular_pack': 549,
+          'pro_pack': 1299
       };
       
       finalAmount = basePrices[planId] || 0;
@@ -168,10 +202,43 @@ export async function POST(request: Request) {
       console.log(`[PAYMENT_VERIFY] Updating plan for user ${userId} (ID: ${profileId}) in table ${targetTable}`);
 
       // Perform updates on the identified table
-      const { error: profileError } = await supabaseAdmin
-          .from(targetTable)
-          .update(updateData)
-          .eq('id', profileId); 
+      let profileError: any;
+      
+      if (updateData.credits_to_add) {
+          const creditsToAdd = updateData.credits_to_add;
+          delete updateData.credits_to_add;
+          
+          // Use the new dual-credit atomic function
+          const { error } = await supabaseAdmin.rpc('add_purchased_credits', { 
+              p_user_id: profileId, 
+              p_amount: creditsToAdd 
+          });
+          
+          if (error) {
+              console.error('[PAYMENT_VERIFY] RPC add_purchased_credits failed, falling back to manual update:', error);
+              // Fallback: Get current credits and add
+              const { data: currentData } = await supabaseAdmin
+                .from(targetTable)
+                .select('purchased_credits')
+                .eq('id', profileId)
+                .single();
+              
+              const { error: fallbackError } = await supabaseAdmin
+                .from(targetTable)
+                .update({ 
+                    purchased_credits: (currentData?.purchased_credits || 0) + creditsToAdd,
+                    updated_at: now.toISOString()
+                })
+                .eq('id', profileId);
+              profileError = fallbackError;
+          }
+      } else {
+          const { error } = await supabaseAdmin
+              .from(targetTable)
+              .update(updateData)
+              .eq('id', profileId);
+          profileError = error;
+      }
 
       if (profileError) throw profileError;
 

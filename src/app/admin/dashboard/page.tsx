@@ -6,7 +6,7 @@ import { useUser } from "@/contexts/user-context";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Briefcase, Users, FileSignature, BarChart3, Calendar as CalendarIcon, UserSearch, UserRound, UserCheck, ThumbsUp } from "lucide-react";
+import { Briefcase, Users, FileSignature, BarChart3, Calendar as CalendarIcon, UserSearch, UserRound, UserCheck, ThumbsUp, ShieldCheck, Wallet } from "lucide-react";
 import {
   PieChart,
   Pie,
@@ -256,7 +256,7 @@ export default function AdminDashboardPage() {
         </Card>
       ) : (
         <>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
                 <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total Job Seekers</CardTitle>
@@ -293,8 +293,36 @@ export default function AdminDashboardPage() {
                     <AnimatedCounter value={analytics.totalApplications} className="text-2xl font-bold" />
                 </CardContent>
                 </Card>
+                <Card className="bg-indigo-600 text-white shadow-lg shadow-indigo-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Verify Referrals</CardTitle>
+                    <ShieldCheck className="h-4 w-4 text-indigo-100" />
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-between">
+                        <span className="text-2xl font-bold">New</span>
+                        <Button variant="secondary" size="sm" className="h-7 text-[10px] font-bold uppercase" onClick={() => router.push('/admin/verifications')}>
+                            View Queue
+                        </Button>
+                    </div>
+                </CardContent>
+                </Card>
+                <Card className="bg-emerald-600 text-white shadow-lg shadow-emerald-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Employee Payouts</CardTitle>
+                    <Wallet className="h-4 w-4 text-emerald-100" />
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-between">
+                        <span className="text-2xl font-bold">New</span>
+                        <Button variant="secondary" size="sm" className="h-7 text-[10px] font-bold uppercase" onClick={() => router.push('/admin/payouts')}>
+                            Manage Payouts
+                        </Button>
+                    </div>
+                </CardContent>
+                </Card>
             </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Direct Jobs</CardTitle>

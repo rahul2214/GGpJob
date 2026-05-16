@@ -88,21 +88,61 @@ export function useNotifications(userId?: string, options: { skip?: boolean } = 
 
         setIsLoading(true);
 
-        // 1. Initial Fetch
         const fetchInitialNotifications = async () => {
+            if (!userId) return;
             try {
-                // Use backend API to resolve complex IDs and bypass RLS
                 const res = await fetch(`/api/notifications?userId=${userId}`);
-                if (!res.ok) {
-                    const data = await res.json();
-                    throw new Error(data.error || 'Failed to fetch notifications');
-                }
                 const data = await res.json();
-                
                 setNotifications(data);
                 setIsLoading(false);
+                
+                // 2. Setup Real-time Subscription for all resolved PKs
+                if (data && Array.isArray(data)) {
+                    const uniquePks = Array.from(new Set(data.map((n: any) => n.userPk).filter(Boolean))) as number[];
+                    
+                    if (uniquePks.length > 0) {
+                        const channelName = `notifications_${userId}_${Date.now()}`;
+                        const channel = supabase
+                            .channel(channelName)
+                            .on(
+                                'postgres_changes',
+                                {
+                                    event: '*',
+                                    schema: 'public',
+                                    table: 'notifications',
+                                },
+                                (payload: any) => {
+                                    // Client-side filtering to support multi-role PKs
+                                    if (!uniquePks.includes(payload.new?.user_pk || payload.old?.user_pk)) return;
+
+                                    if (payload.eventType === 'INSERT') {
+                                        setNotifications(prev => {
+                                            const newNotif = {
+                                                id: payload.new.id,
+                                                ...payload.new,
+                                                timestamp: payload.new.created_at,
+                                                userPk: payload.new.user_pk // Map for consistency
+                                            };
+                                            return [newNotif, ...(prev || [])];
+                                        });
+                                    } else if (payload.eventType === 'UPDATE') {
+                                        setNotifications(prev => 
+                                            (prev || []).map(n => n.id === payload.new.id ? { ...n, ...payload.new } : n)
+                                        );
+                                    } else if (payload.eventType === 'DELETE') {
+                                        setNotifications(prev => 
+                                            (prev || []).filter(n => n.id !== payload.old.id)
+                                        );
+                                    }
+                                }
+                            )
+                            .subscribe();
+                            
+                        (window as any)._notifChannel = channel; // For cleanup
+                    }
+                }
             } catch (err: any) {
-                console.error("Supabase initial notifications fetch error:", err);
+                console.error("Notifications fetch error:", err);
                 setError(err);
                 setIsLoading(false);
             }
@@ -110,43 +150,12 @@ export function useNotifications(userId?: string, options: { skip?: boolean } = 
 
         fetchInitialNotifications();
 
-        // 2. Real-time Subscription - Use a unique ID to avoid collisions
-        const channelName = `notifications_${userId}_${Date.now()}`;
-        const channel = supabase
-            .channel(channelName)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'notifications',
-                    filter: `${/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId) ? 'user_id' : 'user_pk'}=eq.${userId}`,
-                },
-                (payload) => {
-                    if (payload.eventType === 'INSERT') {
-                        setNotifications(prev => {
-                            const newNotif = {
-                                id: payload.new.id,
-                                ...payload.new,
-                                timestamp: payload.new.created_at
-                            };
-                            return [newNotif, ...(prev || [])];
-                        });
-                    } else if (payload.eventType === 'UPDATE') {
-                        setNotifications(prev => 
-                            (prev || []).map(n => n.id === payload.new.id ? { ...n, ...payload.new } : n)
-                        );
-                    } else if (payload.eventType === 'DELETE') {
-                        setNotifications(prev => 
-                            (prev || []).filter(n => n.id !== payload.old.id)
-                        );
-                    }
-                }
-            )
-            .subscribe();
-
         return () => {
-            supabase.removeChannel(channel);
+            const channel = (window as any)._notifChannel;
+            if (channel) {
+                supabase.removeChannel(channel);
+                delete (window as any)._notifChannel;
+            }
         };
     }, [userId, options.skip]);
 

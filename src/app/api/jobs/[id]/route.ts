@@ -98,9 +98,14 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
         location: locNames.join(', ') || 'N/A',
         locations: locNames,
         experienceLevel: `${job.experience_min} - ${job.experience_max} Years`,
-        applicantCount: Array.isArray(job.applications) ? (job.applications[0]?.count || 0) : (job.applications?.count || 0),
+        applicantCount: job.applicant_count || 0,
+        selectedApplicantCount: job.selected_count || 0,
+        referredApplicantCount: job.referred_count || 0,
+        hiredApplicantCount: job.hired_count || 0,
         requiredSkills: skillNames,
-        isApplied: isApplied
+        isApplied: isApplied,
+        employeeTrustScore: (job.employees || job.employees?.[0])?.trust_score ?? 100,
+        employeeEmail: (job.employees || job.employees?.[0])?.email ?? null,
     };
 }
 
@@ -120,7 +125,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
             job_types!job_type_pk(uuid, name),
             workplace_types!workplace_type_pk(uuid, name),
             company_sizes!company_size_id(uuid, name),
-            applications(count)
+            employees!employee_pk(trust_score, email)
         `)
         .eq(isNumericId ? 'id' : 'uuid', id)
         .single();
@@ -332,6 +337,22 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
                 .eq('uuid', id)
                 .single();
             if (jobData) jobPk = jobData.id;
+        }
+
+        // 1.1 Prevent deletion if applications exist
+        if (jobPk) {
+            const { count: appCount, error: countError } = await supabaseAdmin
+                .from('applications')
+                .select('id', { count: 'exact', head: true })
+                .eq('job_pk', jobPk);
+
+            if (countError) throw countError;
+
+            if (appCount && appCount > 0) {
+                return NextResponse.json({ 
+                    error: 'Cannot delete job posting with active applications. Please mark it as inactive instead to preserve history.' 
+                }, { status: 403 });
+            }
         }
 
         if (jobPk) {

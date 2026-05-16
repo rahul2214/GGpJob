@@ -1,4 +1,4 @@
-import { Star, Crown, Search } from "lucide-react";
+import { Star, Crown, Search, Rocket } from "lucide-react";
 
 export const RECRUITER_PLANS = [
   {
@@ -67,5 +67,103 @@ export const RECRUITER_PLANS = [
       "Direct contact info access",
       "Saved searches & alerts"
     ]
+  }
+];
+
+export const JOB_SEEKER_PLANS = [
+  {
+    id: "free",
+    name: "Free Plan",
+    price: 0,
+    description: "Best for new users, students & first-time jobseekers.",
+    icon: Star,
+    color: "emerald",
+    features: [
+      "5 Referral applications/month",
+      "2 Active pending referrals",
+      "2 Credits per referral unlock",
+      "Unlimited Standard job applies",
+      "2 Credits included"
+    ]
+  },
+  {
+    id: "jobseeker_premium",
+    name: "Premium Plan",
+    price: 499,
+    originalPrice: 999,
+    description: "Best for active jobseekers & regular applicants.",
+    icon: Search,
+    color: "sky",
+    popular: true,
+    features: [
+      "25 Referral applications/month",
+      "5 Active pending referrals",
+      "20 Referral unlocks/month",
+      "20 Credits included",
+      "Priority visibility & App insights",
+      "Faster employee visibility"
+    ]
+  },
+  {
+    id: "jobseeker_pro",
+    name: "Pro Plan",
+    price: 999,
+    originalPrice: 1999,
+    description: "Best for serious professionals & aggressive job seekers.",
+    icon: Rocket,
+    color: "indigo",
+    features: [
+      "75 Referral applications/month",
+      "10 Active pending referrals",
+      "60 Referral unlocks/month",
+      "60 Credits included",
+      "High Priority visibility & Chat",
+      "AI resume optimization",
+      "Faster referral processing"
+    ]
+  }
+];
+
+export const CREDIT_PACKS = [
+  {
+    id: "mini",
+    name: "Mini Pack",
+    credits: 10,
+    price: 149,
+    perCredit: 14.9,
+    description: "Perfect for a quick referral unlock.",
+    icon: Rocket,
+    color: "sky"
+  },
+  {
+    id: "basic_pack",
+    name: "Basic Pack",
+    credits: 25,
+    price: 299,
+    perCredit: 11.9,
+    description: "The essential credit boost for jobseekers.",
+    icon: Search,
+    color: "emerald"
+  },
+  {
+    id: "popular_pack",
+    name: "Popular Pack",
+    credits: 60,
+    price: 549,
+    perCredit: 9.1,
+    description: "Our best value pack for active applicants.",
+    icon: Star,
+    color: "amber",
+    popular: true
+  },
+  {
+    id: "pro_pack",
+    name: "Pro Pack",
+    credits: 150,
+    price: 1299,
+    perCredit: 8.6,
+    description: "Maximum credits for aggressive job hunting.",
+    icon: Rocket,
+    color: "indigo"
   }
 ];

@@ -2,7 +2,7 @@
 "use client"
 
 import { useUser } from "@/contexts/user-context";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { ProfileSections } from "@/components/profile-sections";
 import type { User as UserType } from "@/lib/types";
@@ -24,7 +24,9 @@ export default function PublicProfilePage() {
   const { user: currentUser, loading: currentUserLoading } = useUser();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const id = params.id as string;
+  const applicationId = searchParams.get('applicationId');
 
   const [profileUser, setProfileUser] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +37,12 @@ export default function PublicProfilePage() {
     if (id) {
       setLoading(true);
       try {
-        const data = await axiosInstance.get(`/users/${id}`);
+        let data;
+        if (applicationId) {
+            data = await axiosInstance.get(`/applications/${applicationId}/candidate-profile`);
+        } else {
+            data = await axiosInstance.get(`/users/${id}`);
+        }
         
         setProfileUser(data);
       } catch (error) {
@@ -44,7 +51,7 @@ export default function PublicProfilePage() {
         setLoading(false);
       }
     }
-  }, [id]);
+  }, [id, applicationId]);
 
   const [hasNotified, setHasNotified] = useState(false);
 

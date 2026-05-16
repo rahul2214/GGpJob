@@ -17,8 +17,11 @@ export async function GET(request: Request) {
             { data: employee, error: employeeError },
             { data: admin, error: adminError }
         ] = await Promise.all([
-            // Jobseekers (heavy query)
-            supabaseAdmin.from('jobseekers').select('*, roles(name), domains!domain_id(uuid, name), education(*), experience(*), projects(*), languages(*), jobseeker_personal_details(*), jobseeker_skills(proficiency_level, years_experience, skills(id, uuid, name))').eq('uuid', uid).maybeSingle(),
+            // Jobseekers (heavy query) - Proactively check and reset credits if needed
+            (async () => {
+                await supabaseAdmin.rpc('check_and_reset_credits_by_uuid', { p_uuid: uid });
+                return supabaseAdmin.from('jobseekers').select('*, roles(name), domains!domain_id(uuid, name), education(*), experience(*), projects(*), languages(*), jobseeker_personal_details(*), jobseeker_skills(proficiency_level, years_experience, skills(id, uuid, name))').eq('uuid', uid).maybeSingle();
+            })(),
             // Recruiters
             supabaseAdmin.from('recruiters').select('*, roles(name)').eq('uuid', uid).maybeSingle(),
             // Employees
@@ -82,6 +85,11 @@ export async function GET(request: Request) {
                 planExpiresAt: jobseeker.plan_expires_at,
                 talentSearchExpiresAt: jobseeker.talent_search_expires_at,
                 metadata: jobseeker.metadata,
+                credits: (jobseeker.subscription_credits || 0) + (jobseeker.purchased_credits || 0),
+                subscriptionCredits: jobseeker.subscription_credits || 0,
+                purchasedCredits: jobseeker.purchased_credits || 0,
+                subscriptionAllowance: jobseeker.subscription_allowance || 0,
+                nextCreditResetAt: jobseeker.next_credit_reset_at,
                 education: (jobseeker.education || []).map((e: any) => ({
                     ...e,
                     startDate: e.start_date,
@@ -112,6 +120,7 @@ export async function GET(request: Request) {
                     hasLanguages: Array.isArray(jobseeker.languages) && jobseeker.languages.length > 0,
                     hasSummary: !!jobseeker.summary,
                 },
+                trustScore: jobseeker.trust_score ?? 100,
             };
             return NextResponse.json(user);
         }
@@ -164,11 +173,21 @@ export async function GET(request: Request) {
             });
         }
 
-        if (employeeError && employeeError.code !== 'PGRST116') {
-            console.error(`Error fetching employee ${uid}:`, employeeError);
-        }
-
         if (employee) {
+            // Fetch pending rewards from payouts table
+            const { data: allPayouts } = await supabaseAdmin
+                .from('payouts')
+                .select('amount, status, method')
+                .eq('employee_id', employee.id);
+            
+            const pendingRewards = (allPayouts || [])
+                .filter(p => p.method === 'system' && (p.status === 'held' || p.status === 'delayed' || p.status === 'pending'))
+                .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+                
+            const totalRewards = (allPayouts || [])
+                .filter(p => p.method === 'system' && p.status !== 'blocked' && p.status !== 'rejected')
+                .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
             // Robustly resolve UUIDs for relational fields
             let companySizeUuid = employee.company_size_id;
             if (employee.company_size_id) {
@@ -208,7 +227,19 @@ export async function GET(request: Request) {
                 planExpiresAt: employee.plan_expires_at,
                 maxAppliesLimit: employee.max_applies_limit,
                 jobPostLimit: employee.job_post_limit ?? 5,
-
+                trustScore: employee.trust_score ?? 100,
+                // Gamification Fields
+                xp: employee.xp ?? 0,
+                level: employee.level ?? 1,
+                rewardsBalance: employee.rewards_balance ?? 0,
+                pendingRewards: pendingRewards,
+                totalRewards: totalRewards,
+                verifiedReferralsCount: employee.verified_referrals_count ?? 0,
+                interviewsCount: employee.interviews_count ?? 0,
+                offersCount: employee.offers_count ?? 0,
+                hiresCount: employee.hires_count ?? 0,
+                milestonesAchieved: employee.milestones_achieved ?? [],
+                badgeIds: employee.badge_ids ?? [],
             });
         }
 

@@ -9,9 +9,10 @@ interface ShareButtonProps {
     jobId: string;
     jobTitle: string;
     companyName?: string;
+    variant?: 'icon' | 'text';
 }
 
-export function ShareButton({ jobId, jobTitle, companyName }: ShareButtonProps) {
+export function ShareButton({ jobId, jobTitle, companyName, variant }: ShareButtonProps) {
     const { toast } = useToast();
 
     const copyToClipboard = async (url: string) => {
@@ -31,7 +32,7 @@ export function ShareButton({ jobId, jobTitle, companyName }: ShareButtonProps) 
         }
     };
 
-    const handleShare = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    const handleShare = async (e: React.MouseEvent<HTMLButtonElement | HTMLSpanElement>) => {
         e.stopPropagation();
         e.preventDefault();
         const jobUrl = `${window.location.origin}/jobs/${jobId}`;
@@ -46,8 +47,6 @@ export function ShareButton({ jobId, jobTitle, companyName }: ShareButtonProps) 
             try {
                 await navigator.share(shareData);
             } catch (error: any) {
-                // If the user cancels the share, it might throw an AbortError.
-                // We only want to fall back to clipboard for other errors.
                 if (error.name !== 'AbortError') {
                     console.error("Error sharing:", error);
                     await copyToClipboard(jobUrl);
@@ -58,18 +57,12 @@ export function ShareButton({ jobId, jobTitle, companyName }: ShareButtonProps) 
         }
     };
 
-    const isDashboard = typeof window !== 'undefined' && (
-        window.location.pathname.includes('/dashboard') ||
-        window.location.pathname === '/' ||
-        window.location.pathname === '/admin/jobs'
-    );
-
-    if (isDashboard) {
-         return (
-             <button onClick={handleShare} className="flex items-center w-full">
-                <span>Share</span>
-            </button>
-        )
+    if (variant === 'text') {
+        return (
+            <span onClick={handleShare} className="w-full text-left">
+                Share
+            </span>
+        );
     }
 
     return (

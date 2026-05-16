@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import type { Job } from '@/lib/types';
+import { awardXP } from '@/lib/gamification-logic';
 
 // Helper to map Supabase snake_case job to camelCase Job type
 function mapJobToFrontend(job: any): any {
@@ -56,7 +57,14 @@ function mapJobToFrontend(job: any): any {
         locations: job.location_names || [],
         experienceLevel: job.experience_min === job.experience_max ? `${job.experience_min} Years` : `${job.experience_min} - ${job.experience_max} Years`,
         applicantCount: job.applicantCount ?? job.applications_count?.[0]?.count ?? 0,
-        selectedApplicantCount: job.selectedApplicantCount ?? job.selected_applications_count?.[0]?.count ?? 0
+        selectedApplicantCount: job.selectedApplicantCount ?? job.selected_applications_count?.[0]?.count ?? 0,
+        referredApplicantCount: job.referredApplicantCount ?? 0,
+        hiredApplicantCount: job.hiredApplicantCount ?? 0,
+        employeeTrustScore: (job.employees || job.employees?.[0])?.trust_score ?? 100,
+        employeeEmail: (job.employees || job.employees?.[0])?.email ?? null,
+        creditsRequired: job.credits_required || 5,
+        referralStrength: job.referral_strength || 'Basic',
+        referralCapacity: job.referral_capacity,
     };
 }
 
@@ -82,27 +90,10 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
     const benefitMap = new Map(benefits?.map(b => [String(b.id), { name: b.name, uuid: b.uuid }]) || []);
     const skillMap = new Map(skills?.map(s => [String(s.id), { name: s.name, uuid: s.uuid }]) || []);
 
-    // ── Bulk Resolve Application Counts ────────────────────────────────────
-    const jobPks = jobs.map(j => j.id);
-    const { data: apps } = await supabaseAdmin
-        .from('applications')
-        .select('job_pk, status_id')
-        .in('job_pk', jobPks);
-
-    const appCountMap = new Map<number, { total: number, selected: number }>();
-    apps?.forEach(app => {
-        const counts = appCountMap.get(app.job_pk) || { total: 0, selected: 0 };
-        counts.total++;
-        if (app.status_id === 4) counts.selected++;
-        appCountMap.set(app.job_pk, counts);
-    });
-
     return jobs.map(job => {
         const mappedLocations = (job.location_pks || []).map((id: number) => locationMap.get(String(id))).filter(Boolean);
         const mappedBenefits = (job.benefit_ids || []).map((id: number) => benefitMap.get(String(id))).filter(Boolean);
         const mappedSkills = (job.skill_pks || []).map((id: number) => skillMap.get(String(id))).filter(Boolean);
-        
-        const counts = appCountMap.get(job.id) || { total: 0, selected: 0 };
         
         return mapJobToFrontend({ 
             ...job, 
@@ -111,8 +102,10 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
             benefit_names: mappedBenefits.map((b: any) => b.name),
             benefit_uuids: mappedBenefits.map((b: any) => b.uuid),
             skill_uuids: mappedSkills.map((s: any) => s.uuid),
-            applicantCount: counts.total,
-            selectedApplicantCount: counts.selected
+            applicantCount: job.applicant_count || 0,
+            selectedApplicantCount: job.selected_count || 0,
+            referredApplicantCount: job.referred_count || 0,
+            hiredApplicantCount: job.hired_count || 0
         });
     });
 }
@@ -157,6 +150,7 @@ export async function GET(request: NextRequest) {
             job_types!job_type_pk(uuid, name),
             workplace_types!workplace_type_pk(uuid, name),
             company_sizes!company_size_id(uuid, name),
+            employees!employee_pk(trust_score, email),
             applications_count:applications(count)
         `)
         .eq('status', 'active')
@@ -183,8 +177,9 @@ export async function GET(request: NextRequest) {
 
         const postedDays = searchParams.get('posted');
 
-        let recQuery = supabaseAdmin.from('jobs').select('*, domains!domain_pk(uuid, name), job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name)').eq('is_referral', false).limit(10).order('posted_at', { ascending: false });
-        let refQuery = supabaseAdmin.from('jobs').select('*, domains!domain_pk(uuid, name), job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name)').eq('is_referral', true).limit(10).order('posted_at', { ascending: false });
+        const nowIso = new Date().toISOString();
+        let recQuery = supabaseAdmin.from('jobs').select('*, domains!domain_pk(uuid, name), job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name), employees!employee_pk(trust_score, email)').eq('status', 'active').gt('expires_at', nowIso).eq('is_referral', false).limit(10).order('posted_at', { ascending: false });
+        let refQuery = supabaseAdmin.from('jobs').select('*, domains!domain_pk(uuid, name), job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name), employees!employee_pk(trust_score, email)').eq('status', 'active').gt('expires_at', nowIso).eq('is_referral', true).limit(10).order('posted_at', { ascending: false });
 
         if (appliedJobPks.length > 0) {
             recQuery = recQuery.not('id', 'in', `(${appliedJobPks.join(',')})`);
@@ -641,7 +636,10 @@ export async function POST(request: Request) {
       company_website: user.company_website || data.companyWebsite || null,
       address: user.company_address || data.address || null,
       job_link: data.jobLink || null,
-      is_consultancy: !!data.isConsultancy
+      is_consultancy: !!data.isConsultancy,
+      credits_required: data.creditsRequired || 5,
+      referral_strength: data.referralStrength || 'Basic',
+      referral_capacity: data.referralCapacity || null
     };
     
     const { data: newJob, error: insertError } = await supabaseAdmin
@@ -659,7 +657,14 @@ export async function POST(request: Request) {
         }, { status: 500 });
     }
 
-    return NextResponse.json(mapJobToFrontend(newJob), { status: 201 });
+    const createdJob = mapJobToFrontend(newJob);
+
+    // ── Gamification: Award XP for Job Posting ──────────────────────────────
+    if (userTable === 'employees' && userNumericPk) {
+        await awardXP(userNumericPk, 'JOB_POSTED', newJob.id);
+    }
+
+    return NextResponse.json(createdJob, { status: 201 });
   } catch (e: any) {
     console.error('[API_JOBS_POST] Unexpected Error:', e);
     return NextResponse.json({ error: 'Failed to create job', details: e.message }, { status: 500 });

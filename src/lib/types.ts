@@ -73,6 +73,21 @@ export interface User {
   languages?: Language[];
   skills?: MasterSkill[];
   skillIds?: string[];
+  credits?: number;  // For Job Seekers (Legacy Total)
+  subscriptionCredits?: number;
+  purchasedCredits?: number;
+  subscriptionAllowance?: number;
+  nextCreditResetAt?: string;
+  rewards?: number;  // For Employees
+  trustScore?: number; // Starting at 100
+  xp?: number;
+  level?: number;
+  rewardsBalance?: number;
+  verifiedReferralsCount?: number;
+  interviewsCount?: number;
+  hiresCount?: number;
+  milestonesAchieved?: string[];
+  badges?: string[];
 }
 
 export interface JobType {
@@ -152,14 +167,19 @@ export interface Job {
   domain?: string;
   applicantCount?: number;
   selectedApplicantCount?: number;
+  referredApplicantCount?: number;
+  hiredApplicantCount?: number;
   expiresAt?: string;
   appExpiresAt?: string;
   maxApplies?: number;
+  creditsRequired?: number;
+  referralStrength?: 'Basic' | 'Strong' | 'Direct HR';
+  referralCapacity?: number;
 }
 
 export interface ApplicationStatus {
   id: number;
-  name: "Applied" | "Profile Viewed" | "Not Suitable" | "Selected";
+  name: "Applied" | "Profile Viewed" | "Not Suitable" | "Selected" | "Accepted" | "Referred" | "Interviewing" | "Offer Received" | "Hired";
 }
 
 export interface Application {
@@ -184,6 +204,28 @@ export interface Application {
   applicantPk?: number;  // BIGINT
   applicantSkills?: string;
   applicantResumeUrl?: string;
+  applicantSummary?: string;
+  applicantWorkStatus?: string;
+  applicantExperience?: string;
+  applicantLocation?: string;
+  applicantPlanType?: 'none' | 'basic' | 'premium' | 'talent' | 'pro';
+  
+  // Job Extended details
+  jobSalaryMin?: number;
+  jobSalaryMax?: number;
+  jobLocation?: string;
+  jobType?: string;
+  jobIsReferral?: boolean;
+  posterName?: string;
+  posterEmail?: string;
+
+  // Verification System
+  proofUrl?: string;
+  verificationStatus?: 'none' | 'pending' | 'verified' | 'disputed';
+  verificationExpiresAt?: string;
+  disputeReason?: string;
+  isUnlocked?: boolean;
+  internalReferralId?: string;
 }
 
 export interface Domain {

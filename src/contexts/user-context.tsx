@@ -11,6 +11,7 @@ interface UserContextType {
   setUser: (user: User | null) => void;
   loading: boolean;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   fetchUserProfile: (uid: string) => Promise<User | null>;
   createNewUserProfile: (supabaseUser: any) => Promise<User | null>;
 }
@@ -44,7 +45,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const fetchUserProfile = useCallback(async (uid: string): Promise<User | null> => {
     try {
-      const res = await fetch(`/api/users?uid=${uid}`);
+      const res = await fetch(`/api/users?uid=${uid}`, { cache: 'no-store' });
       if (res.ok) {
         return await res.json();
       }
@@ -54,6 +55,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
       return null;
     }
   }, []);
+
+  const refreshUser = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const updatedProfile = await fetchUserProfile(session.user.id);
+      if (updatedProfile) setUserState(updatedProfile);
+    }
+  }, [fetchUserProfile]);
   
   const createNewUserProfile = async (supabaseUser: any): Promise<User | null> => {
       const { id, email, user_metadata } = supabaseUser;
@@ -97,7 +106,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
       const isInitial = event === 'INITIAL_SESSION';
       const isSignEvent = event === 'SIGNED_IN' || event === 'SIGNED_OUT';
       
@@ -137,7 +146,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }
   
   return (
-    <UserContext.Provider value={{ user, setUser, loading, logout, fetchUserProfile, createNewUserProfile }}>
+    <UserContext.Provider value={{ user, setUser, loading, logout, refreshUser, fetchUserProfile, createNewUserProfile }}>
       {children}
     </UserContext.Provider>
   );

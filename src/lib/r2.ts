@@ -11,7 +11,7 @@ const R2_ENDPOINT = process.env.R2_ENDPOINT?.trim() || (R2_ACCOUNT_ID ? `https:/
 const r2Client = new S3Client({
   region: "auto",
   endpoint: R2_ENDPOINT,
-  forcePathStyle: true, // Use path-style for better compatibility with R2 endpoints
+  forcePathStyle: true, // Reverted to true for account-specific R2 endpoints
   credentials: {
     accessKeyId: R2_ACCESS_KEY_ID || "",
     secretAccessKey: R2_SECRET_ACCESS_KEY || "",
@@ -112,7 +112,7 @@ export async function getSignedResumeUrl(r2Uri: string, expiresIn = 3600) {
 
     return await getSignedUrl(r2Client, command, { expiresIn });
   } catch (error) {
-    console.error("[R2_SIGNED_URL_ERROR]:", error);
-    return r2Uri; // Fallback to original
+    console.error("[R2_SIGNED_URL_ERROR] Full URI:", r2Uri, "Error:", error);
+    return r2Uri; // Fallback
   }
 }

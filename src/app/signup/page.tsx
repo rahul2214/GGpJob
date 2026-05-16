@@ -23,6 +23,7 @@ import { supabase } from "@/lib/supabase-client"; // still used for Google OAuth
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from "framer-motion";
+import { JOB_SEEKER_PLANS } from "@/lib/pricing-constants";
 
 const GoogleIcon = () => (
   <svg className="mr-2 h-4 w-4" viewBox="0 0 48 48">
@@ -153,38 +154,39 @@ export default function SignupPage() {
           </motion.div>
 
           <div className="space-y-4">
-            {benefits.map((b, idx) => (
+            {JOB_SEEKER_PLANS.map((plan, idx) => (
               <motion.div
-                key={idx}
+                key={plan.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.5 + idx * 0.12 }}
-                className="flex items-center gap-3"
+                className={`bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 relative overflow-hidden ${plan.popular ? 'ring-2 ring-indigo-300 shadow-lg shadow-indigo-500/30' : ''}`}
               >
-                <b.icon className={`w-5 h-5 shrink-0 ${b.color}`} />
-                <span className="text-white/90 text-sm font-medium">{b.text}</span>
+                {plan.popular && (
+                  <div className="absolute top-0 right-0 bg-indigo-500 text-white px-3 py-1 rounded-bl-lg text-[10px] font-bold tracking-widest uppercase">
+                    Popular
+                  </div>
+                )}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <plan.icon className={`w-6 h-6 ${plan.color === 'emerald' ? 'text-emerald-400' : 'text-indigo-300'}`} />
+                    <h3 className="text-white font-bold text-lg">{plan.name}</h3>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-white font-bold text-xl">₹{plan.price}</span>
+                  </div>
+                </div>
+                <ul className="space-y-2 mb-0">
+                  {plan.features.map((feature, fIdx) => (
+                    <li key={fIdx} className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-white/70 shrink-0 mt-0.5" />
+                      <span className="text-white/80 text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
               </motion.div>
             ))}
           </div>
-
-          {/* Testimonial card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.9 }}
-            className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5"
-          >
-            <p className="text-white/90 text-sm italic leading-relaxed mb-3">
-              "I got my dream job through a referral posted here. The whole process took less than 2 weeks!"
-            </p>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white text-xs font-bold">P</div>
-              <div>
-                <p className="text-white text-sm font-semibold">Priya S.</p>
-                <p className="text-indigo-200 text-xs">Software Engineer, Bangalore</p>
-              </div>
-            </div>
-          </motion.div>
         </div>
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="relative z-10">

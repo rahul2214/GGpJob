@@ -3,7 +3,8 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function POST(request: Request) {
   try {
-    const { code, planId } = await request.json();
+    const { code, planId, packId } = await request.json();
+    const targetId = planId || packId;
 
     if (!code) {
       return NextResponse.json({ error: 'Coupon code is required' }, { status: 400 });
@@ -31,14 +32,19 @@ export async function POST(request: Request) {
     }
 
     // Validate Applicable Plan
-    if (coupon.applicable_plan && coupon.applicable_plan !== 'all' && coupon.applicable_plan !== planId) {
-         const planNames: Record<string, string> = {
-             'basic': 'Basic Plan',
-             'premium': 'Premium Plan',
-             'pro': 'Pro Recruitment',
-             'talent': 'Talent Search',
-             'jobseeker_premium': 'Job Seeker Premium'
-         };
+    if (coupon.applicable_plan && coupon.applicable_plan !== 'all' && coupon.applicable_plan !== targetId) {
+          const planNames: Record<string, string> = {
+              'basic': 'Recruiter Basic',
+              'premium': 'Recruiter Premium',
+              'pro': 'Recruiter Pro',
+              'talent': 'Talent Search',
+              'jobseeker_premium': 'Job Seeker Premium',
+              'jobseeker_pro': 'Job Seeker Pro',
+              'mini': 'Mini Credit Pack',
+              'basic_pack': 'Basic Credit Pack',
+              'popular_pack': 'Popular Credit Pack',
+              'pro_pack': 'Pro Credit Pack'
+          };
          return NextResponse.json({ 
              error: `This coupon is only valid for the ${planNames[coupon.applicable_plan] || 'specified'} plan.` 
          }, { status: 400 });

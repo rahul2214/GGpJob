@@ -14,8 +14,11 @@ import { SummaryForm } from "@/components/summary-form";
 import { PersonalInfoFormCombined } from "@/components/personal-info-form-combined";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserCog, ShieldCheck, FileText, Briefcase, Link2, Users, HeartHandshake, Mail, Phone, LayoutDashboard, Trash2 } from "lucide-react";
+import { UserCog, ShieldCheck, FileText, Briefcase, Link2, Users, HeartHandshake, Mail, Phone, LayoutDashboard, Trash2, Wallet, Award, Sparkles, Zap, ShieldCheck as TrustIcon } from "lucide-react";
 import { DeleteAccountButton } from "@/components/delete-account-button";
+import { TrustScoreBadge } from "@/components/trust-score-badge";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
     const { user, loading } = useUser();
@@ -120,6 +123,127 @@ export default function ProfilePage() {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Wallet / Credits Section */}
+                                {(user.role === 'Job Seeker' || user.role === 'Employee') && (
+                                    <div className="mt-8 pt-6 border-t border-slate-100">
+                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                            <Wallet className="w-3.5 h-3.5" />
+                                            My Wallet
+                                        </h3>
+                                        
+                                        {user.role === 'Job Seeker' ? (
+                                            <div className="relative group/wallet">
+                                                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-2xl blur opacity-20 group-hover/wallet:opacity-30 transition-opacity" />
+                                                <div className="relative bg-white border border-slate-100 rounded-2xl p-4 flex flex-col gap-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                                                                <Sparkles className="w-5 h-5 text-indigo-600" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs font-bold text-slate-400">Available Credits</p>
+                                                                <p className="text-xl font-black text-slate-800 tracking-tight">{(user.subscriptionCredits || 0) + (user.purchasedCredits || 0)}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {/* Breakdown for Job Seekers */}
+                                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-50">
+                                                        <div className="bg-slate-50 rounded-lg p-2 text-center">
+                                                            <p className="text-[9px] font-bold text-slate-400 uppercase leading-none mb-1">Subscription</p>
+                                                            <p className="text-sm font-black text-indigo-600">{user.subscriptionCredits || 0}</p>
+                                                        </div>
+                                                        <div className="bg-slate-50 rounded-lg p-2 text-center">
+                                                            <p className="text-[9px] font-bold text-slate-400 uppercase leading-none mb-1">Purchased</p>
+                                                            <p className="text-sm font-black text-emerald-600">{user.purchasedCredits || 0}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="relative group/rewards">
+                                                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl blur opacity-20 group-hover/rewards:opacity-30 transition-opacity" />
+                                                <div className="relative bg-white border border-slate-100 rounded-2xl p-4 flex flex-col gap-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                                                                <Award className="w-5 h-5 text-emerald-600" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs font-bold text-slate-400">Available Balance</p>
+                                                                <p className="text-xl font-black text-slate-800 tracking-tight">₹{user.rewardsBalance?.toLocaleString() || 0}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {(user as any).totalRewards > 0 && (
+                                                        <div className="pt-2 border-t border-slate-50">
+                                                            <div className="flex justify-between items-center text-[10px]">
+                                                                <span className="font-bold text-slate-400 uppercase">Lifetime Earned</span>
+                                                                <span className="font-black text-emerald-600">₹{(user as any).totalRewards.toLocaleString()}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Trust Reputation Section */}
+                                        <div className="mt-6 space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                                    <TrustIcon className="w-3.5 h-3.5" />
+                                                    Reputation
+                                                </h3>
+                                                <TrustScoreBadge score={user.trustScore || 100} />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <div className="flex justify-between text-[10px] font-bold text-slate-400">
+                                                    <span>Level Status</span>
+                                                    <span className={(user.trustScore || 100) >= 90 ? "text-emerald-500" : "text-amber-500"}>
+                                                        {(user.trustScore || 100) >= 90 ? "Excellent" : "Trusted"}
+                                                    </span>
+                                                </div>
+                                                <Progress value={user.trustScore || 0} className="h-1.5 bg-slate-100" />
+                                            </div>
+                                        </div>
+
+                                        {/* Job Plan Section */}
+                                        {user.role === 'Job Seeker' && (
+                                            <div className="mt-6 pt-6 border-t border-slate-100">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                                        <Sparkles className="w-3.5 h-3.5" />
+                                                        Job Plan
+                                                    </h3>
+                                                    <span className={cn(
+                                                        "text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter",
+                                                        user.planType === 'jobseeker_pro' ? "bg-indigo-100 text-indigo-700" :
+                                                        user.planType === 'jobseeker_premium' ? "bg-sky-100 text-sky-700" :
+                                                        "bg-slate-100 text-slate-600"
+                                                    )}>
+                                                        {user.planType === 'jobseeker_pro' ? "Pro Plan" :
+                                                         user.planType === 'jobseeker_premium' ? "Premium" : "Free Plan"}
+                                                    </span>
+                                                </div>
+                                                
+                                                <Button 
+                                                    onClick={() => router.push('/jobseeker/plans')}
+                                                    className="w-full h-9 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all active:scale-95"
+                                                >
+                                                    <Zap className="w-3 h-3 mr-1.5 opacity-70" />
+                                                    Upgrade Plan
+                                                </Button>
+                                            </div>
+                                        )}
+
+                                        <p className="text-[10px] text-slate-400 mt-3 text-center leading-relaxed">
+                                            {user.role === 'Job Seeker' 
+                                                ? "Apply for referral jobs to use your credits." 
+                                                : "Points are awarded when your referred candidate is hired."}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Navigation Tabs (Desktop) */}

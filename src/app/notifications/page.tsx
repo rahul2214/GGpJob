@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bell, Briefcase, Eye, CheckCircle, XCircle } from "lucide-react";
+import { Bell, Briefcase, Eye, CheckCircle, XCircle, MessageSquareQuote } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
@@ -42,11 +42,18 @@ export default function NotificationsPage() {
             if (!user.notificationLastViewedAt || new Date(latestTimestamp).getTime() > new Date(user.notificationLastViewedAt).getTime()) {
                 const updateNotificationViewed = async () => {
                     try {
-                        const updatedUser = await axiosInstance.put(`/users/${user.uuid}`, {
-                            ...user,
-                            notificationLastViewedAt: latestTimestamp,
+                        const response = await fetch(`/api/users/${user.uuid}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                notificationLastViewedAt: latestTimestamp,
+                                role: user.role // Help the API identify the table
+                            }),
                         });
-                        setUser(updatedUser);
+                        if (response.ok) {
+                            const updatedUser = await response.json();
+                            setUser(updatedUser);
+                        }
                     } catch (error) {
                         console.error("Failed to update notification view status", error);
                     }
@@ -57,8 +64,11 @@ export default function NotificationsPage() {
         }
     }, [user, notifications, setUser]);
 
-    const renderIcon = (status: string) => {
-        switch (status) {
+    const renderIcon = (notif: Notification) => {
+        if (notif.message.includes('[APP_ID:')) {
+            return <MessageSquareQuote className="h-5 w-5 text-indigo-500" />;
+        }
+        switch (notif.statusName) {
             case 'Profile Viewed':
                 return <Eye className="h-5 w-5 text-blue-500" />;
             case 'Selected':
@@ -96,6 +106,10 @@ export default function NotificationsPage() {
         )
     }
 
+    const cleanMessage = (msg: string) => {
+        return msg.replace(/\[APP_ID:[^\]]+\]\s*/, '');
+    };
+
     return (
          <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
             <Card>
@@ -112,11 +126,11 @@ export default function NotificationsPage() {
                                 const content = (
                                     <div className="flex items-start space-x-4 p-4 rounded-lg hover:bg-muted/50 border-b transition-colors cursor-default">
                                         <div className="bg-muted p-2 rounded-full mt-1">
-                                            {renderIcon(notif.statusName || (notif.message.includes('Profile Viewed') ? 'Profile Viewed' : ''))}
+                                            {renderIcon(notif)}
                                         </div>
                                         <div className="flex-1">
                                             <p className="font-medium text-sm sm:text-base">
-                                                {notif.message}
+                                                {cleanMessage(notif.message)}
                                             </p>
                                             <p className="text-xs text-muted-foreground mt-1">
                                                 {formatDistanceToNow(new Date(notif.timestamp), { addSuffix: true })}
@@ -141,11 +155,15 @@ export default function NotificationsPage() {
                              <Bell className="mx-auto h-12 w-12 text-muted-foreground" />
                             <h3 className="mt-4 text-lg font-medium">No notifications yet</h3>
                             <p className="mt-1 text-sm text-muted-foreground">
-                                We'll let you know when your application status changes.
+                                {user?.role === 'Recruiter' 
+                                    ? "We'll notify you when candidates apply or send you messages." 
+                                    : user?.role === 'Employee' 
+                                        ? "We'll notify you when your referrals are processed or updated."
+                                        : "We'll let you know when your application status changes or you get messages."}
                             </p>
                             <Button asChild className="mt-6">
-                                <Link href="/jobs">
-                                    Browse Jobs
+                                <Link href="/">
+                                    Go to Dashboard
                                 </Link>
                             </Button>
                         </div>

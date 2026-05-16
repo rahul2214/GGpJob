@@ -216,11 +216,22 @@ export default function AdminCouponsPage() {
                     className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
                  >
                     <option value="all">All Plans (Global)</option>
-                    <option value="basic">Recruiter - Basic Plan</option>
-                    <option value="talent">Recruiter - Talent Search</option>
-                    <option value="premium">Recruiter - Premium Plan</option>
-                    <option value="pro">Recruiter - Pro Recruitment</option>
-                    <option value="jobseeker_premium">Job Seeker - Premium</option>
+                    <optgroup label="Recruiter Plans">
+                        <option value="basic">Recruiter - Basic Plan</option>
+                        <option value="talent">Recruiter - Talent Search</option>
+                        <option value="premium">Recruiter - Premium Plan</option>
+                        <option value="pro">Recruiter - Pro Recruitment</option>
+                    </optgroup>
+                    <optgroup label="Job Seeker Plans">
+                        <option value="jobseeker_premium">Job Seeker - Premium</option>
+                        <option value="jobseeker_pro">Job Seeker - Pro</option>
+                    </optgroup>
+                    <optgroup label="Credit Packs">
+                        <option value="mini">Mini Pack (10 Cr)</option>
+                        <option value="basic_pack">Basic Pack (25 Cr)</option>
+                        <option value="popular_pack">Popular Pack (60 Cr)</option>
+                        <option value="pro_pack">Pro Pack (150 Cr)</option>
+                    </optgroup>
                  </select>
                </div>
                
@@ -292,7 +303,12 @@ export default function AdminCouponsPage() {
                                      coupon.applicablePlan === 'premium' ? 'RC - Premium' : 
                                      coupon.applicablePlan === 'pro' ? 'RC - Pro' : 
                                      coupon.applicablePlan === 'talent' ? 'RC - Talent' : 
-                                     coupon.applicablePlan === 'jobseeker_premium' ? 'JS - Premium' : coupon.applicablePlan}
+                                     coupon.applicablePlan === 'jobseeker_premium' ? 'JS - Premium' : 
+                                     coupon.applicablePlan === 'jobseeker_pro' ? 'JS - Pro' : 
+                                     coupon.applicablePlan === 'mini' ? 'Credits - Mini' : 
+                                     coupon.applicablePlan === 'basic_pack' ? 'Credits - Basic' : 
+                                     coupon.applicablePlan === 'popular_pack' ? 'Credits - Popular' : 
+                                     coupon.applicablePlan === 'pro_pack' ? 'Credits - Pro' : coupon.applicablePlan}
                                 </Badge>
                             </TableCell>
                             <TableCell>

@@ -85,6 +85,7 @@ export async function POST(request: Request) {
         is_paid: true,
         plan_type: 'free',
         plan_expires_at: expiryDate.toISOString(),
+        subscription_credits: 2,
         updated_at: now.toISOString(),
     };
 

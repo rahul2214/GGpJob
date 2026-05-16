@@ -2,13 +2,15 @@
 
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
 import type { Job, Application } from "@/lib/types";
-import { 
-    Briefcase, MapPin, Building, Calendar, Users, 
-    BadgeDollarSign, Clock, UserCheck, 
+import {
+    Briefcase, MapPin, Building, Calendar, Users,
+    BadgeDollarSign, Clock, UserCheck,
     ChevronRight, Info, Award, LayoutList, CheckCircle2,
     Layers, User as UserIcon, ArrowLeft, Bookmark,
-    ChevronDown, Linkedin
+    ChevronDown, Linkedin, Star, ShieldCheck, MessageCircle
 } from 'lucide-react';
+import { ChatDrawer } from '@/components/chat/ChatDrawer';
+import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { ApplyButton } from './apply-button';
 import JobCard from '@/components/job-card';
@@ -44,17 +46,26 @@ function JobDetailsContent() {
     const params = useParams();
     const searchParams = useSearchParams();
     const id = params.id as string;
-    
+
     // Visibility tracking for footer
     const [isApplyAreaVisible, setIsApplyAreaVisible] = useState(false);
     const [isSimilarJobsVisible, setIsSimilarJobsVisible] = useState(false);
     const footerSentinelRef = useRef<HTMLDivElement>(null);
     const similarJobsSectionRef = useRef<HTMLDivElement>(null);
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [currentAppId, setCurrentAppId] = useState<string | null>(null);
+    const [currentAppStatus, setCurrentAppStatus] = useState<number | null>(null);
 
     const isAdminView = searchParams.get('view') === 'admin';
 
     const appliedJobIds = useMemo(() => new Set(userApplications.map(app => app.jobId)), [userApplications]);
-   
+
+    const isCorporateEmail = useCallback((email?: string | null) => {
+        if (!email) return false;
+        const lower = email.toLowerCase();
+        const publicDomains = ['@gmail.', '@yahoo.', '@outlook.', '@hotmail.', '@live.', '@icloud.', '@aol.', '@ymail.', '@rocketmail.'];
+        return !publicDomains.some(d => lower.includes(d));
+    }, []);
 
     // Filter related jobs: remove those the user has already applied to
     const relatedJobs = useMemo(() => {
@@ -71,17 +82,26 @@ function JobDetailsContent() {
         try {
             const data = await getJobData(id, user?.uuid);
             setJob(data);
-            
+
             // If the API says we've applied, add it to our local state
             if (data?.isApplied) {
                 setUserApplications([{ jobId: id } as any]);
+                // Fetch the application ID for chat
+                const appRes = await fetch(`/api/applications?userId=${user?.uuid}&jobId=${id}`);
+                if (appRes.ok) {
+                    const apps = await appRes.json();
+                    if (apps.length > 0) {
+                        setCurrentAppId(apps[0].id.toString());
+                        setCurrentAppStatus(apps[0].statusId);
+                    }
+                }
             }
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
         }
-    }, [id]);
+    }, [id, user?.uuid, user?.id]);
 
     useEffect(() => {
         fetchJobInfo();
@@ -142,7 +162,7 @@ function JobDetailsContent() {
                     }
                 });
             },
-            { 
+            {
                 threshold: 0,
                 rootMargin: '0px 0px -10% 0px'
             }
@@ -150,11 +170,11 @@ function JobDetailsContent() {
 
         if (sentinel) observer.observe(sentinel);
         if (similarSection) observer.observe(similarSection);
-        
+
         return () => observer.disconnect();
     }, [loading, job]);
 
-  
+
     const handleExternalApply = async (e: React.MouseEvent, url: string) => {
         e.preventDefault();
         e.stopPropagation();
@@ -198,6 +218,27 @@ function JobDetailsContent() {
         }
     };
 
+    const handleApplySuccess = useCallback(() => {
+        if (job) {
+            setJob(prev => prev ? {
+                ...prev,
+                applicantCount: (prev.applicantCount || 0) + 1,
+                isApplied: true
+            } : null);
+            setUserApplications(prev => [...prev, { jobId: id } as any]);
+            
+            // Fetch application ID after successful apply to enable chat
+            fetch(`/api/applications?userId=${user?.uuid}&jobId=${id}`)
+                .then(res => res.json())
+                .then(apps => {
+                    if (apps.length > 0) {
+                        setCurrentAppId(apps[0].id.toString());
+                        setCurrentAppStatus(apps[0].statusId);
+                    }
+                });
+        }
+    }, [job, id]);
+
     const scrollToSimilarJobs = () => {
         const element = document.getElementById('similar-jobs-section');
         if (element) {
@@ -212,13 +253,13 @@ function JobDetailsContent() {
     if (!job) {
         notFound();
     }
-    
+
     const hasBenefits = job.benefits && job.benefits.length > 0;
     const showSimilarJobs = relatedJobs.length > 0 && !isAdminView;
     const isFooterHidden = isApplyAreaVisible || isSimilarJobsVisible;
 
     return (
-       <div className="min-h-screen bg-[#f5f7fb] pb-24 md:pb-8">
+        <div className="min-h-screen bg-[#f5f7fb] pb-24 md:pb-8">
             {/* Mobile Header */}
             <div className="md:hidden sticky top-0 z-50 bg-white border-b px-4 py-3 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-2">
@@ -234,7 +275,7 @@ function JobDetailsContent() {
             <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
-                        
+
                         {/* Desktop Header */}
                         <div className="hidden md:block bg-white rounded-2xl shadow-sm border p-8 mb-6">
                             <div className="flex justify-between items-start mb-6">
@@ -249,6 +290,25 @@ function JobDetailsContent() {
                                                     <span className="text-blue-600 font-medium text-sm">{job.job_role}</span>
                                                 </>
                                             )}
+                                              {job.isReferral && (job as any).employeeTrustScore >= 90 && isCorporateEmail((job as any).employeeEmail) && (
+                                                <>
+                                                    <div className="w-1 h-1 rounded-full bg-gray-300" />
+                                                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-bold uppercase py-0.5 px-2">
+                                                        <ShieldCheck className="w-3 h-3 mr-1 text-emerald-600" />
+                                                        Verified Hire
+                                                    </Badge>
+                                                </>
+                                            )}
+                                            {job.isReferral && (
+                                                <>
+                                                    <div className="w-1 h-1 rounded-full bg-gray-300" />
+                                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] font-bold uppercase py-0.5 px-2">
+                                                        <Star className="w-3 h-3 mr-1 fill-green-500 text-green-500" />
+                                                        Referral
+                                                    </Badge>
+                                                </>
+                                            )}
+                                          
                                             {job.jobId && (
                                                 <>
                                                     <div className="w-1 h-1 rounded-full bg-gray-300" />
@@ -257,7 +317,7 @@ function JobDetailsContent() {
                                             )}
                                         </div>
                                     </div>
-                                    
+
                                     <div className="flex flex-col gap-2">
                                         <div className="flex items-center gap-4 text-gray-500">
                                             <div className="flex items-center gap-1.5">
@@ -267,11 +327,11 @@ function JobDetailsContent() {
                                             <div className="w-px h-4 bg-gray-200" />
                                             <div className="flex items-center gap-1.5">
                                                 <span className="font-bold text-gray-800">
-                                                    {job.salaryMin && job.salaryMax 
+                                                    {job.salaryMin && job.salaryMax
                                                         ? `₹ ${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()}`
-                                                        : job.salaryMin 
+                                                        : job.salaryMin
                                                             ? `From ₹ ${job.salaryMin.toLocaleString()}`
-                                                            : job.salaryMax 
+                                                            : job.salaryMax
                                                                 ? `Up to ₹ ${job.salaryMax.toLocaleString()}`
                                                                 : 'Not Disclosed'}
                                                 </span>
@@ -283,7 +343,7 @@ function JobDetailsContent() {
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div className="flex flex-col items-end gap-4">
                                     <div className="w-20 h-20 bg-black rounded-xl flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
                                         {job.companyName.charAt(0).toUpperCase()}
@@ -303,20 +363,37 @@ function JobDetailsContent() {
                                         <span className="text-gray-400">Applicants:</span> <span className="font-semibold text-gray-700">{job.applicantCount || 0}</span>
                                     </div>
                                 </div>
-                                
+
                                 <div className="flex items-center gap-3">
-                                   
-                                    <div className="min-w-[120px]">
-                                        {job.jobLink ? (
+
+                                    <div className="flex items-center gap-3">
+                                        {appliedJobIds.has(id) && currentAppStatus && currentAppStatus >= 3 && currentAppStatus <= 8 && (
                                             <Button 
-                                                className="w-full bg-[#2e5bff] hover:bg-blue-700 text-white rounded-full font-bold h-11 text-base px-10" 
-                                                onClick={(e) => handleExternalApply(e, job.jobLink!)}
+                                                variant="outline" 
+                                                className="rounded-full font-bold h-11 border-blue-200 text-blue-600 hover:bg-blue-50"
+                                                onClick={() => setIsChatOpen(true)}
                                             >
-                                                Apply
+                                                <MessageCircle className="w-4 h-4 mr-2" />
+                                                {job.isReferral ? 'Chat with Referrer' : 'Chat with Recruiter'}
                                             </Button>
-                                        ) : (
-                                            <ApplyButton job={job} variant="desktop" isApplied={appliedJobIds.has(id)} />
                                         )}
+                                        <div className="min-w-[120px]">
+                                            {job.jobLink ? (
+                                                <Button
+                                                    className="w-full bg-[#2e5bff] hover:bg-blue-700 text-white rounded-full font-bold h-11 text-base px-10"
+                                                    onClick={(e) => handleExternalApply(e, job.jobLink!)}
+                                                >
+                                                    Apply
+                                                </Button>
+                                            ) : (
+                                                <ApplyButton 
+                                                    job={job} 
+                                                    variant="desktop" 
+                                                    isApplied={appliedJobIds.has(id)} 
+                                                    onSuccess={handleApplySuccess}
+                                                />
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -333,6 +410,25 @@ function JobDetailsContent() {
                                     <div className="flex items-center gap-1 text-primary font-medium">
                                         {job.companyName}
                                         <ChevronRight className="h-4 w-4" />
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                                        
+                                         {job.isReferral && (job as any).employeeTrustScore >= 90 && isCorporateEmail((job as any).employeeEmail) && (
+                                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-bold uppercase py-0.5 px-2">
+                                                <ShieldCheck className="w-3 h-3 mr-1 text-emerald-600" />
+                                                Verified Hire
+                                            </Badge>
+                                        )}
+                                        {job.isReferral && (
+                                            <>
+                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] font-bold uppercase py-0.5 px-2">
+                                                    <Star className="w-3 h-3 mr-1 fill-green-500 text-green-500" />
+                                                    Referral
+                                                </Badge>
+                                            </>
+                                        )}
+                                       
+
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-500 pt-2">
@@ -362,12 +458,14 @@ function JobDetailsContent() {
                                 <div className="bg-white rounded-xl border p-6 space-y-8">
                                     {/* Primary Info: Location, Vacancies, Salary, Experience */}
                                     <div className="space-y-4">
+                                      
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
                                             <div>
                                                 <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Location</div>
                                                 <div className="font-bold text-slate-900">{job.location}</div>
                                             </div>
                                         </div>
+
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
                                             <div>
                                                 <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Vacancies</div>
@@ -378,11 +476,11 @@ function JobDetailsContent() {
                                             <div>
                                                 <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Salary</div>
                                                 <div className="font-bold text-slate-900">
-                                                    {job.salaryMin && job.salaryMax 
+                                                    {job.salaryMin && job.salaryMax
                                                         ? `₹ ${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()}`
-                                                        : job.salaryMin 
+                                                        : job.salaryMin
                                                             ? `From ₹ ${job.salaryMin.toLocaleString()}`
-                                                            : job.salaryMax 
+                                                            : job.salaryMax
                                                                 ? `Up to ₹ ${job.salaryMax.toLocaleString()}`
                                                                 : 'Not Disclosed'}
                                                 </div>
@@ -460,15 +558,19 @@ function JobDetailsContent() {
 
                                     <div className="pt-8 md:hidden">
                                         {job.jobLink ? (
-                                            <Button 
-                                                size="lg" 
-                                                className="w-full bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full" 
+                                            <Button
+                                                size="lg"
+                                                className="w-full bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full"
                                                 onClick={(e) => handleExternalApply(e, job.jobLink!)}
                                             >
                                                 Apply on Website
                                             </Button>
                                         ) : (
-                                            <ApplyButton job={job} isApplied={appliedJobIds.has(id)} />
+                                            <ApplyButton 
+                                                job={job} 
+                                                isApplied={appliedJobIds.has(id)} 
+                                                onSuccess={handleApplySuccess}
+                                            />
                                         )}
                                     </div>
                                 </div>
@@ -514,19 +616,19 @@ function JobDetailsContent() {
                                             <div>
                                                 <h3 className="text-xl font-bold text-gray-900">{job.companyName}</h3>
                                                 {job.companyWebsite && (
-                                                  <a href={job.companyWebsite} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
-                                                    Visit Website
-                                                  </a>
+                                                    <a href={job.companyWebsite} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                                                        Visit Website
+                                                    </a>
                                                 )}
                                                 {job.companyLinkedinUrl && (
-                                                  <a href={job.companyLinkedinUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-800 hover:underline flex items-center gap-1 mt-1">
-                                                    <Linkedin className="h-3 w-3" />
-                                                    LinkedIn Profile
-                                                  </a>
+                                                    <a href={job.companyLinkedinUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-800 hover:underline flex items-center gap-1 mt-1">
+                                                        <Linkedin className="h-3 w-3" />
+                                                        LinkedIn Profile
+                                                    </a>
                                                 )}
                                             </div>
                                         </div>
-                                        
+
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             {job.companySize && (
                                                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
@@ -538,9 +640,9 @@ function JobDetailsContent() {
                                                 </div>
                                             )}
                                         </div>
-                                        
+
                                         <Separator />
-                                        
+
                                         {job.companyOverview && (
                                             <div>
                                                 <h4 className="text-lg font-bold mb-3 flex items-center gap-2 text-slate-800">
@@ -577,11 +679,11 @@ function JobDetailsContent() {
                                 </h3>
                                 <div className="space-y-4">
                                     {relatedJobs.map(relatedJob => (
-                                        <JobCard 
-                                            key={relatedJob.id} 
-                                            job={relatedJob} 
-                                            isApplied={appliedJobIds.has(relatedJob.uuid)} 
-                                          
+                                        <JobCard
+                                            key={relatedJob.id}
+                                            job={relatedJob}
+                                            isApplied={appliedJobIds.has(relatedJob.uuid)}
+
                                         />
                                     ))}
                                 </div>
@@ -602,21 +704,49 @@ function JobDetailsContent() {
                         <span className="text-[10px] uppercase tracking-wider">Similar jobs</span>
                     </Button>
                 )}
-                <div className={cn("w-full", showSimilarJobs ? "flex-[2.5]" : "flex-1")}>
-                    {job.jobLink ? (
+                <div className={cn("w-full flex flex-col gap-2", showSimilarJobs ? "flex-[2.5]" : "flex-1")}>
+                    {appliedJobIds.has(id) && currentAppStatus && currentAppStatus >= 3 && currentAppStatus <= 8 && (
                         <Button 
-                            size="lg" 
-                            className="w-full bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full" 
+                            variant="outline" 
+                            className="w-full rounded-full font-bold h-11 border-blue-200 text-blue-600 hover:bg-blue-50"
+                            onClick={() => setIsChatOpen(true)}
+                        >
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            {job.isReferral ? 'Chat with Referrer' : 'Chat with Recruiter'}
+                        </Button>
+                    )}
+                    {job.jobLink ? (
+                        <Button
+                            size="lg"
+                            className="w-full bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full"
                             onClick={(e) => handleExternalApply(e, job.jobLink!)}
                         >
                             Apply on Website
                         </Button>
                     ) : (
-                        <ApplyButton job={job} isApplied={appliedJobIds.has(id)} />
+                        <ApplyButton 
+                            job={job} 
+                            isApplied={appliedJobIds.has(id)} 
+                            onSuccess={handleApplySuccess}
+                        />
                     )}
                 </div>
             </div>
-       </div>
+            <ChatDrawer 
+                applicationId={currentAppId || ""} 
+                isOpen={isChatOpen} 
+                onClose={() => setIsChatOpen(false)}
+                onUnlockRequest={() => {
+                    setIsChatOpen(false);
+                    // The unlock UI is already part of the status flow in applications page,
+                    // but we can add a toast or redirect if needed.
+                    toast({
+                        title: "Unlock Required",
+                        description: "Please visit your 'My Applications' page to unlock this referral and continue chatting.",
+                    });
+                }}
+            />
+        </div>
     );
 }
 

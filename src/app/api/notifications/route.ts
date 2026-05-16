@@ -12,27 +12,25 @@ export async function GET(request: Request) {
 
     // Resolve user_pk from userId (can be UUID or numeric string)
     const isNumericId = /^\d+$/.test(userId);
-    let userPk = null;
-
+    const allPks = [];
     if (isNumericId) {
-        userPk = parseInt(userId);
+        allPks.push(parseInt(userId));
     } else {
-        // Resolve UUID to numeric PK
-        let { data: seeker } = await supabaseAdmin.from('jobseekers').select('id').eq('uuid', userId).maybeSingle();
-        if (seeker) {
-            userPk = seeker.id;
-        } else {
-            let { data: recruiter } = await supabaseAdmin.from('recruiters').select('id').eq('uuid', userId).maybeSingle();
-            if (recruiter) {
-                userPk = recruiter.id;
-            } else {
-                let { data: employee } = await supabaseAdmin.from('employees').select('id').eq('uuid', userId).maybeSingle();
-                if (employee) userPk = employee.id;
-            }
-        }
+        const [
+            { data: js },
+            { data: emp },
+            { data: rec }
+        ] = await Promise.all([
+            supabaseAdmin.from('jobseekers').select('id').eq('uuid', userId).maybeSingle(),
+            supabaseAdmin.from('employees').select('id').eq('uuid', userId).maybeSingle(),
+            supabaseAdmin.from('recruiters').select('id').eq('uuid', userId).maybeSingle()
+        ]);
+        if (js) allPks.push(js.id);
+        if (emp) allPks.push(emp.id);
+        if (rec) allPks.push(rec.id);
     }
 
-    if (!userPk) return NextResponse.json([]);
+    if (allPks.length === 0) return NextResponse.json([]);
 
     // Fetch notifications: Support numeric user_pk or UUID user_id
     // Explicitly select columns to avoid schema cache issues (e.g., phantom 'viewerId')
@@ -45,7 +43,7 @@ export async function GET(request: Request) {
             is_read,
             jobs (uuid, title)
         `)
-        .eq('user_pk', userPk) // Supports both UUID and BIGINT lookup
+        .in('user_pk', allPks) 
         .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -136,5 +134,64 @@ export async function POST(request: Request) {
     } catch (e: any) {
         console.error('[API_NOTIFICATIONS_POST] Error:', e);
         return NextResponse.json({ error: 'Failed to create notification', details: e.message }, { status: 500 });
+    }
+}
+
+export async function PATCH(request: Request) {
+    try {
+        const body = await request.json();
+        const { notificationId, jobPk, userId, type, applicationId } = body;
+
+        let query = supabaseAdmin.from('notifications').update({ is_read: true });
+
+        if (notificationId) {
+            query = query.eq('id', notificationId);
+        } else if (userId) {
+            const [
+                { data: js },
+                { data: emp },
+                { data: rec }
+            ] = await Promise.all([
+                supabaseAdmin.from('jobseekers').select('id').eq('uuid', userId).maybeSingle(),
+                supabaseAdmin.from('employees').select('id').eq('uuid', userId).maybeSingle(),
+                supabaseAdmin.from('recruiters').select('id').eq('uuid', userId).maybeSingle()
+            ]);
+            
+            const allPks = [js?.id, emp?.id, rec?.id].filter(Boolean) as number[];
+            if (allPks.length === 0) return NextResponse.json({ success: true });
+
+            if (applicationId) {
+                // Resolve applicationId to internal ID if it's a UUID
+                let internalAppId = applicationId;
+                const isUuidApp = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(applicationId);
+                if (isUuidApp) {
+                    const { data: app } = await supabaseAdmin.from('applications').select('id').eq('uuid', applicationId).maybeSingle();
+                    if (app) internalAppId = app.id.toString();
+                }
+
+                // Mark chat notifications for this app as read
+                query = query.in('user_pk', allPks)
+                             .eq('type', 'chat_message')
+                             .ilike('message', `%[APP_ID:${internalAppId}]%`);
+            } else if (jobPk) {
+                // Mark all notifications for a user/job as read
+                query = query.eq('job_pk', jobPk).in('user_pk', allPks);
+                if (type) {
+                    query = query.eq('type', type);
+                }
+            } else {
+                return NextResponse.json({ error: 'Missing jobPk or applicationId' }, { status: 400 });
+            }
+        } else {
+            return NextResponse.json({ error: 'Missing parameters to mark as read' }, { status: 400 });
+        }
+
+        const { error } = await query;
+        if (error) throw error;
+
+        return NextResponse.json({ success: true });
+    } catch (e: any) {
+        console.error('[API_NOTIFICATIONS_PATCH] Error:', e);
+        return NextResponse.json({ error: 'Failed to update notification' }, { status: 500 });
     }
 }

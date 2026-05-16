@@ -82,7 +82,12 @@ export async function POST(request: Request) {
         'premium': 1499,
         'talent': 499,
         'pro': 4999,
-        'jobseeker_premium': 199
+        'jobseeker_premium': 499,
+        'jobseeker_pro': 999,
+        'mini': 149,
+        'basic_pack': 299,
+        'popular_pack': 549,
+        'pro_pack': 1299
     };
 
     let baseAmount = validPlans[planId];
