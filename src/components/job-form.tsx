@@ -737,9 +737,9 @@ export function JobForm({ job }: JobFormProps) {
               name="salaryMin"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Min Salary (Optional)</FormLabel>
+                  <FormLabel>Min Yearly Net Salary (Optional)</FormLabel>
                   <FormControl>
-                    <Input type="number" min="0" placeholder="e.g. 50000" {...field} value={field.value || ''} />
+                    <Input type="number" min="0" placeholder="e.g. 600000" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -750,9 +750,9 @@ export function JobForm({ job }: JobFormProps) {
               name="salaryMax"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Max Salary (Optional)</FormLabel>
+                  <FormLabel>Max Yearly Net Salary (Optional)</FormLabel>
                   <FormControl>
-                    <Input type="number" min="0" placeholder="e.g. 80000" {...field} value={field.value || ''} />
+                    <Input type="number" min="0" placeholder="e.g. 1200000" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

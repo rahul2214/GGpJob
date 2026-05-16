@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, Eye, EyeOff, Briefcase, Building2, Users, TrendingUp, ArrowRight, Zap, Database, Star, BarChart2, Mail, Phone, ShieldCheck } from "lucide-react";
+import { LoaderCircle, Eye, EyeOff, Briefcase, Building2, Users, TrendingUp, ArrowRight, Zap, Database, Star, BarChart2, Mail, Phone, ShieldCheck, Sparkles, CheckCircle2, ShieldAlert, Award, UserCheck, AlertTriangle, Coins } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
@@ -54,6 +54,7 @@ export default function CompanyLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [activeTab, setActiveTab] = useState<'recruiters' | 'employees'>('recruiters');
 
   useEffect(() => {
     if (!loading && user) {
@@ -193,6 +194,37 @@ export default function CompanyLoginPage() {
       gradient: "from-emerald-500 to-teal-600",
       bg: "bg-emerald-50",
       border: "border-emerald-100",
+    },
+  ];
+
+  const employeeFeatures = [
+    {
+      icon: Users,
+      title: "Direct Referral Payouts",
+      desc: "Earn guaranteed XP and direct cash payouts when your referred candidates advance through interview rounds and get hired.",
+      gradient: "from-violet-500 to-purple-600",
+      highlight: "Guaranteed Payout per Milestone",
+    },
+    {
+      icon: Star,
+      title: "Gamified Leaderboards",
+      desc: "Unlock exclusive badges (Connector, Talent Spotter, Trusted Referrer) and climb company leaderboards as your referral success rate grows.",
+      gradient: "from-amber-400 to-orange-500",
+      highlight: "Multi-Tier Milestone Unlock",
+    },
+    {
+      icon: BarChart2,
+      title: "Transparent Tracking",
+      desc: "Track every candidate's real-time interview status, HR feedback, and milestone verification updates directly from your dashboard.",
+      gradient: "from-sky-500 to-blue-600",
+      highlight: "Real-Time Pipeline Updates",
+    },
+    {
+      icon: Briefcase,
+      title: "Fast Direct Withdrawals",
+      desc: "Once a milestone proof is verified by HR, your earned cash rewards are instantly available to withdraw straight to your bank account.",
+      gradient: "from-emerald-500 to-teal-600",
+      highlight: "Zero Hidden Deductions",
     },
   ];
 
@@ -373,82 +405,197 @@ export default function CompanyLoginPage() {
       </div>
 
       {/* ============ MARKETING SECTION ============ */}
-      <div className="bg-slate-950 text-white">
+      <div className="bg-slate-950 text-white pb-12">
+        {/* Tab Switcher Header */}
+        <div className="max-w-7xl mx-auto px-6 pt-20 pb-8 text-center">
+          <h2 className="text-4xl font-extrabold text-white mb-3 tracking-tight">
+            One Portal, <span className="text-emerald-400">Two Powerful Roles</span>
+          </h2>
+          <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-8">
+            Explore advanced enterprise tools for recruiters or discover how employees earn rewards through verified referrals.
+          </p>
 
-        {/* Why Jobs Dart — Feature Cards */}
-        <div className="max-w-7xl mx-auto px-6 py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-14"
-          >
-            <div className="inline-flex items-center gap-2 bg-emerald-900/50 border border-emerald-700/40 text-emerald-400 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
-              <ShieldCheck className="w-3 h-3" /> Enterprise-Grade Hiring Tools
-            </div>
-            <h2 className="text-4xl font-extrabold text-white mb-3">
-              Why Top Companies Choose <span className="text-emerald-400">Jobs Dart</span>
-            </h2>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              From your first hire to scaling entire teams — we give recruiters and HR professionals the unfair advantage they need.
-            </p>
-          </motion.div>
+          <div className="inline-flex p-1.5 rounded-full bg-slate-900 border border-slate-800 shadow-xl">
+            <button
+              onClick={() => setActiveTab("recruiters")}
+              className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 ${
+                activeTab === "recruiters"
+                  ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Building2 className="w-4 h-4" /> For Recruiters & HR
+            </button>
+            <button
+              onClick={() => setActiveTab("employees")}
+              className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 ${
+                activeTab === "employees"
+                  ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/25"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Users className="w-4 h-4" /> For Insider Employees
+            </button>
+          </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {features.map((f, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="group relative bg-slate-900 border border-slate-800 rounded-2xl p-7 hover:border-slate-600 transition-all duration-300 overflow-hidden"
-              >
-                {/* Glow on hover */}
-                <div className={`absolute -top-10 -right-10 w-36 h-36 bg-gradient-to-br ${f.gradient} opacity-0 group-hover:opacity-10 rounded-full blur-2xl transition-opacity duration-500`} />
-
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.gradient} flex items-center justify-center shadow-lg mb-5`}>
-                  <f.icon className="w-6 h-6 text-white" />
+        {activeTab === "recruiters" ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
+            {/* Why Jobs Dart — Feature Cards */}
+            <div className="max-w-7xl mx-auto px-6 py-12">
+              <div className="text-center mb-14">
+                <div className="inline-flex items-center gap-2 bg-emerald-900/50 border border-emerald-700/40 text-emerald-400 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
+                  <ShieldCheck className="w-3 h-3" /> Enterprise-Grade Hiring Tools
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">{f.title}</h3>
-                <p className="text-slate-400 leading-relaxed text-sm">{f.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
+                <h3 className="text-3xl md:text-4xl font-extrabold text-white mb-3">
+                  Why Top Companies Choose <span className="text-emerald-400">Jobs Dart</span>
+                </h3>
+                <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+                  From your first hire to scaling entire teams — we give recruiters and HR professionals the unfair advantage they need.
+                </p>
+              </div>
 
-        {/* Pricing Plans Section — NEW */}
-        <div id="plans" className="max-w-7xl mx-auto px-6 py-20 border-t border-slate-800">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
-          >
-            <div className="inline-flex items-center gap-2 bg-emerald-900/50 border border-emerald-700/40 text-emerald-400 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
-              <Zap className="w-3 h-3" /> Flexible Hiring Plans
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {features.map((f, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: idx * 0.1 }}
+                    className="group relative bg-slate-900 border border-slate-800 rounded-2xl p-7 hover:border-slate-600 transition-all duration-300 overflow-hidden"
+                  >
+                    <div className={`absolute -top-10 -right-10 w-36 h-36 bg-gradient-to-br ${f.gradient} opacity-0 group-hover:opacity-10 rounded-full blur-2xl transition-opacity duration-500`} />
+
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.gradient} flex items-center justify-center shadow-lg mb-5`}>
+                      <f.icon className="w-6 h-6 text-white" />
+                    </div>
+                    <h4 className="text-xl font-bold text-white mb-2">{f.title}</h4>
+                    <p className="text-slate-400 leading-relaxed text-sm">{f.desc}</p>
+                  </motion.div>
+                ))}
+              </div>
             </div>
-            <h2 className="text-4xl font-extrabold text-white mb-3">
-              Scale Your Hiring <span className="text-emerald-400">On Your Terms</span>
-            </h2>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Whether you're a startup making your first hire or an enterprise scaling teams, we have a plan that fits your business needs.
-            </p>
-          </motion.div>
 
-          <RecruiterPricingGrid isMarketing={true} />
-          
-          <div className="mt-12 text-center">
-            <p className="text-slate-500 text-sm italic">
-              All plans are one-time payments. No recurring subscriptions. No hidden fees.
-            </p>
-          </div>
-        </div>
+            {/* Pricing Plans Section */}
+            <div id="plans" className="max-w-7xl mx-auto px-6 py-20 border-t border-slate-800">
+              <div className="text-center mb-16">
+                <div className="inline-flex items-center gap-2 bg-emerald-900/50 border border-emerald-700/40 text-emerald-400 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
+                  <Zap className="w-3 h-3" /> Flexible Hiring Plans
+                </div>
+                <h3 className="text-3xl md:text-4xl font-extrabold text-white mb-3">
+                  Scale Your Hiring <span className="text-emerald-400">On Your Terms</span>
+                </h3>
+                <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+                  Whether you're a startup making your first hire or an enterprise scaling teams, we have a plan that fits your business needs.
+                </p>
+              </div>
+
+              <RecruiterPricingGrid isMarketing={true} />
+              
+              <div className="mt-12 text-center">
+                <p className="text-slate-500 text-sm italic">
+                  All plans are one-time payments. No recurring subscriptions. No hidden fees.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="max-w-7xl mx-auto px-6 py-12 space-y-12 md:space-y-16">
+            <div className="text-center max-w-3xl mx-auto">
+              <div className="inline-flex items-center gap-2 bg-violet-900/50 border border-violet-700/40 text-violet-400 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
+                <Sparkles className="w-3 h-3" /> Gamified Referral Rewards
+              </div>
+              <h3 className="text-3xl md:text-4xl font-extrabold text-white mb-4">
+                Turn Your Connections Into <span className="text-violet-400">Extra Earnings</span>
+              </h3>
+              <p className="text-slate-400 text-lg leading-relaxed">
+                Employees earn guaranteed XP and direct cash payouts when referred candidates successfully advance through interview rounds and final hiring stages.
+              </p>
+            </div>
+
+            {/* Employee Features Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+              {employeeFeatures.map((ef, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.1 }}
+                  className="group relative bg-slate-900/90 border border-slate-800 rounded-2xl p-7 hover:border-violet-500/50 transition-all duration-300 overflow-hidden flex flex-col justify-between shadow-xl"
+                >
+                  <div className="absolute -top-12 -right-12 w-32 h-32 bg-violet-500/10 group-hover:bg-violet-500/20 rounded-full blur-2xl transition-all duration-500" />
+                  <div className="flex-1 flex flex-col mb-6 relative z-10">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${ef.gradient} flex items-center justify-center shadow-lg mb-5 shrink-0`}>
+                      <ef.icon className="w-6 h-6 text-white" />
+                    </div>
+                    <h4 className="text-xl font-bold text-white mb-3">{ef.title}</h4>
+                    <p className="text-slate-400 leading-relaxed text-sm flex-1">{ef.desc}</p>
+                  </div>
+                  <div className="pt-4 border-t border-slate-800 text-xs font-semibold text-violet-300 flex items-center gap-2 mt-auto relative z-10">
+                    <CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0" /> {ef.highlight}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Employee Conditions & Rules Banner */}
+            <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-violet-500/30 rounded-3xl p-8 md:p-12 relative overflow-hidden shadow-2xl">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
+              
+              <div className="relative z-10">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 border-b border-slate-800 pb-8">
+                  <div>
+                    <h4 className="text-2xl font-extrabold text-white mb-2 flex items-center gap-2">
+                      <ShieldAlert className="w-6 h-6 text-violet-400" /> Employee Eligibility & Rules
+                    </h4>
+                    <p className="text-slate-400 text-sm">
+                      Strict compliance and quality benchmarks required to maintain active referrer status.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4 bg-violet-500/10 border border-violet-500/20 px-5 py-3 rounded-2xl">
+                    <Award className="w-8 h-8 text-violet-400 shrink-0" />
+                    <div>
+                      <p className="text-white font-bold text-sm">Trust Score Model</p>
+                      <p className="text-violet-300 text-xs">Maintain 80%+ rating for instant payouts</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-violet-400 font-bold text-base">
+                      <UserCheck className="w-5 h-5" /> 1. Corporate Verification
+                    </div>
+                    <p className="text-slate-400 text-sm leading-relaxed">
+                      Employees must register using a verifiable company work email. Anonymous or unverified external personal accounts cannot post company referrals.
+                    </p>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-violet-400 font-bold text-base">
+                      <AlertTriangle className="w-5 h-5" /> 2. Honest Proof Validation
+                    </div>
+                    <p className="text-slate-400 text-sm leading-relaxed">
+                      Referrers are responsible for reviewing candidate interview/hiring proofs accurately. Fraudulent approvals or fake milestone claims lead to immediate account suspension.
+                    </p>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-violet-400 font-bold text-base">
+                      <Coins className="w-5 h-5" /> 3. Reward Distribution
+                    </div>
+                    <p className="text-slate-400 text-sm leading-relaxed">
+                      XP and milestone cash rewards are credited automatically when candidates pass verification checks. Payouts can be directly withdrawn to your bank account.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Business Inquiry CTA Strip */}
-        <div className="border-t border-slate-800">
+        <div className="border-t border-slate-800 mt-16">
           <div className="max-w-7xl mx-auto px-6 py-16 flex flex-col lg:flex-row items-center justify-between gap-10">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -499,8 +646,6 @@ export default function CompanyLoginPage() {
             </motion.div>
           </div>
         </div>
-
-       
       </div>
     </div>
   );

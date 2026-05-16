@@ -527,7 +527,7 @@ export function ReferralForm({ job }: ReferralFormProps) {
               </div>
 
               <div className="space-y-4">
-                <FormLabel className="text-slate-600 dark:text-slate-400 font-semibold text-sm">Monthly Net Salary (Optional)</FormLabel>
+                <FormLabel className="text-slate-600 dark:text-slate-400 font-semibold text-sm">Yearly Net Salary (Optional)</FormLabel>
                 <div className="flex items-center gap-4">
                   <FormField
                     control={form.control}
