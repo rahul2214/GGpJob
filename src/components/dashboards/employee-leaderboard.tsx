@@ -31,7 +31,7 @@ export function EmployeeLeaderboard() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortMode, setSortMode] = useState<SortMode>('xp');
-  const [periodMode, setPeriodMode] = useState<PeriodMode>('monthly');
+  const [periodMode, setPeriodMode] = useState<PeriodMode>('all');
 
   const fetchLeaderboard = async (sort: SortMode, period: PeriodMode) => {
     setLoading(true);
@@ -119,32 +119,9 @@ export function EmployeeLeaderboard() {
             </CardTitle>
             <CardDescription className="font-medium text-slate-500">Compete with the best</CardDescription>
           </div>
-          <div className="flex flex-col items-end gap-1.5">
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-full border border-slate-200">
-                <button 
-                  onClick={() => setPeriodMode('monthly')}
-                  className={cn(
-                    "px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all",
-                    periodMode === 'monthly' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                  )}
-                >
-                  Monthly
-                </button>
-                <button 
-                  onClick={() => setPeriodMode('all')}
-                  className={cn(
-                    "px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all",
-                    periodMode === 'all' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                  )}
-                >
-                  All-Time
-                </button>
-            </div>
-            <Badge variant="outline" className={cn(
-              "px-1.5 py-0 text-[9px] uppercase tracking-widest font-black border-none h-4",
-              periodMode === 'monthly' ? "bg-emerald-50 text-emerald-600" : "bg-indigo-50 text-indigo-600"
-            )}>
-               <TrendingUp className="w-2.5 h-2.5 mr-1" /> {periodMode === 'monthly' ? 'Live Race' : 'Legends'}
+          <div className="flex items-center">
+            <Badge variant="outline" className="px-2.5 py-1 text-[10px] uppercase tracking-widest font-black bg-indigo-50 text-indigo-600 border-none">
+               <TrendingUp className="w-3 h-3 mr-1.5" /> All-Time Legends
             </Badge>
           </div>
         </div>

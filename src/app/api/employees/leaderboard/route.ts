@@ -36,7 +36,7 @@ export async function GET(request: Request) {
         const userPks = Object.keys(monthlyXpMap).map(Number);
         const { data: users, error: userErr } = await supabaseAdmin
             .from('employees')
-            .select('uuid, name, company_name, xp, level, designation, company_logo, trust_score, interviews_count, hires_count, verified_referrals_count')
+            .select('id, uuid, name, company_name, xp, level, designation, company_logo, trust_score, interviews_count, hires_count, verified_referrals_count')
             .in('id', userPks);
 
         if (userErr) throw userErr;
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
     } else {
         let query = supabaseAdmin
           .from('employees')
-          .select('uuid, name, company_name, xp, level, designation, company_logo, trust_score, interviews_count, hires_count, verified_referrals_count');
+          .select('id, uuid, name, company_name, xp, level, designation, company_logo, trust_score, interviews_count, hires_count, verified_referrals_count');
 
         if (sortBy === 'trust') {
             query = query.order('trust_score', { ascending: false });
