@@ -36,7 +36,7 @@ const statusConfig: Record<string, { label: string; color: string; bg: string; i
   "Offer Received":   { label: "Offer Received",  color: "text-purple-700",  bg: "bg-purple-100",  icon: CheckCircle2 },
   "Pending Confirmation": { label: "Joined?",     color: "text-orange-700",  bg: "bg-orange-100",  icon: Clock },
   "Joined Company":   { label: "Joined",          color: "text-emerald-700", bg: "bg-emerald-100", icon: CheckCircle2 },
-  "Completed":        { label: "Completed",       color: "text-slate-700",   bg: "bg-slate-100",   icon: CheckCircle2 },
+  "Completed":        { label: "Completed",       color: "text-emerald-700", bg: "bg-emerald-100", icon: CheckCircle2 },
   "Disputed":         { label: "Disputed",        color: "text-red-700",     bg: "bg-red-100",     icon: XCircle },
   "Rejected":         { label: "Rejected",        color: "text-rose-700",    bg: "bg-rose-100",    icon: XCircle },
   default:            { label: "Applied",         color: "text-slate-600",   bg: "bg-slate-100",   icon: Clock },
@@ -288,7 +288,7 @@ export default function ApplicationsPage() {
                                     <p className="text-[9px] text-slate-400 italic">Waiting for employee verification</p>
                                 </div>
                             )}
-                             {((app.statusId === 5 && app.verificationStatus === 'verified') || (app.statusId === 6 && !['pending', 'pending_jobseeker', 'pending_employee', 'verified'].includes(app.verificationStatus || 'none'))) && (
+                             {((app.statusId === 5 && app.verificationStatus === 'verified') || (app.statusId === 6 && !['pending', 'pending_jobseeker', 'pending_employee', 'verified'].includes(app.verificationStatus || 'none'))) && !app.jobIsReferral && (
                                 <Button 
                                     size="sm" 
                                     variant="outline"
@@ -303,7 +303,7 @@ export default function ApplicationsPage() {
                                     Interview Scheduled
                                 </Button>
                              )}
-                             {((app.statusId === 6 && app.verificationStatus === 'verified') || (app.statusId === 7 && !['pending', 'pending_jobseeker', 'pending_employee', 'verified'].includes(app.verificationStatus || 'none'))) && (
+                             {((app.statusId === 6 && app.verificationStatus === 'verified') || (app.statusId === 7 && !['pending', 'pending_jobseeker', 'pending_employee', 'verified'].includes(app.verificationStatus || 'none'))) && !app.jobIsReferral && (
                                 <Button 
                                     size="sm" 
                                     variant="outline"
@@ -318,7 +318,7 @@ export default function ApplicationsPage() {
                                     Offer Received
                                 </Button>
                              )}
-                             {((app.statusId === 7 && app.verificationStatus === 'verified') || app.statusId === 8 || (app.statusId === 9 && !['pending', 'pending_jobseeker', 'pending_employee', 'verified'].includes(app.verificationStatus || 'none'))) && (
+                             {((app.statusId === 7 && app.verificationStatus === 'verified') || app.statusId === 8 || (app.statusId === 9 && !['pending', 'pending_jobseeker', 'pending_employee', 'verified'].includes(app.verificationStatus || 'none'))) && !app.jobIsReferral && (
                                 <Button 
                                     size="sm" 
                                     variant="outline"

@@ -42,15 +42,21 @@ export async function POST(request: Request, { params }: { params: { id: string 
     let message = '';
 
     if (action === 'confirm') {
-        // Credits are now only deducted at the Unlock stage, so we no longer check or deduct them here.
-
-        nextStatusId = isHiringVerification ? 10 : (isOfferVerification ? 8 : 6);
-        verificationStatus = (app.status_id === 5) ? 'none' : 'verified';
-        message = isHiringVerification 
-            ? `Confirmation received! The hire for "${app.jobs?.title}" is now verified. Rewards released.`
-            : (isOfferVerification 
-                ? `Confirmation received! The offer for "${app.jobs?.title}" is verified.`
-                : `Confirmation received! The stage for "${app.jobs?.title}" is verified.`);
+        const isReferralVerification = app.status_id === 5;
+        
+        if (isReferralVerification) {
+            nextStatusId = 10; // 10: Completed
+            verificationStatus = 'verified';
+            message = `Verification Successful! The referral for "${app.jobs?.title}" is now complete and verified. Rewards released.`;
+        } else {
+            nextStatusId = isHiringVerification ? 10 : (isOfferVerification ? 8 : 6);
+            verificationStatus = 'verified';
+            message = isHiringVerification 
+                ? `Confirmation received! The hire for "${app.jobs?.title}" is now verified. Rewards released.`
+                : (isOfferVerification 
+                    ? `Confirmation received! The offer for "${app.jobs?.title}" is verified.`
+                    : `Confirmation received! The stage for "${app.jobs?.title}" is verified.`);
+        }
     } else {
         message = `Dispute submitted for "${app.jobs?.title}". Admin will review the provided proof.`;
     }

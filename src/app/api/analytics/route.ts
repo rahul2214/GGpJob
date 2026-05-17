@@ -37,47 +37,47 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // 1. Fetch Summary Counts
-        // Note: Schema uses 'created_at' for profiles/jobs and 'applied_at' for applications.
+        // 1. Fetch Summary Counts (All-time totals for headline metrics)
         const [
             totalJobSeekers,
             totalRecruiters,
             totalEmployees,
             totalApplications,
             totalReferralJobs,
-            totalDirectJobsResult
+            totalDirectJobsResult,
+            // Period counts
+            periodJobSeekers,
+            periodRecruiters,
+            periodEmployees,
+            periodApplications
         ] = await Promise.all([
+            getCount('jobseekers', null, null, 'created_at'),
+            getCount('recruiters', null, null, 'created_at'),
+            getCount('employees', null, null, 'created_at'),
+            getCount('applications', null, null, 'applied_at'),
+            // Referral Jobs (All-time)
+            (async () => {
+                const { count } = await supabaseAdmin.from('jobs').select('*', { count: 'exact', head: true }).eq('is_referral', true);
+                return count || 0;
+            })(),
+            // Direct Jobs (All-time)
+            (async () => {
+                const { count } = await supabaseAdmin.from('jobs').select('*', { count: 'exact', head: true }).eq('is_referral', false);
+                return count || 0;
+            })(),
+            // Period counts
             getCount('jobseekers', from, to, 'created_at'),
             getCount('recruiters', from, to, 'created_at'),
             getCount('employees', from, to, 'created_at'),
-            getCount('applications', from, to, 'applied_at'),
-            // Referral Jobs
-            (async () => {
-                let q = supabaseAdmin.from('jobs').select('*', { count: 'exact', head: true }).eq('is_referral', true);
-                if (from) q = q.gte('created_at', from);
-                if (to) q = q.lte('created_at', to);
-                const { count } = await q;
-                return count || 0;
-            })(),
-            // Direct Jobs
-            (async () => {
-                let q = supabaseAdmin.from('jobs').select('*', { count: 'exact', head: true }).eq('is_referral', false);
-                if (from) q = q.gte('created_at', from);
-                if (to) q = q.lte('created_at', to);
-                const { count } = await q;
-                return count || 0;
-            })()
+            getCount('applications', from, to, 'applied_at')
         ]);
 
-        // 2. Fetch Grouped Data for Charts
+        // 2. Fetch Grouped Data for Charts (All-time distribution for robust analytics view)
         
         // Jobs Grouping
-        let jobsQuery = supabaseAdmin
+        const { data: jobsByDomainRaw, error: jobsErr } = await supabaseAdmin
             .from('jobs')
-            .select('is_referral, domains!domain_pk(name)'); // Corrected to domain_pk
-        if (from) jobsQuery = jobsQuery.gte('created_at', from);
-        if (to) jobsQuery = jobsQuery.lte('created_at', to);
-        const { data: jobsByDomainRaw, error: jobsErr } = await jobsQuery;
+            .select('is_referral, domains!domain_pk(name)');
         if (jobsErr) console.error('[API_ANALYTICS] Jobs query error:', jobsErr);
 
         const directJobsByDomainMap: Record<string, number> = {};
@@ -89,12 +89,9 @@ export async function GET(request: NextRequest) {
         });
 
         // Users Grouping (Job Seekers)
-        let usersQuery = supabaseAdmin
+        const { data: usersByDomainRaw } = await supabaseAdmin
             .from('jobseekers')
             .select('domains!domain_id(name)');
-        if (from) usersQuery = usersQuery.gte('created_at', from);
-        if (to) usersQuery = usersQuery.lte('created_at', to);
-        const { data: usersByDomainRaw } = await usersQuery;
 
         const usersByDomainMap: Record<string, number> = {};
         usersByDomainRaw?.forEach((u: any) => {
@@ -105,12 +102,9 @@ export async function GET(request: NextRequest) {
         if (usersByDomainRaw === null) console.warn('[API_ANALYTICS] Jobseekers query returned null. Check RLS or schema.');
 
         // Applications Grouping
-        let appsByDomainQuery = supabaseAdmin
+        const { data: appsByDomainRaw, error: appsErr } = await supabaseAdmin
             .from('applications')
-            .select('jobs!job_pk(domains!domain_pk(name))'); // Corrected to job_pk and domain_pk
-        if (from) appsByDomainQuery = appsByDomainQuery.gte('applied_at', from);
-        if (to) appsByDomainQuery = appsByDomainQuery.lte('applied_at', to);
-        const { data: appsByDomainRaw, error: appsErr } = await appsByDomainQuery;
+            .select('jobs!job_pk(domains!domain_pk(name))');
         if (appsErr) console.error('[API_ANALYTICS] Applications query error:', appsErr);
 
         const appsByDomainMap: Record<string, number> = {};
@@ -120,12 +114,9 @@ export async function GET(request: NextRequest) {
         });
 
         // Status Grouping
-        let appsByStatusQuery = supabaseAdmin
+        const { data: appsByStatusRaw } = await supabaseAdmin
             .from('applications')
-            .select('status_id'); // Select numeric status_id
-        if (from) appsByStatusQuery = appsByStatusQuery.gte('applied_at', from);
-        if (to) appsByStatusQuery = appsByStatusQuery.lte('applied_at', to);
-        const { data: appsByStatusRaw } = await appsByStatusQuery;
+            .select('status_id');
 
         // Fallback Status Map
         const statusMap: Record<number, string> = {
@@ -157,6 +148,10 @@ export async function GET(request: NextRequest) {
             totalDirectJobs: totalDirectJobsResult,
             totalReferralJobs,
             totalApplications,
+            periodJobSeekers,
+            periodRecruiters,
+            periodEmployees,
+            periodApplications,
             directJobsByDomain: formatMap(directJobsByDomainMap),
             referralJobsByDomain: formatMap(referralJobsByDomainMap),
             usersByDomain: formatMap(usersByDomainMap),

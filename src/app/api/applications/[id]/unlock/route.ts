@@ -16,7 +16,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     const { data: app, error: appError } = await supabaseAdmin
       .from('applications')
-      .select('*, jobs(credits_required, employee_pk), jobseekers(id, subscription_credits, purchased_credits, email, name)')
+      .select('*, jobs(title, employee_pk), jobseekers(id, subscription_credits, purchased_credits, email, name)')
       .eq(idField, isNumericId ? parseInt(id) : id)
       .single();
 

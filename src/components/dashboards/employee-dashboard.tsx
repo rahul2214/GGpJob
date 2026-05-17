@@ -49,28 +49,6 @@ const MILESTONE_CATEGORIES = [
       { target: 50, reward: '50 Referrals (+400 XP)' },
       { target: 100, reward: '100 Referrals (+1000 XP)' },
     ]
-  },
-  {
-    id: 'interviews',
-    label: 'Verified Interviews',
-    icon: Zap,
-    key: 'interviewsCount',
-    tiers: [
-      { target: 10, reward: 'Talent Spotter Badge' },
-      { target: 25, reward: '25 Interviews (+700 XP)' },
-      { target: 50, reward: '50 Interviews (+1500 XP)' },
-    ]
-  },
-  {
-    id: 'hires',
-    label: 'Successful Hires',
-    icon: Trophy,
-    key: 'hiresCount',
-    tiers: [
-      { target: 5, reward: 'Trusted Referrer Badge' },
-      { target: 15, reward: '15 Hires (+1500 XP)' },
-      { target: 30, reward: '30 Hires (+4000 XP)' },
-    ]
   }
 ];
 
@@ -438,7 +416,7 @@ export default function EmployeeDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {MILESTONE_CATEGORIES.map((m, i) => {
               const emp = user as any;
               const current = emp?.[m.key] || 0;

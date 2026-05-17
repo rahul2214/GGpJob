@@ -158,7 +158,7 @@ export default function JobApplicationsPage() {
                 }
                 return <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">Joined</Badge>;
             case 'Completed':
-                return <Badge className="bg-slate-100 text-slate-800 border-slate-200">Completed</Badge>;
+                return <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 uppercase text-[10px] font-bold">Completed</Badge>;
             case 'Disputed':
                 return <Badge variant="destructive">Disputed</Badge>;
             case 'Rejected':
@@ -330,7 +330,7 @@ export default function JobApplicationsPage() {
 
                                              {/* Primary Next Action Buttons */}
 
-                                             {app.statusId === 5 && app.verificationStatus === 'verified' && (
+                                             {app.statusId === 5 && app.verificationStatus === 'verified' && !job.isReferral && (
                                                  <Button 
                                                      size="sm" 
                                                      variant="outline"
@@ -342,7 +342,7 @@ export default function JobApplicationsPage() {
                                                  </Button>
                                              )}
 
-                                             {app.statusId === 6 && app.verificationStatus === 'verified' && (
+                                             {app.statusId === 6 && app.verificationStatus === 'verified' && !job.isReferral && (
                                                  <Button 
                                                      size="sm" 
                                                      variant="outline"
@@ -354,7 +354,7 @@ export default function JobApplicationsPage() {
                                                  </Button>
                                              )}
 
-                                             {((app.statusId === 7 || app.statusId === 8) && app.verificationStatus === 'verified') && (
+                                             {((app.statusId === 7 || app.statusId === 8) && app.verificationStatus === 'verified') && !job.isReferral && (
                                                  <Button 
                                                      size="sm" 
                                                      className="rounded-xl font-bold h-9 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
@@ -418,43 +418,43 @@ export default function JobApplicationsPage() {
                                                                 </DropdownMenuItem>
                                                             )}
 
-                                                            {app.statusId === 5 && app.verificationStatus === 'verified' && (
-                                                                <DropdownMenuItem onClick={() => handleStatusChange(app.id, 6)}>
-                                                                    Candidate Interviewing
-                                                                </DropdownMenuItem>
-                                                            )}
+                                                             {app.statusId === 5 && app.verificationStatus === 'verified' && !job.isReferral && (
+                                                                 <DropdownMenuItem onClick={() => handleStatusChange(app.id, 6)}>
+                                                                     Candidate Interviewing
+                                                                 </DropdownMenuItem>
+                                                             )}
 
-                                                            {app.statusId === 6 && (
-                                                                <>
-                                                                    {app.verificationStatus !== 'pending' && app.verificationStatus !== 'verified' && (
-                                                                        <DropdownMenuItem 
-                                                                            onClick={() => handleStatusChange(app.id, 6)}
-                                                                            className="bg-amber-600 text-white font-bold focus:bg-amber-700 focus:text-white"
-                                                                        >
-                                                                            <UploadCloud className="mr-2 h-4 w-4" />
-                                                                            Interview Scheduled
-                                                                        </DropdownMenuItem>
-                                                                    )}
-                                                                    {app.verificationStatus === 'verified' && (
-                                                                        <DropdownMenuItem onClick={() => handleStatusChange(app.id, 7)}>
-                                                                            Offer Received
-                                                                        </DropdownMenuItem>
-                                                                    )}
-                                                                </>
-                                                            )}
+                                                             {app.statusId === 6 && !job.isReferral && (
+                                                                 <>
+                                                                     {app.verificationStatus !== 'pending' && app.verificationStatus !== 'verified' && (
+                                                                         <DropdownMenuItem 
+                                                                             onClick={() => handleStatusChange(app.id, 6)}
+                                                                             className="bg-amber-600 text-white font-bold focus:bg-amber-700 focus:text-white"
+                                                                         >
+                                                                             <UploadCloud className="mr-2 h-4 w-4" />
+                                                                             Interview Scheduled
+                                                                         </DropdownMenuItem>
+                                                                     )}
+                                                                     {app.verificationStatus === 'verified' && (
+                                                                         <DropdownMenuItem onClick={() => handleStatusChange(app.id, 7)}>
+                                                                             Offer Received
+                                                                         </DropdownMenuItem>
+                                                                     )}
+                                                                 </>
+                                                             )}
 
-                                                            {(app.statusId === 7 || app.statusId === 8) && app.verificationStatus !== 'pending' && (
-                                                                <DropdownMenuItem 
-                                                                    onClick={() => {
-                                                                        setSelectedAppForHiring(app);
-                                                                        setIsProofModalOpen(true);
-                                                                    }}
-                                                                    className="bg-emerald-600 text-white font-bold focus:bg-emerald-700 focus:text-white"
-                                                                >
-                                                                    <CheckCircle className="mr-2 h-4 w-4" />
-                                                                    Confirm Hire
-                                                                </DropdownMenuItem>
-                                                            )}
+                                                             {(app.statusId === 7 || app.statusId === 8) && app.verificationStatus !== 'pending' && !job.isReferral && (
+                                                                 <DropdownMenuItem 
+                                                                     onClick={() => {
+                                                                         setSelectedAppForHiring(app);
+                                                                         setIsProofModalOpen(true);
+                                                                     }}
+                                                                     className="bg-emerald-600 text-white font-bold focus:bg-emerald-700 focus:text-white"
+                                                                 >
+                                                                     <CheckCircle className="mr-2 h-4 w-4" />
+                                                                     Confirm Hire
+                                                                 </DropdownMenuItem>
+                                                             )}
 
                                                             {app.statusId < 4 && (
                                                                 <DropdownMenuItem onClick={() => handleStatusChange(app.id, 12)} className="text-destructive font-bold">

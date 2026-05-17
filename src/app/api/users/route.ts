@@ -378,10 +378,24 @@ export async function GET(request: Request) {
         return dateB - dateA;
     });
 
-    const resolvedUsers = await Promise.all(allUsers.map(async u => ({
-        ...u,
-        resume_url: await resolveResumeUrl((u as any).resume_url)
-    })));
+    const resolvedUsers = await Promise.all(allUsers.map(async u => {
+        return {
+            ...u,
+            createdAt: u.created_at,
+            resumeUrl: u.resume_url ? await resolveResumeUrl(u.resume_url) : undefined,
+            companyName: u.company_name,
+            companyWebsite: u.company_website,
+            designation: u.designation,
+            department: u.department,
+            trustScore: u.trust_score ?? 100,
+            jobsPostedThisMonth: u.jobs_posted_this_month ?? 0,
+            jobPostLimit: u.job_post_limit ?? 5,
+            isPaid: u.is_paid ?? false,
+            planType: u.plan_type ?? 'none',
+            credits: (u.subscription_credits || 0) + (u.purchased_credits || 0),
+            isSuperAdmin: u.is_super_admin ?? false,
+        };
+    }));
 
     return NextResponse.json(resolvedUsers);
   } catch (e: any) {

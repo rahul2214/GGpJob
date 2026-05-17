@@ -148,6 +148,7 @@ export default function Header() {
 
   const adminNavItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
+    { href: "/admin/revenue", label: "Revenue Analytics", icon: Coins },
     { href: "/jobs/post", label: "Post Job", icon: PlusCircle },
     { href: "/admin/users", label: "Manage Users", icon: UserCog },
     { href: "/admin/jobs", label: "Manage Jobs", icon: BriefcaseBusiness },
