@@ -201,6 +201,21 @@ export async function GET(request: Request) {
                 if (dom) domainUuid = dom.uuid;
             }
 
+            let jobsPostedThisMonth = employee.jobs_posted_this_month ?? 0;
+            let nextJobsResetAt = employee.next_jobs_reset_at ?? null;
+
+            const now = new Date();
+            const nextResetDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0));
+
+            if (!nextJobsResetAt || now.getTime() >= new Date(nextJobsResetAt).getTime()) {
+                jobsPostedThisMonth = 0;
+                nextJobsResetAt = nextResetDate.toISOString();
+                supabaseAdmin.from('employees').update({
+                    jobs_posted_this_month: 0,
+                    next_jobs_reset_at: nextJobsResetAt
+                }).eq('id', employee.id).then().catch(e => console.error('Auto-reset error:', e));
+            }
+
             return NextResponse.json({
                 id: employee.id,
                 uuid: employee.uuid,
@@ -227,6 +242,8 @@ export async function GET(request: Request) {
                 planExpiresAt: employee.plan_expires_at,
                 maxAppliesLimit: employee.max_applies_limit,
                 jobPostLimit: employee.job_post_limit ?? 5,
+                jobsPostedThisMonth,
+                nextJobsResetAt,
                 trustScore: employee.trust_score ?? 100,
                 // Gamification Fields
                 xp: employee.xp ?? 0,

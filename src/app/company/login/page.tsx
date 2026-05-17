@@ -481,13 +481,13 @@ export default function CompanyLoginPage() {
             <div id="plans" className="max-w-7xl mx-auto px-6 py-20 border-t border-slate-800">
               <div className="text-center mb-16">
                 <div className="inline-flex items-center gap-2 bg-emerald-900/50 border border-emerald-700/40 text-emerald-400 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
-                  <Zap className="w-3 h-3" /> Flexible Hiring Plans
+                  <Zap className="w-3 h-3" /> Flexible Hiring Plans & Limits
                 </div>
                 <h3 className="text-3xl md:text-4xl font-extrabold text-white mb-3">
-                  Scale Your Hiring <span className="text-emerald-400">On Your Terms</span>
+                  Job Posting Limits & <span className="text-emerald-400">Application Access</span>
                 </h3>
                 <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-                  Whether you're a startup making your first hire or an enterprise scaling teams, we have a plan that fits your business needs.
+                  Compare our transparent quotas below — including maximum job posts allowed, job listing validity (30 to 90 days), and application tracking windows.
                 </p>
               </div>
 
@@ -538,6 +538,76 @@ export default function CompanyLoginPage() {
                   </div>
                 </motion.div>
               ))}
+            </div>
+
+            {/* Insider Quotas & Eligibility Banner */}
+            <div className="bg-slate-900 border border-violet-500/30 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="text-center max-w-2xl mx-auto mb-10 relative z-10">
+                <div className="inline-flex items-center gap-2 bg-violet-900/50 border border-violet-700/40 text-violet-400 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-3">
+                  <Zap className="w-3 h-3" /> Privileges & Quotas
+                </div>
+                <h4 className="text-2xl md:text-3xl font-extrabold text-white mb-2">
+                  Insider Employee <span className="text-violet-400">Eligibility Limits</span>
+                </h4>
+                <p className="text-slate-400 text-sm">
+                  Verified employees enjoy full, uninhibited access to refer top talent without any recruiter subscription costs.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between shadow-lg hover:border-violet-500/40 transition-all duration-300">
+                  <div>
+                    <div className="text-violet-400 text-xs font-bold uppercase tracking-wider mb-1">Posting Limit</div>
+                    <div className="text-3xl font-black text-white mb-3">5 / Month</div>
+                    <p className="text-slate-400 text-xs leading-relaxed">
+                      Post up to 5 verified internal company referral opportunities each calendar month. Zero subscription fees.
+                    </p>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-xs font-semibold text-emerald-400">
+                    <CheckCircle2 className="w-4 h-4" /> Monthly Quota Resets 1st
+                  </div>
+                </div>
+
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between shadow-lg hover:border-violet-500/40 transition-all duration-300">
+                  <div>
+                    <div className="text-violet-400 text-xs font-bold uppercase tracking-wider mb-1">Job Validity</div>
+                    <div className="text-3xl font-black text-white mb-3">14 Days</div>
+                    <p className="text-slate-400 text-xs leading-relaxed">
+                      Each referral opportunity stays active for exactly 14 days before automatically expiring to ensure fresh listings.
+                    </p>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-xs font-semibold text-violet-400">
+                    <CheckCircle2 className="w-4 h-4" /> 14-Day Active Window
+                  </div>
+                </div>
+
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between shadow-lg hover:border-violet-500/40 transition-all duration-300">
+                  <div>
+                    <div className="text-violet-400 text-xs font-bold uppercase tracking-wider mb-1">Application Quota</div>
+                    <div className="text-3xl font-black text-white mb-3">100 / Job</div>
+                    <p className="text-slate-400 text-xs leading-relaxed">
+                      Receive up to 100 candidate applications per referral job. Full pipeline tracking access for 14 days per application.
+                    </p>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-xs font-semibold text-emerald-400">
+                    <CheckCircle2 className="w-4 h-4" /> 100 Verified Applies Max
+                  </div>
+                </div>
+
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between shadow-lg hover:border-violet-500/40 transition-all duration-300">
+                  <div>
+                    <div className="text-violet-400 text-xs font-bold uppercase tracking-wider mb-1">Referral Rewards</div>
+                    <div className="text-3xl font-black text-white mb-3">Instant Credit</div>
+                    <p className="text-slate-400 text-xs leading-relaxed">
+                      When candidate applications are unlocked, cash rewards and XP are credited directly to your wallet upon successful interview verification.
+                    </p>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-xs font-semibold text-violet-400">
+                    <CheckCircle2 className="w-4 h-4" /> Verified Payout Guarantee
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Employee Conditions & Rules Banner */}

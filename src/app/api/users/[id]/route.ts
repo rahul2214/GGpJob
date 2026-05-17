@@ -73,7 +73,7 @@ async function mapProfileToUser(profile: any): Promise<User> {
         }
     }
 
-    return {
+    const baseObj = {
         id: profile.id,       // BIGINT primary key
         uuid: profile.uuid,   // Public UUID
         name: profile.name,
@@ -164,6 +164,29 @@ async function mapProfileToUser(profile: any): Promise<User> {
         offersCount: profile.offers_count ?? 0,
         hiresCount: profile.hires_count ?? 0,
         jobPostLimit: profile.job_post_limit ?? (role === 'Employee' ? 5 : undefined),
+    };
+
+    let jobsPostedThisMonth = profile.jobs_posted_this_month ?? 0;
+    let nextJobsResetAt = profile.next_jobs_reset_at ?? null;
+
+    if (role === 'Employee' || role === 'employee') {
+        const now = new Date();
+        const nextResetDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0));
+
+        if (!nextJobsResetAt || now.getTime() >= new Date(nextJobsResetAt).getTime()) {
+            jobsPostedThisMonth = 0;
+            nextJobsResetAt = nextResetDate.toISOString();
+            supabaseAdmin.from('employees').update({
+                jobs_posted_this_month: 0,
+                next_jobs_reset_at: nextJobsResetAt
+            }).eq('id', profile.id).then().catch(e => console.error('Auto-reset error:', e));
+        }
+    }
+
+    return {
+        ...baseObj,
+        jobsPostedThisMonth,
+        nextJobsResetAt,
     } as User;
 }
 

@@ -242,14 +242,7 @@ export default function EmployeeDashboard() {
     }
   }, [user]);
 
-  // ── Derived stats ──────────────────────────────────────────────────────────
-  const now = new Date();
-  const monthStart = startOfMonth(now);
-
-  const jobsThisMonth = useMemo(
-    () => referralJobs.filter(j => j.postedAt && new Date(j.postedAt) >= monthStart).length,
-    [referralJobs]
-  );
+  const jobsThisMonth = (user as any)?.jobsPostedThisMonth ?? 0;
 
     const router = useRouter();
     const [isMobile, setIsMobile] = useState(false);
@@ -604,8 +597,15 @@ export default function EmployeeDashboard() {
               <CalendarDays className="w-5 h-5 text-indigo-600" />
             </div>
             <div className="flex flex-col">
-              <span className="text-slate-900 font-bold text-sm tracking-tight">Monthly Job Limit</span>
-              <span className="text-slate-500 text-xs font-medium">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-900 font-bold text-sm tracking-tight">Monthly Job Limit</span>
+                {(user as any)?.nextJobsResetAt && (
+                  <Badge variant="outline" className="text-[10px] bg-white border-slate-200 text-slate-600 font-bold">
+                    Resets {format(new Date((user as any).nextJobsResetAt), 'MMM d, yyyy')}
+                  </Badge>
+                )}
+              </div>
+              <span className="text-slate-500 text-xs font-medium mt-0.5">
                 You have used <strong className="text-indigo-600 font-black">{jobsThisMonth}</strong> out of <strong className="text-slate-800 font-black">{jobPostLimit}</strong> posts.
               </span>
             </div>

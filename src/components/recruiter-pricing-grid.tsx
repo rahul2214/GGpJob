@@ -17,7 +17,7 @@ interface RecruiterPricingGridProps {
 
 export default function RecruiterPricingGrid({ onPlanSelect, isMarketing = false, processingId = null, disabled = false }: RecruiterPricingGridProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 xl:gap-8">
       {RECRUITER_PLANS.map((plan, idx) => (
         <motion.div
           key={plan.id}

@@ -88,6 +88,8 @@ export interface User {
   hiresCount?: number;
   milestonesAchieved?: string[];
   badges?: string[];
+  jobsPostedThisMonth?: number;
+  nextJobsResetAt?: string | null;
 }
 
 export interface JobType {

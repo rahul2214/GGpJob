@@ -501,23 +501,19 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'System safety limit reached for Admin posts.' }, { status: 403 });
         }
     } else if (userTable === 'employees') {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
+      let jobsPostedThisMonth = user.jobs_posted_this_month ?? 0;
+      let nextJobsResetAt = user.next_jobs_reset_at ?? null;
+      const nextResetDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0));
 
-      const { count: monthlyCount, error: countError } = await supabaseAdmin
-        .from('jobs')
-        .select('*', { count: 'exact', head: true })
-        .eq('employee_pk', user.id)
-        .gte('posted_at', startOfMonth.toISOString());
-
-      if (countError) throw countError;
-      count = monthlyCount;
+      if (!nextJobsResetAt || now.getTime() >= new Date(nextJobsResetAt).getTime()) {
+          jobsPostedThisMonth = 0;
+          nextJobsResetAt = nextResetDate.toISOString();
+      }
 
       const EMPLOYEE_MONTHLY_LIMIT = user.job_post_limit ?? 5;
-      if (count !== null && count >= EMPLOYEE_MONTHLY_LIMIT) {
+      if (jobsPostedThisMonth >= EMPLOYEE_MONTHLY_LIMIT) {
         return NextResponse.json({
-          error: `Monthly job posting limit reached. Employees can post up to ${EMPLOYEE_MONTHLY_LIMIT} jobs per month. Resets on the 1st of next month.`,
+          error: `Monthly job posting limit (${EMPLOYEE_MONTHLY_LIMIT}/month) reached. Employees can post up to ${EMPLOYEE_MONTHLY_LIMIT} jobs per month. Quota resets on the 1st of next month.`,
         }, { status: 403 });
       }
     } else {
@@ -541,12 +537,13 @@ export async function POST(request: Request) {
     }
 
     // Calculate expiry dates
+    const isEmpOrReferral = userTable === 'employees' || !!data.isReferral;
     const jobExpiry = new Date();
-    const jobValidityDays = planType === 'pro' ? 90 : 30;
+    const jobValidityDays = isEmpOrReferral ? 14 : (planType === 'pro' ? 90 : 30);
     jobExpiry.setDate(now.getDate() + jobValidityDays);
     
     const appExpiry = new Date();
-    const appAccessDays = planType === 'pro' ? 180 : (planType === 'premium' ? 90 : 30);
+    const appAccessDays = isEmpOrReferral ? 14 : (planType === 'pro' ? 180 : (planType === 'premium' ? 90 : 30));
     appExpiry.setDate(now.getDate() + appAccessDays);
 
 
@@ -623,7 +620,7 @@ export async function POST(request: Request) {
       posted_at: now.toISOString(),
       expires_at: jobExpiry.toISOString(),
       app_expires_at: appExpiry.toISOString(),
-      max_applies: user.max_applies_limit ?? -1,
+      max_applies: isEmpOrReferral ? 100 : (user.max_applies_limit ?? -1),
       plan_type_at_posting: planType,
       vacancies: data.vacancies || 1,
       sections: data.sections || [],
@@ -659,8 +656,25 @@ export async function POST(request: Request) {
 
     const createdJob = mapJobToFrontend(newJob);
 
-    // ── Gamification: Award XP for Job Posting ──────────────────────────────
+    // ── Gamification & Quota: Update Employee and Award XP ───────────────────
     if (userTable === 'employees' && userNumericPk) {
+        let jobsPostedThisMonth = user.jobs_posted_this_month ?? 0;
+        let nextJobsResetAt = user.next_jobs_reset_at ?? null;
+        const nextResetDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0));
+
+        if (!nextJobsResetAt || now.getTime() >= new Date(nextJobsResetAt).getTime()) {
+            jobsPostedThisMonth = 0;
+            nextJobsResetAt = nextResetDate.toISOString();
+        }
+
+        await supabaseAdmin
+            .from('employees')
+            .update({
+                jobs_posted_this_month: jobsPostedThisMonth + 1,
+                next_jobs_reset_at: nextJobsResetAt
+            })
+            .eq('id', userNumericPk);
+
         await awardXP(userNumericPk, 'JOB_POSTED', newJob.id);
     }
 
