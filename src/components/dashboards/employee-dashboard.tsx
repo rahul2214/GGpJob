@@ -155,33 +155,33 @@ export default function EmployeeDashboard() {
             
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
-                <div className="flex items-center gap-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                   <motion.div 
                     whileHover={{ scale: 1.08, rotate: 6 }}
-                    className={`w-24 h-24 sm:w-28 sm:h-28 rounded-[2rem] bg-gradient-to-br ${levelInfo.color} flex items-center justify-center text-5xl sm:text-6xl shadow-2xl shadow-indigo-300/50 shrink-0 border-2 border-white/80`}
+                    className={`w-20 h-20 sm:w-28 sm:h-28 rounded-2xl sm:rounded-[2rem] bg-gradient-to-br ${levelInfo.color} flex items-center justify-center text-4xl sm:text-6xl shadow-2xl shadow-indigo-300/50 shrink-0 border-2 border-white/80`}
                   >
                     <span className="relative z-10 drop-shadow-md">{levelInfo.badge}</span>
                   </motion.div>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2.5 mb-2">
-                       <Badge className="text-xs uppercase font-black tracking-widest py-1 px-3.5 bg-slate-900 text-white border-none shadow-md shadow-slate-300">
+                  <div className="w-full">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                       <Badge className="text-[10px] sm:text-xs uppercase font-black tracking-widest py-1 px-3 bg-slate-900 text-white border-none shadow-md shadow-slate-300">
                          Level {currentLevel}
                        </Badge>
                        {nextLevel && (
-                         <span className="text-xs text-slate-600 font-extrabold bg-white/90 px-3.5 py-1 rounded-full border border-slate-200/80 shadow-sm">
+                         <span className="text-[10px] sm:text-xs text-slate-600 font-extrabold bg-white/90 px-3 py-1 rounded-full border border-slate-200/80 shadow-sm inline-block">
                            {xpNeededForNext - xpInCurrentLevel} XP to Level {currentLevel + 1}
                          </span>
                        )}
                     </div>
-                    <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-3">
+                    <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight mb-3">
                       {levelInfo.name}
                     </h2>
                     
                     {emp?.badges && emp.badges.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-3">
                         {emp.badges.map((badge: string, idx: number) => (
-                          <Badge key={idx} variant="secondary" className="bg-amber-100 text-amber-800 border border-amber-200 font-black tracking-wide px-3 py-1 flex items-center gap-1.5 shadow-sm">
-                            <Award className="w-4 h-4 text-amber-600" />
+                          <Badge key={idx} variant="secondary" className="bg-amber-100 text-amber-800 border border-amber-200 font-black tracking-wide text-[10px] sm:text-xs px-2.5 py-1 flex items-center gap-1.5 shadow-sm">
+                            <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                             {badge}
                           </Badge>
                         ))}
@@ -224,12 +224,12 @@ export default function EmployeeDashboard() {
             </div>
 
             {/* Level Progress Track */}
-            <div className="bg-slate-900/5 backdrop-blur-md p-6 rounded-3xl border border-white/60 shadow-inner">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-black text-slate-600 uppercase tracking-widest flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-amber-500 animate-pulse" /> XP Level Progression
+            <div className="bg-slate-900/5 backdrop-blur-md p-5 sm:p-6 rounded-3xl border border-white/60 shadow-inner">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-3">
+                <span className="text-[10px] sm:text-xs font-black text-slate-600 uppercase tracking-widest flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-amber-500 animate-pulse shrink-0" /> XP Level Progression
                 </span>
-                <span className="text-xs font-black text-indigo-800 bg-indigo-100 px-3 py-1 rounded-xl shadow-sm">
+                <span className="text-[10px] sm:text-xs font-black text-indigo-800 bg-indigo-100 px-3 py-1 rounded-xl shadow-sm inline-block">
                   {xpInCurrentLevel} / {xpNeededForNext} XP
                 </span>
               </div>
@@ -276,7 +276,7 @@ export default function EmployeeDashboard() {
               
               <div className="flex items-start gap-1.5 mb-6">
                 <span className="text-3xl font-bold text-slate-500 mt-2">₹</span>
-                <span className="text-7xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white via-slate-100 to-slate-400 drop-shadow-md">
+                <span className="text-6xl sm:text-7xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white via-slate-100 to-slate-400 drop-shadow-md">
                   {emp?.rewardsBalance?.toLocaleString() || 0}
                 </span>
               </div>
@@ -352,28 +352,28 @@ export default function EmployeeDashboard() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
-          className="lg:col-span-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 bg-gradient-to-r from-indigo-50 via-white to-white border border-indigo-100 rounded-3xl p-7 shadow-sm backdrop-blur-md h-full"
+          className="lg:col-span-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 bg-gradient-to-r from-indigo-50 via-white to-white border border-indigo-100 rounded-3xl p-6 sm:p-7 shadow-sm backdrop-blur-md h-full w-full"
         >
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-100/60 flex items-center justify-center shrink-0 border border-indigo-200/50 shadow-inner">
-              <CalendarDays className="w-7 h-7 text-indigo-600 animate-pulse" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 w-full sm:w-auto">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-indigo-100/60 flex items-center justify-center shrink-0 border border-indigo-200/50 shadow-inner">
+              <CalendarDays className="w-6 h-6 sm:w-7 sm:h-7 text-indigo-600 animate-pulse" />
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-3">
-                <span className="text-slate-900 font-black text-lg tracking-tight">Monthly Quota Tracker</span>
+            <div className="flex flex-col w-full">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
+                <span className="text-slate-900 font-black text-base sm:text-lg tracking-tight">Monthly Quota Tracker</span>
                 {(user as any)?.nextJobsResetAt && (
-                  <Badge variant="outline" className="text-xs px-3 py-1 bg-white border-slate-200 text-slate-700 font-extrabold shadow-sm">
+                  <Badge variant="outline" className="text-[10px] sm:text-xs px-2.5 py-1 bg-white border-slate-200 text-slate-700 font-extrabold shadow-sm">
                     Resets {format(new Date((user as any).nextJobsResetAt), 'MMM d, yyyy')}
                   </Badge>
                 )}
               </div>
-              <span className="text-slate-500 text-sm font-medium mt-1">
+              <span className="text-slate-500 text-xs sm:text-sm font-medium leading-relaxed">
                 You have published <strong className="text-indigo-600 font-black">{jobsThisMonth}</strong> out of <strong className="text-slate-900 font-black">{jobPostLimit}</strong> available job referral postings this month.
               </span>
             </div>
           </div>
-          <div className="sm:self-center">
-            <Badge className={`px-4 py-2 font-black text-xs tracking-widest uppercase rounded-xl shadow-sm ${jobsThisMonth < jobPostLimit ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100' : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'}`}>
+          <div className="w-full sm:w-auto sm:self-center mt-2 sm:mt-0 text-left sm:text-right">
+            <Badge className={`px-4 py-2 font-black text-xs tracking-widest uppercase rounded-xl shadow-sm inline-block text-center w-full sm:w-auto ${jobsThisMonth < jobPostLimit ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100' : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'}`}>
               {jobsThisMonth < jobPostLimit ? `${jobPostLimit - jobsThisMonth} Slots Left` : 'Limit Reached'}
             </Badge>
           </div>

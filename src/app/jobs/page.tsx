@@ -158,7 +158,7 @@ function JobSearchContent() {
             {/* Job Cards */}
             {!isLoading && !isError && jobsToDisplay.length > 0 && (
               <AnimatePresence>
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {jobsToDisplay.map((job, i) => (
                     <motion.div
                       key={job.id}
@@ -166,11 +166,12 @@ function JobSearchContent() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.35, delay: i * 0.04 }}
+                      className="h-full"
                     >
                       <JobCard
                         job={job}
                         isApplied={false}
-                                            />
+                      />
                     </motion.div>
                   ))}
                 </div>

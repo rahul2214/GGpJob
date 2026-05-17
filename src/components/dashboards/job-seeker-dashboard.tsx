@@ -181,12 +181,12 @@ export default function JobSeekerDashboard() {
         <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-slate-800 text-lg">Recommended For You</h2>
-            <Link href="/jobs" className="text-sm font-bold text-indigo-600 hover:underline">View All</Link>
+            <Link href="/jobs?view=recommended" className="text-sm font-bold text-indigo-600 hover:underline">View All</Link>
           </div>
           <Carousel className="w-full">
-            <CarouselContent className="-ml-2">
+            <CarouselContent className="-ml-3">
               {recommendedJobs.map((job) => (
-                <CarouselItem key={job.id} className="pl-2 basis-[85%] sm:basis-1/2 lg:basis-1/3">
+                <CarouselItem key={job.id} className="pl-3 basis-[90%] sm:basis-1/2 lg:basis-1/3">
                   <JobCard job={job} isApplied={false} hideDetails={false} />
                 </CarouselItem>
               ))}
@@ -205,12 +205,12 @@ export default function JobSeekerDashboard() {
                 <h2 className="font-bold text-slate-800 text-lg">Referral Opportunities</h2>
                 <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] uppercase font-bold px-2 py-0.5">High Success Rate</Badge>
             </div>
-            <Link href="/jobs?type=referral" className="text-sm font-bold text-indigo-600 hover:underline">Explore More</Link>
+            <Link href="/jobs?isReferral=true" className="text-sm font-bold text-indigo-600 hover:underline">Explore More</Link>
           </div>
           <Carousel className="w-full">
-            <CarouselContent className="-ml-2">
+            <CarouselContent className="-ml-3">
               {referralJobs.map((job: any) => (
-                <CarouselItem key={job.id} className="pl-2 basis-[85%] sm:basis-1/2 lg:basis-1/3">
+                <CarouselItem key={job.id} className="pl-3 basis-[90%] sm:basis-1/2 lg:basis-1/3">
                   <JobCard job={job} isApplied={false} hideDetails={false} />
                 </CarouselItem>
               ))}

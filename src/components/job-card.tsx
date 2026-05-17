@@ -27,22 +27,22 @@ export default function JobCard({ job, isApplied = false, hideDetails = false }:
       <Card className="h-full flex flex-col md:border relative">
         <CardHeader>
           <div className="flex justify-between items-start">
-            <div className="flex-1 min-w-0 pr-10">
-              <CardTitle className="text-lg truncate">{job.title}</CardTitle>
-              <div className="flex items-center gap-2 text-sm text-blue-600 font-medium">
-                <CardDescription className="truncate">{job.companyName}</CardDescription>
+            <div className="flex-1 min-w-0 pr-2 sm:pr-10">
+              <CardTitle className="text-base sm:text-lg truncate font-bold text-slate-900">{job.title}</CardTitle>
+              <div className="flex items-center gap-1.5 text-xs sm:text-sm text-indigo-600 font-semibold mt-0.5 min-w-0">
+                <CardDescription className="truncate font-semibold text-indigo-600 max-w-[150px] sm:max-w-none">{job.companyName}</CardDescription>
                 {job.job_role && (
                   <>
-                    <span className="text-gray-300">•</span>
-                    <span className="truncate">{job.job_role}</span>
+                    <span className="text-gray-300 shrink-0">•</span>
+                    <span className="truncate text-slate-500 max-w-[120px] sm:max-w-none">{job.job_role}</span>
                   </>
                 )}
               </div>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 shrink-0">
               {job.isReferral && (
                 <div className="flex flex-col items-end gap-1.5">
-                    <Badge variant="outline" className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200 ml-2 shrink-0">
+                    <Badge variant="outline" className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200 ml-2 shrink-0 font-bold">
                       <Star className="h-3 w-3" />
                       Referral
                     </Badge>
@@ -58,15 +58,15 @@ export default function JobCard({ job, isApplied = false, hideDetails = false }:
           </div>
         </CardHeader>
         <CardContent className="flex-grow">
-          <div className="flex flex-col space-y-3 text-sm text-muted-foreground">
-            <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-primary" />
+          <div className="flex flex-col space-y-3 text-xs sm:text-sm text-muted-foreground">
+            <div className="grid grid-cols-2 gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                    <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
                     <span className="truncate">{job.location}</span>
                 </div>
-                 <div className="flex items-center gap-2">
-                    <Briefcase className="h-4 w-4 text-primary" />
-                    <span>{job.type}</span>
+                 <div className="flex items-center gap-2 min-w-0">
+                    <Briefcase className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="truncate">{job.type}</span>
                 </div>
             </div>
             
