@@ -15,7 +15,7 @@ export async function adjustTrustScore(userId: number, role: 'jobseeker' | 'empl
     return;
   }
 
-  const newScore = Math.max(0, Math.min(100, (data.trust_score || 100) + adjustment));
+  const newScore = Math.max(0, Math.min(100, (data.trust_score) + adjustment));
 
   const { error: updateError } = await supabaseAdmin
     .from(table)

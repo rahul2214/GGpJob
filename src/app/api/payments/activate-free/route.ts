@@ -82,10 +82,11 @@ export async function POST(request: Request) {
     expiryDate.setFullYear(expiryDate.getFullYear() + 5); // 5 years validity for free tier
     
     const updateData = {
-        is_paid: true,
+        is_paid: false,
         plan_type: 'free',
         plan_expires_at: expiryDate.toISOString(),
         subscription_credits: 2,
+        subscription_allowance: 2,
         updated_at: now.toISOString(),
     };
 

@@ -78,6 +78,17 @@ export async function POST(request: Request) {
               updateData.next_credit_reset_at = nextResetPrem.toISOString();
               break;
               
+          case 'free':
+              const freeExp = new Date();
+              freeExp.setFullYear(freeExp.getFullYear() + 5); // 5 years validity for free tier
+              updateData.plan_expires_at = freeExp.toISOString();
+              updateData.subscription_allowance = 2;
+              updateData.subscription_credits = 2;
+              const nextResetFree = new Date();
+              nextResetFree.setMonth(nextResetFree.getMonth() + 1);
+              updateData.next_credit_reset_at = nextResetFree.toISOString();
+              break;
+              
           case 'jobseeker_pro':
               const jsProExp = new Date();
               jsProExp.setFullYear(jsProExp.getFullYear() + 1); // 1 Year
