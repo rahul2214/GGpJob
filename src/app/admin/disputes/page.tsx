@@ -6,7 +6,7 @@ import type { Application } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Eye, CheckCircle, XCircle, Info, Star, Building } from "lucide-react";
+import { ShieldCheck, Eye, CheckCircle, XCircle, Info, Star, Building, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -23,6 +23,8 @@ export default function HiringDisputesPage() {
   const [disputedApps, setDisputedApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDispute, setSelectedDispute] = useState<Application | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ appId: string; action: 'verify' | 'reject' } | null>(null);
+  const [isResolving, setIsResolving] = useState(false);
   const { toast } = useToast();
 
   const fetchDisputes = async () => {
@@ -49,6 +51,7 @@ export default function HiringDisputesPage() {
   }, []);
 
   const handleResolveDispute = async (appId: string, action: 'verify' | 'reject') => {
+    setIsResolving(true);
     try {
       const response = await fetch(`/api/applications/${appId}/resolve`, {
         method: 'POST',
@@ -63,15 +66,18 @@ export default function HiringDisputesPage() {
 
       toast({ 
         title: 'Dispute Resolved', 
-        description: action === 'verify' ? 'Hire confirmed and rewards released.' : 'Hire rejected and penalty applied.' 
+        description: action === 'verify' ? 'Hire confirmed and rewards released.' : 'Hire rejected and claim marked invalid.' 
       });
       
       // Refresh disputes list
       await fetchDisputes();
       setSelectedDispute(null);
+      setConfirmAction(null);
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       console.error(error);
+    } finally {
+      setIsResolving(false);
     }
   };
 
@@ -174,7 +180,7 @@ export default function HiringDisputesPage() {
                 <Button 
                   size="sm" 
                   className="bg-emerald-600 hover:bg-emerald-700 h-8" 
-                  onClick={() => handleResolveDispute(String(app.id), 'verify')}
+                  onClick={() => setConfirmAction({ appId: String(app.id), action: 'verify' })}
                 >
                   <CheckCircle className="mr-2 h-4 w-4" />
                   Approve Hire
@@ -183,7 +189,7 @@ export default function HiringDisputesPage() {
                   size="sm" 
                   variant="destructive" 
                   className="h-8" 
-                  onClick={() => handleResolveDispute(String(app.id), 'reject')}
+                  onClick={() => setConfirmAction({ appId: String(app.id), action: 'reject' })}
                 >
                   <XCircle className="mr-2 h-4 w-4" />
                   Reject
@@ -335,19 +341,50 @@ export default function HiringDisputesPage() {
                         <Button 
                             variant="destructive" 
                             className="bg-rose-600 hover:bg-rose-700"
-                            onClick={() => handleResolveDispute(String(selectedDispute.id), 'reject')}
+                            onClick={() => setConfirmAction({ appId: String(selectedDispute.id), action: 'reject' })}
                         >
                             <XCircle className="mr-2 h-4 w-4" /> Reject Claim
                         </Button>
                         <Button 
                             className="bg-emerald-600 hover:bg-emerald-700"
-                            onClick={() => handleResolveDispute(String(selectedDispute.id), 'verify')}
+                            onClick={() => setConfirmAction({ appId: String(selectedDispute.id), action: 'verify' })}
                         >
                             <CheckCircle className="mr-2 h-4 w-4" /> Confirm Hire
                         </Button>
                     </div>
                 </div>
             )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!confirmAction} onOpenChange={(open) => !open && !isResolving && setConfirmAction(null)}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Info className="w-5 h-5 text-indigo-600" />
+              Confirm Dispute Resolution
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              {confirmAction?.action === 'verify'
+                ? "Are you sure you want to approve this hire/referral claim? The employee will receive a 25 trust score refund and rewards will be released."
+                : "Are you sure you want to reject this claim? The job seeker will be refunded 2 credits and the employee will lose 100 XP (with level recalculated)."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setConfirmAction(null)} disabled={isResolving}>Cancel</Button>
+            <Button 
+              variant={confirmAction?.action === 'verify' ? 'default' : 'destructive'}
+              className={confirmAction?.action === 'verify' ? "bg-emerald-600 hover:bg-emerald-700 font-bold" : "bg-rose-600 hover:bg-rose-700 font-bold"}
+              disabled={isResolving}
+              onClick={async () => {
+                if (!confirmAction) return;
+                await handleResolveDispute(confirmAction.appId, confirmAction.action);
+              }}
+            >
+              {isResolving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {confirmAction?.action === 'verify' ? "Yes, Approve Hire" : "Yes, Reject Claim"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

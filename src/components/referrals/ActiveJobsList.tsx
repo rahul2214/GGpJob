@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   PlusCircle, MoreHorizontal, Edit, Trash2, Share2, Users,
-  TrendingUp, Briefcase, CheckCircle2, Trophy
+  TrendingUp, Briefcase, CheckCircle2
 } from "lucide-react";
 import { format, startOfMonth } from "date-fns";
 import {
@@ -142,7 +142,6 @@ export function ActiveJobsList() {
                     <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-400 py-4">Applicants</TableHead>
                     <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-400 py-4">Selected</TableHead>
                     <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-400 py-4">Referred</TableHead>
-                    <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-400 py-4">Hired</TableHead>
                     <TableHead className="text-right pr-7 font-black text-[10px] uppercase tracking-widest text-slate-400 py-4">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -181,12 +180,6 @@ export function ActiveJobsList() {
                           <div className="flex items-center gap-1.5 text-violet-600 text-sm font-black tracking-tight">
                             <CheckCircle2 className="w-4 h-4 text-violet-300 group-hover:text-violet-500 transition-colors" />
                             {job.referredApplicantCount || 0}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5 text-amber-600 text-sm font-black tracking-tight">
-                            <Trophy className="w-4 h-4 text-amber-300 group-hover:text-amber-500 transition-colors" />
-                            {(job as any).hiredApplicantCount || 0}
                           </div>
                         </TableCell>
                         <TableCell className="text-right pr-7 pt-4 pb-4">

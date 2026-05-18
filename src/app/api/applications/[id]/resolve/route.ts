@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { adjustTrustScore } from '@/lib/trust-score';
-import { awardXP } from '@/lib/gamification-logic';
+import { updateTrustScore } from '@/lib/trust-logic';
+import { awardXP, deductXP } from '@/lib/gamification-logic';
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -40,13 +40,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
       if (app.jobs?.employee_pk) {
         await awardXP(app.jobs.employee_pk, 'REFERRAL_VERIFIED', app.job_pk);
         
-        // Manual trust score boost for honest verification
-        const { data: emp } = await supabaseAdmin.from('employees').select('trust_score').eq('id', app.jobs.employee_pk).single();
-        if (emp) {
-            await supabaseAdmin.from('employees')
-                .update({ trust_score: Math.min(100, (emp.trust_score ?? 100) + 10) })
-                .eq('id', app.jobs.employee_pk);
-        }
+        // Refund 25 trust score deducted during dispute
+        await updateTrustScore(app.jobs.employee_pk, 'DISPUTE_REFUND', 'Admin resolved dispute in favor of employee');
 
         // Notification for employee
         await supabaseAdmin.from('notifications').insert({
@@ -75,26 +70,46 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
       if (updateError) throw updateError;
 
-      // Trust Penalty: Employee -30 (Fake/Invalid claim)
       if (app.jobs?.employee_pk) {
-        const { data: emp } = await supabaseAdmin.from('employees').select('trust_score').eq('id', app.jobs.employee_pk).single();
-        if (emp) {
-            await supabaseAdmin.from('employees')
-                .update({ trust_score: Math.max(0, (emp.trust_score ?? 100) - 30) })
-                .eq('id', app.jobs.employee_pk);
-        }
+        // 25 trust score was already deducted when dispute was raised, so no further trust score deduction needed.
+        // Deduct 100 XP from employee and recalculate level
+        await deductXP(app.jobs.employee_pk, 100, app.job_pk);
 
         // Notification for employee
         await supabaseAdmin.from('notifications').insert({
             user_pk: app.jobs.employee_pk,
-            message: `Verification REJECTED. Your referral submission was disputed by Admin. Trust score reduced.`,
+            message: `Verification REJECTED. Your referral submission was rejected by Admin. 100 XP deducted.`,
             type: 'penalty',
             job_pk: app.job_pk,
             created_at: new Date().toISOString(),
         });
       }
 
-      return NextResponse.json({ message: 'Verification rejected and penalty applied.' });
+      // Credit 2 credits back to the jobseeker
+      if (app.user_pk) {
+        const { data: js } = await supabaseAdmin
+            .from('jobseekers')
+            .select('credits')
+            .eq('id', app.user_pk)
+            .single();
+
+        if (js) {
+            await supabaseAdmin
+                .from('jobseekers')
+                .update({ credits: Math.max(0, (js.credits || 0) + 2) })
+                .eq('id', app.user_pk);
+
+            await supabaseAdmin.from('notifications').insert({
+                user_pk: app.user_pk,
+                message: `Admin rejected the employee's claim for "${app.jobs?.title || 'the job'}". 2 credits have been refunded to your wallet.`,
+                type: 'credits_refund',
+                job_pk: app.job_pk,
+                created_at: new Date().toISOString(),
+            });
+        }
+      }
+
+      return NextResponse.json({ message: 'Verification rejected. Jobseeker credited with 2 credits and employee deducted 100 XP.' });
     }
 
   } catch (e: any) {

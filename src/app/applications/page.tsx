@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Coins, Lock, Unlock, ShieldCheck, AlertCircle, UploadCloud } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ChatDrawer } from "@/components/chat/ChatDrawer";
 
@@ -109,6 +110,8 @@ export default function ApplicationsPage() {
   const [isSubmittingInitiate, setIsSubmittingInitiate] = useState(false);
   const [initiateFile, setInitiateFile] = useState<File | null>(null);
   const [initiateTargetStatus, setInitiateTargetStatus] = useState<6 | 7 | 9>(6);
+  const [showDisputeInput, setShowDisputeInput] = useState(false);
+  const [disputeReasonInput, setDisputeReasonInput] = useState("");
 
   useEffect(() => {
     if (!userLoading && !user) router.push("/login");
@@ -488,7 +491,13 @@ export default function ApplicationsPage() {
         </DialogContent>
       </Dialog>
       {/* Referral/Joining Verification Modal */}
-      <Dialog open={isVerifyModalOpen} onOpenChange={setIsVerifyModalOpen}>
+      <Dialog open={isVerifyModalOpen} onOpenChange={(open) => {
+        setIsVerifyModalOpen(open);
+        if (!open) {
+            setShowDisputeInput(false);
+            setDisputeReasonInput("");
+        }
+      }}>
         <DialogContent className="sm:max-w-[460px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
@@ -538,56 +547,101 @@ export default function ApplicationsPage() {
             </div>
           )}
 
+          <AnimatePresence>
+            {showDisputeInput && (
+                <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-2 mt-3 pt-3 border-t border-slate-100 overflow-hidden"
+                >
+                    <Label className="text-xs font-bold text-rose-600 flex items-center gap-1.5 uppercase tracking-tight">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        Please state why this submission is invalid
+                    </Label>
+                    <Textarea 
+                        placeholder="e.g. Proof image is fake / does not match my details / no referral email received..." 
+                        value={disputeReasonInput}
+                        onChange={(e) => setDisputeReasonInput(e.target.value)}
+                        className="h-20 text-xs rounded-xl border-slate-200 focus-visible:ring-rose-500 placeholder:text-slate-400"
+                        disabled={isSubmittingVerify}
+                    />
+                </motion.div>
+            )}
+          </AnimatePresence>
+
           <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
-            <Button 
-                variant="ghost" 
-                className="flex-1 text-rose-600 hover:text-rose-700 hover:bg-rose-50 font-bold rounded-xl"
-                disabled={isSubmittingVerify}
-                onClick={async () => {
-                    if (!selectedApp) return;
-                    setIsSubmittingVerify(true);
-                    try {
-                        const res = await fetch(`/api/applications/${selectedApp.id}/verify`, {
-                            method: 'POST',
-                            body: JSON.stringify({ action: 'dispute', requesterRole: user?.role })
-                        });
-                        if (!res.ok) throw new Error('Failed to submit dispute');
-                        toast({ title: "Dispute Submitted", description: "Admin will review the case shortly." });
-                        setIsVerifyModalOpen(false);
-                        window.location.reload();
-                    } catch (e) {
-                        toast({ title: "Error", description: "Submission failed", variant: "destructive" });
-                    } finally {
-                        setIsSubmittingVerify(false);
-                    }
-                }}
-            >
-                It's Fake
-            </Button>
-            <Button 
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100"
-                disabled={isSubmittingVerify}
-                onClick={async () => {
-                    if (!selectedApp) return;
-                    setIsSubmittingVerify(true);
-                    try {
-                        const res = await fetch(`/api/applications/${selectedApp.id}/verify`, {
-                            method: 'POST',
-                            body: JSON.stringify({ action: 'confirm', requesterRole: user?.role })
-                        });
-                        if (!res.ok) throw new Error('Failed to confirm');
-                        toast({ title: "Verified! 🎉", description: "Thank you for confirming your referral." });
-                        setIsVerifyModalOpen(false);
-                        window.location.reload();
-                    } catch (e) {
-                        toast({ title: "Error", description: "Submission failed", variant: "destructive" });
-                    } finally {
-                        setIsSubmittingVerify(false);
-                    }
-                }}
-            >
-                {isSubmittingVerify ? <Loader2 className="w-4 h-4 animate-spin" /> : "Yes, it's correct"}
-            </Button>
+            {showDisputeInput ? (
+                <>
+                    <Button 
+                        variant="ghost" 
+                        className="flex-1 text-slate-500 hover:text-slate-700 font-medium text-xs rounded-xl"
+                        disabled={isSubmittingVerify}
+                        onClick={() => setShowDisputeInput(false)}
+                    >
+                        Cancel
+                    </Button>
+                    <Button 
+                        className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-lg shadow-rose-100 text-xs"
+                        disabled={isSubmittingVerify || !disputeReasonInput.trim()}
+                        onClick={async () => {
+                            if (!selectedApp || !disputeReasonInput.trim()) return;
+                            setIsSubmittingVerify(true);
+                            try {
+                                const res = await fetch(`/api/applications/${selectedApp.id}/verify`, {
+                                    method: 'POST',
+                                    body: JSON.stringify({ action: 'dispute', requesterRole: user?.role, disputeReason: disputeReasonInput.trim() })
+                                });
+                                if (!res.ok) throw new Error('Failed to submit dispute');
+                                toast({ title: "Dispute Submitted", description: "Admin will review the case shortly." });
+                                setIsVerifyModalOpen(false);
+                                window.location.reload();
+                            } catch (e) {
+                                toast({ title: "Error", description: "Submission failed", variant: "destructive" });
+                            } finally {
+                                setIsSubmittingVerify(false);
+                            }
+                        }}
+                    >
+                        {isSubmittingVerify ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Dispute"}
+                    </Button>
+                </>
+            ) : (
+                <>
+                    <Button 
+                        variant="ghost" 
+                        className="flex-1 text-rose-600 hover:text-rose-700 hover:bg-rose-50 font-bold rounded-xl"
+                        disabled={isSubmittingVerify}
+                        onClick={() => setShowDisputeInput(true)}
+                    >
+                        It's Fake
+                    </Button>
+                    <Button 
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100"
+                        disabled={isSubmittingVerify}
+                        onClick={async () => {
+                            if (!selectedApp) return;
+                            setIsSubmittingVerify(true);
+                            try {
+                                const res = await fetch(`/api/applications/${selectedApp.id}/verify`, {
+                                    method: 'POST',
+                                    body: JSON.stringify({ action: 'confirm', requesterRole: user?.role })
+                                });
+                                if (!res.ok) throw new Error('Failed to confirm');
+                                toast({ title: "Verified! 🎉", description: "Thank you for confirming your referral." });
+                                setIsVerifyModalOpen(false);
+                                window.location.reload();
+                            } catch (e) {
+                                toast({ title: "Error", description: "Submission failed", variant: "destructive" });
+                            } finally {
+                                setIsSubmittingVerify(false);
+                            }
+                        }}
+                    >
+                        {isSubmittingVerify ? <Loader2 className="w-4 h-4 animate-spin" /> : "Yes, it's correct"}
+                    </Button>
+                </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

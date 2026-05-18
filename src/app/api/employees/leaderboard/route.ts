@@ -1,6 +1,38 @@
-
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+
+async function calculateSuccessRates(employees: any[]) {
+    if (!employees || !employees.length) return [];
+    const employeePks = employees.map(e => e.id).filter(Boolean);
+    if (!employeePks.length) return employees;
+
+    const { data: jobs } = await supabaseAdmin.from('jobs').select('id, employee_pk').in('employee_pk', employeePks);
+    const jobMap = new Map<number, number>(); // job_pk -> employee_pk
+    jobs?.forEach(j => jobMap.set(j.id, j.employee_pk));
+    
+    const jobIds = Array.from(jobMap.keys());
+    const empTotalApps: Record<number, number> = {};
+
+    if (jobIds.length > 0) {
+        const { data: apps } = await supabaseAdmin.from('applications').select('job_pk, status_id').in('job_pk', jobIds);
+        apps?.forEach(a => {
+            const empPk = jobMap.get(a.job_pk);
+            if (empPk) {
+                empTotalApps[empPk] = (empTotalApps[empPk] || 0) + 1;
+            }
+        });
+    }
+
+    return employees.map(emp => {
+        const total = empTotalApps[emp.id] || 0;
+        const verified = emp.verified_referrals_count || 0;
+        let success_rate = total > 0 ? Math.min(100, Math.round((verified / total) * 100)) : (verified > 0 ? 100 : 0);
+        return {
+            ...emp,
+            success_rate
+        };
+    });
+}
 
 export async function GET(request: Request) {
   try {
@@ -36,21 +68,21 @@ export async function GET(request: Request) {
         const userPks = Object.keys(monthlyXpMap).map(Number);
         const { data: users, error: userErr } = await supabaseAdmin
             .from('employees')
-            .select('id, uuid, name, company_name, xp, level, designation, company_logo, trust_score, interviews_count, hires_count, verified_referrals_count')
+            .select('id, uuid, name, company_name, xp, level, designation, company_logo, trust_score, verified_referrals_count')
             .in('id', userPks);
 
         if (userErr) throw userErr;
 
-        leaderboard = (users || []).map(u => ({
+        const usersWithRates = await calculateSuccessRates(users || []);
+        leaderboard = usersWithRates.map(u => ({
             ...u,
             xp: monthlyXpMap[(u as any).id] || 0, // In monthly view, XP column shows monthly XP
-            success_rate: (u.interviews_count || 0) > 0 ? Math.round(((u.hires_count || 0) / u.interviews_count) * 100) : 0
         }));
 
     } else {
         let query = supabaseAdmin
           .from('employees')
-          .select('id, uuid, name, company_name, xp, level, designation, company_logo, trust_score, interviews_count, hires_count, verified_referrals_count');
+          .select('id, uuid, name, company_name, xp, level, designation, company_logo, trust_score, verified_referrals_count');
 
         if (sortBy === 'trust') {
             query = query.order('trust_score', { ascending: false });
@@ -63,14 +95,7 @@ export async function GET(request: Request) {
         const { data: topEmployees, error } = await query.limit(20);
         if (error) throw error;
 
-        leaderboard = (topEmployees || []).map((emp) => {
-          const interviewCount = emp.interviews_count || 0;
-          const hireCount = emp.hires_count || 0;
-          return {
-            ...emp,
-            success_rate: interviewCount > 0 ? Math.round((hireCount / interviewCount) * 100) : 0
-          };
-        });
+        leaderboard = await calculateSuccessRates(topEmployees || []);
     }
 
     // Final sorting based on sortBy

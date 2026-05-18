@@ -6,7 +6,7 @@ import { updateTrustScore } from '@/lib/trust-logic';
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    const { action, requesterRole } = await request.json(); // 'confirm' or 'dispute'
+    const { action, requesterRole, disputeReason } = await request.json(); // 'confirm' or 'dispute'
 
     if (!['confirm', 'dispute'].includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
@@ -19,7 +19,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     const { data: app, error: fetchError } = await supabaseAdmin
       .from('applications')
-      .select('*, jobs(title, employee_pk), jobseekers(name)')
+      .select('*, jobs(title, employee_pk, company_name), jobseekers(name)')
       .eq(idField, isNumericId ? parseInt(id) : id)
       .single();
 
@@ -62,13 +62,18 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
 
     // 2. Update Application
+    const updatePayload: any = {
+      status_id: nextStatusId,
+      verification_status: verificationStatus,
+      updated_at: new Date().toISOString()
+    };
+    if (action === 'dispute' && disputeReason) {
+      updatePayload.dispute_reason = disputeReason;
+    }
+
     const { data: updatedApp, error: updateError } = await supabaseAdmin
       .from('applications')
-      .update({
-        status_id: nextStatusId,
-        verification_status: verificationStatus,
-        updated_at: new Date().toISOString()
-      })
+      .update(updatePayload)
       .eq('id', app.id)
       .select()
       .single();

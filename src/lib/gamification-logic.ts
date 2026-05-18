@@ -7,10 +7,7 @@ import { processPayout } from './payout-logic';
 export const ACTION_XP = {
     JOB_POSTED: 5,
     CANDIDATE_ACCEPTED: 10,
-    REFERRAL_VERIFIED: 20,    // Updated to 20 XP as requested
-    CANDIDATE_INTERVIEW: 30,  // Higher quality
-    OFFER_RECEIVED: 50,
-    CANDIDATE_JOINED: 65      // Highest value
+    REFERRAL_VERIFIED: 20
 };
 
 export const MILESTONES = [
@@ -93,17 +90,7 @@ export const COUNT_MILESTONES = [
     { id: 'referrals_20', field: 'verified_referrals_count', target: 20, xp: 150, badge: 'Connector', notification: 'Achievement Unlocked: Connector 🎖️ (20 Verified Referrals)' },
     { id: 'referrals_50', field: 'verified_referrals_count', target: 50, xp: 400, notification: 'Achievement Unlocked: 50 Verified Referrals! +400 XP' },
     { id: 'referrals_100', field: 'verified_referrals_count', target: 100, xp: 1000, notification: 'Achievement Unlocked: 100 Verified Referrals! +1000 XP' },
-    
-    // Verified Interviews
-    { id: 'interviews_10', field: 'interviews_count', target: 10, xp: 250, badge: 'Talent Spotter', notification: 'Achievement Unlocked: Talent Spotter 🕵️ (10 Verified Interviews)' },
-    { id: 'interviews_25', field: 'interviews_count', target: 25, xp: 700, notification: 'Achievement Unlocked: 25 Verified Interviews! +700 XP' },
-    { id: 'interviews_50', field: 'interviews_count', target: 50, xp: 1500, notification: 'Achievement Unlocked: 50 Verified Interviews! +1500 XP' },
-    
-    // Successful Hires
-    { id: 'hires_5', field: 'hires_count', target: 5, xp: 500, badge: 'Trusted Referrer', notification: 'Achievement Unlocked: Trusted Referrer ⭐ (5 Successful Hires)' },
-    { id: 'hires_15', field: 'hires_count', target: 15, xp: 1500, notification: 'Achievement Unlocked: 15 Successful Hires! +1500 XP' },
-    { id: 'hires_30', field: 'hires_count', target: 30, xp: 4000, notification: 'Achievement Unlocked: 30 Successful Hires! +4000 XP' }
-];
+]
 
 export async function awardXP(employeeId: string | number, action: keyof typeof ACTION_XP, jobPk?: number) {
     console.log(`[GAMIFICATION] awardXP called for employee: ${employeeId}, action: ${action}`);
@@ -113,7 +100,7 @@ export async function awardXP(employeeId: string | number, action: keyof typeof 
     try {
         const { data: emp, error: fetchErr } = await supabaseAdmin
             .from('employees')
-            .select('xp, level, milestones_achieved, rewards_balance, verified_referrals_count, interviews_count, hires_count, badge_ids')
+            .select('xp, level, milestones_achieved, rewards_balance, verified_referrals_count, badge_ids')
             .eq('id', employeeId)
             .single();
 
@@ -134,14 +121,10 @@ export async function awardXP(employeeId: string | number, action: keyof typeof 
         // 1. Update primary counters
         const updatedCounts: any = {
             verified_referrals_count: emp.verified_referrals_count || 0,
-            interviews_count: emp.interviews_count || 0,
-            hires_count: emp.hires_count || 0
         };
 
         if (action === 'REFERRAL_VERIFIED') updatedCounts.verified_referrals_count++;
-        if (action === 'CANDIDATE_INTERVIEW') updatedCounts.interviews_count++;
-        if (action === 'CANDIDATE_JOINED') updatedCounts.hires_count++;
-
+       
         // 2. Check Count-based Milestones
         for (const milestone of COUNT_MILESTONES) {
             if (!newMilestones.includes(milestone.id)) {
@@ -225,8 +208,6 @@ export async function awardXP(employeeId: string | number, action: keyof typeof 
         // 6. Update Trust Score
         let trustReason: TrustReason | null = null;
         if (action === 'REFERRAL_VERIFIED') trustReason = 'VERIFIED_REFERRAL';
-        else if (action === 'CANDIDATE_INTERVIEW') trustReason = 'VERIFIED_INTERVIEW';
-        else if (action === 'CANDIDATE_JOINED') trustReason = 'SUCCESSFUL_HIRE';
         
         if (trustReason) {
             await updateTrustScore(Number(employeeId), trustReason);
@@ -236,6 +217,62 @@ export async function awardXP(employeeId: string | number, action: keyof typeof 
 
     } catch (err: any) {
         console.error('[GAMIFICATION] Error awarding XP:', err);
+        return { error: err.message };
+    }
+}
+
+export async function deductXP(employeeId: string | number, amount: number, jobPk?: number) {
+    console.log(`[GAMIFICATION] deductXP called for employee: ${employeeId}, amount: ${amount}`);
+    try {
+        const { data: emp, error: fetchErr } = await supabaseAdmin
+            .from('employees')
+            .select('xp, level')
+            .eq('id', employeeId)
+            .single();
+
+        if (fetchErr || !emp) {
+            console.error('[GAMIFICATION] Employee fetch error in deductXP:', fetchErr?.message);
+            throw new Error(fetchErr?.message || 'Employee not found');
+        }
+
+        let newXp = (emp.xp ) - amount;
+        let newLevel = emp.level ;
+
+        const LEVEL_MAX_XP: Record<number, number> = {
+            1: 200, 2: 500, 3: 1000, 4: 1500, 5: 3000, 
+            6: 5000, 7: 8000, 8: 12000, 9: 20000, 10: 100000 
+        };
+
+        while (newXp < 0 && newLevel > 1) {
+            newLevel--;
+            newXp = (LEVEL_MAX_XP[newLevel]) + newXp;
+        }
+
+        if (newLevel === 1 && newXp < 0) {
+            newXp = 0;
+        }
+
+        const updateData = { xp: newXp, level: newLevel };
+        console.log(`[GAMIFICATION] Committing deductXP for employee ${employeeId}:`, JSON.stringify(updateData));
+
+        const { error: updateErr } = await supabaseAdmin
+            .from('employees')
+            .update(updateData)
+            .eq('id', employeeId);
+
+        if (updateErr) throw updateErr;
+
+        await supabaseAdmin.from('notifications').insert({
+            user_pk: employeeId,
+            message: `Dispute Rejected by Admin. ${amount} XP deducted. Current Level: ${newLevel}.`,
+            type: 'penalty',
+            job_pk: jobPk,
+            created_at: new Date().toISOString()
+        });
+
+        return { success: true, newXp, newLevel };
+    } catch (err: any) {
+        console.error('[GAMIFICATION] Error in deductXP:', err);
         return { error: err.message };
     }
 }

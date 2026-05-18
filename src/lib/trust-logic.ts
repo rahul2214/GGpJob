@@ -9,7 +9,8 @@ export type TrustReason =
     | 'MISSING_PROOF'
     | 'FAKE_ACTIVITY'
     | 'SPAM_BEHAVIOR'
-    | 'MULTI_ACCOUNT_ABUSE';
+    | 'MULTI_ACCOUNT_ABUSE'
+    | 'DISPUTE_REFUND';
 
 const TRUST_DELTAS: Record<TrustReason, number> = {
     VERIFIED_REFERRAL: 2,
@@ -20,7 +21,8 @@ const TRUST_DELTAS: Record<TrustReason, number> = {
     MISSING_PROOF: -15,
     FAKE_ACTIVITY: -25,
     SPAM_BEHAVIOR: -15,
-    MULTI_ACCOUNT_ABUSE: -40
+    MULTI_ACCOUNT_ABUSE: -40,
+    DISPUTE_REFUND: 25
 };
 
 /**
