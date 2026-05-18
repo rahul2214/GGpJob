@@ -615,22 +615,7 @@ export function ReferralForm({ job }: ReferralFormProps) {
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="jobLink"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-slate-600 dark:text-slate-400 font-semibold">External Job Link (Optional)</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input placeholder="https://careers.company.com/job/123" {...field} className="h-12 pl-10 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-2 focus:ring-primary/20 font-mono text-sm" />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
           </section>
 
           {/* Section 4: Structured Content */}
