@@ -1,4 +1,4 @@
-import { Star, Crown, Search, Rocket } from "lucide-react";
+import { Star, Crown, Search, Rocket, Zap } from "lucide-react";
 
 export const RECRUITER_PLANS = [
   {
@@ -81,9 +81,25 @@ export const JOB_SEEKER_PLANS = [
     features: [
       "5 Referral applications/month",
       "2 Active pending referrals",
-      "2 Credits per referral unlock",
       "Unlimited Standard job applies",
-      "2 Credits included"
+      "2 Credits included/month"
+    ]
+  },
+  {
+    id: "jobseeker_basic",
+    name: "Basic Plan",
+    price: 299,
+    originalPrice: 599,
+    description: "Best for active entry-level applicants.",
+    icon: Zap,
+    color: "amber",
+    features: [
+      "10 Referral applications/month",
+      "3 Active pending referrals",
+      "10 Referral unlocks/month",
+      "4 Credits included/month",
+      "Priority visibility & App insights",
+      "Faster employee visibility"
     ]
   },
   {
@@ -99,7 +115,7 @@ export const JOB_SEEKER_PLANS = [
       "25 Referral applications/month",
       "5 Active pending referrals",
       "20 Referral unlocks/month",
-      "20 Credits included",
+      "20 Credits included/month",
       "Priority visibility & App insights",
       "Faster employee visibility"
     ]
@@ -116,7 +132,7 @@ export const JOB_SEEKER_PLANS = [
       "75 Referral applications/month",
       "10 Active pending referrals",
       "60 Referral unlocks/month",
-      "60 Credits included",
+      "60 Credits included/month",
       "High Priority visibility & Chat",
       "AI resume optimization",
       "Faster referral processing"

@@ -223,6 +223,7 @@ export default function AdminCouponsPage() {
                         <option value="pro">Recruiter - Pro Recruitment</option>
                     </optgroup>
                     <optgroup label="Job Seeker Plans">
+                        <option value="jobseeker_basic">Job Seeker - Basic</option>
                         <option value="jobseeker_premium">Job Seeker - Premium</option>
                         <option value="jobseeker_pro">Job Seeker - Pro</option>
                     </optgroup>
@@ -303,6 +304,7 @@ export default function AdminCouponsPage() {
                                      coupon.applicablePlan === 'premium' ? 'RC - Premium' : 
                                      coupon.applicablePlan === 'pro' ? 'RC - Pro' : 
                                      coupon.applicablePlan === 'talent' ? 'RC - Talent' : 
+                                     coupon.applicablePlan === 'jobseeker_basic' ? 'JS - Basic' : 
                                      coupon.applicablePlan === 'jobseeker_premium' ? 'JS - Premium' : 
                                      coupon.applicablePlan === 'jobseeker_pro' ? 'JS - Pro' : 
                                      coupon.applicablePlan === 'mini' ? 'Credits - Mini' : 

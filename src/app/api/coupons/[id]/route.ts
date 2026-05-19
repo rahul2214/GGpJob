@@ -29,7 +29,6 @@ export async function PUT(request: Request, context: any) {
     if (applicablePlan !== undefined) updateData.applicable_plan = applicablePlan;
     if (isActive !== undefined) updateData.is_active = Boolean(isActive);
 
-    updateData.updated_at = new Date().toISOString();
 
     const { error: updateError } = await supabaseAdmin
         .from('coupons')

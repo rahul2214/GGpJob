@@ -67,6 +67,17 @@ export async function POST(request: Request) {
               updateData.talent_search_expires_at = talentExp.toISOString();
               break;
               
+          case 'jobseeker_basic':
+              const jsBasicExp = new Date();
+              jsBasicExp.setMonth(jsBasicExp.getMonth() + 4); // 4 Months
+              updateData.plan_expires_at = jsBasicExp.toISOString();
+              updateData.subscription_allowance = 4;
+              updateData.subscription_credits = 4;
+              const nextResetBasic = new Date();
+              nextResetBasic.setMonth(nextResetBasic.getMonth() + 1);
+              updateData.next_credit_reset_at = nextResetBasic.toISOString();
+              break;
+              
           case 'jobseeker_premium':
               const jsPremExp = new Date();
               jsPremExp.setMonth(jsPremExp.getMonth() + 4); // 4 Months
@@ -91,7 +102,7 @@ export async function POST(request: Request) {
               
           case 'jobseeker_pro':
               const jsProExp = new Date();
-              jsProExp.setFullYear(jsProExp.getFullYear() + 1); // 1 Year
+              jsProExp.setFullYear(jsProExp.getMonth() + 4); // 1 Year
               updateData.plan_expires_at = jsProExp.toISOString();
               updateData.subscription_allowance = 60;
               updateData.subscription_credits = 60;
@@ -128,6 +139,7 @@ export async function POST(request: Request) {
           'premium': 1499,
           'pro': 4999,
           'talent': 499,
+          'jobseeker_basic': 299,
           'jobseeker_premium': 499,
           'jobseeker_pro': 999,
           'mini': 149,

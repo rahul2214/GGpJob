@@ -39,6 +39,7 @@ export async function POST(request: Request) {
               'pro': 'Recruiter Pro',
               'talent': 'Talent Search',
               'jobseeker_premium': 'Job Seeker Premium',
+              'jobseeker_basic': 'Job Seeker Basic',
               'jobseeker_pro': 'Job Seeker Pro',
               'mini': 'Mini Credit Pack',
               'basic_pack': 'Basic Credit Pack',

@@ -82,6 +82,7 @@ export async function POST(request: Request) {
         'premium': 1499,
         'talent': 499,
         'pro': 4999,
+        'jobseeker_basic': 299,
         'jobseeker_premium': 499,
         'jobseeker_pro': 999,
         'mini': 149,

@@ -196,7 +196,7 @@ export default function JobSeekerPlansPage() {
       <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-indigo-100/30 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-amber-100/30 rounded-full blur-[100px] translate-x-1/3 translate-y-1/2 pointer-events-none" />
 
-      <div className="max-w-6xl mx-auto relative z-10">
+      <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-16 space-y-4">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <h1 className="text-5xl font-black text-slate-900 tracking-tight sm:text-6xl">
@@ -210,7 +210,7 @@ export default function JobSeekerPlansPage() {
 
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {JOB_SEEKER_PLANS.map((plan, idx) => (
             <motion.div
               key={plan.id}
@@ -243,18 +243,27 @@ export default function JobSeekerPlansPage() {
                   <h3 className="text-2xl font-bold mb-1 text-white">{plan.name}</h3>
                   <p className="text-white/80 text-sm leading-relaxed mb-6">{plan.description}</p>
                   
-                  <div className="flex items-center flex-wrap gap-2.5 mb-2">
-                    {plan.originalPrice && plan.price > 0 && (
-                      <>
-                        <span className="text-white/60 font-medium text-xl line-through decoration-white/40 pt-1">₹{plan.originalPrice}</span>
-                        <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider mt-1">
-                          Save {Math.round((1 - plan.price / plan.originalPrice) * 100)}%
+                  <div className="flex items-center justify-between gap-2.5 mb-2 w-full">
+                    {plan.originalPrice && plan.price > 0 ? (
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white/60 font-medium text-xl line-through decoration-white/40">₹{plan.originalPrice}</span>
+                          <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                            Save {Math.round((1 - plan.price / plan.originalPrice) * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                    ) : <div />}
+                    <div className="flex flex-col items-end">
+                      <span className="text-4xl font-black tracking-tighter text-white">
+                        ₹{plan.price}
+                      </span>
+                      {plan.price > 0 && (
+                        <span className="text-white/70 text-[10px] font-bold uppercase tracking-wider mt-0.5">
+                          for 4 months
                         </span>
-                      </>
-                    )}
-                    <span className="text-4xl font-black tracking-tighter pt-1 ml-auto text-white">
-                      ₹{plan.price}
-                    </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -286,6 +295,7 @@ export default function JobSeekerPlansPage() {
                     className={cn(
                       "w-full h-14 rounded-2xl font-bold text-lg transition-all group",
                       plan.id === 'free' && "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200",
+                      plan.id === 'jobseeker_basic' && "bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-200",
                       plan.id === 'jobseeker_premium' && "bg-sky-500 hover:bg-sky-600 text-white shadow-lg shadow-sky-200",
                       plan.id === 'jobseeker_pro' && "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200",
                     )}

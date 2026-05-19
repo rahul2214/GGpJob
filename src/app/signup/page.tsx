@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, AlertCircle, Eye, EyeOff, CheckCircle2, Rocket, ShieldCheck, ArrowRight, Zap } from "lucide-react";
+import { LoaderCircle, AlertCircle, Eye, EyeOff, CheckCircle2, Rocket, ShieldCheck, ArrowRight, Zap, Star, Search, Crown } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
@@ -137,9 +137,11 @@ export default function SignupPage() {
   if (loading || user) return null;
 
   return (
-    <div className="min-h-screen flex bg-white">
-      {/* Left Panel */}
-      <div className="hidden lg:flex lg:w-[42%] relative overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 flex-col justify-between p-12">
+    <div className="min-h-screen bg-white">
+      {/* Top Split Signup Section */}
+      <div className="flex">
+        {/* Left Panel */}
+        <div className="hidden lg:flex lg:w-[42%] relative overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 flex-col justify-between p-12" style={{ minHeight: '100vh' }}>
         <div className="absolute top-0 -left-20 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 -right-20 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl" />
         <div className="relative z-10 space-y-8">
@@ -148,45 +150,44 @@ export default function SignupPage() {
               Start Your <br />
               <span className="text-indigo-200">Career Journey</span>
             </h1>
-            <p className="text-indigo-200 text-lg leading-relaxed max-w-sm">
+            <p className="text-indigo-200 text-base leading-relaxed max-w-sm">
               Create a free account and unlock thousands of job opportunities from top companies, today.
             </p>
           </motion.div>
 
           <div className="space-y-4">
-            {JOB_SEEKER_PLANS.map((plan, idx) => (
+            {benefits.map((b, idx) => (
               <motion.div
-                key={plan.id}
+                key={idx}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 + idx * 0.12 }}
-                className={`bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 relative overflow-hidden ${plan.popular ? 'ring-2 ring-indigo-300 shadow-lg shadow-indigo-500/30' : ''}`}
+                transition={{ duration: 0.5, delay: 0.4 + idx * 0.12 }}
+                className="flex items-center gap-3"
               >
-                {plan.popular && (
-                  <div className="absolute top-0 right-0 bg-indigo-500 text-white px-3 py-1 rounded-bl-lg text-[10px] font-bold tracking-widest uppercase">
-                    Popular
-                  </div>
-                )}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <plan.icon className={`w-6 h-6 ${plan.color === 'emerald' ? 'text-emerald-400' : 'text-indigo-300'}`} />
-                    <h3 className="text-white font-bold text-lg">{plan.name}</h3>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-white font-bold text-xl">₹{plan.price}</span>
-                  </div>
-                </div>
-                <ul className="space-y-2 mb-0">
-                  {plan.features.map((feature, fIdx) => (
-                    <li key={fIdx} className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-white/70 shrink-0 mt-0.5" />
-                      <span className="text-white/80 text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+                <b.icon className={`w-5 h-5 shrink-0 ${b.color}`} />
+                <span className="text-white/90 text-sm font-medium">{b.text}</span>
               </motion.div>
             ))}
           </div>
+
+          {/* Testimonial card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.8 }}
+            className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5"
+          >
+            <p className="text-white/90 text-sm italic leading-relaxed mb-3">
+              "Thanks to JobsDart, I got referred at one of the top tech companies and secured a job within 2 weeks!"
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold">A</div>
+              <div>
+                <p className="text-white text-sm font-semibold">Ananya K.</p>
+                <p className="text-indigo-200 text-xs">Software Engineer, Amazon</p>
+              </div>
+            </div>
+          </motion.div>
         </div>
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="relative z-10">
@@ -203,7 +204,7 @@ export default function SignupPage() {
       <div className="w-full lg:w-[58%] flex items-start justify-center px-6 py-10 lg:px-16 overflow-y-auto">
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="w-full max-w-lg py-4">
 
-         
+
 
           <div className="mb-7">
             <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
@@ -331,8 +332,101 @@ export default function SignupPage() {
             <Link href="/login" className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors">Sign in</Link>
           </p>
 
-         
         </motion.div>
+      </div>
+      </div>
+
+      {/* ============ PRICING SECTION ============ */}
+      <div className="bg-slate-950 text-white pb-20 pt-16 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <div className="inline-flex items-center gap-2 bg-indigo-900/50 border border-indigo-700/40 text-indigo-400 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
+            <Zap className="w-3 h-3" /> Jobseeker Plans
+          </div>
+          <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-3 tracking-tight">
+            Accelerate Your Job Search
+          </h2>
+          <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-12">
+            Get referred by verified industry insiders, unlock priority visibility, and access premium dashboard insights.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {JOB_SEEKER_PLANS.map((plan, idx) => (
+              <motion.div
+                key={plan.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: idx * 0.1 }}
+                className={`flex flex-col bg-slate-900 border rounded-3xl overflow-hidden text-left transition-all duration-300 hover:scale-[1.01] ${
+                  plan.popular 
+                    ? 'border-indigo-500 ring-2 ring-indigo-500/30 shadow-xl shadow-indigo-500/10' 
+                    : 'border-slate-800'
+                }`}
+              >
+                {plan.popular && (
+                  <div className="bg-indigo-600 text-white text-center py-1.5 text-xs font-bold tracking-widest uppercase">
+                    Recommended Plan
+                  </div>
+                )}
+                
+                <div className="p-8 flex-grow flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        plan.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400' :
+                        plan.color === 'sky' ? 'bg-sky-500/10 text-sky-400' :
+                        plan.color === 'amber' ? 'bg-amber-500/10 text-amber-400' :
+                        'bg-indigo-500/10 text-indigo-400'
+                      }`}>
+                        <plan.icon className="w-5 h-5" />
+                      </div>
+                      <h3 className="font-extrabold text-white text-xl">{plan.name}</h3>
+                    </div>
+                    
+                    <p className="text-slate-400 text-xs leading-relaxed mb-6">{plan.description}</p>
+                    
+                    <div className="flex items-baseline gap-2 mb-6">
+                      <span className="text-4xl font-black text-white">₹{plan.price}</span>
+                      {plan.price > 0 && <span className="text-slate-400 text-xs">/ 4 months</span>}
+                      {plan.originalPrice && plan.price > 0 && (
+                        <span className="text-slate-500 line-through text-sm ml-2">₹{plan.originalPrice}</span>
+                      )}
+                    </div>
+
+                    <div className="space-y-4 mb-8">
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Features Include:</div>
+                      <ul className="space-y-3">
+                        {plan.features.map((feature, fIdx) => (
+                          <li key={fIdx} className="flex items-start gap-2.5">
+                            <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                            <span className="text-slate-300 text-xs leading-relaxed">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <Button 
+                    onClick={() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      toast({
+                        title: "Sign Up First",
+                        description: "Please create your account to activate or purchase this plan.",
+                      });
+                    }}
+                    className={`w-full h-11 rounded-xl font-bold text-xs transition-all ${
+                      plan.popular
+                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20'
+                        : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
+                    }`}
+                  >
+                    {plan.price === 0 ? 'Sign Up & Get Started' : 'Upgrade After Sign Up'}
+                  </Button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

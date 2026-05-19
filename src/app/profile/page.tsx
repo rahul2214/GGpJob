@@ -220,10 +220,12 @@ export default function ProfilePage() {
                                                         "text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter",
                                                         user.planType === 'jobseeker_pro' ? "bg-indigo-100 text-indigo-700" :
                                                         user.planType === 'jobseeker_premium' ? "bg-sky-100 text-sky-700" :
+                                                        user.planType === 'jobseeker_basic' ? "bg-amber-100 text-amber-700" :
                                                         "bg-slate-100 text-slate-600"
                                                     )}>
                                                         {user.planType === 'jobseeker_pro' ? "Pro Plan" :
-                                                         user.planType === 'jobseeker_premium' ? "Premium" : "Free Plan"}
+                                                         user.planType === 'jobseeker_premium' ? "Premium" :
+                                                         user.planType === 'jobseeker_basic' ? "Basic Plan" : "Free Plan"}
                                                     </span>
                                                 </div>
                                                 
