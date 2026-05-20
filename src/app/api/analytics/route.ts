@@ -3,6 +3,8 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkAdmin } from '@/lib/check-admin';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 
 async function getCount(table: string, from?: string | null, to?: string | null, dateField: string = 'created_at') {
     let query = supabaseAdmin
