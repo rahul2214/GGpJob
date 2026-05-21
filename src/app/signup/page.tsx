@@ -18,6 +18,7 @@ import { LoaderCircle, AlertCircle, Eye, EyeOff, CheckCircle2, Rocket, ShieldChe
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
+import { isOnboardingComplete } from "@/lib/onboarding";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase-client"; // still used for Google OAuth
 
@@ -67,7 +68,7 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      if (user.role === 'Job Seeker' && (!user.domainId || !user.resumeUrl || !user.phone || !user.profileStats?.hasSkills)) {
+      if (user.role === 'Job Seeker' && !isOnboardingComplete(user)) {
         router.push('/onboarding');
       } else {
         router.push('/');

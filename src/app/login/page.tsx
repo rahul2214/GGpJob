@@ -29,6 +29,7 @@ import { LoaderCircle, Eye, EyeOff, Briefcase, Search, Star, ArrowRight, Users, 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
+import { isOnboardingComplete } from "@/lib/onboarding";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase-client";
 import { motion } from "framer-motion";
@@ -65,7 +66,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      if (user.role === 'Job Seeker' && (!user.domainId || !user.resumeUrl || !user.phone || !user.profileStats?.hasSkills)) {
+      if (user.role === 'Job Seeker' && !isOnboardingComplete(user)) {
         router.push('/onboarding');
       } else {
         router.push('/');

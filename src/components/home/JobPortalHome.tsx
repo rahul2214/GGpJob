@@ -271,7 +271,7 @@ const JobPortalHome = () => {
             <section className="py-24 bg-white relative z-20">
                 <div className="container px-4 md:px-6 mx-auto">
                     <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp} className="text-center max-w-3xl mx-auto mb-16">
-                        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">Why Choose Job Portal?</h2>
+                        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">Why Choose JobsDart ?</h2>
                         <p className="text-lg text-slate-600">Our platform is designed to make job hunting and hiring simple, effective, and accessible to everyone.</p>
                     </motion.div>
                     
@@ -298,7 +298,7 @@ const JobPortalHome = () => {
                 <div className="container px-4 md:px-6 mx-auto">
                     <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="text-center max-w-3xl mx-auto mb-16">
                         <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">How It Works</h2>
-                        <p className="text-lg text-slate-600">Getting started with Job Portal is simple for both job seekers and employers.</p>
+                        <p className="text-lg text-slate-600">Getting started with JobsDart is simple for both job seekers and employers.</p>
                     </motion.div>
 
                     <div className="relative">
@@ -495,13 +495,13 @@ const JobPortalHome = () => {
                             Frequently Asked <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Questions</span>
                         </motion.h2>
                         <motion.p variants={fadeInUp} className="text-base md:text-lg text-slate-500">
-                            Everything you need to know about our job portal.
+                            Everything you need to know about our JobDart.
                         </motion.p>
                     </motion.div>
 
                     <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={staggerContainer} className="space-y-3">
                         {[
-                            { q: "Is Job Portal completely free to use?", a: "Yes! Job Portal is 100% free for both job seekers and employers. You can post jobs, apply for positions, and connect with candidates without any fees or hidden charges." },
+                            { q: "Is JobsDart completely free to use?", a: "Yes! JobsDart is 100% free for both job seekers and employers. You can post jobs, apply for positions, and connect with candidates without any fees or hidden charges." },
                             { q: "How do I apply for a job on this platform?", a: "Simply create a profile, browse the job listings, and click 'Apply Now' on any job that interests you. You can track your applications from your dashboard." },
                             { q: "What is a referral job listing?", a: "Referral jobs are posted by verified company employees who can refer you internally. Referred candidates are typically fast-tracked and have a significantly higher chance of getting hired." },
                             { q: "How do I post a job as an employer?", a: "Sign up as a company, complete your company profile, and click 'Post a Job'. Your listing will be live instantly and visible to thousands of qualified candidates." },

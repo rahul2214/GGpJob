@@ -5,6 +5,7 @@ import { createContext, useState, useContext, useEffect, ReactNode, useCallback,
 import { useRouter, usePathname } from 'next/navigation';
 import { User } from '@/lib/types';
 import { supabase } from '@/lib/supabase-client';
+import { isOnboardingComplete } from '@/lib/onboarding';
 
 interface UserContextType {
   user: User | null;
@@ -36,9 +37,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
     }
 
-    if (user.role === 'Job Seeker' && (!user.planType || user.planType === 'none')) {
-        if (!pathname.startsWith('/jobseeker/plans') && !isAllowedPath) {
-            router.replace('/jobseeker/plans');
+    if (user.role === 'Job Seeker') {
+        if (!isOnboardingComplete(user)) {
+            if (!pathname.startsWith('/onboarding') && !isAllowedPath) {
+                router.replace('/onboarding');
+            }
+        } else if (!user.planType || user.planType === 'none') {
+            if (!pathname.startsWith('/jobseeker/plans') && !isAllowedPath) {
+                router.replace('/jobseeker/plans');
+            }
         }
     }
   }, [user, loading, pathname, router]);

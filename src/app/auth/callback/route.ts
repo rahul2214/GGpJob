@@ -23,15 +23,21 @@ export async function GET(request: Request) {
 
     if (!error && data?.user) {
       const user = data.user;
+      const session = data?.session;
       
       // 1. Search across all tables to see if the profile already exists
       const tables = ['jobseekers', 'recruiters', 'employees', 'admins'];
       let foundProfile = null;
 
       for (const t of tables) {
+        // Retrieve onboarding check fields for jobseekers
+        const selectQuery = t === 'jobseekers'
+          ? 'id, uuid, phone, resume_url, domain_id, jobseeker_skills(id)'
+          : 'id, uuid';
+
         const { data: profile } = await supabaseAdmin
             .from(t)
-            .select('id, uuid')
+            .select(selectQuery)
             .eq('uuid', user.id)
             .maybeSingle();
         
@@ -69,9 +75,12 @@ export async function GET(request: Request) {
           }
         };
 
-        // Add role string for jobseekers legacy compatibility
+        // Add role string and default plan for jobseekers legacy compatibility and default plan setting
         if (targetTable === 'jobseekers') {
             (profileData as any).role = 'Job Seeker';
+            (profileData as any).plan_type = 'free';
+            (profileData as any).is_paid = false;
+            (profileData as any).credits = 2;
         }
 
         const { error: insertError } = await supabaseAdmin
@@ -86,7 +95,31 @@ export async function GET(request: Request) {
         
         // Redirect to onboarding for new users
         const onboardingPath = targetTable === 'recruiters' ? '/company/onboarding' : '/onboarding';
+        if (session) {
+          const sessionUrl = `${origin}/auth/session?access_token=${session.access_token}&refresh_token=${session.refresh_token}&next=${encodeURIComponent(onboardingPath)}`;
+          return NextResponse.redirect(sessionUrl);
+        }
         return NextResponse.redirect(`${origin}${onboardingPath}`);
+      }
+
+      // Check onboarding completeness for existing Job Seekers
+      let redirectNext = next;
+      if (foundProfile && foundProfile.table === 'jobseekers') {
+        const phone = foundProfile.phone || '';
+        const resumeUrl = foundProfile.resume_url || '';
+        const domainId = foundProfile.domain_id || '';
+        const hasSkills = Array.isArray(foundProfile.jobseeker_skills) && foundProfile.jobseeker_skills.length > 0;
+        
+        const isComplete = !!(phone && phone.length >= 10 && resumeUrl && domainId && hasSkills);
+        if (!isComplete) {
+          redirectNext = '/onboarding';
+        }
+      }
+
+      // Existing user: redirect through session helper if session is available
+      if (session) {
+        const sessionUrl = `${origin}/auth/session?access_token=${session.access_token}&refresh_token=${session.refresh_token}&next=${encodeURIComponent(redirectNext)}`;
+        return NextResponse.redirect(sessionUrl);
       }
     }
   }

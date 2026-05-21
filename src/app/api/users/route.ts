@@ -34,6 +34,22 @@ export async function GET(request: Request) {
             console.error(`Error fetching jobseeker ${uid}:`, jobseekerError);
         }
         if (jobseeker) {
+            // Self-healing: if plan_type is missing or 'none', assign 'free'
+            if (!jobseeker.plan_type || jobseeker.plan_type === 'none') {
+                const { error: updatePlanErr } = await supabaseAdmin
+                    .from('jobseekers')
+                    .update({ plan_type: 'free', is_paid: false })
+                    .eq('uuid', uid);
+                
+                if (updatePlanErr) {
+                    console.error(`[API_USERS_GET] Failed to self-heal plan_type to free for ${uid}:`, updatePlanErr);
+                } else {
+                    console.log(`[API_USERS_GET] Self-healed plan_type to free for ${uid}`);
+                    jobseeker.plan_type = 'free';
+                    jobseeker.is_paid = false;
+                }
+            }
+
             // Resolve skills from junction table
             let resolvedSkills: any[] = [];
             if (jobseeker.jobseeker_skills && jobseeker.jobseeker_skills.length > 0) {
@@ -319,6 +335,7 @@ export async function GET(request: Request) {
                     email: authUser.email,
                     role_id: roleId,
                     phone: metadata?.phone || '',
+                    ...(targetTable === 'jobseekers' ? { credits: 2, plan_type: 'free', is_paid: false } : {}),
                     ...(targetTable === 'admins' ? { is_super_admin: false } : {})
                 }, { onConflict: 'email' })
                 .select()
