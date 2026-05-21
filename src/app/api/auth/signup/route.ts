@@ -71,7 +71,12 @@ export async function POST(request: Request) {
             email,
             phone: phone ? `+91${phone}` : '',
             role_id: roleId,
-            ...(table === 'jobseekers' ? { credits: 2, plan_type: 'free', is_paid: false } : {}),
+            ...(table === 'jobseekers' ? { 
+                plan_type: 'free', 
+                is_paid: false,
+                subscription_credits: 2,
+                subscription_allowance: 2
+            } : {}),
             ...(table === 'admins' ? { is_super_admin: false } : {})
         });
 

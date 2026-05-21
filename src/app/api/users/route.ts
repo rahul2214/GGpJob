@@ -38,7 +38,12 @@ export async function GET(request: Request) {
             if (!jobseeker.plan_type || jobseeker.plan_type === 'none') {
                 const { error: updatePlanErr } = await supabaseAdmin
                     .from('jobseekers')
-                    .update({ plan_type: 'free', is_paid: false })
+                    .update({ 
+                        plan_type: 'free', 
+                        is_paid: false,
+                        subscription_credits: 2,
+                        subscription_allowance: 2
+                    })
                     .eq('uuid', uid);
                 
                 if (updatePlanErr) {
@@ -47,6 +52,8 @@ export async function GET(request: Request) {
                     console.log(`[API_USERS_GET] Self-healed plan_type to free for ${uid}`);
                     jobseeker.plan_type = 'free';
                     jobseeker.is_paid = false;
+                    jobseeker.subscription_credits = 2;
+                    jobseeker.subscription_allowance = 2;
                 }
             }
 
@@ -335,7 +342,12 @@ export async function GET(request: Request) {
                     email: authUser.email,
                     role_id: roleId,
                     phone: metadata?.phone || '',
-                    ...(targetTable === 'jobseekers' ? { credits: 2, plan_type: 'free', is_paid: false } : {}),
+                    ...(targetTable === 'jobseekers' ? { 
+                        plan_type: 'free', 
+                        is_paid: false,
+                        subscription_credits: 2,
+                        subscription_allowance: 2
+                    } : {}),
                     ...(targetTable === 'admins' ? { is_super_admin: false } : {})
                 }, { onConflict: 'email' })
                 .select()

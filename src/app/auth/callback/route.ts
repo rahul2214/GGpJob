@@ -80,7 +80,8 @@ export async function GET(request: Request) {
             (profileData as any).role = 'Job Seeker';
             (profileData as any).plan_type = 'free';
             (profileData as any).is_paid = false;
-            (profileData as any).credits = 2;
+            (profileData as any).subscription_credits = 2;
+            (profileData as any).subscription_allowance = 2;
         }
 
         const { error: insertError } = await supabaseAdmin
