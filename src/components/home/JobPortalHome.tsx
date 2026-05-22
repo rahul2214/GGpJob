@@ -207,12 +207,7 @@ const JobPortalHome = () => {
                 <div className="container relative z-10 px-4 md:px-6 mx-auto">
                     <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
                         <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="max-w-2xl lg:col-span-7">
-                            
-                            <motion.div variants={fadeInUp} className="inline-flex items-center rounded-full px-4 py-1.5 bg-indigo-500/10 text-indigo-300 font-medium text-xs md:text-sm mb-6 border border-indigo-500/20 shadow-lg backdrop-blur-sm gap-2">
-                                <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
-                                <span>Get Insider Referrals or Apply Directly to Recruiters</span>
-                            </motion.div>
-                            
+
                             <motion.h1 variants={fadeInUp} className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white mb-6 leading-[1.1]">
                                 Bypass the ATS.<br />
                                 Get Referred by <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 drop-shadow-sm">Insiders.</span>
@@ -379,7 +374,7 @@ const JobPortalHome = () => {
                         variants={fadeInUp} 
                         className="text-center max-w-3xl mx-auto mb-16"
                     >
-                        <span className="text-indigo-600 text-xs font-bold uppercase tracking-widest px-3.5 py-1 bg-indigo-50 rounded-full border border-indigo-100">The Power of Referrals</span>
+                 
                         <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 mt-4 mb-6 tracking-tight">ATS Black Hole vs JobsDart</h2>
                         <p className="text-base sm:text-lg text-slate-600">Why applying the standard way is set up for failure, and how bypassing automated screeners direct recruiter attention.</p>
                     </motion.div>
@@ -467,7 +462,7 @@ const JobPortalHome = () => {
                         variants={fadeInUp} 
                         className="text-center max-w-3xl mx-auto mb-16"
                     >
-                        <span className="text-indigo-400 text-xs font-bold uppercase tracking-widest px-3.5 py-1 bg-indigo-500/10 rounded-full border border-indigo-500/20">The Referral Lifecycle</span>
+                       
                         <h2 className="text-3xl md:text-5xl font-extrabold text-white mt-4 mb-6 tracking-tight">Interactive Pipeline Simulator</h2>
                         <p className="text-base sm:text-lg text-slate-400">Click through the 8 stages of the JobsDart referral flow to see how we coordinate safety, validation proofs, and payouts.</p>
                     </motion.div>
@@ -621,9 +616,7 @@ const JobPortalHome = () => {
 
                         {/* Chat explanation Copy */}
                         <div className="lg:col-span-6 max-w-xl">
-                            <span className="text-indigo-600 text-xs font-bold uppercase tracking-widest px-3.5 py-1 bg-indigo-50 rounded-full border border-indigo-100">
-                                Direct Messaging System
-                            </span>
+                          
                             <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 mt-4 mb-6 tracking-tight leading-tight">
                                 Direct In-App Chat.<br />No Middlemen.
                             </h2>
@@ -661,7 +654,7 @@ const JobPortalHome = () => {
                         variants={fadeInUp} 
                         className="text-center max-w-3xl mx-auto mb-12"
                     >
-                        <span className="text-indigo-600 text-xs font-bold uppercase tracking-widest px-3.5 py-1 bg-indigo-50 rounded-full border border-indigo-100">How JobsDart Works</span>
+                      
                         <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 mt-4 mb-6 tracking-tight">Platform Economics</h2>
                         <p className="text-base sm:text-lg text-slate-600">Choose your role to understand how our credit and reputation economics keep the job search completely fair.</p>
                         
@@ -835,7 +828,7 @@ const JobPortalHome = () => {
                             transition={{ duration: 0.6 }}
                             className="lg:col-span-5 max-w-lg"
                         >
-                            <span className="text-indigo-600 text-xs font-bold uppercase tracking-widest px-3.5 py-1 bg-indigo-50 rounded-full border border-indigo-100">Speed & Trust Leaderboard</span>
+                          
                             <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 mt-4 mb-6 tracking-tight">Hiring at India's Top MNCs</h2>
                             <p className="text-base sm:text-lg text-slate-600 mb-6 leading-relaxed">
                                 Referrers on JobsDart are ranked in real-time by their **Average Response Speed** and **Trust Score**. 
@@ -916,13 +909,7 @@ const JobPortalHome = () => {
                         variants={staggerContainer} 
                         className="text-center mb-16"
                     >
-                        <span className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-600 text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-5">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                            </span>
-                            Live Listings
-                        </span>
+                       
                         <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
                             Latest <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Opportunities</span>
                         </h2>
@@ -1156,9 +1143,7 @@ const JobPortalHome = () => {
                         variants={staggerContainer} 
                         className="text-center mb-14"
                     >
-                        <span className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-5">
-                            Common Enquiries
-                        </span>
+                    
                         <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">
                             Platform <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Rules & FAQs</span>
                         </h2>
