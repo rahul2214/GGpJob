@@ -986,13 +986,13 @@ const JobPortalHome = () => {
                                         >
                                             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
                                             <div className="flex items-start justify-between mb-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-extrabold text-base shadow-lg shadow-indigo-200">
+                                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-extrabold text-base shadow-lg shadow-indigo-200 shrink-0">
                                                         {(job.companyName || job.title || 'J')[0].toUpperCase()}
                                                     </div>
-                                                    <div>
+                                                    <div className="min-w-0 flex-1">
                                                         <h3 className="font-bold text-slate-900 text-sm leading-tight line-clamp-1">{job.title}</h3>
-                                                        <p className="text-xs text-slate-500 mt-0.5">{job.companyName || 'Company'}</p>
+                                                        <p className="text-xs text-slate-500 mt-0.5 truncate">{job.companyName || 'Company'}</p>
                                                     </div>
                                                 </div>
                                                 {job.isReferral ? (
@@ -1054,13 +1054,13 @@ const JobPortalHome = () => {
                                         <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left rounded-t-3xl"></div>
                                         <div>
                                             <div className="flex items-start justify-between mb-5">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-extrabold text-lg shadow-lg shadow-indigo-200/50 group-hover:scale-110 transition-transform duration-300">
+                                                <div className="flex items-center gap-4 min-w-0 flex-1">
+                                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-extrabold text-lg shadow-lg shadow-indigo-200/50 group-hover:scale-110 transition-transform duration-300 shrink-0">
                                                         {(job.companyName || job.title || 'J')[0].toUpperCase()}
                                                     </div>
-                                                    <div>
+                                                    <div className="min-w-0 flex-1">
                                                         <h3 className="font-bold text-slate-900 leading-tight text-base group-hover:text-indigo-700 transition-colors line-clamp-1">{job.title}</h3>
-                                                        <p className="text-sm text-slate-500 mt-0.5">{job.companyName || 'Company'}</p>
+                                                        <p className="text-sm text-slate-500 mt-0.5 truncate">{job.companyName || 'Company'}</p>
                                                     </div>
                                                 </div>
                                                 {job.isReferral ? (
