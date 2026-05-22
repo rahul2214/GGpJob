@@ -7,7 +7,8 @@ import { processPayout } from './payout-logic';
 export const ACTION_XP = {
     JOB_POSTED: 5,
     CANDIDATE_ACCEPTED: 10,
-    REFERRAL_VERIFIED: 20
+    REFERRAL_VERIFIED: 20,
+    CANDIDATE_INTERVIEW: 15
 };
 
 export const MILESTONES = [
@@ -208,6 +209,7 @@ export async function awardXP(employeeId: string | number, action: keyof typeof 
         // 6. Update Trust Score
         let trustReason: TrustReason | null = null;
         if (action === 'REFERRAL_VERIFIED') trustReason = 'VERIFIED_REFERRAL';
+        else if (action === 'CANDIDATE_INTERVIEW') trustReason = 'VERIFIED_INTERVIEW';
         
         if (trustReason) {
             await updateTrustScore(Number(employeeId), trustReason);

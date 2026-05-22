@@ -130,7 +130,8 @@ export async function GET(request: NextRequest) {
             6: 'Referred',
             7: 'Interviewing',
             8: 'Offer Received',
-            9: 'Hired'
+            9: 'Hired',
+            13: 'Verified Referral'
         };
 
         const appsByStatusMap: Record<string, number> = {};

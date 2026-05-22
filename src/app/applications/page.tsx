@@ -33,6 +33,7 @@ const statusConfig: Record<string, { label: string; color: string; bg: string; i
   "Accepted":         { label: "Accepted",        color: "text-cyan-700",    bg: "bg-cyan-100",    icon: CheckCircle2 },
   "Referral Unlocked":{ label: "Unlocked",        color: "text-indigo-700",  bg: "bg-indigo-100",  icon: CheckCircle2 },
   "Referred":         { label: "Referred",        color: "text-indigo-700",  bg: "bg-indigo-100",  icon: ArrowRight },
+  "Verified Referral":{ label: "Verified Referral", color: "text-emerald-700", bg: "bg-emerald-100", icon: ShieldCheck },
   "Interviewing":     { label: "Interview Needs to be Scheduled", color: "text-amber-700", bg: "bg-amber-100", icon: Clock },
   "Offer Received":   { label: "Offer Received",  color: "text-purple-700",  bg: "bg-purple-100",  icon: CheckCircle2 },
   "Pending Confirmation": { label: "Joined?",     color: "text-orange-700",  bg: "bg-orange-100",  icon: Clock },
@@ -112,6 +113,9 @@ export default function ApplicationsPage() {
   const [initiateTargetStatus, setInitiateTargetStatus] = useState<6 | 7 | 9>(6);
   const [showDisputeInput, setShowDisputeInput] = useState(false);
   const [disputeReasonInput, setDisputeReasonInput] = useState("");
+  const [simulatedElapsed, setSimulatedElapsed] = useState<Record<string, boolean>>({});
+  const [feedbackAnswers, setFeedbackAnswers] = useState<Record<string, { recruiterContact: string; movedForward: string; genuineReferral: string }>>({});
+  const [submittingFeedback, setSubmittingFeedback] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!userLoading && !user) router.push("/login");
@@ -373,6 +377,210 @@ export default function ApplicationsPage() {
                       </div>
                     </div>
                   </div>
+                  {app.statusId === 13 && (
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                      {app.jobseekerFeedback || app.feedbackSubmittedAt ? (
+                        <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3.5 flex items-center gap-2.5">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                          <span className="text-xs font-semibold text-slate-600">
+                            Thank you! Referral confirmation feedback has been submitted.
+                          </span>
+                        </div>
+                      ) : (() => {
+                        const updatedAt = app.updatedAt ? new Date(app.updatedAt) : new Date(app.appliedAt);
+                        const diffTime = new Date().getTime() - updatedAt.getTime();
+                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                        const isEligible = diffDays >= 5 || simulatedElapsed[app.id];
+                        
+                        if (!isEligible) {
+                          return (
+                            <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                              <div className="space-y-1">
+                                <p className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                                  <Clock className="w-4 h-4 text-indigo-500" />
+                                  Candidate Confirmation Stage
+                                </p>
+                                <p className="text-[11px] text-indigo-600 leading-normal">
+                                  JobsDart will ask for your confirmation feedback after 5 days to ensure transparency and track response time.
+                                </p>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-[10px] font-bold uppercase tracking-wider bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50 rounded-lg whitespace-nowrap self-start md:self-auto"
+                                onClick={() => setSimulatedElapsed(prev => ({ ...prev, [app.id]: true }))}
+                              >
+                                Simulate 5 Days (Test Mode)
+                              </Button>
+                            </div>
+                          );
+                        }
+
+                        // Retrieve current form state for this app
+                        const formState = feedbackAnswers[app.id] || { recruiterContact: '', movedForward: '', genuineReferral: '' };
+                        const updateForm = (field: string, val: string) => {
+                          setFeedbackAnswers(prev => ({
+                            ...prev,
+                            [app.id]: {
+                              ...formState,
+                              [field]: val
+                            }
+                          }));
+                        };
+
+                        const isFormComplete = !!(formState.recruiterContact && formState.movedForward && formState.genuineReferral);
+
+                        return (
+                          <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4 md:p-5 space-y-4">
+                            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                              <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                              <h4 className="font-extrabold text-slate-800 text-sm">Candidate Confirmation & Feedback</h4>
+                            </div>
+
+                            <div className="space-y-3.5">
+                              {/* Q1 */}
+                              <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-700">1. Did you receive any recruiter call/email?</Label>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                  {[
+                                    "Received recruiter response",
+                                    "No response yet",
+                                    "Fake/Spam referral",
+                                    "Interview scheduled"
+                                  ].map((opt) => (
+                                    <button
+                                      key={opt}
+                                      type="button"
+                                      className={cn(
+                                        "px-3 py-2 text-[11px] font-bold rounded-xl border text-center transition-all",
+                                        formState.recruiterContact === opt
+                                          ? "bg-indigo-600 border-indigo-600 text-white shadow-sm shadow-indigo-100"
+                                          : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50/30"
+                                      )}
+                                      onClick={() => updateForm('recruiterContact', opt)}
+                                    >
+                                      {opt}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Q2 */}
+                              <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-700">2. Did your application move forward?</Label>
+                                <div className="flex gap-2">
+                                  {["Yes", "No"].map((opt) => (
+                                    <button
+                                      key={opt}
+                                      type="button"
+                                      className={cn(
+                                        "px-4 py-2 text-[11px] font-bold rounded-xl border text-center transition-all min-w-[70px]",
+                                        formState.movedForward === opt
+                                          ? "bg-indigo-600 border-indigo-600 text-white shadow-sm shadow-indigo-100"
+                                          : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50/30"
+                                      )}
+                                      onClick={() => updateForm('movedForward', opt)}
+                                    >
+                                      {opt}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Q3 */}
+                              <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-700">3. Was the referral genuine?</Label>
+                                <div className="flex gap-2">
+                                  {["Yes", "No"].map((opt) => (
+                                    <button
+                                      key={opt}
+                                      type="button"
+                                      className={cn(
+                                        "px-4 py-2 text-[11px] font-bold rounded-xl border text-center transition-all min-w-[70px]",
+                                        formState.genuineReferral === opt
+                                          ? "bg-indigo-600 border-indigo-600 text-white shadow-sm shadow-indigo-100"
+                                          : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50/30"
+                                      )}
+                                      onClick={() => updateForm('genuineReferral', opt)}
+                                    >
+                                      {opt}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Warnings */}
+                            {formState.recruiterContact === 'Fake/Spam referral' && (
+                              <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-2.5">
+                                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                                <div className="space-y-1">
+                                  <p className="text-xs font-bold text-rose-700">Dispute Escalation Alert</p>
+                                  <p className="text-[10px] text-rose-600 leading-normal">
+                                    Reporting this as Fake/Spam will deduct 25 trust score points from the employee and refund your 2 credits. Flagrant or false spam reports are subject to review.
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {formState.recruiterContact === 'Interview scheduled' && (
+                              <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-2.5">
+                                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                <div className="space-y-1">
+                                  <p className="text-xs font-bold text-emerald-700">Application Milestone</p>
+                                  <p className="text-[10px] text-emerald-600 leading-normal">
+                                    Selecting "Interview scheduled" will automatically advance your application to "Interviewing" and award rewards to your referrer employee.
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="flex justify-end pt-2">
+                              <Button
+                                size="sm"
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-5 shadow-lg shadow-indigo-100 text-xs h-9"
+                                disabled={!isFormComplete || submittingFeedback[app.id]}
+                                onClick={async () => {
+                                  setSubmittingFeedback(prev => ({ ...prev, [app.id]: true }));
+                                  try {
+                                    const res = await fetch(`/api/applications/${app.id}/confirm`, {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify(formState)
+                                    });
+                                    if (!res.ok) throw new Error('Failed to submit feedback');
+                                    
+                                    toast({
+                                      title: "Feedback Submitted! 👍",
+                                      description: "Thank you for helping keep JobsDart transparent and reliable."
+                                    });
+                                    
+                                    // Refresh applications
+                                    mutateApplications();
+                                    refreshUser();
+                                  } catch (e) {
+                                    toast({
+                                      title: "Submission Failed",
+                                      description: "Failed to process feedback. Please try again.",
+                                      variant: "destructive"
+                                    });
+                                  } finally {
+                                    setSubmittingFeedback(prev => ({ ...prev, [app.id]: false }));
+                                  }
+                                }}
+                              >
+                                {submittingFeedback[app.id] ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  "Submit Feedback"
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>

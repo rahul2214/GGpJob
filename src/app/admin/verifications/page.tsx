@@ -50,12 +50,12 @@ export default function AdminVerificationsPage() {
         setProcessingId(applicationId);
         try {
             // Mapping:
-            // 5 (Referred) -> Approve (6: Interviewing) or Reject (11: Disputed)
+            // 5 (Referred) -> Approve (13: Verified Referral) or Reject (11: Disputed)
             // 9 (Joined Company) -> Approve (10: Completed) or Reject (11: Disputed)
             
             let nextStatusId = 11; // Default to Disputed
             if (approve) {
-                nextStatusId = currentStatusId === 5 ? 6 : 10;
+                nextStatusId = currentStatusId === 5 ? 13 : 10;
             }
 
             const res = await fetch(`/api/applications/${applicationId}/status`, {

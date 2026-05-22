@@ -12,13 +12,20 @@ async function calculateSuccessRates(employees: any[]) {
     
     const jobIds = Array.from(jobMap.keys());
     const empTotalApps: Record<number, number> = {};
+    const empResponseTimes: Record<number, number[]> = {};
 
     if (jobIds.length > 0) {
-        const { data: apps } = await supabaseAdmin.from('applications').select('job_pk, status_id').in('job_pk', jobIds);
+        const { data: apps } = await supabaseAdmin.from('applications').select('job_pk, status_id, response_time_seconds').in('job_pk', jobIds);
         apps?.forEach(a => {
             const empPk = jobMap.get(a.job_pk);
             if (empPk) {
                 empTotalApps[empPk] = (empTotalApps[empPk] || 0) + 1;
+                if (a.response_time_seconds !== null && a.response_time_seconds !== undefined) {
+                    if (!empResponseTimes[empPk]) {
+                        empResponseTimes[empPk] = [];
+                    }
+                    empResponseTimes[empPk].push(a.response_time_seconds);
+                }
             }
         });
     }
@@ -27,9 +34,16 @@ async function calculateSuccessRates(employees: any[]) {
         const total = empTotalApps[emp.id] || 0;
         const verified = emp.verified_referrals_count || 0;
         let success_rate = total > 0 ? Math.min(100, Math.round((verified / total) * 100)) : (verified > 0 ? 100 : 0);
+        
+        const times = empResponseTimes[emp.id] || [];
+        const avg_response_time = times.length > 0
+            ? Math.round(times.reduce((sum, val) => sum + val, 0) / times.length)
+            : null;
+
         return {
             ...emp,
-            success_rate
+            success_rate,
+            avg_response_time
         };
     });
 }
@@ -92,7 +106,8 @@ export async function GET(request: Request) {
             query = query.order('xp', { ascending: false });
         }
 
-        const { data: topEmployees, error } = await query.limit(20);
+        const limitCount = sortBy === 'speed' ? 100 : 20;
+        const { data: topEmployees, error } = await query.limit(limitCount);
         if (error) throw error;
 
         leaderboard = await calculateSuccessRates(topEmployees || []);
@@ -103,6 +118,15 @@ export async function GET(request: Request) {
         leaderboard = leaderboard.sort((a, b) => (b.success_rate - a.success_rate));
     } else if (sortBy === 'trust') {
         leaderboard = leaderboard.sort((a, b) => (b.trust_score - a.trust_score));
+    } else if (sortBy === 'speed') {
+        leaderboard = leaderboard.sort((a, b) => {
+            const aTime = a.avg_response_time;
+            const bTime = b.avg_response_time;
+            if (aTime === null && bTime === null) return 0;
+            if (aTime === null) return 1;
+            if (bTime === null) return -1;
+            return aTime - bTime;
+        });
     } else {
         leaderboard = leaderboard.sort((a, b) => (b.xp - a.xp));
     }

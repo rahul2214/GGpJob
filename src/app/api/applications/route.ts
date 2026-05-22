@@ -14,7 +14,8 @@ const statusMap: { [key: number]: string } = {
     9: 'Joined Company',
     10: 'Completed',
     11: 'Disputed',
-    12: 'Rejected'
+    12: 'Rejected',
+    13: 'Verified Referral'
 };
 
 // Map Supabase application to frontend structure
@@ -62,6 +63,7 @@ async function mapApplicationToFrontend(app: any, skillMap?: Map<string, string>
         rating: app.rating,
         feedback: app.feedback,
         isUnlocked: !!app.is_unlocked,
+        updatedAt: app.updated_at,
         
         // Applicant details (Conditionally masked for Referrals)
         applicantName: profile.name,
@@ -95,6 +97,8 @@ async function mapApplicationToFrontend(app: any, skillMap?: Map<string, string>
         verificationStatus: app.verification_status,
         verificationExpiresAt: app.verification_expires_at,
         disputeReason: app.dispute_reason,
+        jobseekerFeedback: app.jobseeker_feedback,
+        feedbackSubmittedAt: app.feedback_submitted_at,
     };
 }
 
@@ -139,6 +143,14 @@ export async function GET(request: Request) {
     const verificationStatus = searchParams.get('verificationStatus');
     if (verificationStatus) {
         query = query.eq('verification_status', verificationStatus);
+    }
+
+    const statusIdParam = searchParams.get('statusId');
+    if (statusIdParam) {
+        const statusIds = statusIdParam.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        if (statusIds.length > 0) {
+            query = query.in('status_id', statusIds);
+        }
     }
 
     const { data: appDocs, error } = await query.order('applied_at', { ascending: false });

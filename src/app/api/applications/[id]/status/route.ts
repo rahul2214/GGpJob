@@ -20,7 +20,8 @@ const statusMap: { [key: number]: string } = {
     9: 'Joined Company',
     10: 'Completed',
     11: 'Disputed',
-    12: 'Rejected'
+    12: 'Rejected',
+    13: 'Verified Referral'
 };
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
@@ -48,7 +49,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     // 0.1 Fetch application data
     const { data: appData } = await supabaseAdmin
         .from('applications')
-        .select('job_pk, status_id, is_unlocked, user_pk')
+        .select('job_pk, status_id, is_unlocked, user_pk, unlocked_at')
         .eq('id', targetPk)
         .single();
 
@@ -174,6 +175,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         
         updatePayload.proof_uploaded_at = new Date().toISOString();
         
+        // Calculate response speed when status transitions to 5 (Referred)
+        if (sId === 5 && appData?.unlocked_at) {
+            const unlockedTime = new Date(appData.unlocked_at).getTime();
+            const nowTime = new Date().getTime();
+            updatePayload.response_time_seconds = Math.max(0, Math.floor((nowTime - unlockedTime) / 1000));
+        }
+
         if (internalReferralId) {
             updatePayload.internal_referral_id = internalReferralId;
         }
@@ -227,6 +235,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       case 9: message = `Welcome to the team! Your hire for ${jobTitle} is being verified.`; break;
       case 11: message = `There is a dispute regarding your referral for ${jobTitle}. Admin is reviewing.`; break;
       case 12: message = `Your application for ${jobTitle} decided to move forward with other candidates.`; break;
+      case 13: message = `Your referral for ${jobTitle} has been verified by JobsDart!`; break;
       default: message = `Your application status for ${jobTitle} has been updated to ${statusMap[sId] || 'a new stage'}.`;
     }
 
@@ -330,7 +339,7 @@ async function refundCredits(jobseekerId: string | number, amount: number, jobPk
                 if (needsCreditDeduction) {
                     await deductCredits(applicantPk, 2, jobPk);
                 }
-            } else if (sId === 10) { // Completed (Verified by Admin)
+            } else if (sId === 13 || sId === 10) { // 13: Verified Referral, 10: Completed
                 await awardXP(empId, 'REFERRAL_VERIFIED', jobPk);
             } else if (sId === 11) { // Disputed (Penalty)
                 // Penalties: Use Trust System

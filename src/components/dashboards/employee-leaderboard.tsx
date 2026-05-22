@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, Medal, Crown, Star, TrendingUp, Users, Zap, CheckCircle, ShieldCheck } from "lucide-react";
+import { Trophy, Medal, Crown, Star, TrendingUp, Users, Zap, CheckCircle, ShieldCheck, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -22,9 +22,10 @@ interface LeaderboardEntry {
   trust_score: number;
   success_rate: number;
   verified_referrals_count: number;
+  avg_response_time?: number | null;
 }
 
-type SortMode = 'xp' | 'success' | 'trust';
+type SortMode = 'xp' | 'success' | 'trust' | 'speed';
 type PeriodMode = 'all' | 'monthly';
 
 export function EmployeeLeaderboard() {
@@ -51,6 +52,24 @@ export function EmployeeLeaderboard() {
   useEffect(() => {
     fetchLeaderboard(sortMode, periodMode);
   }, [sortMode, periodMode]);
+
+const formatResponseTime = (seconds: number | null | undefined) => {
+  if (seconds === null || seconds === undefined) return "N/A";
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    const remSeconds = seconds % 60;
+    return remSeconds > 0 ? `${minutes}m ${remSeconds}s` : `${minutes}m`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remMinutes = minutes % 60;
+  if (hours < 24) {
+    return remMinutes > 0 ? `${hours}h ${remMinutes}m` : `${hours}h`;
+  }
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
+  return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+};
 
   const getMetricDisplay = (entry: LeaderboardEntry) => {
     switch (sortMode) {
@@ -80,6 +99,13 @@ export function EmployeeLeaderboard() {
           <div className="text-right">
             <div className="text-sm font-black text-indigo-600">{entry.trust_score}</div>
             <div className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">Trust Score</div>
+          </div>
+        );
+      case 'speed':
+        return (
+          <div className="text-right">
+            <div className="text-sm font-black text-indigo-600">{formatResponseTime(entry.avg_response_time)}</div>
+            <div className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">Avg Speed</div>
           </div>
         );
     }
@@ -130,7 +156,8 @@ export function EmployeeLeaderboard() {
             {[
                 { id: 'xp', label: 'Top XP', icon: Zap },
                 { id: 'success', label: 'High Success', icon: CheckCircle },
-                { id: 'trust', label: 'Most Trusted', icon: ShieldCheck }
+                { id: 'trust', label: 'Most Trusted', icon: ShieldCheck },
+                { id: 'speed', label: 'Fastest Response', icon: Clock }
             ].map((tab) => (
                 <button
                     key={tab.id}
