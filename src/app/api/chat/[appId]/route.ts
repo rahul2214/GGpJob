@@ -149,7 +149,7 @@ export async function GET(
             .order('created_at', { ascending: true });
 
         // 4. Map integer sender_id back to UUID for frontend
-        const mappedMessages = (messages || []).map(m => ({
+        const mappedMessages = (messages || []).map((m: any) => ({
             ...m,
             sender_id: m.sender_id === session.jobseeker.id ? session.jobseeker.uuid : session.poster.uuid
         }));

@@ -13,7 +13,7 @@ export async function GET(request: Request) {
         
         if (error) throw error;
 
-        const feedbackList = (feedbackData || []).map(item => ({
+        const feedbackList = (feedbackData || []).map((item: any) => ({
             id: item.id,
             userId: (item as any).jobseekers?.uuid,
             userPk: item.user_pk,

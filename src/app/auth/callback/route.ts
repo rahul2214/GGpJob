@@ -82,6 +82,10 @@ export async function GET(request: Request) {
             (profileData as any).is_paid = false;
             (profileData as any).subscription_credits = 2;
             (profileData as any).subscription_allowance = 2;
+            
+            const expiryDate = new Date();
+            expiryDate.setFullYear(expiryDate.getFullYear() + 5);
+            (profileData as any).plan_expires_at = expiryDate.toISOString();
         }
 
         const { error: insertError } = await supabaseAdmin

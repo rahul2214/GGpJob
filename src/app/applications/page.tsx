@@ -90,7 +90,7 @@ function StatusBadge({ app }: { app: Application }) {
   );
 }
 
-const fadeUp = {
+const fadeUp: any = {
   hidden: { opacity: 0, y: 16 },
   visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.07, duration: 0.4, ease: "easeOut" } }),
 };
@@ -660,7 +660,7 @@ export default function ApplicationsPage() {
                 disabled={unlockingId !== null || (((user as any)?.subscriptionCredits || 0) + ((user as any)?.purchasedCredits || 0)) < 2}
                 onClick={async () => {
                     if (!selectedApp) return;
-                    setUnlockingId(selectedApp.id);
+                    setUnlockingId(String(selectedApp.id));
                     try {
                         const res = await fetch(`/api/applications/${selectedApp.id}/unlock`, { method: 'POST' });
                         const data = await res.json();

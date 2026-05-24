@@ -159,7 +159,7 @@ export function ReferralForm({ job }: ReferralFormProps) {
     defaultValues: {
       companyName: job?.companyName || "",
       jobTitle: job?.title || "",
-      locationIds: job?.locationPks ? job.locationPks.map(pk => String(pk)) : (job?.locationPk ? [String(job.locationPk)] : []),
+      locationIds: job?.locationPks ? job.locationPks.map(pk => String(pk)) : [],
       job_role: job?.job_role || "",
       jobDescription: job?.description || "",
       vacancies: job?.vacancies ?? undefined,
@@ -190,7 +190,7 @@ export function ReferralForm({ job }: ReferralFormProps) {
       form.reset({
         companyName: job.companyName || "",
         jobTitle: job.title || "",
-        locationIds: job.locationPks ? job.locationPks.map(pk => String(pk)) : (job.locationPk ? [String(job.locationPk)] : []),
+        locationIds: job.locationPks ? job.locationPks.map(pk => String(pk)) : [],
         job_role: job.job_role || "",
         jobDescription: job.description || "",
         vacancies: job.vacancies ?? undefined,

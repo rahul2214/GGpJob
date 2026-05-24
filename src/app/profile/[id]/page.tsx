@@ -31,7 +31,7 @@ export default function PublicProfilePage() {
   const [profileUser, setProfileUser] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const isOwnProfile = currentUser?.id === id;
+  const isOwnProfile = currentUser?.id?.toString() === id;
 
   const fetchUser = useCallback(async () => {
     if (id) {

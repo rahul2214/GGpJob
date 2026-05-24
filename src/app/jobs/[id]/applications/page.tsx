@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Download, User, MoreHorizontal, CheckCircle, XCircle, Lock, MessageCircle, ShieldCheck, Trophy } from "lucide-react";
+import { Download, User, MoreHorizontal, CheckCircle, XCircle, Lock, MessageCircle, ShieldCheck, Trophy, Calendar } from "lucide-react";
 import { ChatDrawer } from '@/components/chat/ChatDrawer';
 import Link from "next/link";
 import { useUser } from "@/contexts/user-context";
@@ -167,7 +167,7 @@ export default function JobApplicationsPage() {
         }
     };
     
-    const handleStatusChange = async (applicationId: string, statusId: number, proofUrl?: string, internalReferralId?: string) => {
+    const handleStatusChange = async (applicationId: string | number, statusId: number, proofUrl?: string, internalReferralId?: string) => {
         try {
             const response = await fetch(`/api/applications/${applicationId}/status`, {
                 method: 'PUT',
@@ -184,7 +184,7 @@ export default function JobApplicationsPage() {
 
             setApplications(prev => 
                 prev.map(app => 
-                    app.id === applicationId ? { ...app, ...updatedApplicationFromServer } : app
+                    app.id.toString() === applicationId.toString() ? { ...app, ...updatedApplicationFromServer } : app
                 )
             );
 
@@ -281,7 +281,9 @@ export default function JobApplicationsPage() {
                                                 <div className="flex items-center gap-2">
                                                     {app.applicantName}
                                                     {!app.isUnlocked && job.isReferral && (
-                                                        <Lock className="w-3 h-3 text-slate-400" title="Locked until you accept and they confirm" />
+                                                        <span title="Locked until you accept and they confirm">
+                                                            <Lock className="w-3 h-3 text-slate-400" />
+                                                        </span>
                                                     )}
                                                 </div>
                                                 <div className={`text-xs ${app.isUnlocked || !job.isReferral ? 'text-muted-foreground' : 'text-slate-300 font-mono italic'}`}>
@@ -299,14 +301,14 @@ export default function JobApplicationsPage() {
                                                          size="sm" 
                                                          className="rounded-xl font-bold h-9 border-blue-200 text-blue-600 hover:bg-blue-50"
                                                          onClick={() => {
-                                                             setActiveChatAppId(app.id);
+                                                             setActiveChatAppId(app.id.toString());
                                                              setIsChatOpen(true);
                                                          }}
                                                      >
                                                          <MessageCircle className="w-4 h-4 mr-2" />
                                                          Chat
                                                      </Button>
-                                                     {app.unreadChatCount > 0 && (
+                                                     {app.unreadChatCount !== undefined && app.unreadChatCount > 0 && (
                                                         <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white animate-bounce">
                                                             {app.unreadChatCount > 9 ? '9+' : app.unreadChatCount}
                                                         </span>
@@ -375,7 +377,7 @@ export default function JobApplicationsPage() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                                        <ViewProfileLink applicationId={app.id} applicantId={app.applicantId!}>
+                                                        <ViewProfileLink applicationId={app.id.toString()} applicantId={app.applicantId!}>
                                                             <User className="mr-2 h-4 w-4" />
                                                             View Profile
                                                         </ViewProfileLink>

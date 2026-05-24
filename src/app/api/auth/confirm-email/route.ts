@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
     // 2. Also mark the email as confirmed in Supabase so the user can log in
     const { data: supaUser } = await supabaseAdmin.auth.admin.listUsers();
-    const targetUser = supaUser?.users?.find((u) => u.email === email);
+    const targetUser = supaUser?.users?.find((u: any) => u.email === email);
 
     if (targetUser) {
       await supabaseAdmin.auth.admin.updateUserById(targetUser.id, {

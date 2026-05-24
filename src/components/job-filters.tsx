@@ -119,7 +119,7 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
 
             if (Array.isArray(value)) {
                 if (value.length > 0) {
-                    value.forEach(v => params.append(filterKey, v));
+                    value.forEach(v => params.append(filterKey, String(v)));
                 }
             } else if (value && value !== 'all') {
                 params.set(filterKey, value);
@@ -147,7 +147,7 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
     [locations]);
 
     const domainOptions = useMemo(() => 
-        domains.map(d => ({ value: d.id, label: d.name })), 
+        domains.map(d => ({ value: String(d.id), label: d.name })), 
     [domains]);
 
     const jobTypeOptions = useMemo(() => 
@@ -163,11 +163,11 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
     ];
 
     const filterCategories: { id: FilterCategory; label: string; icon: React.ElementType }[] = [
-        { id: 'posted', label: 'Date Posted', icon: Calendar },
-        { id: 'domain', label: 'Domains', icon: Layers },
-        { id: 'location', label: 'Locations', icon: MapPin },
-        { id: 'experience', label: 'Experience', icon: Award },
-        { id: 'jobType', label: 'Employment', icon: Briefcase },
+        { id: 'posted' as const, label: 'Date Posted', icon: Calendar },
+        { id: 'domain' as const, label: 'Domains', icon: Layers },
+        { id: 'location' as const, label: 'Locations', icon: MapPin },
+        { id: 'experience' as const, label: 'Experience', icon: Award },
+        { id: 'jobType' as const, label: 'Employment', icon: Briefcase },
     ].filter(cat => !(hideDomain && cat.id === 'domain'));
     
     if (isSheet) {
@@ -209,11 +209,11 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
                                         <div key={option.id} className="flex items-center space-x-3">
                                             <Checkbox
                                                 id={`domain-${option.id}`}
-                                                checked={filters.domain.includes(option.id)}
+                                                checked={filters.domain.includes(String(option.id))}
                                                 onCheckedChange={(checked) => {
                                                     const newSelection = checked
-                                                        ? [...filters.domain, option.id]
-                                                        : filters.domain.filter(v => v !== option.id);
+                                                        ? [...filters.domain, String(option.id)]
+                                                        : filters.domain.filter(v => v !== String(option.id));
                                                     handleFilterChange('domain', newSelection);
                                                 }}
                                             />

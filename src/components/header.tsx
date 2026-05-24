@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   BriefcaseBusiness,
+  Briefcase,
   Settings,
   User,
   LogOut,
@@ -34,7 +35,9 @@ import {
   Users,
   Wrench,
   ShieldCheck,
-  Coins
+  Coins,
+  Sparkles,
+  FileText
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -258,16 +261,7 @@ export default function Header() {
                                     </Link>
                                 </SheetClose>
                                 
-                                {user.role === 'Employee' && (
-                                    <SheetClose asChild>
-                                        <Link href="/referrals/active" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/referrals/active' && "text-foreground font-bold")}>
-                                            <Briefcase className="h-5 w-5" />
-                                            Active Jobs
-                                        </Link>
-                                    </SheetClose>
-                                )}
-                               
-                                {user.domainId && (
+                                 {user.domainId && (
                                     <SheetClose asChild>
                                        <Link href={recommendedJobsHref} className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", isRecommendedActive && "text-foreground font-bold")}>
                                             <Star className="h-5 w-5" />
@@ -281,8 +275,42 @@ export default function Header() {
                                         Training
                                     </Link>
                                 </SheetClose>
+                                <SheetClose asChild>
+                                    <Link href="/ats-score" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/ats-score' && "text-foreground font-bold")}>
+                                        <Sparkles className="h-5 w-5" />
+                                        ATS Checker
+                                    </Link>
+                                </SheetClose>
+                                <SheetClose asChild>
+                                    <Link href="/resume-builder" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/resume-builder' && "text-foreground font-bold")}>
+                                        <FileText className="h-5 w-5" />
+                                        Resume Builder
+                                    </Link>
+                                </SheetClose>
                                </>
                             )}
+                             {isClient && !userLoading && !user && (
+                               <>
+                                 <SheetClose asChild>
+                                     <Link href="/jobs" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", isJobsActive && "text-foreground font-bold")}>
+                                         <Search className="h-5 w-5" />
+                                         Jobs
+                                     </Link>
+                                 </SheetClose>
+                                 <SheetClose asChild>
+                                     <Link href="/ats-score" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/ats-score' && "text-foreground font-bold")}>
+                                         <Sparkles className="h-5 w-5" />
+                                         ATS Checker
+                                     </Link>
+                                 </SheetClose>
+                                 <SheetClose asChild>
+                                     <Link href="/resume-builder" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/resume-builder' && "text-foreground font-bold")}>
+                                         <FileText className="h-5 w-5" />
+                                         Resume Builder
+                                     </Link>
+                                 </SheetClose>
+                               </>
+                             )}
                              {isClient && !userLoading && user && (user.role === 'Recruiter' || user.role === 'Employee') && !isPlanSelectionPage && (
                                   (!(user.planType === 'basic' && jobCount >= 1)) && (
                                      <SheetClose asChild>
@@ -292,6 +320,14 @@ export default function Header() {
                                         </Link>
                                     </SheetClose>
                                   )
+                            )}
+                            {isClient && !userLoading && user?.role === 'Employee' && !isPlanSelectionPage && (
+                                 <SheetClose asChild>
+                                     <Link href="/referrals/active" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/referrals/active' && "text-foreground font-bold")}>
+                                         <Briefcase className="h-5 w-5" />
+                                         Active Jobs
+                                     </Link>
+                                 </SheetClose>
                             )}
                             {isClient && !userLoading && user && user.role === 'Recruiter' && !isPlanSelectionPage && user.planType !== 'basic' && (
                                  <SheetClose asChild>
@@ -482,7 +518,26 @@ export default function Header() {
                     <Link href="#" className={`transition-colors hover:text-foreground ${pathname === "/training" ? "text-foreground" : "text-foreground/60"}`}>
                         Training
                     </Link>
+                    <Link href="/ats-score" className={`transition-colors hover:text-foreground ${pathname === "/ats-score" ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                        ATS Checker
+                    </Link>
+                    <Link href="/resume-builder" className={`transition-colors hover:text-foreground ${pathname === "/resume-builder" ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                        Resume Builder
+                    </Link>
                 </Suspense>
+            )}
+            {isClient && !userLoading && !user && (
+              <>
+                <Link href="/jobs" className={`transition-colors hover:text-foreground ${isJobsActive ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                    Jobs
+                </Link>
+                <Link href="/ats-score" className={`transition-colors hover:text-foreground ${pathname === "/ats-score" ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                    ATS Checker
+                </Link>
+                <Link href="/resume-builder" className={`transition-colors hover:text-foreground ${pathname === "/resume-builder" ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                    Resume Builder
+                </Link>
+              </>
             )}
           </>
         )}

@@ -63,11 +63,13 @@ export async function POST(request: Request) {
         if (userData.resume_url) {
             try {
                 const resolvedUrl = await resolveResumeUrl(userData.resume_url);
-                const res = await fetch(resolvedUrl);
-                if (res.ok) {
-                    const buffer = Buffer.from(await res.arrayBuffer());
-                    fs.writeFileSync(customResumePath, buffer);
-                    resumeSaved = true;
+                if (resolvedUrl) {
+                    const res = await fetch(resolvedUrl);
+                    if (res.ok) {
+                        const buffer = Buffer.from(await res.arrayBuffer());
+                        fs.writeFileSync(customResumePath, buffer);
+                        resumeSaved = true;
+                    }
                 }
             } catch (err) {
                 console.error("Failed to download resume:", err);

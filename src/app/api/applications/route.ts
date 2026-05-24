@@ -158,13 +158,13 @@ export async function GET(request: Request) {
     if (error) throw error;
 
     // Resolve skill names for applicants in bulk
-    const allSkillIds = Array.from(new Set(appDocs.flatMap(app => app.jobseekers?.skill_ids || [])));
+    const allSkillIds = Array.from(new Set(appDocs.flatMap((app: any) => app.jobseekers?.skill_ids || [])));
     const { data: skillsData } = await supabaseAdmin
         .from('skills')
         .select('id, name')
         .in('id', allSkillIds);
     
-    const skillMap = new Map(skillsData?.map(s => [s.id, s.name]) || []);
+    const skillMap = new Map<string, string>(skillsData?.map((s: any) => [String(s.id), String(s.name)]) || []);
 
     // Fetch unread chat counts if requesterId is provided
     let unreadChatCounts: Record<number, number> = {};
@@ -197,7 +197,7 @@ export async function GET(request: Request) {
                 .eq('is_read', false);
             
             if (notifs) {
-                notifs.forEach(n => {
+                notifs.forEach((n: any) => {
                     const match = n.message.match(/\[APP_ID:(\d+)\]/);
                     if (match) {
                         const appId = parseInt(match[1]);
@@ -209,7 +209,7 @@ export async function GET(request: Request) {
     }
 
     const now = new Date();
-    const applications = (await Promise.all(appDocs.map(async app => {
+    const applications = (await Promise.all(appDocs.map(async (app: any) => {
         // Check if application view is expired for this recruiter view
         if (jobId && app.jobs?.app_expires_at) {
             const expiry = new Date(app.jobs.app_expires_at);

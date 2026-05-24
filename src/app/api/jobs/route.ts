@@ -86,9 +86,9 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
         allSkillPks.length > 0 ? supabaseAdmin.from('skills').select('id, uuid, name').in('id', allSkillPks) : { data: [] }
     ]);
 
-    const locationMap = new Map(locations?.map(l => [String(l.id), { name: l.name, uuid: l.uuid }]) || []);
-    const benefitMap = new Map(benefits?.map(b => [String(b.id), { name: b.name, uuid: b.uuid }]) || []);
-    const skillMap = new Map(skills?.map(s => [String(s.id), { name: s.name, uuid: s.uuid }]) || []);
+    const locationMap = new Map<string, any>(locations?.map((l: any) => [String(l.id), { name: l.name, uuid: l.uuid }]) || []);
+    const benefitMap = new Map<string, any>(benefits?.map((b: any) => [String(b.id), { name: b.name, uuid: b.uuid }]) || []);
+    const skillMap = new Map<string, any>(skills?.map((s: any) => [String(s.id), { name: s.name, uuid: s.uuid }]) || []);
 
     return jobs.map(job => {
         const mappedLocations = (job.location_pks || []).map((id: number) => locationMap.get(String(id))).filter(Boolean);
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
             userDomainId = user.domain_id;
             const { data: apps } = await supabaseAdmin.from('applications').select('job_pk').eq('user_pk', user.id);
             if (apps && apps.length > 0) {
-                appliedJobPks = apps.map(ap => ap.job_pk).filter(Boolean);
+                appliedJobPks = apps.map((ap: any) => ap.job_pk).filter(Boolean);
             }
         }
     }
@@ -284,7 +284,7 @@ export async function GET(request: NextRequest) {
         const finalPks = [...numericInputs];
         if (uuidInputs.length > 0) {
             const { data } = await supabaseAdmin.from(table).select('id').in('uuid', uuidInputs);
-            if (data) finalPks.push(...data.map(d => d.id));
+            if (data) finalPks.push(...data.map((d: any) => d.id));
         }
         return Array.from(new Set(finalPks));
     };
@@ -356,7 +356,7 @@ export async function POST(request: Request) {
 
     // ── Robust User Resolution ─────────────────────────────────────────────
     let user: any = null;
-    let userTable: 'recruiters' | 'employees' | 'jobseekers' | null = null;
+    let userTable: 'recruiters' | 'employees' | 'jobseekers' | 'admins' | null = null;
     const isNumericUserId = /^\d+$/.test(userId);
     const lookupId = isNumericUserId ? parseInt(userId) : userId;
 

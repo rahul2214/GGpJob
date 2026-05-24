@@ -12,8 +12,8 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
             .select('uuid, name')
             .in('id', job.location_pks);
         if (locations) {
-            locNames = locations.map(l => l.name);
-            locUuids = locations.map(l => l.uuid);
+            locNames = locations.map((l: any) => l.name);
+            locUuids = locations.map((l: any) => l.uuid);
         }
     }
 
@@ -26,8 +26,8 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
             .select('uuid, name')
             .in('id', job.skill_pks);
         if (skills) {
-            skillNames = skills.map(s => s.name);
-            skillUuids = skills.map(s => s.uuid);
+            skillNames = skills.map((s: any) => s.name);
+            skillUuids = skills.map((s: any) => s.uuid);
         }
     }
 
@@ -40,8 +40,8 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
             .select('uuid, name')
             .in('id', job.benefit_ids);
         if (benefits) {
-            benefitNames = benefits.map(b => b.name);
-            benefitUuids = benefits.map(b => b.uuid);
+            benefitNames = benefits.map((b: any) => b.name);
+            benefitUuids = benefits.map((b: any) => b.uuid);
         }
     }
 
@@ -209,7 +209,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             const { data: { users: authUsers } } = await supabaseAdmin.auth.admin.listUsers();
             
             // Try to find the user by their BigInt ID (stored in recruiter_pk/employee_pk) or potentially their UUID
-            const authUser = authUsers.find(u => u.id === job.user_pk || u.email === (job as any).employee_email);
+            const authUser = authUsers.find((u: any) => u.id === job.user_pk || u.email === (job as any).employee_email);
             
             if (authUser) {
                 const userType = authUser.user_metadata?.role || (job.employee_pk ? 'employee' : 'recruiter');

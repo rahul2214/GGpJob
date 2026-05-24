@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
                 .select('uuid')
                 .in('id', numericSkillIds);
             if (skillsData) {
-                resolvedSkillUuids.push(...skillsData.map(s => s.uuid));
+                resolvedSkillUuids.push(...skillsData.map((s: any) => s.uuid));
             }
         }
     }

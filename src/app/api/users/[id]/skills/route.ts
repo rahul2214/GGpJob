@@ -48,7 +48,7 @@ export async function POST(
         .in('uuid', skillUuids);
 
       if (dbSkills && dbSkills.length > 0) {
-         skillInserts = dbSkills.map(dbSkill => ({
+         skillInserts = dbSkills.map((dbSkill: any) => ({
 
             user_pk: userPk,
             skill_pk: dbSkill.id

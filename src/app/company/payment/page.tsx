@@ -109,7 +109,7 @@ export default function PaymentPage() {
 
         if (verifyRes.ok) {
           toast({ title: "Activated Successfully!", description: `The ${selectedPlan.name} is now active on your account.` });
-          const updatedProfile = await fetchUserProfile(user.id);
+          const updatedProfile = await fetchUserProfile(user.uuid);
           setUser(updatedProfile);
           router.push("/");
         } else {

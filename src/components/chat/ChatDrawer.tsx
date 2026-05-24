@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { 
     MessageSquare, Send, X, ShieldAlert, Lock, 
     Clock, AlertCircle, Sparkles, MessageCircle 
@@ -64,7 +65,7 @@ export function ChatDrawer({ applicationId, isOpen, onClose, onUnlockRequest, on
                     event: 'INSERT', 
                     schema: 'public', 
                     table: 'messages' 
-                }, (payload) => {
+                }, (payload: any) => {
                     const newMsg = payload.new as Message;
                     setMessages(prev => [...prev, newMsg]);
                 })

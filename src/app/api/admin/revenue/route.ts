@@ -18,19 +18,19 @@ export async function GET(request: Request) {
     const payments = paymentsRaw || [];
 
     // Calculate total revenue
-    const totalRevenue = payments.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const totalRevenue = payments.reduce((sum: number, item: any) => sum + (Number(item.amount) || 0), 0);
     const totalTransactions = payments.length;
-    const paidTransactions = payments.filter(p => (Number(p.amount) || 0) > 0);
+    const paidTransactions = payments.filter((p: any) => (Number(p.amount) || 0) > 0);
     const paidCount = paidTransactions.length;
     const averageOrderValue = paidCount > 0 ? Math.round(totalRevenue / paidCount) : 0;
 
     // Unique paying users
-    const uniqueUsers = new Set(payments.map(p => p.user_id).filter(Boolean)).size;
+    const uniqueUsers = new Set(payments.map((p: any) => p.user_id).filter(Boolean)).size;
 
     // Group by Plan ID
     const planMap: Record<string, number> = {};
     const planCounts: Record<string, number> = {};
-    payments.forEach(p => {
+    payments.forEach((p: any) => {
         const plan = p.plan_id || 'unspecified';
         planMap[plan] = (planMap[plan] || 0) + (Number(p.amount) || 0);
         planCounts[plan] = (planCounts[plan] || 0) + 1;
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
 
     // Group by Month
     const monthMap: Record<string, { revenue: number; payouts: number; transactions: number }> = {};
-    payments.forEach(p => {
+    payments.forEach((p: any) => {
         const date = p.timestamp ? new Date(p.timestamp) : new Date();
         const monthKey = `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
         if (!monthMap[monthKey]) {
@@ -63,15 +63,15 @@ export async function GET(request: Request) {
     if (poErr) throw poErr;
 
     const payouts = payoutsRaw || [];
-    const completedPayouts = payouts.filter(p => p.status === 'completed');
-    const totalPayouts = completedPayouts.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-    const pendingPayouts = payouts.filter(p => p.status === 'pending').reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-    const pendingPayoutsCount = payouts.filter(p => p.status === 'pending').length;
+    const completedPayouts = payouts.filter((p: any) => p.status === 'completed');
+    const totalPayouts = completedPayouts.reduce((sum: any, item: any) => sum + (Number(item.amount) || 0), 0);
+    const pendingPayouts = payouts.filter((p: any) => p.status === 'pending').reduce((sum: any, item: any) => sum + (Number(item.amount) || 0), 0);
+    const pendingPayoutsCount = payouts.filter((p: any) => p.status === 'pending').length;
 
     const netRevenue = totalRevenue - totalPayouts;
 
     // Add payouts to monthly map
-    completedPayouts.forEach(p => {
+    completedPayouts.forEach((p: any) => {
         const date = p.created_at ? new Date(p.created_at) : new Date();
         const monthKey = `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
         if (!monthMap[monthKey]) {
@@ -101,7 +101,7 @@ export async function GET(request: Request) {
         uniquePayingUsers: uniqueUsers,
         revenueByPlan,
         monthlyTrend,
-        recentTransactions: payments.map(p => ({
+        recentTransactions: payments.map((p: any) => ({
             id: p.id,
             uuid: p.uuid,
             userId: p.user_id,

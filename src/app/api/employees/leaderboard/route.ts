@@ -8,7 +8,7 @@ async function calculateSuccessRates(employees: any[]) {
 
     const { data: jobs } = await supabaseAdmin.from('jobs').select('id, employee_pk').in('employee_pk', employeePks);
     const jobMap = new Map<number, number>(); // job_pk -> employee_pk
-    jobs?.forEach(j => jobMap.set(j.id, j.employee_pk));
+    jobs?.forEach((j: any) => jobMap.set(j.id, j.employee_pk));
     
     const jobIds = Array.from(jobMap.keys());
     const empTotalApps: Record<number, number> = {};
@@ -16,7 +16,7 @@ async function calculateSuccessRates(employees: any[]) {
 
     if (jobIds.length > 0) {
         const { data: apps } = await supabaseAdmin.from('applications').select('job_pk, status_id, response_time_seconds').in('job_pk', jobIds);
-        apps?.forEach(a => {
+        apps?.forEach((a: any) => {
             const empPk = jobMap.get(a.job_pk);
             if (empPk) {
                 empTotalApps[empPk] = (empTotalApps[empPk] || 0) + 1;
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
         if (xpErr) throw xpErr;
 
         const monthlyXpMap: Record<number, number> = {};
-        recentXp.forEach(n => {
+        recentXp.forEach((n: any) => {
             const match = n.message.match(/\+(\d+)\s*XP/);
             if (match) {
                 const val = parseInt(match[1]);

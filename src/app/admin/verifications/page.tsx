@@ -18,7 +18,7 @@ export default function AdminVerificationsPage() {
     const { toast } = useToast();
     const [applications, setApplications] = useState<Application[]>([]);
     const [loading, setLoading] = useState(true);
-    const [processingId, setProcessingId] = useState<string | null>(null);
+    const [processingId, setProcessingId] = useState<number | null>(null);
 
     const isAdminOrSuperAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
 
@@ -46,7 +46,7 @@ export default function AdminVerificationsPage() {
         }
     }, [user, userLoading, isAdminOrSuperAdmin, router, fetchPendingVerifications]);
 
-    const handleVerify = async (applicationId: string, currentStatusId: number, approve: boolean) => {
+    const handleVerify = async (applicationId: number, currentStatusId: number, approve: boolean) => {
         setProcessingId(applicationId);
         try {
             // Mapping:

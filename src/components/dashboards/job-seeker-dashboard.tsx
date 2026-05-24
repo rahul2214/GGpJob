@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import type { Job, Application } from "@/lib/types";
 import JobCard from "../job-card";
 import { Button } from "../ui/button";
-import { Search, ArrowRight, BriefcaseBusiness, Star, ThumbsUp, Bell, Zap, Loader2, ShieldCheck, CheckCircle, MessageSquare, Trophy, AlertCircle, Clock, Coins } from "lucide-react";
+import { Search, ArrowRight, BriefcaseBusiness, Star, ThumbsUp, Bell, Zap, Loader2, ShieldCheck, CheckCircle, MessageSquare, Trophy, AlertCircle, Clock, Coins, Sparkles } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Link from "next/link";
@@ -130,6 +130,14 @@ export default function JobSeekerDashboard() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Link href="/jobs" className="bg-white text-indigo-700 font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-transform hover:scale-105 active:scale-95">Browse Jobs</Link>
+            <Link href="/ats-score" className="bg-indigo-500/50 hover:bg-indigo-500/70 border border-white/20 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-transform hover:scale-105 active:scale-95 flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-indigo-200 fill-indigo-200" />
+              ATS Checker
+            </Link>
+            <Link href="/resume-builder" className="bg-purple-500/50 hover:bg-purple-500/70 border border-white/20 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-transform hover:scale-105 active:scale-95 flex items-center gap-1.5">
+              <Zap className="w-4 h-4 text-purple-200 fill-purple-200" />
+              Resume Builder
+            </Link>
           </div>
         </div>
       </div>

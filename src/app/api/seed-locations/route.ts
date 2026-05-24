@@ -31,7 +31,7 @@ export async function GET() {
     
     if (fetchError) throw fetchError;
 
-    const existingNames = new Set(existingCities?.map(c => c.name) || []);
+    const existingNames = new Set(existingCities?.map((c: any) => c.name) || []);
     const citiesToAdd = indianCities.filter(city => !existingNames.has(city.name));
 
     if (citiesToAdd.length === 0) {

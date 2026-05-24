@@ -61,7 +61,7 @@ const reviewReferralJobPostFlow = ai.defineFlow(
     inputSchema: ReviewReferralJobPostInputSchema,
     outputSchema: ReviewReferralJobPostOutputSchema,
   },
-  async input => {
+  async (input: ReviewReferralJobPostInput) => {
     const {output} = await reviewReferralJobPostPrompt(input);
     return output!;
   }

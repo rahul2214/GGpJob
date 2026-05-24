@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getSignedResumeUrl } from '@/lib/r2';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const uri = searchParams.get('uri');

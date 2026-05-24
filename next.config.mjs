@@ -9,11 +9,11 @@ config();
 const nextConfig = {
   /* config options here */
    experimental: {
-    serverComponentsExternalPackages: ['pdf-parse']
+    serverComponentsExternalPackages: ['pdf-parse', 'pdfjs-dist']
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
-      config.externals = [...config.externals, 'pdf-parse'];
+      config.externals = [...config.externals, 'pdf-parse', 'pdfjs-dist'];
     }
     return config;
   },

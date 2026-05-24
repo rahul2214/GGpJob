@@ -63,13 +63,13 @@ async function mapProfileToUser(profile: any): Promise<User> {
         if (payouts) {
             // Lifetime rewards: sum of all earnings that are not blocked or rejected
             totalRewards = payouts
-                .filter(p => p.method === 'system' && p.status !== 'blocked' && p.status !== 'rejected')
-                .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+                .filter((p: any) => p.method === 'system' && p.status !== 'blocked' && p.status !== 'rejected')
+                .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
                 
             // Pending rewards: earnings currently held for review
             pendingRewards = payouts
-                .filter(p => p.method === 'system' && (p.status === 'held' || p.status === 'delayed' || p.status === 'pending'))
-                .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+                .filter((p: any) => p.method === 'system' && (p.status === 'held' || p.status === 'delayed' || p.status === 'pending'))
+                .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
         }
     }
 
@@ -179,7 +179,7 @@ async function mapProfileToUser(profile: any): Promise<User> {
             supabaseAdmin.from('employees').update({
                 jobs_posted_this_month: 0,
                 next_jobs_reset_at: nextJobsResetAt
-            }).eq('id', profile.id).then().catch(e => console.error('Auto-reset error:', e));
+            }).eq('id', profile.id).then().catch((e: any) => console.error('Auto-reset error:', e));
         }
     }
 
@@ -546,7 +546,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                             .in('uuid', validSkillUuids);
                             
                         if (dbSkills && dbSkills.length > 0) {
-                            const skillInserts = dbSkills.map(dbSkill => ({
+                            const skillInserts = dbSkills.map((dbSkill: any) => ({
                                 user_pk: userPk,
                                 skill_pk: dbSkill.id
                             }));

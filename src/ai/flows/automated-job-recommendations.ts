@@ -54,7 +54,7 @@ const jobRecommendationsFlow = ai.defineFlow(
     inputSchema: JobRecommendationsInputSchema,
     outputSchema: JobRecommendationsOutputSchema,
   },
-  async input => {
+  async (input: JobRecommendationsInput) => {
     const {output} = await prompt(input);
     return output!;
   }

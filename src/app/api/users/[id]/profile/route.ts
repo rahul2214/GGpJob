@@ -137,7 +137,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
                     .select('proficiency_level, years_experience, skills(*)')
                     .eq('user_pk', userPk);
                 if (error) throw error;
-                return NextResponse.json(data?.map(d => ({
+                return NextResponse.json(data?.map((d: any) => ({
                     ...(d.skills as any),
                     proficiencyLevel: d.proficiency_level,
                     yearsExperience: d.years_experience
@@ -181,11 +181,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
         ]);
 
         return NextResponse.json({
-            education: (edu.data || []).map(i => mapDbToFrontend('education', i)),
-            employment: (exp.data || []).map(i => mapDbToFrontend('experience', i)),
-            projects: (proj.data || []).map(i => mapDbToFrontend('projects', i)),
+            education: (edu.data || []).map((i: any) => mapDbToFrontend('education', i)),
+            employment: (exp.data || []).map((i: any) => mapDbToFrontend('experience', i)),
+            projects: (proj.data || []).map((i: any) => mapDbToFrontend('projects', i)),
             languages: lang.data || [],
-            skills: skills.data?.map(d => ({
+            skills: skills.data?.map((d: any) => ({
                 ...(d.skills as any),
                 proficiencyLevel: d.proficiency_level,
                 yearsExperience: d.years_experience

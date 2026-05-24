@@ -268,7 +268,7 @@ function JobDetailsContent() {
                     </Button>
                 </div>
                 <div className="flex items-center gap-1">
-                    <ShareButton jobId={job.id} jobTitle={job.title} companyName={job.companyName} />
+                    <ShareButton jobId={String(job.id)} jobTitle={job.title} companyName={job.companyName} />
                 </div>
             </div>
 

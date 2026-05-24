@@ -265,7 +265,7 @@ export default function TalentSearch() {
             <SelectContent>
               <SelectItem value="all">All Domains</SelectItem>
               {domains.map(d => (
-                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -300,12 +300,12 @@ export default function TalentSearch() {
                       <CommandItem
                         key={skill.id}
                         value={skill.name}
-                        onSelect={() => toggleSkill(skill.id)}
+                        onSelect={() => toggleSkill(String(skill.id))}
                       >
                         <Check
                           className={cn(
                             "mr-2 h-4 w-4",
-                            selectedSkills.includes(skill.id) ? "opacity-100" : "opacity-0"
+                            selectedSkills.includes(String(skill.id)) ? "opacity-100" : "opacity-0"
                           )}
                         />
                         {skill.name}
@@ -322,7 +322,7 @@ export default function TalentSearch() {
         {selectedSkills.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 mt-2">
             {selectedSkills.map(id => {
-              const skill = masterSkills.find(s => s.id === id);
+              const skill = masterSkills.find(s => String(s.id) === id);
               if (!skill) return null;
               return (
                 <Badge 

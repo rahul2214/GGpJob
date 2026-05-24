@@ -126,7 +126,7 @@ export default function AdminDashboardPage() {
         if (date?.from) params.append('from', date.from.toISOString());
         if (date?.to) params.append('to', date.to.toISOString());
 
-        if (user?.id) params.append('userId', user.id);
+        if (user?.id) params.append('userId', String(user.id));
 
         const res = await fetch(`/api/analytics?${params.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch analytics");

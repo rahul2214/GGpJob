@@ -204,12 +204,12 @@ export async function GET(request: Request) {
                 .eq('employee_id', employee.id);
             
             const pendingRewards = (allPayouts || [])
-                .filter(p => p.method === 'system' && (p.status === 'held' || p.status === 'delayed' || p.status === 'pending'))
-                .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+                .filter((p: any) => p.method === 'system' && (p.status === 'held' || p.status === 'delayed' || p.status === 'pending'))
+                .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
                 
             const totalRewards = (allPayouts || [])
-                .filter(p => p.method === 'system' && p.status !== 'blocked' && p.status !== 'rejected')
-                .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+                .filter((p: any) => p.method === 'system' && p.status !== 'blocked' && p.status !== 'rejected')
+                .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
 
             // Robustly resolve UUIDs for relational fields
             let companySizeUuid = employee.company_size_id;
@@ -236,7 +236,7 @@ export async function GET(request: Request) {
                 supabaseAdmin.from('employees').update({
                     jobs_posted_this_month: 0,
                     next_jobs_reset_at: nextJobsResetAt
-                }).eq('id', employee.id).then().catch(e => console.error('Auto-reset error:', e));
+                }).eq('id', employee.id).then().catch((e: any) => console.error('Auto-reset error:', e));
             }
 
             return NextResponse.json({
@@ -394,10 +394,10 @@ export async function GET(request: Request) {
 
     // Combine and map to a unified format
     const allUsers = [
-        ...(seekers || []).map(u => ({ ...u, role: (u as any).roles?.name || u.role || 'Job Seeker', table: 'jobseekers' })),
-        ...(recruiters || []).map(u => ({ ...u, role: (u as any).roles?.name || 'Recruiter', table: 'recruiters' })),
-        ...(employees || []).map(u => ({ ...u, role: (u as any).roles?.name || 'Employee', table: 'employees' })),
-        ...(admins || []).map(u => ({ ...u, role: (u as any).roles?.name || (u.is_super_admin ? 'Super Admin' : 'Admin'), table: 'admins' }))
+        ...(seekers || []).map((u: any) => ({ ...u, role: (u as any).roles?.name || u.role || 'Job Seeker', table: 'jobseekers' })),
+        ...(recruiters || []).map((u: any) => ({ ...u, role: (u as any).roles?.name || 'Recruiter', table: 'recruiters' })),
+        ...(employees || []).map((u: any) => ({ ...u, role: (u as any).roles?.name || 'Employee', table: 'employees' })),
+        ...(admins || []).map((u: any) => ({ ...u, role: (u as any).roles?.name || (u.is_super_admin ? 'Super Admin' : 'Admin'), table: 'admins' }))
     ];
 
     // Sort by created_at desc
@@ -482,11 +482,28 @@ export async function POST(request: Request) {
 
     let conflictField = 'uuid';
 
-    // Table-specific compatibility/metadata
     if (table === 'jobseekers') {
         dataToSave.role = role; // Compatibility until role column is fully dropped
         if (domainId) {
             dataToSave.metadata = { domainId };
+        }
+
+        // Check if jobseeker already exists to preserve their plan
+        const { data: existingJS } = await supabaseAdmin
+            .from('jobseekers')
+            .select('plan_type')
+            .eq('uuid', id)
+            .maybeSingle();
+
+        if (!existingJS) {
+            dataToSave.plan_type = 'free';
+            dataToSave.is_paid = false;
+            dataToSave.subscription_credits = 2;
+            dataToSave.subscription_allowance = 2;
+            
+            const expiryDate = new Date();
+            expiryDate.setFullYear(expiryDate.getFullYear() + 5);
+            dataToSave.plan_expires_at = expiryDate.toISOString();
         }
     } else if (table === 'admins') {
         dataToSave.is_super_admin = (role === 'Super Admin');

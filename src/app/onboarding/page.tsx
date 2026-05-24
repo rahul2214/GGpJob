@@ -32,6 +32,7 @@ export default function OnboardingPage() {
     const [skillSearch, setSkillSearch] = useState("");
     const [linkedinUrl, setLinkedinUrl] = useState<string>("");
     const [githubUrl, setGithubUrl] = useState<string>("");
+    const [isParsing, setIsParsing] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -48,6 +49,91 @@ export default function OnboardingPage() {
         };
         fetchData();
     }, []);
+
+    const handleParseResume = async () => {
+        if (!resumeFile) return;
+        setIsParsing(true);
+        try {
+            const formData = new FormData();
+            formData.append("file", resumeFile);
+            const res = await fetch("/api/resume/parse", {
+                method: "POST",
+                body: formData,
+            });
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || "Failed to parse resume");
+            }
+            const data = await res.json();
+            
+            // 1. Phone number
+            if (data.phone) {
+                setPhone(data.phone);
+            }
+            
+            // 2. Domain (name-matching)
+            if (data.domain && domains.length > 0) {
+                const matchedDomain = domains.find(d => 
+                    d.name.toLowerCase().includes(data.domain.toLowerCase()) || 
+                    data.domain.toLowerCase().includes(d.name.toLowerCase())
+                );
+                if (matchedDomain) {
+                    setSelectedDomain(matchedDomain.uuid);
+                }
+            }
+            
+            // 3. Social links
+            if (data.linkedinUrl) {
+                setLinkedinUrl(data.linkedinUrl);
+            }
+            if (data.githubUrl) {
+                setGithubUrl(data.githubUrl);
+            }
+            
+            // 4. Skills matching against masterSkills
+            if (data.skills && data.skills.length > 0 && masterSkills.length > 0) {
+                const matchedSkillIds: string[] = [];
+                data.skills.forEach((extractedSkillName: string) => {
+                    const matched = masterSkills.find(s => s.name.toLowerCase() === extractedSkillName.toLowerCase());
+                    if (matched) {
+                        matchedSkillIds.push(matched.uuid);
+                    } else {
+                        // fuzzy check: does it include?
+                        const fuzzyMatch = masterSkills.find(s => 
+                            s.name.toLowerCase().includes(extractedSkillName.toLowerCase()) || 
+                            extractedSkillName.toLowerCase().includes(s.name.toLowerCase())
+                        );
+                        if (fuzzyMatch && !matchedSkillIds.includes(fuzzyMatch.uuid)) {
+                            matchedSkillIds.push(fuzzyMatch.uuid);
+                        }
+                    }
+                });
+                if (matchedSkillIds.length > 0) {
+                    setSelectedSkillIds(prev => {
+                        const merged = [...prev];
+                        matchedSkillIds.forEach(id => {
+                            if (!merged.includes(id)) merged.push(id);
+                        });
+                        return merged;
+                    });
+                }
+            }
+
+            toast({
+                title: "Resume Parsed Successfully! ✨",
+                description: "We have auto-filled your phone, domain, socials, and skills based on your resume.",
+            });
+        } catch (error: any) {
+            console.error(error);
+            toast({
+                title: "Parsing Failed",
+                description: error.message || "Could not auto-fill details from this PDF. You can still enter them manually.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsParsing(false);
+        }
+    };
 
     // Redirect logic: only allow logged-in job seekers missing essential fields
     useEffect(() => {
@@ -344,6 +430,18 @@ export default function OnboardingPage() {
                                     />
                                 </div>
                             </div>
+                            {resumeFile && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handleParseResume}
+                                    disabled={isParsing}
+                                    className="w-full flex items-center justify-center gap-2 border-indigo-200 text-indigo-700 bg-indigo-50/30 hover:bg-indigo-50 hover:text-indigo-800 rounded-2xl py-3 font-semibold text-sm transition-colors mt-2"
+                                >
+                                    <Sparkles className="w-4 h-4 text-indigo-500" />
+                                    Auto-fill Form with AI
+                                </Button>
+                            )}
                             {uploadProgress !== null && (
                                 <div className="space-y-2 mt-4">
                                     <Progress value={uploadProgress} className="h-2.5 rounded-full bg-slate-100" />
@@ -437,6 +535,28 @@ export default function OnboardingPage() {
                     </div>
                 </form>
             </motion.div>
+
+            {isParsing && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
+                    <motion.div 
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl border border-slate-100 flex flex-col items-center"
+                    >
+                        <div className="p-4 bg-indigo-50 rounded-2xl text-indigo-600 mb-4 animate-bounce">
+                            <Sparkles className="w-8 h-8" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-800 mb-2">Analyzing Resume...</h3>
+                        <p className="text-sm text-slate-500 mb-6">
+                            Our AI is extracting skills, contact info, and matching your professional domain. This will take a moment.
+                        </p>
+                        <div className="flex items-center gap-2 text-indigo-600 font-semibold text-sm">
+                            <LoaderCircle className="w-5 h-5 animate-spin" />
+                            <span>Processing with Grok...</span>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
         </div>
     );
 }

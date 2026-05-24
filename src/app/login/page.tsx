@@ -69,7 +69,9 @@ export default function LoginPage() {
       if (user.role === 'Job Seeker' && !isOnboardingComplete(user)) {
         router.push('/onboarding');
       } else {
-        router.push('/');
+        const params = new URLSearchParams(window.location.search);
+        const redirectTo = params.get("redirect") || "/";
+        router.push(redirectTo);
       }
     }
   }, [user, loading, router]);

@@ -10,6 +10,7 @@ export interface User {
   phone?: string;
   role: Role;
   roleId?: number;
+  metadata?: any;
   headline?: string;
   summary?: string;
   locationId?: string;
@@ -177,11 +178,18 @@ export interface Job {
   creditsRequired?: number;
   referralStrength?: 'Basic' | 'Strong' | 'Direct HR';
   referralCapacity?: number;
+  isApplied?: boolean;
+}
+
+export interface ExperienceLevel {
+  id: number;
+  uuid: string;
+  name: string;
 }
 
 export interface ApplicationStatus {
   id: number;
-  name: "Applied" | "Profile Viewed" | "Not Suitable" | "Selected" | "Accepted" | "Referred" | "Interviewing" | "Offer Received" | "Hired";
+  name: "Applied" | "Profile Viewed" | "Not Suitable" | "Selected" | "Accepted" | "Referred" | "Interviewing" | "Offer Received" | "Hired" | "Completed" | "Disputed" | "Rejected" | "Pending Confirmation" | "Joined Company" | "Under Review" | "Referral Unlocked";
 }
 
 export interface Application {
@@ -211,6 +219,7 @@ export interface Application {
   applicantExperience?: string;
   applicantLocation?: string;
   applicantPlanType?: 'none' | 'basic' | 'premium' | 'talent' | 'pro';
+  unreadChatCount?: number;
   
   // Job Extended details
   jobSalaryMin?: number;
@@ -223,11 +232,12 @@ export interface Application {
 
   // Verification System
   proofUrl?: string;
-  verificationStatus?: 'none' | 'pending' | 'verified' | 'disputed';
+  verificationStatus?: 'none' | 'pending' | 'verified' | 'disputed' | 'pending_jobseeker' | 'pending_employee';
   verificationExpiresAt?: string;
   disputeReason?: string;
   isUnlocked?: boolean;
   internalReferralId?: string;
+  updatedAt?: Date | string;
 }
 
 export interface Domain {
