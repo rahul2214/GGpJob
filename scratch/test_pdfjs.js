@@ -23,13 +23,18 @@ async function main() {
     };
   }
 
-  // Load pdfjs-dist
   console.log('Importing pdfjs-dist...');
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
-  // Set workerSrc
-  console.log('Setting workerSrc...');
-  pdfjs.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/legacy/build/pdf.worker.mjs';
+  console.log('Importing pdfjs-dist worker...');
+  const pdfjsWorker = await import('pdfjs-dist/legacy/build/pdf.worker.mjs');
+
+  // Attach worker to globalThis
+  console.log('Attaching worker to globalThis.pdfjsWorker...');
+  globalThis.pdfjsWorker = pdfjsWorker;
+
+  // Let's modify workerSrc to a non-existent path to prove that it does NOT try to import it from filesystem
+  pdfjs.GlobalWorkerOptions.workerSrc = 'non-existent-path-to-prove-no-filesystem-import.js';
 
   // Try parsing a PDF
   const pdfPath = 'C:\\Users\\Rahul Naik G\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\AutoJobApply\\resume.pdf';

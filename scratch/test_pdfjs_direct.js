@@ -1,40 +1,21 @@
 const fs = require('fs');
 const path = require('path');
 
-async function testPdfjs() {
-  const pdfPath = 'C:\\Users\\Rahul Naik G\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\AutoJobApply\\resume.pdf';
-  if (!fs.existsSync(pdfPath)) {
-    console.error("PDF file not found at " + pdfPath);
+async function main() {
+  const filePath = path.join(__dirname, '../node_modules/pdfjs-dist/legacy/build/pdf.mjs');
+  if (!fs.existsSync(filePath)) {
+    console.error('pdf.mjs not found at:', filePath);
     return;
   }
-  const fileBuffer = fs.readFileSync(pdfPath);
+
+  const content = fs.readFileSync(filePath, 'utf8');
+  const lines = content.split('\n');
   
-  try {
-    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-    console.log('pdfjs loaded successfully!');
-    
-    // Set worker path/source
-    const pdfjsWorker = await import('pdfjs-dist/legacy/build/pdf.worker.mjs');
-    pdfjs.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/legacy/build/pdf.worker.mjs';
-    
-    // Load document
-    const loadingTask = pdfjs.getDocument({ data: new Uint8Array(fileBuffer) });
-    const pdf = await loadingTask.promise;
-    console.log('PDF loaded! Total pages:', pdf.numPages);
-    
-    let fullText = '';
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map(item => item.str).join(' ');
-      fullText += pageText + '\n';
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes('pdf.worker')) {
+      console.log(`${i + 1}: ${lines[i].trim()}`);
     }
-    
-    console.log('Successfully extracted text! Length:', fullText.length);
-    console.log('Sample text:', fullText.substring(0, 200));
-  } catch (err) {
-    console.error('Error with pdfjs-dist:', err);
   }
 }
 
-testPdfjs();
+main().catch(console.error);
