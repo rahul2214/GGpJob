@@ -7,8 +7,6 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
 
-const GROK_API_URL = "https://api.x.ai/v1/chat/completions"
-
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
