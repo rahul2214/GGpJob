@@ -25,10 +25,12 @@ export async function parsePDF(buffer: Buffer): Promise<{ text: string }> {
   try {
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
-    // Setup worker dynamically
-    if (!pdfjs.GlobalWorkerOptions.workerSrc) {
-      pdfjs.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/legacy/build/pdf.worker.mjs';
-    }
+    // Setup worker dynamically - Commented out for Vercel/serverless environments
+    // where the worker file path is not resolvable. Unset workerSrc will cause
+    // pdfjs to fall back to the built-in fake worker (main thread parsing).
+    // if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+    //   pdfjs.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/legacy/build/pdf.worker.mjs';
+    // }
 
     const loadingTask = pdfjs.getDocument({
       data: new Uint8Array(buffer),
