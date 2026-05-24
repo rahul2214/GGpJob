@@ -84,10 +84,11 @@ export async function POST(req: NextRequest) {
     try {
       const data = await parsePDF(buffer);
       resumeText = data.text;
-    } catch (pdfError) {
+    } catch (pdfError: any) {
       console.error("PDF Parse Error:", pdfError);
       return NextResponse.json({ 
-        error: "Failed to parse PDF. Please ensure it's a valid text-based PDF file." 
+        error: "Failed to parse PDF. Please ensure it's a valid text-based PDF file.",
+        details: pdfError?.message || String(pdfError)
       }, { status: 400 });
     }
 
