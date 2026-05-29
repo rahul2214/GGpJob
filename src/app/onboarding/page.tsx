@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { LoaderCircle, FileText, CheckCircle2, UploadCloud, Building2, ChevronRight, Phone, Sparkles, X } from "lucide-react";
+import { LoaderCircle, FileText, CheckCircle2, UploadCloud, Building2, ChevronRight, Phone, Sparkles, X, ArrowLeft } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/lib/supabase-client";
@@ -33,6 +33,7 @@ export default function OnboardingPage() {
     const [linkedinUrl, setLinkedinUrl] = useState<string>("");
     const [githubUrl, setGithubUrl] = useState<string>("");
     const [isParsing, setIsParsing] = useState(false);
+    const [buildMethod, setBuildMethod] = useState<'upload' | 'manual' | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -134,6 +135,13 @@ export default function OnboardingPage() {
             setIsParsing(false);
         }
     };
+
+    // Auto-trigger parsing when resume is selected in "upload" mode
+    useEffect(() => {
+        if (resumeFile && buildMethod === 'upload') {
+            handleParseResume();
+        }
+    }, [resumeFile, buildMethod]);
 
     // Redirect logic: only allow logged-in job seekers missing essential fields
     useEffect(() => {
@@ -301,6 +309,133 @@ export default function OnboardingPage() {
     ].filter(Boolean).length;
     const progressPct = totalSteps > 0 ? Math.round(((totalSteps - stepsLeft) / totalSteps) * 100) : 100;
 
+    if (buildMethod === null) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-hidden">
+                {/* Background Aesthetics */}
+                <div className="absolute top-0 -left-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 -right-20 w-[500px] h-[500px] bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="w-full max-w-xl bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 lg:p-12 relative z-10 text-center"
+                >
+                    <div className="mb-10 mt-4">
+                        <h1 className="text-3xl font-black text-slate-800 tracking-tight mb-3">
+                            How would you like to build your profile?
+                        </h1>
+                        <p className="text-slate-500 text-sm font-medium">
+                            Choose a method to set up your JobsDart profile and start applying.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6">
+                        {/* Option 1: Upload Resume */}
+                        <motion.button
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
+                            type="button"
+                            onClick={() => setBuildMethod('upload')}
+                            className="flex items-center gap-6 p-6 rounded-3xl border-2 border-indigo-100 bg-gradient-to-br from-indigo-50/50 via-white to-white hover:border-indigo-500 hover:shadow-lg transition-all text-left group"
+                        >
+                            <div className="w-16 h-16 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200 shrink-0 group-hover:scale-110 transition-transform">
+                                <Sparkles className="w-8 h-8 animate-pulse" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black text-slate-800 mb-1 group-hover:text-indigo-600 transition-colors">
+                                    Upload my Resume
+                                </h3>
+                                <p className="text-slate-500 text-xs font-semibold leading-relaxed">
+                                    Our AI will parse your resume to auto-fill your domain, phone, and skills in seconds.
+                                </p>
+                            </div>
+                        </motion.button>
+
+                        {/* Option 2: Fill Manually */}
+                        <motion.button
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
+                            type="button"
+                            onClick={() => setBuildMethod('manual')}
+                            className="flex items-center gap-6 p-6 rounded-3xl border-2 border-slate-100 bg-white hover:border-indigo-500 hover:shadow-lg transition-all text-left group"
+                        >
+                            <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-50 group-hover:text-indigo-600 group-hover:scale-110 transition-all">
+                                <FileText className="w-8 h-8" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black text-slate-800 mb-1 group-hover:text-indigo-600 transition-colors">
+                                    Fill it Manually
+                                </h3>
+                                <p className="text-slate-500 text-xs font-semibold leading-relaxed">
+                                    Skip the AI auto-fill and enter your phone number, skills, and profile details manually.
+                                </p>
+                            </div>
+                        </motion.button>
+                    </div>
+                </motion.div>
+            </div>
+        );
+    }
+
+    if (buildMethod === 'upload' && !resumeFile) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-hidden">
+                <div className="absolute top-0 -left-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 -right-20 w-[500px] h-[500px] bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="w-full max-w-xl bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 lg:p-12 relative z-10"
+                >
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setBuildMethod(null)}
+                        className="absolute top-6 left-6 text-slate-500 hover:text-slate-800 flex items-center gap-1.5 text-xs font-black uppercase tracking-wider rounded-xl py-2 px-3 hover:bg-slate-50 transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4" /> Back
+                    </Button>
+
+                    <div className="text-center mb-10 mt-6">
+                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-200">
+                            <UploadCloud className="w-8 h-8 text-white animate-pulse" />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-800 tracking-tight mb-2">Upload your resume</h1>
+                        <p className="text-slate-500 text-sm font-medium">Our AI will extract all details to build your profile automatically.</p>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="relative group">
+                            <div className="absolute inset-0 bg-gradient-to-r from-indigo-50 to-violet-50 rounded-2xl border-2 border-dashed border-slate-300 group-hover:border-indigo-400 transition-colors" />
+                            <div className="relative px-6 py-12 flex flex-col items-center justify-center text-center cursor-pointer">
+                                <UploadCloud className="w-12 h-12 mb-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                                <h3 className="text-base font-bold text-slate-700 mb-1">
+                                    Click to upload or drag and drop
+                                </h3>
+                                <p className="text-xs text-slate-500 max-w-[200px]">
+                                    PDF, DOC, or DOCX (max. 5MB)
+                                </p>
+                                <Input
+                                    type="file"
+                                    accept=".pdf,.doc,.docx"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) setResumeFile(file);
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-hidden">
             {/* Background Aesthetics */}
@@ -313,7 +448,19 @@ export default function OnboardingPage() {
                 transition={{ duration: 0.6 }}
                 className="w-full max-w-xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 lg:p-12 relative z-10"
             >
-                <div className="text-center mb-8">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                        setBuildMethod(null);
+                        setResumeFile(null);
+                    }}
+                    className="absolute top-6 left-6 text-slate-500 hover:text-slate-800 flex items-center gap-1.5 text-xs font-black uppercase tracking-wider rounded-xl py-2 px-3 hover:bg-slate-50 transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" /> Back
+                </Button>
+
+                <div className="text-center mb-8 mt-6">
                     <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-200">
                         <CheckCircle2 className="w-8 h-8 text-white" />
                     </div>

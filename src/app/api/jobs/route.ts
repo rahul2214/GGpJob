@@ -65,6 +65,7 @@ function mapJobToFrontend(job: any): any {
         creditsRequired: job.credits_required || 5,
         referralStrength: job.referral_strength || 'Basic',
         referralCapacity: job.referral_capacity,
+        requiredSkills: job.skill_names || [],
     };
 }
 
@@ -102,6 +103,7 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
             benefit_names: mappedBenefits.map((b: any) => b.name),
             benefit_uuids: mappedBenefits.map((b: any) => b.uuid),
             skill_uuids: mappedSkills.map((s: any) => s.uuid),
+            skill_names: mappedSkills.map((s: any) => s.name),
             applicantCount: job.applicant_count || 0,
             selectedApplicantCount: job.selected_count || 0,
             referredApplicantCount: job.referred_count || 0,
@@ -321,11 +323,22 @@ export async function GET(request: NextRequest) {
         query = query.gte('posted_at', cutoff.toISOString());
     }
 
-    // Order and Limit
+    // Order and Limit / Pagination
     query = query.order('posted_at', { ascending: false });
-    const limit = searchParams.get('limit');
-    if (limit) query = query.limit(parseInt(limit));
-    else query = query.limit(100);
+    
+    const pageParam = searchParams.get('page');
+    const limitParam = searchParams.get('limit');
+    
+    if (pageParam) {
+        const page = parseInt(pageParam, 10) || 1;
+        const limit = parseInt(limitParam || '25', 10) || 25;
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+        query = query.range(from, to);
+    } else {
+        const limit = limitParam ? parseInt(limitParam, 10) : 100;
+        query = query.limit(limit);
+    }
 
     const { data: jobs, error } = await query;
     if (error) throw error;

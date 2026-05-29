@@ -35,7 +35,7 @@ export default function Page() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "JobsDart AI Resume Builder",
+    "name": "JD Resume Builder",
     "url": "https://www.jobsdart.in/resume-builder",
     "description": "Create a professional ATS-friendly resume in minutes with our free online AI resume builder and writer.",
     "applicationCategory": "BusinessApplication",

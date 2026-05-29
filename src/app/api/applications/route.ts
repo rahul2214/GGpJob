@@ -107,6 +107,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const jobId = searchParams.get('jobId');
+    const employeeId = searchParams.get('employeeId');
     const requesterId = searchParams.get('requesterId');
 
     let query = supabaseAdmin
@@ -116,6 +117,30 @@ export async function GET(request: Request) {
             jobseekers(*, jobseeker_skills(skills(id, name))),
             jobs(*, employees(name, email))
         `);
+
+    if (employeeId) {
+      const { data: emp } = await supabaseAdmin
+        .from('employees')
+        .select('id')
+        .eq('uuid', employeeId)
+        .maybeSingle();
+
+      if (emp) {
+        const { data: jobs } = await supabaseAdmin
+          .from('jobs')
+          .select('id')
+          .eq('employee_pk', emp.id);
+
+        if (jobs && jobs.length > 0) {
+          const jobPks = jobs.map((j: any) => j.id);
+          query = query.in('job_pk', jobPks);
+        } else {
+          return NextResponse.json([]);
+        }
+      } else {
+        return NextResponse.json([]);
+      }
+    }
 
     if (userId) {
       const isNumericUser = /^\d+$/.test(userId);

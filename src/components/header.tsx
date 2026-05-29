@@ -33,6 +33,7 @@ import {
   ThumbsUp,
   ClipboardList,
   Users,
+  MessageSquare,
   Wrench,
   ShieldCheck,
   Coins,
@@ -270,11 +271,11 @@ export default function Header() {
                                     </SheetClose>
                                 )}
                                 <SheetClose asChild>
-                                    <Link href="#" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
-                                        <Award className="h-5 w-5" />
-                                        Training
-                                    </Link>
-                                </SheetClose>
+                                     <Link href="/referrers" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/referrers' && "text-foreground font-bold")}>
+                                         <Users className="h-5 w-5" />
+                                         Referrers
+                                     </Link>
+                                 </SheetClose>
                                 <SheetClose asChild>
                                     <Link href="/ats-score" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/ats-score' && "text-foreground font-bold")}>
                                         <Sparkles className="h-5 w-5" />
@@ -326,6 +327,14 @@ export default function Header() {
                                      <Link href="/referrals/active" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/referrals/active' && "text-foreground font-bold")}>
                                          <Briefcase className="h-5 w-5" />
                                          Active Jobs
+                                     </Link>
+                                 </SheetClose>
+                            )}
+                            {isClient && !userLoading && user?.role === 'Employee' && !isPlanSelectionPage && (
+                                 <SheetClose asChild>
+                                     <Link href="/messages" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/messages' && "text-foreground font-bold")}>
+                                         <MessageSquare className="h-5 w-5" />
+                                         Messages
                                      </Link>
                                  </SheetClose>
                             )}
@@ -494,6 +503,11 @@ export default function Header() {
                 Active Jobs
               </Link>
             )}
+            {isClient && !userLoading && user?.role === 'Employee' && !isPlanSelectionPage && (
+              <Link href="/messages" className={`transition-colors hover:text-foreground ${pathname === '/messages' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                Messages
+              </Link>
+            )}
             {isClient && !userLoading && user && (user.role === 'Recruiter' || user.role === 'Employee') && !isPlanSelectionPage && (
               (!(user.planType === 'basic' && jobCount >= 1)) && (
                 <Link href={user.role === 'Employee' ? '/referrals/post' : '/jobs/post'} className={`transition-colors hover:text-foreground ${pathname === '/jobs/post' || pathname === '/referrals/post' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
@@ -515,9 +529,9 @@ export default function Header() {
                             Recommended Jobs
                         </Link>
                     )}
-                    <Link href="#" className={`transition-colors hover:text-foreground ${pathname === "/training" ? "text-foreground" : "text-foreground/60"}`}>
-                        Training
-                    </Link>
+                     <Link href="/referrers" className={`transition-colors hover:text-foreground ${pathname === "/referrers" ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                         Referrers
+                     </Link>
                     <Link href="/ats-score" className={`transition-colors hover:text-foreground ${pathname === "/ats-score" ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
                         ATS Checker
                     </Link>
@@ -558,7 +572,7 @@ export default function Header() {
                    : "bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
                )}>
                  <Coins className="h-4 w-4" />
-                 <span className="text-xs font-bold">{((user as any).subscriptionCredits || 0) + ((user as any).purchasedCredits || 0)} Credits</span>
+                 <span className="text-xs font-bold">{((user as any).subscriptionCredits || 0) + ((user as any).purchasedCredits || 0)}</span>
                </Link>
            )}
            {renderMobileRightButton()}
@@ -625,6 +639,14 @@ export default function Header() {
                            
                         </>
                         )}
+                        {user.role === 'Employee' && (
+                             <DropdownMenuItem asChild>
+                                 <Link href="/messages">
+                                     <MessageSquare className="mr-2 h-4 w-4" />
+                                     <span>Messages</span>
+                                 </Link>
+                             </DropdownMenuItem>
+                         )}
                         {['Job Seeker', 'Recruiter', 'Employee'].includes(user.role) && (
                             <DropdownMenuItem asChild>
                                 <Link href="/feedback">

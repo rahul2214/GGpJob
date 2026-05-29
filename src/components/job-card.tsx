@@ -79,6 +79,12 @@ export default function JobCard({ job, isApplied = false, hideDetails = false }:
                 </span>
             </div>
 
+            {job.requiredSkills && job.requiredSkills.length > 0 && (
+              <div className="text-xs text-muted-foreground truncate pt-1">
+                <span className="font-semibold text-slate-700">Skills:</span> {job.requiredSkills.join(', ')}
+              </div>
+            )}
+
           </div>
         </CardContent>
         <CardFooter className="flex justify-between items-center border-t border-slate-50 pt-4">

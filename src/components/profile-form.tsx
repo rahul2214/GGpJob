@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "next/navigation";
 import { User, Domain, CompanySize } from "@/lib/types";
+import { MultiSelectFilter } from "./multi-select-filter";
 
 const PillSelect = ({ value, onChange, options, className = "" }: { value?: string, onChange: (v: string) => void, options: string[], className?: string }) => (
     <div className={`flex flex-wrap gap-2 ${className}`}>
@@ -62,6 +63,7 @@ const formSchema = z.object({
   companyAddress: z.string().optional().or(z.literal('')),
   companyLinkedinUrl: z.string().optional().or(z.literal('')),
   designation: z.string().optional().or(z.literal('')),
+  preferredLocations: z.array(z.string()).optional(),
 });
 
 type ProfileFormValues = z.infer<typeof formSchema>;
@@ -76,24 +78,32 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
   const { setUser } = useUser();
   const [domains, setDomains] = useState<Domain[]>([]);
   const [companySizes, setCompanySizes] = useState<CompanySize[]>([]);
+  const [locations, setLocations] = useState<any[]>([]);
   const isMobile = useIsMobile();
   const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
         try {
-            const [domainsRes, sizesRes] = await Promise.all([
+            const [domainsRes, sizesRes, locationsRes] = await Promise.all([
                 fetch('/api/domains'),
-                fetch('/api/company-sizes')
+                fetch('/api/company-sizes'),
+                fetch('/api/locations')
             ]);
             setDomains(await domainsRes.json());
             setCompanySizes(await sizesRes.json());
+            setLocations(await locationsRes.json());
         } catch (error) {
             console.error("Failed to fetch form data", error);
         }
     }
     fetchData();
   }, []);
+
+  const locationOptions = (locations || []).map(loc => ({
+    value: loc.name,
+    label: loc.name
+  }));
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(formSchema),
@@ -122,6 +132,7 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
       companyAddress: user.companyAddress || "",
       companyLinkedinUrl: user.companyLinkedinUrl || "",
       designation: user.designation || "",
+      preferredLocations: user.preferredLocations || [],
     },
 });
   
@@ -161,6 +172,7 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
       companyAddress: user.companyAddress || "",
       companyLinkedinUrl: user.companyLinkedinUrl || "",
       designation: user.designation || "",
+      preferredLocations: user.preferredLocations || [],
     });
   }, [user, reset]);
 
@@ -270,6 +282,14 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Current Location</span>
                             <span className="text-sm text-slate-800 font-medium">
                                 {[user.currentArea, user.currentCity].filter(Boolean).join(', ') || "Not specified"}
+                            </span>
+                        </div>
+                        <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
+                            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Preferred Locations</span>
+                            <span className="text-sm text-slate-800 font-medium">
+                                {user.preferredLocations && user.preferredLocations.length > 0
+                                    ? user.preferredLocations.join(', ')
+                                    : "Not specified"}
                             </span>
                         </div>
                         <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
@@ -450,6 +470,25 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                         )}
                     />
                 </div>
+
+                <FormField
+                    control={form.control}
+                    name="preferredLocations"
+                    render={({ field }) => (
+                        <FormItem className="mt-4">
+                            <FormLabel className="text-slate-600">Preferred Locations</FormLabel>
+                            <FormControl>
+                                <MultiSelectFilter
+                                    title="Locations"
+                                    options={locationOptions}
+                                    selectedValues={field.value || []}
+                                    onChange={field.onChange}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <FormField

@@ -17,6 +17,30 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
+// Job Card loading skeleton placeholder
+const JobCardSkeleton = () => (
+  <div className="border border-slate-100 rounded-xl p-5 bg-white space-y-4 shadow-sm animate-pulse">
+    <div className="flex justify-between items-start">
+      <div className="space-y-2 flex-1">
+        <Skeleton className="h-5 w-4/5 rounded-md" />
+        <Skeleton className="h-4 w-1/3 rounded-md" />
+      </div>
+      <Skeleton className="h-6 w-16 rounded-full" />
+    </div>
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2">
+        <Skeleton className="h-4 w-3/4 rounded-md" />
+        <Skeleton className="h-4 w-2/3 rounded-md" />
+      </div>
+      <Skeleton className="h-4 w-1/2 rounded-md" />
+    </div>
+    <div className="border-t border-slate-50 pt-4 flex justify-between items-center">
+      <Skeleton className="h-4 w-24 rounded-md" />
+      <Skeleton className="h-6 w-16 rounded-md" />
+    </div>
+  </div>
+);
+
 export default function JobSeekerDashboard() {
   const { user } = useUser();
   const router = useRouter();
@@ -126,7 +150,7 @@ export default function JobSeekerDashboard() {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
           <div className="flex-1">
             <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-2">Welcome back, {firstName}!</h1>
-            <p className="text-indigo-200 text-sm md:text-base">You have {recommendedJobs.length} new jobs waiting.</p>
+            <p className="text-indigo-200 text-sm md:text-base">New jobs are waiting.</p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link href="/jobs" className="bg-white text-indigo-700 font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-transform hover:scale-105 active:scale-95">Browse Jobs</Link>
@@ -144,7 +168,7 @@ export default function JobSeekerDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Profile Strength */}
-        <div className="lg:col-span-8 rounded-2xl border border-slate-100 bg-white shadow-sm p-5 h-full">
+        <div className="lg:col-span-8 h-full">
           {user && <ProfileStrength user={user} />}
         </div>
 
@@ -185,48 +209,81 @@ export default function JobSeekerDashboard() {
       </div>
 
       {/* Recommended Jobs */}
-      {!isLoading && user?.domainId && recommendedJobs.length > 0 && (
-        <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-slate-800 text-lg">Recommended For You</h2>
-            <Link href="/jobs?view=recommended" className="text-sm font-bold text-indigo-600 hover:underline">View All</Link>
+      {isLoading ? (
+        user?.domainId && (
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-slate-800 text-lg">Recommended For You</h2>
+              <Skeleton className="h-4 w-14 rounded-md" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <JobCardSkeleton />
+              <JobCardSkeleton />
+              <JobCardSkeleton />
+            </div>
           </div>
-          <Carousel className="w-full">
-            <CarouselContent className="-ml-3">
-              {recommendedJobs.map((job) => (
-                <CarouselItem key={job.id} className="pl-3 basis-[90%] sm:basis-1/2 lg:basis-1/3">
-                  <JobCard job={job} isApplied={false} hideDetails={false} />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="hidden sm:flex" />
-            <CarouselNext className="hidden sm:flex" />
-          </Carousel>
-        </div>
+        )
+      ) : (
+        user?.domainId && recommendedJobs.length > 0 && (
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-slate-800 text-lg">Recommended For You</h2>
+              <Link href="/jobs?view=recommended" className="text-sm font-bold text-indigo-600 hover:underline">View All</Link>
+            </div>
+            <Carousel className="w-full">
+              <CarouselContent className="-ml-3">
+                {recommendedJobs.map((job) => (
+                  <CarouselItem key={job.id} className="pl-3 basis-[90%] sm:basis-1/2 lg:basis-1/3">
+                    <JobCard job={job} isApplied={false} hideDetails={false} />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden sm:flex" />
+              <CarouselNext className="hidden sm:flex" />
+            </Carousel>
+          </div>
+        )
       )}
 
       {/* Referral Opportunities */}
-      {!isLoading && referralJobs.length > 0 && (
+      {isLoading ? (
         <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-                <h2 className="font-bold text-slate-800 text-lg">Referral Opportunities</h2>
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] uppercase font-bold px-2 py-0.5">High Success Rate</Badge>
+              <h2 className="font-bold text-slate-800 text-lg">Referral Opportunities</h2>
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] uppercase font-bold px-2 py-0.5 animate-pulse">High Success Rate</Badge>
             </div>
-            <Link href="/jobs?isReferral=true" className="text-sm font-bold text-indigo-600 hover:underline">Explore More</Link>
+            <Skeleton className="h-4 w-20 rounded-md" />
           </div>
-          <Carousel className="w-full">
-            <CarouselContent className="-ml-3">
-              {referralJobs.map((job: any) => (
-                <CarouselItem key={job.id} className="pl-3 basis-[90%] sm:basis-1/2 lg:basis-1/3">
-                  <JobCard job={job} isApplied={false} hideDetails={false} />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="hidden sm:flex" />
-            <CarouselNext className="hidden sm:flex" />
-          </Carousel>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <JobCardSkeleton />
+            <JobCardSkeleton />
+            <JobCardSkeleton />
+          </div>
         </div>
+      ) : (
+        referralJobs.length > 0 && (
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                  <h2 className="font-bold text-slate-800 text-lg">Referral Opportunities</h2>
+                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] uppercase font-bold px-2 py-0.5">High Success Rate</Badge>
+              </div>
+              <Link href="/jobs?isReferral=true" className="text-sm font-bold text-indigo-600 hover:underline">Explore More</Link>
+            </div>
+            <Carousel className="w-full">
+              <CarouselContent className="-ml-3">
+                {referralJobs.map((job: any) => (
+                  <CarouselItem key={job.id} className="pl-3 basis-[90%] sm:basis-1/2 lg:basis-1/3">
+                    <JobCard job={job} isApplied={false} hideDetails={false} />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden sm:flex" />
+              <CarouselNext className="hidden sm:flex" />
+            </Carousel>
+          </div>
+        )
       )}
     </div>
   );

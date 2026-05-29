@@ -105,6 +105,7 @@ async function mapProfileToUser(profile: any): Promise<User> {
         expectedSalary: profile.expected_salary,
         salaryBreakdown: profile.salary_breakdown,
         noticePeriod: profile.notice_period,
+        preferredLocations: profile.preferred_locations || [],
         isPaid: profile.is_paid,
         planType: profile.plan_type,
         planExpiresAt: profile.plan_expires_at,
@@ -388,7 +389,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 annual_salary: rest.annualSalary === '' ? null : rest.annualSalary,
                 expected_salary: rest.expectedSalary === '' ? null : rest.expectedSalary,
                 salary_breakdown: rest.salaryBreakdown,
-                notice_period: rest.noticePeriod
+                notice_period: rest.noticePeriod,
+                preferred_locations: rest.preferredLocations
             });
         }
 

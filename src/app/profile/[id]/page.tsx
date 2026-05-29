@@ -444,6 +444,19 @@ export default function PublicProfilePage() {
                   </div>
                 </div>
               )}
+              {profileUser.preferredLocations && profileUser.preferredLocations.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+                    <MapPin className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">Preferred Locations</span>
+                    <p className="font-semibold text-slate-800">
+                      {profileUser.preferredLocations.join(', ')}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

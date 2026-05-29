@@ -9,7 +9,8 @@ import { useUser } from "@/contexts/user-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useJobs } from "@/hooks/use-jobs";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ThumbsUp, Star, SlidersHorizontal, BriefcaseBusiness } from "lucide-react";
+import { Search, ThumbsUp, Star, BriefcaseBusiness } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const pageConfig = {
   referral: {
@@ -41,6 +42,12 @@ const pageConfig = {
 function JobSearchContent() {
   const searchParams = useSearchParams();
   const { user } = useUser();
+  const [page, setPage] = useState(1);
+
+  // Reset page when search filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchParams]);
 
   const params = useMemo(() => {
     const p: Record<string, any> = {};
@@ -55,8 +62,10 @@ function JobSearchContent() {
     if (user?.uuid) {
         p.userId = user.uuid;
     }
+    p.page = String(page);
+    p.limit = "25";
     return p;
-  }, [searchParams, user?.id]);
+  }, [searchParams, user?.id, page]);
 
   const { jobs, isLoading, isError } = useJobs(params);
 
@@ -93,15 +102,7 @@ function JobSearchContent() {
         <div className="grid lg:grid-cols-[280px_1fr] gap-6">
           {/* Sidebar Filters */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="hidden lg:block">
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden sticky top-20">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100">
-                <SlidersHorizontal className="w-4 h-4 text-slate-500" />
-                <span className="font-bold text-slate-700 text-sm">Filters</span>
-              </div>
-              <div className="p-3">
-                <JobFilters />
-              </div>
-            </div>
+            <JobFilters />
           </motion.div>
 
           {/* Results */}
@@ -176,6 +177,39 @@ function JobSearchContent() {
                   ))}
                 </div>
               </AnimatePresence>
+            )}
+
+            {/* Pagination Controls */}
+            {!isLoading && !isError && (jobsToDisplay.length > 0 || page > 1) && (
+              <div className="flex items-center justify-between mt-6 bg-white px-6 py-4 rounded-2xl border border-slate-200 shadow-sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setPage(prev => Math.max(1, prev - 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={page === 1}
+                  className="font-bold border-slate-200 text-slate-700 rounded-xl"
+                >
+                  Previous
+                </Button>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                  Page {page}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setPage(prev => prev + 1);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={jobsToDisplay.length < 25}
+                  className="font-bold border-slate-200 text-slate-700 rounded-xl"
+                >
+                  Next
+                </Button>
+              </div>
             )}
 
             {/* Empty State */}

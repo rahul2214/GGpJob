@@ -41,6 +41,7 @@ export interface User {
   expectedSalary?: number;
   salaryBreakdown?: 'Fixed' | 'Fixed + Variable' | 'Fixed + Variable + Stocks' | 'Fixed + Stocks';
   noticePeriod?: '15 Days or less' | '1 Month' | '2 Months' | '3 Months' | 'More than 3 Months' | 'Serving Notice Period';
+  preferredLocations?: string[];
 
   isPaid?: boolean;
   planType?: 'none' | 'basic' | 'premium' | 'talent' | 'pro';

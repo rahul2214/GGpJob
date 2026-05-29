@@ -40,8 +40,11 @@ export async function POST(request: Request) {
     });
 
     if (createError) {
-      if (createError.message?.toLowerCase().includes('already registered') ||
-          createError.message?.toLowerCase().includes('already exists')) {
+      const errMsg = createError.message?.toLowerCase() || '';
+      if (errMsg.includes('phone')) {
+        return NextResponse.json({ error: 'An account with this phone number already exists.' }, { status: 409 });
+      }
+      if (errMsg.includes('already registered') || errMsg.includes('already exists')) {
         return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 });
       }
       throw createError;

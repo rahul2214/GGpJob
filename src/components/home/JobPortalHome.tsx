@@ -831,7 +831,7 @@ const JobPortalHome = () => {
                           
                             <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 mt-4 mb-6 tracking-tight">Hiring at India's Top MNCs</h2>
                             <p className="text-base sm:text-lg text-slate-600 mb-6 leading-relaxed">
-                                Referrers on JobsDart are ranked in real-time by their **Average Response Speed** and **Trust Score**. 
+                                Referrers on JobsDart are ranked in real-time by their <strong className="font-bold text-slate-900">Average Response Speed</strong> and <strong className="font-bold text-slate-900">Trust Score</strong>. 
                             </p>
                             <p className="text-sm text-slate-500 mb-8 leading-relaxed">
                                 Employees who verify requests within minutes and maintain a 100% genuine referral record scale to the top, gaining elite bonuses, while fake referrers are penalized.

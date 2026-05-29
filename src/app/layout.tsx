@@ -8,6 +8,7 @@ import Header from '@/components/header';
 import Footer from '@/components/footer';
 import { UserProvider } from '@/contexts/user-context';
 import { Suspense } from 'react';
+import CareerAssistant from '@/components/chat/CareerAssistant';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -61,6 +62,7 @@ export default function RootLayout({
             <Footer />
           </div>
           <Toaster />
+          <CareerAssistant />
         </UserProvider>
       </body>
     </html>

@@ -1,20 +1,21 @@
 const fs = require('fs');
 const path = require('path');
 
-function search(dir) {
-    const list = fs.readdirSync(dir);
-    list.forEach(file => {
-        const filePath = path.join(dir, file);
-        const stat = fs.statSync(filePath);
-        if (stat && stat.isDirectory()) {
-            search(filePath);
-        } else if (file.endsWith('.sql')) {
-            const content = fs.readFileSync(filePath, 'utf8');
-            if (content.includes('exec_sql')) {
-                console.log(`Found in: ${filePath}`);
-            }
+const dir = './supabase';
+const files = fs.readdirSync(dir);
+for (const file of files) {
+  const fullPath = path.join(dir, file);
+  if (fs.statSync(fullPath).isFile() && file.endsWith('.sql')) {
+    const content = fs.readFileSync(fullPath, 'utf8');
+    if (content.includes('employees') && (content.includes('REFERENCES') || content.includes('FOREIGN KEY') || content.includes('alter table'))) {
+      console.log(`Found in: ${file}`);
+      // Print lines containing employees
+      const lines = content.split('\n');
+      lines.forEach((line, index) => {
+        if (line.includes('employees')) {
+          console.log(`  Line ${index + 1}: ${line.trim()}`);
         }
-    });
+      });
+    }
+  }
 }
-
-search('supabase');

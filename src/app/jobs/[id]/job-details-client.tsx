@@ -383,7 +383,7 @@ function JobDetailsContent() {
                                                     className="w-full bg-[#2e5bff] hover:bg-blue-700 text-white rounded-full font-bold h-11 text-base px-10"
                                                     onClick={(e) => handleExternalApply(e, job.jobLink!)}
                                                 >
-                                                    Apply
+                                                    Apply on Website
                                                 </Button>
                                             ) : (
                                                 <ApplyButton 

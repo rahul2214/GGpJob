@@ -19,6 +19,7 @@ async function getOrCreateSession(appId: string) {
             uuid,
             user_pk,
             status_id,
+            is_unlocked,
             jobseekers!user_pk(id, uuid, plan_type),
             job:jobs(
                 id, 
@@ -44,6 +45,18 @@ async function getOrCreateSession(appId: string) {
         .eq('application_id', internalAppId)
         .maybeSingle();
 
+    if (session && session.is_unlocked !== !!appData.is_unlocked) {
+        const { data: updatedSession } = await supabaseAdmin
+            .from('chat_sessions')
+            .update({ is_unlocked: !!appData.is_unlocked })
+            .eq('id', session.id)
+            .select()
+            .maybeSingle();
+        if (updatedSession) {
+            session = updatedSession;
+        }
+    }
+
     if (!session && !sessionError) {
         // 3. Create session if missing
         const jobseekerUuid = (appData.jobseekers as any)?.uuid;
@@ -56,7 +69,7 @@ async function getOrCreateSession(appId: string) {
                     application_id: internalAppId,
                     jobseeker_id: jobseekerUuid,
                     employee_id: posterUuid,
-                    is_unlocked: false
+                    is_unlocked: !!appData.is_unlocked
                 })
                 .select()
                 .maybeSingle();

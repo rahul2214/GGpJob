@@ -36,7 +36,7 @@ export default function AtsScorePage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "JobsDart AI ATS Resume Checker & Analyzer",
+    "name": "JD ATS Resume Checker & Analyzer",
     "url": "https://www.jobsdart.in/ats-score",
     "description": "Scan and optimize your resume against a job description with our free AI ATS compatibility score checker.",
     "applicationCategory": "BusinessApplication",
