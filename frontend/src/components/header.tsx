@@ -1,0 +1,691 @@
+
+"use client"
+
+import Link from "next/link";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import {
+  BriefcaseBusiness,
+  Briefcase,
+  Settings,
+  User,
+  LogOut,
+  LogIn,
+  UserPlus,
+  LayoutGrid,
+  Menu,
+  SlidersHorizontal,
+  MessageSquareQuote,
+  ArrowLeft,
+  Share2,
+  Building,
+  Layers,
+  UserCog,
+  BarChart3,
+  Award,
+  Network,
+  MapPin,
+  X,
+  Search,
+  Star,
+  PlusCircle,
+  Bell,
+  Bookmark,
+  ThumbsUp,
+  ClipboardList,
+  Users,
+  MessageSquare,
+  Wrench,
+  ShieldCheck,
+  Coins,
+  Sparkles,
+  FileText
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import { useUser } from "@/contexts/user-context";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetTrigger } from "@/components/ui/sheet";
+import { Separator } from "./ui/separator";
+import { JobFilters } from "./job-filters";
+import { useEffect, useState, Suspense, useMemo } from "react";
+import { ShareButton } from "./share-button";
+import { useIsMobile } from "@/hooks/use-mobile";
+import HeaderSearch from "./header-search";
+import { ScrollArea } from "./ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { useNotifications } from "@/hooks/use-jobs";
+
+export default function Header() {
+  const { user, logout, loading: userLoading } = useUser();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isClient, setIsClient] = useState(false);
+  const isMobile = useIsMobile();
+
+  // Fetch notifications globally to keep the bell updated
+  const { notifications } = useNotifications(user?.uuid);
+  const [jobCount, setJobCount] = useState<number>(0);
+  
+  const notificationCount = useMemo(() => {
+    if (!notifications || !user) return 0;
+    if (!user.notificationLastViewedAt) return notifications.length;
+    
+    const lastViewedTime = new Date(user.notificationLastViewedAt).getTime();
+    return notifications.filter(n => new Date(n.timestamp).getTime() > lastViewedTime).length;
+  }, [notifications, user]);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient && user && (user.role === 'Recruiter' || user.role === 'Employee')) {
+        const fetchJobCount = async () => {
+            try {
+                const res = await fetch(`/api/jobs?recruiterId=${user.uuid}&isReferral=false&fresh=true`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data)) {
+                        setJobCount(data.length);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch job count in Header:", err);
+            }
+        };
+        fetchJobCount();
+    }
+  }, [isClient, user]);
+
+  const isJobSearchPage = pathname === '/jobs';
+  const isNotificationsPage = pathname === '/notifications';
+  const isJobDetailsPage = /^\/jobs\/[^/]+$/.test(pathname) && !pathname.includes('/applications');
+  const isProfileSectionEditPage = /^\/profile\/(education|employment|projects|languages|skills)\/(add|edit\/[^/]+)$/.test(pathname);
+  const isJobApplicationsPage = /^\/jobs\/[^/]+\/applications$/.test(pathname);
+  const isPublicProfilePage = /^\/profile\/[^/]+$/.test(pathname);
+  const isAdminAddPage = /^\/admin\/(users|domains|locations)\/add$/.test(pathname);
+  const isAdminEditPage = /^\/admin\/(domains|locations)\/edit\/[^/]+$/.test(pathname);
+  const isPlanSelectionPage = pathname === '/jobseeker/plans' || pathname === '/company/payment';
+  const isRedeemPage = pathname === '/rewards/redeem';
+
+  // Link active states
+  const isReferralActive = isJobSearchPage && searchParams.get('isReferral') === 'true';
+  const isRecommendedActive = isJobSearchPage && searchParams.get('view') === 'recommended';
+  const isJobsActive = isJobSearchPage && !searchParams.get('isReferral') && !searchParams.get('view');
+  
+  // Link Hrefs
+  const referralJobsHref = '/jobs?isReferral=true';
+  const recommendedJobsHref = '/jobs?view=recommended';
+
+  const getProfileSectionTitle = () => {
+    if (!isProfileSectionEditPage) return '';
+    const parts = pathname.split('/');
+    const action = parts.includes('edit') ? 'Edit' : 'Add';
+    const section = parts[2].charAt(0).toUpperCase() + parts[2].slice(1);
+    const sectionName = section.endsWith('s') ? section.slice(0,-1) : section;
+
+    return `${action} ${sectionName}`;
+  }
+
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
+  
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return '?';
+    const names = name.trim().split(' ');
+    if (names.length > 1) {
+      return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
+    }
+    return `${name.charAt(0)}`.toUpperCase();
+  }
+
+  const adminNavItems = [
+    { href: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
+    { href: "/admin/revenue", label: "Revenue Analytics", icon: Coins },
+    { href: "/jobs/post", label: "Post Job", icon: PlusCircle },
+    { href: "/admin/users", label: "Manage Users", icon: UserCog },
+    { href: "/admin/jobs", label: "Manage Jobs", icon: BriefcaseBusiness },
+    { href: "/admin/disputes", label: "Hiring Disputes", icon: ShieldCheck },
+    { href: "/admin/domains", label: "Manage Domains", icon: Layers },
+    { href: "/admin/skills", label: "Manage Skills", icon: Wrench },
+    { href: "/admin/locations", label: "Manage Locations", icon: MapPin },
+    { href: "/admin/employment-types", label: "Employment Types", icon: Network },
+    { href: "/admin/workplace-types", label: "Workplace Types", icon: Building },
+    { href: "/admin/coupons", label: "Manage Coupons", icon: Award },
+  ];
+
+  if (user?.role === 'Super Admin') {
+    adminNavItems.push({ href: "/admin/feedback", label: "Platform Feedback", icon: MessageSquareQuote });
+  }
+  
+  const getMobileHeaderTitle = () => {
+    if (isNotificationsPage) return 'Notifications';
+    if (isProfileSectionEditPage) return getProfileSectionTitle();
+    if (isAdminAddPage) {
+      if (pathname.includes('/users')) return 'Create New Admin';
+      if (pathname.includes('/domains')) return 'Add New Domain';
+      if (pathname.includes('/locations')) return 'Add New Location';
+    }
+    if (isAdminEditPage) {
+        if(pathname.includes('/domains')) return 'Edit Domain';
+        if(pathname.includes('/locations')) return 'Edit Location';
+    }
+    if (isRedeemPage) return 'Redemption Hub';
+    return '';
+  }
+
+  const renderMobileLeftButton = () => {
+    const isRecruiterOrEmployee = user?.role === 'Recruiter' || user?.role === 'Employee';
+    const showRecruiterBack = isRecruiterOrEmployee && (isJobApplicationsPage || isPublicProfilePage);
+
+    const showBackButton = (isJobDetailsPage && user?.role === 'Job Seeker') || 
+                          isProfileSectionEditPage || 
+                          showRecruiterBack || 
+                          (isMobile && (isAdminAddPage || isAdminEditPage)) ||
+                          isNotificationsPage ||
+                          isRedeemPage;
+
+    if (isClient && showBackButton) {
+      return (
+        <Button variant="ghost" size="icon" className="shrink-0 md:hidden" onClick={() => router.back()}>
+            <ArrowLeft className="h-5 w-5" />
+            <span className="sr-only">Back</span>
+        </Button>
+      );
+    }
+    return (
+        <div className="flex items-center">
+            <Sheet>
+                <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon" className="shrink-0 md:hidden p-0">
+                        <Menu className="h-10 w-10" />
+                        <span className="sr-only">Toggle navigation menu</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="flex flex-col p-0">
+                 <SheetHeader className="p-4">
+                    <SheetTitle asChild>
+                        <SheetClose asChild>
+                            <Link href="/" className="flex items-center font-bold py-2">
+                                <img src="/logo.png" alt="JobsDart Logo" className="h-14 w-auto object-contain" />
+                            </Link>
+                        </SheetClose>
+                    </SheetTitle>
+                </SheetHeader>
+               <ScrollArea className="flex-1">
+                <div className="p-6 pt-0">
+                    <nav className="grid text-lg font-medium mt-6">
+                        {isClient && !userLoading && user && (user.role === 'Admin' || user.role === 'Super Admin') ? (
+                           <>
+                            {adminNavItems.map(item => (
+                               <SheetClose asChild key={item.href}>
+                                 <Link href={item.href} className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                    <item.icon className="h-5 w-5" />
+                                    {item.label}
+                                  </Link>
+                               </SheetClose>
+                            ))}
+                           </>
+                        ) : (
+                          <>
+                            {isClient && !userLoading && user && !isPlanSelectionPage && (
+                              <SheetClose asChild>
+                                  <Link href="/" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                      <LayoutGrid className="h-5 w-5" />
+                                      Dashboard
+                                  </Link>
+                              </SheetClose>
+                            )}
+                             {isClient && !userLoading && user?.role === 'Job Seeker' && !isPlanSelectionPage && (
+                               <>
+                                <SheetClose asChild>
+                                    <Link href="/jobs" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", isJobsActive && "text-foreground font-bold")}>
+                                        <Search className="h-5 w-5" />
+                                        Jobs
+                                    </Link>
+                                </SheetClose>
+                                <SheetClose asChild>
+                                    <Link href={referralJobsHref} className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", isReferralActive && "text-foreground font-bold")}>
+                                        <ThumbsUp className="h-5 w-5" />
+                                        Referral Jobs
+                                    </Link>
+                                </SheetClose>
+                                
+                                 {user.domainId && (
+                                    <SheetClose asChild>
+                                       <Link href={recommendedJobsHref} className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", isRecommendedActive && "text-foreground font-bold")}>
+                                            <Star className="h-5 w-5" />
+                                            Recommended Jobs
+                                       </Link>
+                                    </SheetClose>
+                                )}
+                                <SheetClose asChild>
+                                     <Link href="/referrers" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/referrers' && "text-foreground font-bold")}>
+                                         <Users className="h-5 w-5" />
+                                         Referrers
+                                     </Link>
+                                 </SheetClose>
+                                <SheetClose asChild>
+                                    <Link href="/ats-score" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/ats-score' && "text-foreground font-bold")}>
+                                        <Sparkles className="h-5 w-5" />
+                                        ATS Checker
+                                    </Link>
+                                </SheetClose>
+                                <SheetClose asChild>
+                                    <Link href="/resume-builder" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/resume-builder' && "text-foreground font-bold")}>
+                                        <FileText className="h-5 w-5" />
+                                        Resume Builder
+                                    </Link>
+                                </SheetClose>
+                               </>
+                            )}
+                             {isClient && !userLoading && !user && (
+                               <>
+                                 <SheetClose asChild>
+                                     <Link href="/jobs" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", isJobsActive && "text-foreground font-bold")}>
+                                         <Search className="h-5 w-5" />
+                                         Jobs
+                                     </Link>
+                                 </SheetClose>
+                                 <SheetClose asChild>
+                                     <Link href="/ats-score" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/ats-score' && "text-foreground font-bold")}>
+                                         <Sparkles className="h-5 w-5" />
+                                         ATS Checker
+                                     </Link>
+                                 </SheetClose>
+                                 <SheetClose asChild>
+                                     <Link href="/resume-builder" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/resume-builder' && "text-foreground font-bold")}>
+                                         <FileText className="h-5 w-5" />
+                                         Resume Builder
+                                     </Link>
+                                 </SheetClose>
+                               </>
+                             )}
+                             {isClient && !userLoading && user && (user.role === 'Recruiter' || user.role === 'Employee') && !isPlanSelectionPage && (
+                                  (!(user.planType === 'basic' && jobCount >= 1)) && (
+                                     <SheetClose asChild>
+                                        <Link href={user.role === 'Employee' ? '/referrals/post' : '/jobs/post'} className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                            <PlusCircle className="h-5 w-5" />
+                                            Post Job
+                                        </Link>
+                                    </SheetClose>
+                                  )
+                            )}
+                            {isClient && !userLoading && user?.role === 'Employee' && !isPlanSelectionPage && (
+                                 <SheetClose asChild>
+                                     <Link href="/referrals/active" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/referrals/active' && "text-foreground font-bold")}>
+                                         <Briefcase className="h-5 w-5" />
+                                         Active Jobs
+                                     </Link>
+                                 </SheetClose>
+                            )}
+                            {isClient && !userLoading && user?.role === 'Employee' && !isPlanSelectionPage && (
+                                 <SheetClose asChild>
+                                     <Link href="/messages" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/messages' && "text-foreground font-bold")}>
+                                         <MessageSquare className="h-5 w-5" />
+                                         Messages
+                                     </Link>
+                                 </SheetClose>
+                            )}
+                            {isClient && !userLoading && user && user.role === 'Recruiter' && !isPlanSelectionPage && user.planType !== 'basic' && (
+                                 <SheetClose asChild>
+                                    <Link href="/company/talent" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/company/talent' && "text-foreground font-bold")}>
+                                        <Users className="h-5 w-5" />
+                                        Talent Search
+                                    </Link>
+                                </SheetClose>
+                            )}
+                          </>
+                        )}
+                    </nav>
+                    {isClient && !userLoading && user && (
+                        <>
+                            <Separator className="my-4" />
+                            <nav className="grid text-lg font-medium">
+                               <div className="text-sm font-semibold text-muted-foreground px-1">My Account</div>
+                                <SheetClose asChild>
+                                    <Link href="/profile" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/profile' && "text-foreground font-bold")}>
+                                        <User className="h-5 w-5" />
+                                        Profile
+                                    </Link>
+                                </SheetClose>
+                                {user.role === 'Job Seeker' && !isPlanSelectionPage && (
+                                    <>
+                                        <SheetClose asChild>
+                                            <Link href="/applications" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/applications' && "text-foreground font-bold")}>
+                                                <LayoutGrid className="h-5 w-5" />
+                                                My Applications
+                                            </Link>
+                                        </SheetClose>
+                                    </>
+                                )}
+                                {['Job Seeker', 'Recruiter', 'Employee'].includes(user.role) && (
+                                    <SheetClose asChild>
+                                        <Link href="/feedback" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/feedback' && "text-foreground font-bold")}>
+                                            <MessageSquareQuote className="h-5 w-5" />
+                                            Feedback
+                                        </Link>
+                                    </SheetClose>
+                                )}
+                                <SheetClose asChild>
+                                    <Link href="#" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+                                        <Settings className="h-5 w-5" />
+                                        Settings
+                                    </Link>
+                                </SheetClose>
+                            </nav>
+                        </>
+                    )}
+                </div>
+                </ScrollArea>
+
+                <div className="mt-auto p-6 border-t">
+                     {isClient && !userLoading && user && (
+                        <Button variant="ghost" onClick={handleLogout} className="w-full justify-start text-lg text-muted-foreground">
+                            <LogOut className="mr-3 h-5 w-5" />
+                            Logout
+                        </Button>
+                     )}
+                     {isClient && !userLoading && !user && (
+                      <div className="flex flex-col gap-2">
+                         <SheetClose asChild>
+                         <Button asChild variant="ghost">
+                            <Link href="/login">
+                              Candidate Login
+                            </Link>
+                          </Button>
+                          </SheetClose>
+                           <SheetClose asChild>
+                           <Button asChild>
+                            <Link href="/company/login">
+                                For Recruiter
+                            </Link>
+                          </Button>
+                          </SheetClose>
+                      </div>
+                     )}
+                </div>
+            </SheetContent>
+        </Sheet>
+        {isClient && !userLoading && user?.role === 'Job Seeker' && pathname === '/applications' && (
+            <div className="shrink-0 md:hidden ml-1 font-bold text-2xl text-slate-800">
+                My Applications
+            </div>
+        )}
+        </div>
+    );
+  }
+
+  const renderMobileRightButton = () => {
+    if (isClient && isJobDetailsPage && user?.role === 'Job Seeker') {
+        const jobId = pathname.split('/')[2];
+        return (
+            <div className="md:hidden">
+                <ShareButton jobId={jobId} jobTitle={""} />
+            </div>
+        );
+    }
+     if (isClient && !userLoading && isJobSearchPage) {
+        return (
+            <div className="md:hidden">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <SlidersHorizontal className="h-6 w-6" />
+                    <span className="sr-only">Open filters</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[80%] rounded-t-lg">
+                  <SheetHeader>
+                    <SheetTitle>Filters</SheetTitle>
+                  </SheetHeader>
+                  <JobFilters isSheet={true} />
+                </SheetContent>
+              </Sheet>
+            </div>
+        )
+     }
+     return null;
+  }
+
+  return (
+    <header className={cn(
+      "sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-2 sm:px-6", 
+      isJobDetailsPage && "hidden md:flex"
+    )}>
+       <div className="flex items-center gap-2">
+        {renderMobileLeftButton()}
+        <Link href="/" className="hidden md:flex items-center gap-2 font-bold whitespace-nowrap py-1">
+            <img src="/logo.png" alt="JobsDart Logo" className="h-16 w-auto object-contain" />
+        </Link>
+        {isClient && (isNotificationsPage || isProfileSectionEditPage || (isMobile && (isAdminAddPage || isAdminEditPage))) && (
+          <div className="md:hidden text-lg font-semibold whitespace-nowrap">
+            {getMobileHeaderTitle()}
+          </div>
+        )}
+      </div>
+
+
+      <nav className="ml-6 hidden md:flex items-center gap-6 text-sm font-medium">
+        {isClient && !userLoading && user && (user.role === 'Admin' || user.role === 'Super Admin') ? (
+          <>
+            {adminNavItems.map(item => (
+              <Link key={item.href} href={item.href} className={`transition-colors hover:text-foreground ${pathname === item.href ? "text-foreground" : "text-foreground/60"}`}>
+                {item.label}
+              </Link>
+            ))}
+          </>
+        ) : (
+          <>
+            {isClient && !userLoading && user && !isPlanSelectionPage && (
+              <Link href="/" className={`transition-colors hover:text-foreground ${pathname === "/" ? "text-foreground" : "text-foreground/60"}`}>
+                Dashboard
+              </Link>
+            )}
+            {isClient && !userLoading && user?.role === 'Recruiter' && !isPlanSelectionPage && user.planType !== 'basic' && (
+              <Link href="/company/talent" className={`transition-colors hover:text-foreground ${pathname === '/company/talent' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                Talent Search
+              </Link>
+            )}
+            {isClient && !userLoading && user?.role === 'Employee' && !isPlanSelectionPage && (
+              <Link href="/referrals/active" className={`transition-colors hover:text-foreground ${pathname === '/referrals/active' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                Active Jobs
+              </Link>
+            )}
+            {isClient && !userLoading && user?.role === 'Employee' && !isPlanSelectionPage && (
+              <Link href="/messages" className={`transition-colors hover:text-foreground ${pathname === '/messages' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                Messages
+              </Link>
+            )}
+            {isClient && !userLoading && user && (user.role === 'Recruiter' || user.role === 'Employee') && !isPlanSelectionPage && (
+              (!(user.planType === 'basic' && jobCount >= 1)) && (
+                <Link href={user.role === 'Employee' ? '/referrals/post' : '/jobs/post'} className={`transition-colors hover:text-foreground ${pathname === '/jobs/post' || pathname === '/referrals/post' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                    Post Job
+                </Link>
+              )
+            )}
+            {isClient && !userLoading && user?.role === 'Job Seeker' && !isPlanSelectionPage && (
+                <Suspense>
+                    <Link href="/jobs" className={`transition-colors hover:text-foreground ${isJobsActive ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                        Jobs
+                    </Link>
+                    <Link href={referralJobsHref} className={`transition-colors hover:text-foreground ${isReferralActive ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                        Referral Jobs
+                    </Link>
+                   
+                    {user.domainId && (
+                         <Link href={recommendedJobsHref} className={`transition-colors hover:text-foreground ${isRecommendedActive ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                            Recommended Jobs
+                        </Link>
+                    )}
+                     <Link href="/referrers" className={`transition-colors hover:text-foreground ${pathname === "/referrers" ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                         Referrers
+                     </Link>
+                    <Link href="/ats-score" className={`transition-colors hover:text-foreground ${pathname === "/ats-score" ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                        ATS Checker
+                    </Link>
+                    <Link href="/resume-builder" className={`transition-colors hover:text-foreground ${pathname === "/resume-builder" ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                        Resume Builder
+                    </Link>
+                </Suspense>
+            )}
+            {isClient && !userLoading && !user && (
+              <>
+                <Link href="/jobs" className={`transition-colors hover:text-foreground ${isJobsActive ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                    Jobs
+                </Link>
+                <Link href="/ats-score" className={`transition-colors hover:text-foreground ${pathname === "/ats-score" ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                    ATS Checker
+                </Link>
+                <Link href="/resume-builder" className={`transition-colors hover:text-foreground ${pathname === "/resume-builder" ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                    Resume Builder
+                </Link>
+              </>
+            )}
+          </>
+        )}
+      </nav>
+
+      <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
+        {!isPlanSelectionPage && (
+            <Suspense fallback={null}>
+                <HeaderSearch />
+            </Suspense>
+        )}
+        <div className="ml-auto flex items-center gap-2">
+           {isClient && !userLoading && user?.role === 'Job Seeker' && (
+               <Link href="/jobseeker/credits" className={cn(
+                 "hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all",
+                 (((user as any).subscriptionCredits || 0) + ((user as any).purchasedCredits || 0)) < 1 
+                   ? "bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100" 
+                   : "bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+               )}>
+                 <Coins className="h-4 w-4" />
+                 <span className="text-xs font-bold">{((user as any).subscriptionCredits || 0) + ((user as any).purchasedCredits || 0)}</span>
+               </Link>
+           )}
+           {renderMobileRightButton()}
+           {isClient && !userLoading && user ? (
+            <div className="flex items-center gap-4">
+                {(user.role === 'Job Seeker' || user.role === 'Recruiter' || user.role === 'Employee') && (
+                    <>
+                        {pathname === '/' && (
+                            <Button asChild variant="ghost" size="icon" className="md:hidden">
+                                <Link href="/notifications">
+                                    <div className="relative">
+                                    <Bell className="h-5 w-5" />
+                                    {notificationCount > 0 && (
+                                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                                        {notificationCount > 9 ? '9+' : notificationCount}
+                                        </span>
+                                    )}
+                                    </div>
+                                    <span className="sr-only">Notifications</span>
+                                </Link>
+                            </Button>
+                        )}
+                        <Button asChild variant="ghost" size="icon" className="hidden md:flex">
+                             <Link href="/notifications">
+                                <div className="relative">
+                                  <Bell className="h-5 w-5" />
+                                  {notificationCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                                      {notificationCount > 9 ? '9+' : notificationCount}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="sr-only">Notifications</span>
+                            </Link>
+                        </Button>
+                    </>
+                )}
+                 <div className="hidden md:flex items-center gap-2">
+                    <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="rounded-full">
+                        <Avatar>
+                            <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                        </Avatar>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                        <Link href="/profile">
+                            <User className="mr-2 h-4 w-4" />
+                            <span>Profile</span>
+                        </Link>
+                        </DropdownMenuItem>
+                        {user.role === 'Job Seeker' && !isPlanSelectionPage && (
+                        <>
+                            <DropdownMenuItem asChild>
+                                <Link href="/applications">
+                                <LayoutGrid className="mr-2 h-4 w-4" />
+                                <span>My Applications</span>
+                                </Link>
+                            </DropdownMenuItem>
+                           
+                        </>
+                        )}
+                        {user.role === 'Employee' && (
+                             <DropdownMenuItem asChild>
+                                 <Link href="/messages">
+                                     <MessageSquare className="mr-2 h-4 w-4" />
+                                     <span>Messages</span>
+                                 </Link>
+                             </DropdownMenuItem>
+                         )}
+                        {['Job Seeker', 'Recruiter', 'Employee'].includes(user.role) && (
+                            <DropdownMenuItem asChild>
+                                <Link href="/feedback">
+                                    <MessageSquareQuote className="mr-2 h-4 w-4" />
+                                    <span>Feedback</span>
+                                </Link>
+                            </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem>
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Settings</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                    </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors" onClick={handleLogout} title="Logout">
+                        <LogOut className="h-5 w-5" />
+                        <span className="sr-only">Logout</span>
+                    </Button>
+                </div>
+            </div>
+          ) : (
+             isClient && !userLoading && (
+                <div className="hidden md:flex items-center gap-2">
+                <Button asChild variant="ghost">
+                    <Link href="/login">
+                        Candidate Login
+                    </Link>
+                </Button>
+                <Button asChild>
+                    <Link href="/company/login">
+                        For Recruiter
+                    </Link>
+                </Button>
+                </div>
+             )
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}

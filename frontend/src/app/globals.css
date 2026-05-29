@@ -1,0 +1,1152 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 13% 96%;
+    --foreground: 240 5.9% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 5.9% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 5.9% 10%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 220 13% 91%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 220 13% 91%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 142.1 70.6% 45.3%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 13% 89%;
+    --input: 220 13% 89%;
+    --ring: 217.2 91.2% 59.8%;
+    --radius: 24px;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+
+     /* New variables from Job Portal design */
+    --job-portal-primary: #4361ee;
+    --job-portal-secondary: #3a0ca3;
+    --job-portal-accent: #f72585;
+    --job-portal-light: #f8f9fa;
+    --job-portal-dark: #212529;
+    --job-portal-success: #4cc9f0;
+    --job-portal-gradient: linear-gradient(135deg, #4361ee, #3a0ca3);
+    --job-portal-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .dark {
+    --background: 240 5.9% 10%;
+    --foreground: 0 0% 98%;
+    --card: 240 5.9% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 5.9% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 142.1 70.6% 45.3%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 217.2 91.2% 59.8%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+    .p-6 {
+        padding: 1rem;
+    }
+}
+
+
+.PhoneInputInput {
+    border: none;
+    outline: none;
+    background: transparent;
+    padding-left: 0.5rem;
+    width: 100%;
+}
+
+.PhoneInput {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border: 1px solid hsl(var(--input));
+    border-radius: var(--radius);
+    background-color: hsl(var(--background));
+}
+
+.PhoneInput--focus {
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(var(--ring));
+}
+
+/* Job Portal Styles */
+#job-portal-page * {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#job-portal-page {
+    background-color: #f5f7fb;
+    color: var(--job-portal-dark);
+    overflow-x: hidden;
+    line-height: 1.6;
+}
+
+#job-portal-page .container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+#job-portal-page section {
+    padding: 5rem 0;
+}
+
+#job-portal-page .btn {
+    display: inline-block;
+    padding: 0.8rem 1.8rem;
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    text-align: center;
+    text-decoration: none;
+}
+
+#job-portal-page .btn-primary {
+    background: var(--job-portal-accent);
+    color: white;
+}
+
+#job-portal-page .btn-primary:hover {
+    background: #d9047a;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(247, 37, 133, 0.4);
+}
+
+#job-portal-page .btn-outline {
+    background: transparent;
+    border: 2px solid white;
+    color: white;
+}
+
+#job-portal-page .btn-outline:hover {
+    background: white;
+    color: var(--job-portal-primary);
+}
+
+#job-portal-page .btn-large {
+    padding: 1.2rem 2.5rem;
+    font-size: 1.1rem;
+}
+
+#job-portal-page .section-title {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+#job-portal-page .section-title h2 {
+    font-size: 2.5rem;
+    color: var(--job-portal-secondary);
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+#job-portal-page .section-title p {
+    font-size: 1.2rem;
+    color: #666;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Hero Section */
+#job-portal-page .hero {
+    padding: 6rem 0 5rem;
+    background: var(--job-portal-gradient);
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+#job-portal-page .hero-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 2;
+}
+
+#job-portal-page .hero-text {
+    flex: 1;
+    padding-right: 2rem;
+    animation: jc-fadeInLeft 1s ease-out;
+}
+
+#job-portal-page .hero-text h1 {
+    font-size: 3.5rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+    font-weight: 700;
+}
+
+#job-portal-page .hero-text p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+#job-portal-page .hero-image {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    height: 400px;
+    animation: jc-fadeInRight 1s ease-out;
+}
+
+#job-portal-page .floating-card {
+    width: 280px;
+    height: 160px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+    padding: 1.5rem;
+    color: var(--job-portal-dark);
+    position: absolute;
+}
+
+#job-portal-page .floating-card:nth-child(1) {
+    top: 20px;
+    left: 0;
+    animation: jc-float 6s ease-in-out infinite;
+}
+
+#job-portal-page .floating-card:nth-child(2) {
+    top: 50px;
+    right: 50px;
+    width: 240px;
+    height: 140px;
+    animation: jc-float 6s ease-in-out infinite 1s;
+    background: var(--job-portal-success);
+    color: white;
+}
+
+#job-portal-page .floating-card:nth-child(3) {
+    bottom: 30px;
+    right: 0;
+    width: 200px;
+    height: 120px;
+    animation: jc-float 6s ease-in-out infinite 2s;
+    background: var(--job-portal-accent);
+    color: white;
+}
+
+@keyframes jc-float {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+@keyframes jc-fadeInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes jc-fadeInRight {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+#job-portal-page .search-box {
+    background: white;
+    border-radius: 50px;
+    padding: 0.5rem;
+    display: flex;
+    max-width: 600px;
+    margin-top: 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+#job-portal-page .search-box input {
+    flex: 1;
+    border: none;
+    padding: 1rem 1.5rem;
+    border-radius: 50px;
+    font-size: 1rem;
+    outline: none;
+    color: var(--job-portal-dark);
+}
+
+#job-portal-page .search-box button {
+    background: var(--job-portal-accent);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#job-portal-page .search-box button:hover {
+    background: #d9047a;
+}
+
+/* Features Section */
+#job-portal-page .features {
+    background: white;
+}
+
+#job-portal-page .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+#job-portal-page .feature-card {
+    background: white;
+    border-radius: 10px;
+    padding: 2rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    text-align: center;
+    border-top: 4px solid var(--job-portal-primary);
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+#job-portal-page .feature-card.animate {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+#job-portal-page .feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+#job-portal-page .feature-icon {
+    width: 70px;
+    height: 70px;
+    background: var(--job-portal-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    color: white;
+    font-size: 1.8rem;
+}
+
+#job-portal-page .feature-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: var(--job-portal-secondary);
+}
+
+#job-portal-page .feature-card p {
+    color: #666;
+    line-height: 1.6;
+}
+
+/* How It Works */
+#job-portal-page .how-it-works {
+    background: #f5f7fb;
+}
+
+#job-portal-page .steps {
+    display: flex;
+    justify-content: space-between;
+    max-width: 1000px;
+    margin: 0 auto;
+    position: relative;
+}
+
+#job-portal-page .steps::before {
+    content: '';
+    position: absolute;
+    top: 40px;
+    left: 10%;
+    right: 10%;
+    height: 4px;
+    background: var(--job-portal-primary);
+    z-index: 1;
+}
+
+#job-portal-page .step {
+    text-align: center;
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    padding: 0 1rem;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+#job-portal-page .step.animate {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+#job-portal-page .step-number {
+    width: 80px;
+    height: 80px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--job-portal-primary);
+    border: 4px solid var(--job-portal-primary);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+#job-portal-page .step h3 {
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    color: var(--job-portal-secondary);
+}
+
+#job-portal-page .step p {
+    color: #666;
+    line-height: 1.6;
+}
+
+/* Stats Section */
+#job-portal-page #stats {
+    background: var(--job-portal-gradient);
+    color: white;
+    text-align: center;
+}
+
+#job-portal-page .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+}
+
+#job-portal-page .stat-item {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+#job-portal-page .stat-item.animate {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+
+#job-portal-page .stat-item h3 {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+#job-portal-page .stat-item p {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+/* Top MNCs Section */
+#job-portal-page .top-mncs {
+    background: white;
+    padding: 5rem 0;
+    position: relative;
+    overflow: hidden;
+}
+
+#job-portal-page .mncs-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+#job-portal-page .mncs-header h2 {
+    font-size: 2.8rem;
+    color: var(--job-portal-secondary);
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+#job-portal-page .mncs-header p {
+    font-size: 1.2rem;
+    color: #666;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+#job-portal-page .companies-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+#job-portal-page .company-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem 1.5rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s ease;
+    text-align: center;
+    border: 1px solid #f0f0f0;
+    position: relative;
+    overflow: hidden;
+}
+
+#job-portal-page .company-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--job-portal-gradient);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+}
+
+#job-portal-page .company-card:hover::before {
+    transform: scaleX(1);
+}
+
+#job-portal-page .company-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+#job-portal-page .company-logo {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: var(--job-portal-primary);
+    transition: all 0.4s ease;
+}
+
+#job-portal-page .company-card:hover .company-logo {
+    transform: scale(1.1);
+}
+
+#job-portal-page .company-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--job-portal-dark);
+    margin-bottom: 0.5rem;
+}
+
+#job-portal-page .company-jobs {
+    font-size: 0.9rem;
+    color: var(--job-portal-accent);
+    font-weight: 600;
+}
+
+#job-portal-page .hiring-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: var(--job-portal-accent);
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    animation: jc-pulse 2s infinite;
+}
+
+@keyframes jc-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(247, 37, 133, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(247, 37, 133, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(247, 37, 133, 0);
+    }
+}
+
+/* Referral Benefits Section */
+#job-portal-page .referral-benefits {
+    background: #f8f9ff;
+    padding: 5rem 0;
+    position: relative;
+}
+
+#job-portal-page .benefits-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3rem;
+}
+
+#job-portal-page .benefits-content {
+    flex: 1;
+}
+
+#job-portal-page .benefits-content h2 {
+    font-size: 2.8rem;
+    color: var(--job-portal-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+    font-weight: 700;
+}
+
+#job-portal-page .benefits-content p {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+#job-portal-page .benefits-list {
+    list-style: none;
+    padding: 0;
+}
+
+#job-portal-page .benefits-list li {
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+}
+
+#job-portal-page .benefits-list i {
+    color: var(--job-portal-success);
+    font-size: 1.5rem;
+    margin-right: 1rem;
+    margin-top: 0.2rem;
+}
+
+#job-portal-page .benefits-list span {
+    font-size: 1.1rem;
+    color: var(--job-portal-dark);
+}
+
+
+#job-portal-page .benefits-visual {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    height: 400px;
+}
+
+#job-portal-page .floating-element {
+    position: absolute;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    animation: jc-floatElement 8s ease-in-out infinite;
+}
+
+#job-portal-page .floating-element:nth-child(1) {
+    top: 20px;
+    left: 0;
+    width: 200px;
+    background: var(--job-portal-gradient);
+    color: white;
+    animation-delay: 0s;
+}
+
+#job-portal-page .floating-element:nth-child(2) {
+    top: 120px;
+    right: 20px;
+    width: 180px;
+    background: white;
+    color: var(--job-portal-dark);
+    animation-delay: 1s;
+}
+
+#job-portal-page .floating-element:nth-child(3) {
+    bottom: 80px;
+    left: 40px;
+    width: 220px;
+    background: var(--job-portal-accent);
+    color: white;
+    animation-delay: 2s;
+}
+
+#job-portal-page .floating-element:nth-child(4) {
+    bottom: 40px;
+    right: 0;
+    width: 160px;
+    background: var(--job-portal-success);
+    color: white;
+    animation-delay: 3s;
+}
+
+@keyframes jc-floatElement {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+#job-portal-page .element-icon {
+    font-size: 1.8rem;
+    margin-right: 1rem;
+}
+
+#job-portal-page .element-text {
+    font-weight: 600;
+}
+
+
+/* Referrals Showcase Section */
+#job-portal-page .referrals-showcase {
+    background: white;
+    position: relative;
+    overflow: hidden;
+}
+
+#job-portal-page .referrals-header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+#job-portal-page .referrals-header h2 {
+    font-size: 3rem;
+    background: var(--job-portal-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+#job-portal-page .referrals-header p {
+    font-size: 1.3rem;
+    color: #666;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+#job-portal-page .referrals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2.5rem;
+    margin-bottom: 4rem;
+}
+
+#job-portal-page .referral-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2.5rem 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s ease;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    border-top: 5px solid var(--job-portal-primary);
+}
+
+#job-portal-page .referral-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: var(--job-portal-gradient);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+}
+
+#job-portal-page .referral-card:hover::before {
+    transform: scaleX(1);
+}
+
+#job-portal-page .referral-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+#job-portal-page .referral-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--job-portal-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    color: white;
+    font-size: 2rem;
+    transition: all 0.4s ease;
+}
+
+#job-portal-page .referral-card:hover .referral-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+#job-portal-page .referral-card h3 {
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+    color: var(--job-portal-secondary);
+}
+
+#job-portal-page .referral-card p {
+    color: #666;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+}
+
+#job-portal-page .referral-stats {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+#job-portal-page .stat {
+    text-align: center;
+}
+
+#job-portal-page .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--job-portal-accent);
+    display: block;
+}
+
+#job-portal-page .stat-label {
+    font-size: 0.9rem;
+    color: #777;
+}
+
+/* CTA Section */
+#job-portal-page .cta {
+    background: white;
+    text-align: center;
+}
+
+#job-portal-page .cta-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+#job-portal-page .cta h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    color: var(--job-portal-secondary);
+    font-weight: 700;
+}
+
+#job-portal-page .cta p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    color: #666;
+}
+
+#job-portal-page .cta-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+/* Referral CTA Section */
+#job-portal-page .referral-cta {
+    background: var(--job-portal-gradient);
+    color: white;
+    text-align: center;
+    padding: 6rem 0;
+    position: relative;
+    overflow: hidden;
+}
+
+#job-portal-page .referral-cta::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+    animation: jc-pulse-bg 10s infinite linear;
+}
+
+@keyframes jc-pulse-bg {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+#job-portal-page .referral-cta h2 {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 2;
+    font-weight: 700;
+}
+
+#job-portal-page .referral-cta p {
+    font-size: 1.3rem;
+    margin-bottom: 2.5rem;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    opacity: 0.9;
+    position: relative;
+    z-index: 2;
+}
+
+
+/* Responsive Design */
+@media (max-width: 992px) {
+    #job-portal-page .hero-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    #job-portal-page .hero-text {
+        padding-right: 0;
+        margin-bottom: 3rem;
+    }
+    
+    #job-portal-page .steps {
+        flex-direction: column;
+        gap: 3rem;
+    }
+    
+    #job-portal-page .steps::before {
+        display: none;
+    }
+    
+    #job-portal-page .benefits-container {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    #job-portal-page .benefits-visual {
+        height: 300px;
+        margin-top: 2rem;
+    }
+    
+    #job-portal-page .floating-element {
+        padding: 1rem;
+    }
+    
+    #job-portal-page .floating-element:nth-child(1) {
+        width: 180px;
+    }
+    
+    #job-portal-page .floating-element:nth-child(2) {
+        width: 160px;
+    }
+    
+    #job-portal-page .floating-element:nth-child(3) {
+        width: 200px;
+    }
+    
+    #job-portal-page .floating-element:nth-child(4) {
+        width: 140px;
+    }
+    
+    #job-portal-page .companies-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    #job-portal-page .hero-text h1 {
+        font-size: 2.5rem;
+    }
+    
+    #job-portal-page .search-box {
+        flex-direction: column;
+        border-radius: 10px;
+        gap: 0.5rem;
+        padding: 1rem;
+    }
+    
+    #job-portal-page .search-box input, #job-portal-page .search-box button {
+        border-radius: 10px;
+        width: 100%;
+    }
+    
+    #job-portal-page .floating-card:nth-child(2),
+    #job-portal-page .floating-card:nth-child(3) {
+        display: none;
+    }
+    
+    #job-portal-page .floating-card:nth-child(1) {
+        position: relative;
+        margin: 0 auto;
+    }
+    
+    #job-portal-page .hero-image {
+        height: auto;
+    }
+    
+    #job-portal-page .cta-buttons, #job-portal-page .referral-cta .cta-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    #job-portal-page .btn-large {
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    #job-portal-page .referrals-header h2 {
+        font-size: 2.5rem;
+    }
+    
+    #job-portal-page .referrals-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    #job-portal-page .referral-cta h2 {
+        font-size: 2.5rem;
+    }
+    
+    #job-portal-page .benefits-content h2 {
+        font-size: 2.2rem;
+    }
+    
+    #job-portal-page .mncs-header h2 {
+        font-size: 2.2rem;
+    }
+    
+    #job-portal-page .companies-grid {
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    #job-portal-page .section-title h2 {
+        font-size: 2rem;
+    }
+    
+    #job-portal-page .hero-text h1 {
+        font-size: 2rem;
+    }
+    
+    #job-portal-page .feature-card, #job-portal-page .step, #job-portal-page .stat-item {
+        padding: 1.5rem;
+    }
+    
+    #job-portal-page .feature-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    
+    #job-portal-page .referrals-header h2 {
+        font-size: 2rem;
+    }
+    
+    #job-portal-page .referral-cta h2 {
+        font-size: 2rem;
+    }
+    
+    #job-portal-page .benefits-content h2 {
+        font-size: 1.8rem;
+    }
+    
+    #job-portal-page .referral-card {
+        padding: 2rem 1.5rem;
+    }
+    
+    #job-portal-page .referral-stats {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    #job-portal-page .floating-element {
+        display: none;
+    }
+    
+    #job-portal-page .floating-element:nth-child(1) {
+        display: flex;
+    }
+    
+    #job-portal-page .mncs-header h2 {
+        font-size: 1.8rem;
+    }
+    
+    #job-portal-page .companies-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    #job-portal-page .company-card {
+        padding: 1.5rem 1rem;
+    }
+    
+    #job-portal-page .company-logo {
+        width: 60px;
+        height: 60px;
+        font-size: 2rem;
+    }
+}

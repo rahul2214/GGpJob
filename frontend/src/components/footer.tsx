@@ -1,0 +1,52 @@
+
+import Link from "next/link";
+import { Linkedin, Twitter, Github, Instagram } from "lucide-react";
+
+export default function Footer() {
+  return (
+    <footer className="border-t bg-card text-card-foreground">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col md:flex-row justify-between items-center">
+          <div className="flex items-center gap-2 mb-4 md:mb-0">
+            <img src="/logo.png" alt="JobsDart Logo" className="h-20 w-auto" />
+          </div>
+          
+          <div className="text-center md:text-left mb-4 md:mb-0">
+            <p className="text-sm text-muted-foreground">
+              &copy; {new Date().getFullYear()}{" "}
+              <Link
+                href="https://veltria.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-primary transition-colors"
+              >
+                VELTRIA
+              </Link>
+              . All rights reserved.
+            </p>
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-2 text-xs text-muted-foreground/80">
+              <Link href="/terms" className="hover:text-primary transition-colors">Terms & Conditions</Link>
+              <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+              <Link href="/refund" className="hover:text-primary transition-colors">Refund & Cancellation Policy</Link>
+              <Link href="/contact" className="hover:text-primary transition-colors">Contact Us</Link>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <Link href="https://www.linkedin.com/company/veltria/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+              <Linkedin className="h-5 w-5" />
+            </Link>
+            <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+              <Twitter className="h-5 w-5" />
+            </Link>
+            <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+              <Github className="h-5 w-5" />
+            </Link>
+            <Link href="https://www.instagram.com/veltria/?igsh=dGg5NjJidzNqZXp6" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+              <Instagram className="h-5 w-5" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
