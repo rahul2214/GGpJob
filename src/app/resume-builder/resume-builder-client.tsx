@@ -32,14 +32,14 @@ interface JobInput {
   startDate: string;
   endDate: string;
   location: string;
-  description: string;
+  points: string[];
   currentlyWorkHere?: boolean;
 }
 
 interface ProjectInput {
   name: string;
   techStack: string;
-  description: string;
+  points: string[];
 }
 
 interface EducationInput {
@@ -52,6 +52,7 @@ interface EducationInput {
 
 interface ResumeData {
   name: string;
+  role?: string;
   contact: {
     email: string;
     phone: string;
@@ -94,20 +95,21 @@ export default function ResumeBuilderPage() {
   // Form States
   const [templateType, setTemplateType] = useState("Software Engineer")
   const [name, setName] = useState(user?.name || "")
+  const [role, setRole] = useState(user?.headline || "")
   const [email, setEmail] = useState(user?.email || "")
   const [phone, setPhone] = useState(user?.phone || "")
   const [linkedinUrl, setLinkedinUrl] = useState(user?.linkedinUrl || "")
   const [githubUrl, setGithubUrl] = useState(user?.githubUrl || "")
-  const [skillsText, setSkillsText] = useState(user?.skills?.map(s => s.name).join(", ") || "")
+  const [skills, setSkills] = useState<string[]>(user?.skills && user.skills.length > 0 ? user.skills.map(s => s.name) : [""])
   const [professionalSummary, setProfessionalSummary] = useState("")
   const [languages, setLanguages] = useState<string[]>([""])
   const [achievements, setAchievements] = useState<string[]>([""])
   
   const [jobs, setJobs] = useState<JobInput[]>([
-    { company: "", role: "", startDate: "", endDate: "", location: "", description: "", currentlyWorkHere: false }
+    { company: "", role: "", startDate: "", endDate: "", location: "", points: [""], currentlyWorkHere: false }
   ])
   const [projects, setProjects] = useState<ProjectInput[]>([
-    { name: "", techStack: "", description: "" }
+    { name: "", techStack: "", points: [""] }
   ])
   const [education, setEducation] = useState<EducationInput[]>([
     { institution: "", degree: "", year: "", grade: "" }
@@ -117,7 +119,7 @@ export default function ResumeBuilderPage() {
   const [generatedResume, setGeneratedResume] = useState<ResumeData | null>(null)
 
   // Dynamic Array Modifiers
-  const addJob = () => setJobs([...jobs, { company: "", role: "", startDate: "", endDate: "", location: "", description: "", currentlyWorkHere: false }])
+  const addJob = () => setJobs([...jobs, { company: "", role: "", startDate: "", endDate: "", location: "", points: [""], currentlyWorkHere: false }])
   const removeJob = (index: number) => setJobs(jobs.filter((_, i) => i !== index))
   const updateJob = (index: number, field: keyof JobInput, val: any) => {
     const updated = [...jobs]
@@ -125,11 +127,11 @@ export default function ResumeBuilderPage() {
     setJobs(updated)
   }
 
-  const addProject = () => setProjects([...projects, { name: "", techStack: "", description: "" }])
+  const addProject = () => setProjects([...projects, { name: "", techStack: "", points: [""] }])
   const removeProject = (index: number) => setProjects(projects.filter((_, i) => i !== index))
-  const updateProject = (index: number, field: keyof ProjectInput, val: string) => {
+  const updateProject = (index: number, field: keyof ProjectInput, val: any) => {
     const updated = [...projects]
-    updated[index][field] = val
+    ;(updated[index] as any)[field] = val
     setProjects(updated)
   }
 
@@ -157,24 +159,32 @@ export default function ResumeBuilderPage() {
     setAchievements(updated)
   }
 
+  const addSkill = () => setSkills([...skills, ""])
+  const removeSkill = (index: number) => setSkills(skills.filter((_, i) => i !== index))
+  const updateSkill = (index: number, val: string) => {
+    const updated = [...skills]
+    updated[index] = val
+    setSkills(updated)
+  }
+
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   const executeGenerate = async () => {
     setIsGenerating(true)
     try {
-      const skillsArray = skillsText.split(",").map(s => s.trim()).filter(Boolean)
+      const skillsArray = skills.map(s => s.trim()).filter(Boolean)
       const experienceList = jobs.filter(j => j.company && j.role).map(j => ({
         company: j.company,
         role: j.role,
         startDate: j.startDate,
         endDate: j.currentlyWorkHere ? "Present" : j.endDate,
         location: j.location,
-        description: j.description
+        description: j.points ? j.points.filter(Boolean).join("\n") : ""
       }))
       const projectsList = projects.filter(p => p.name).map(p => ({
         name: p.name,
         techStack: p.techStack,
-        description: p.description
+        description: p.points ? p.points.filter(Boolean).join("\n") : ""
       }))
       const educationList = education.filter(e => e.institution).map(e => ({
         institution: e.institution,
@@ -189,7 +199,7 @@ export default function ResumeBuilderPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contactInfo: { name, email, phone, linkedinUrl, githubUrl },
+          contactInfo: { name, email, phone, linkedinUrl, githubUrl, role },
           templateType,
           experience: experienceList,
           projects: projectsList,
@@ -247,72 +257,40 @@ export default function ResumeBuilderPage() {
   }
 
   const handleDownloadPdf = async () => {
-    const element = document.getElementById("printable-resume-area")
-    if (!element) return
+    if (!generatedResume) return
 
     setIsDownloadingPdf(true)
     try {
-      const html2canvas = (await import("html2canvas")).default
-      const { jsPDF } = await import("jspdf")
+      // Dynamically import @react-pdf/renderer and ResumePdfDocument to avoid Next.js SSR build errors
+      const { pdf } = await import("@react-pdf/renderer")
+      const { ResumePdfDocument } = await import("@/components/resume/ResumePdfDocument")
 
-      // Clone the element to render in a standard desktop viewport aspect ratio
-      const clone = element.cloneNode(true) as HTMLElement
-      clone.id = "printable-resume-clone"
-      
-      // Reset classes & override styling for A4 proportioning without margins/borders
-      clone.className = "bg-white font-sans text-slate-900"
-      clone.style.width = "794px" // A4 width at 96 DPI
-      clone.style.minHeight = "1123px" // A4 height at 96 DPI
-      clone.style.padding = "48px"
-      clone.style.boxSizing = "border-box"
-      clone.style.border = "none"
-      clone.style.boxShadow = "none"
-      clone.style.borderRadius = "0"
-      
-      // Position off-screen
-      clone.style.position = "fixed"
-      clone.style.left = "-9999px"
-      clone.style.top = "0"
-      
-      document.body.appendChild(clone)
+      // Render the document to a Blob in-memory
+      const blob = await pdf(<ResumePdfDocument data={generatedResume} />).toBlob()
 
-      // Allow a brief moment for styles/layout computation
-      await new Promise(resolve => setTimeout(resolve, 50))
+      // Create a temporary object URL and trigger download automatically
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `${generatedResume.name.replace(/\s+/g, "_") || "resume"}_ATS_Optimized.pdf`
+      document.body.appendChild(link)
+      link.click()
 
-      const canvas = await html2canvas(clone, {
-        scale: 2, // High resolution output
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff"
+      // Clean up
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast({ 
+        title: "PDF Saved! 📄", 
+        description: "Your ATS-optimized text-selectable PDF has been downloaded directly." 
       })
-
-      // Clean up the DOM clone
-      document.body.removeChild(clone)
-
-      const imgData = canvas.toDataURL("image/jpeg", 0.8)
-      const pdf = new jsPDF("p", "mm", "a4")
-      const imgWidth = 210
-      const pageHeight = 297
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      let heightLeft = imgHeight
-      let position = 0
-
-      pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight, undefined, "FAST")
-      heightLeft -= pageHeight
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight
-        pdf.addPage()
-        pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight, undefined, "FAST")
-        heightLeft -= pageHeight
-      }
-
-      const filename = `${generatedResume?.name.replace(/\s+/g, "_") || "resume"}_ATS_Optimized.pdf`
-      pdf.save(filename)
-      toast({ title: "PDF Saved! 📄", description: "Your ATS-optimized PDF has been downloaded directly." })
     } catch (err: any) {
       console.error(err)
-      toast({ title: "Download Failed", description: err.message || "An error occurred while generating PDF.", variant: "destructive" })
+      toast({ 
+        title: "Download Failed", 
+        description: err.message || "An error occurred while generating PDF.", 
+        variant: "destructive" 
+      })
     } finally {
       setIsDownloadingPdf(false)
     }
@@ -321,15 +299,20 @@ export default function ResumeBuilderPage() {
   const getMarkdownFormat = () => {
     if (!generatedResume) return ""
     return `# ${generatedResume.name}
-${generatedResume.contact.email} | ${generatedResume.contact.phone} | LinkedIn: ${generatedResume.contact.linkedin} | GitHub: ${generatedResume.contact.github}
+${generatedResume.role ? `${generatedResume.role}\n` : ""}${generatedResume.contact.email} | ${generatedResume.contact.phone} | LinkedIn: ${generatedResume.contact.linkedin} | GitHub: ${generatedResume.contact.github}
 
 ## Professional Summary
 ${generatedResume.summary}
 
-${generatedResume.achievements && generatedResume.achievements.length > 0 ? `## Key Achievements\n${generatedResume.achievements.map(a => `* ${a}`).join("\n")}\n\n` : ""}## Skills
+## Skills
 ${generatedResume.skills.join(", ")}
 
-${generatedResume.languages && generatedResume.languages.length > 0 ? `## Languages\n${generatedResume.languages.join(", ")}\n\n` : ""}## Work Experience
+## Education
+${generatedResume.education.map(edu => `### ${edu.institution}
+*${edu.degree} (${edu.dates})*${edu.grade ? `\n*Grade: ${edu.grade}*` : ""}
+`).join("\n")}
+
+## Experience
 ${generatedResume.experience.map(exp => `### ${exp.role} - ${exp.company}${exp.location ? ` (${exp.location})` : ""}
 *${exp.dates}*
 ${exp.bullets.map(b => `* ${b}`).join("\n")}
@@ -341,11 +324,7 @@ ${generatedResume.projects.map(proj => `### ${proj.name}
 ${proj.bullets.map(b => `* ${b}`).join("\n")}
 `).join("\n")}
 
-## Education
-${generatedResume.education.map(edu => `### ${edu.institution}
-*${edu.degree} (${edu.dates})*${edu.grade ? `\n*Grade: ${edu.grade}*` : ""}
-`).join("\n")}
-`
+${generatedResume.achievements && generatedResume.achievements.length > 0 ? `## Achievements\n${generatedResume.achievements.map(a => `* ${a}`).join("\n")}\n\n` : ""}${generatedResume.languages && generatedResume.languages.length > 0 ? `## Languages\n${generatedResume.languages.join(", ")}\n\n` : ""}`
   }
 
   const handleCopyMarkdown = () => {
@@ -459,6 +438,10 @@ ${generatedResume.education.map(edu => `### ${edu.institution}
                 <label className="text-xs font-bold text-slate-600 block mb-1">Full Name</label>
                 <Input value={name} onChange={e => setName(e.target.value)} placeholder="Amit Kumar" className="rounded-xl" />
               </div>
+              <div>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Role / Headline</label>
+                <Input value={role} onChange={e => setRole(e.target.value)} placeholder="Software Engineer" className="rounded-xl" />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-slate-600 block mb-1">Email</label>
@@ -482,25 +465,6 @@ ${generatedResume.education.map(edu => `### ${edu.institution}
             </CardContent>
           </Card>
 
-          {/* Skills */}
-          <Card className="border shadow-sm">
-            <CardHeader className="flex flex-row items-center gap-3 border-b py-4">
-              <Code className="w-5 h-5 text-amber-500" />
-              <div>
-                <CardTitle className="text-lg">Skills & Technologies</CardTitle>
-                <CardDescription>Enter your core skills (comma-separated)</CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <Textarea 
-                value={skillsText} 
-                onChange={e => setSkillsText(e.target.value)} 
-                placeholder="React, Node.js, TypeScript, AWS, Docker, Redis, Kubernetes, PostgreSQL" 
-                className="rounded-xl resize-none min-h-[80px]" 
-              />
-            </CardContent>
-          </Card>
-
           {/* Professional Summary */}
           <Card className="border shadow-sm">
             <CardHeader className="flex flex-row items-center gap-3 border-b py-4">
@@ -520,81 +484,101 @@ ${generatedResume.education.map(edu => `### ${edu.institution}
             </CardContent>
           </Card>
 
-          {/* Languages */}
+          {/* Skills */}
           <Card className="border shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between border-b py-4">
               <div className="flex items-center gap-3">
-                <Sparkles className="w-5 h-5 text-emerald-500" />
+                <Code className="w-5 h-5 text-amber-500" />
                 <div>
-                  <CardTitle className="text-lg">Languages (Optional)</CardTitle>
-                  <CardDescription>Languages you speak (e.g. English, Hindi, German)</CardDescription>
+                  <CardTitle className="text-lg">Skills & Technologies</CardTitle>
+                  <CardDescription>Enter your core skills and technologies</CardDescription>
                 </div>
               </div>
-              <Button size="sm" variant="outline" onClick={addLanguage} className="rounded-xl border-dashed">
+              <Button size="sm" type="button" variant="outline" onClick={addSkill} className="rounded-xl border-dashed">
                 <Plus className="w-4 h-4 mr-1" /> Add
               </Button>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
-              {languages.map((lang, idx) => (
-                <div key={idx} className="flex items-center gap-3 relative">
-                  <div className="flex-1">
-                    <Input 
-                      value={lang} 
-                      onChange={e => updateLanguage(idx, e.target.value)} 
-                      placeholder="e.g. English" 
-                      className="rounded-xl bg-white" 
-                    />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {skills.map((skill, idx) => (
+                  <div key={idx} className="flex items-center gap-2 relative">
+                    <div className="flex-1">
+                      <Input 
+                        value={skill} 
+                        onChange={e => updateSkill(idx, e.target.value)} 
+                        placeholder="e.g. React" 
+                        className="rounded-xl bg-white" 
+                      />
+                    </div>
+                    {skills.length > 1 && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        type="button"
+                        onClick={() => removeSkill(idx)} 
+                        className="text-rose-500 hover:bg-rose-50 rounded-xl h-9 w-9 shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
-                  {languages.length > 1 && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => removeLanguage(idx)} 
-                      className="text-rose-500 hover:bg-rose-50 rounded-xl h-9 w-9"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
             </CardContent>
           </Card>
 
-          {/* Key Achievements */}
+          {/* Education */}
           <Card className="border shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between border-b py-4">
               <div className="flex items-center gap-3">
-                <Award className="w-5 h-5 text-pink-500" />
+                <GraduationCap className="w-5 h-5 text-purple-500" />
                 <div>
-                  <CardTitle className="text-lg">Key Achievements (Optional)</CardTitle>
-                  <CardDescription>Major awards, honors, or career achievements</CardDescription>
+                  <CardTitle className="text-lg">Education History</CardTitle>
+                  <CardDescription>Academic schools and graduation dates</CardDescription>
                 </div>
               </div>
-              <Button size="sm" variant="outline" onClick={addAchievement} className="rounded-xl border-dashed">
+              <Button size="sm" variant="outline" onClick={addEducation} className="rounded-xl border-dashed">
                 <Plus className="w-4 h-4 mr-1" /> Add
               </Button>
             </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              {achievements.map((achievement, idx) => (
-                <div key={idx} className="flex items-center gap-3 relative">
-                  <div className="flex-1">
-                    <Input 
-                      value={achievement} 
-                      onChange={e => updateAchievement(idx, e.target.value)} 
-                      placeholder="e.g. Winner of internal Hackathon out of 100+ participants" 
-                      className="rounded-xl bg-white" 
-                    />
-                  </div>
-                  {achievements.length > 1 && (
+            <CardContent className="pt-6 space-y-6">
+              {education.map((edu, idx) => (
+                <div key={idx} className="p-4 border rounded-2xl relative space-y-3 bg-slate-50/30">
+                  {education.length > 1 && (
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      onClick={() => removeAchievement(idx)} 
-                      className="text-rose-500 hover:bg-rose-50 rounded-xl h-9 w-9"
+                      onClick={() => removeEducation(idx)} 
+                      className="absolute right-2 top-2 h-7 w-7 text-rose-500 hover:bg-rose-50"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   )}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="text-xs font-semibold text-slate-500 block mb-1">Institution</label>
+                      <Input value={edu.institution} onChange={e => updateEducation(idx, "institution", e.target.value)} placeholder="IIT Delhi" className="rounded-xl bg-white" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-500 block mb-1">Graduation Month & Year</label>
+                      <Input 
+                        type="month" 
+                        value={edu.year} 
+                        onChange={e => updateEducation(idx, "year", e.target.value)} 
+                        className="rounded-xl bg-white" 
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="text-xs font-semibold text-slate-500 block mb-1">Degree & Major</label>
+                      <Input value={edu.degree} onChange={e => updateEducation(idx, "degree", e.target.value)} placeholder="B.Tech in Computer Science" className="rounded-xl bg-white" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-500 block mb-1">Grade / CGPA (Optional)</label>
+                      <Input value={edu.grade || ""} onChange={e => updateEducation(idx, "grade", e.target.value)} placeholder="9.2 CGPA or 92%" className="rounded-xl bg-white" />
+                    </div>
+                  </div>
                 </div>
               ))}
             </CardContent>
@@ -606,7 +590,7 @@ ${generatedResume.education.map(edu => `### ${edu.institution}
               <div className="flex items-center gap-3">
                 <Briefcase className="w-5 h-5 text-blue-500" />
                 <div>
-                  <CardTitle className="text-lg">Work History</CardTitle>
+                  <CardTitle className="text-lg">Experience</CardTitle>
                   <CardDescription>Add prior companies and descriptions</CardDescription>
                 </div>
               </div>
@@ -675,13 +659,54 @@ ${generatedResume.education.map(edu => `### ${edu.institution}
                     </label>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-slate-500 block mb-1">What did you do? (Simple list or summary)</label>
-                    <Textarea 
-                      value={job.description} 
-                      onChange={e => updateJob(idx, "description", e.target.value)} 
-                      placeholder="Responsible for migrations. Rewrote backend logic. Reduced API latency." 
-                      className="rounded-xl bg-white resize-none min-h-[90px]" 
-                    />
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-semibold text-slate-500">Key Accomplishments / Points</label>
+                      <Button 
+                        size="sm" 
+                        type="button"
+                        variant="outline" 
+                        onClick={() => {
+                          const updatedJobs = [...jobs];
+                          updatedJobs[idx].points = [...(updatedJobs[idx].points || []), ""];
+                          setJobs(updatedJobs);
+                        }} 
+                        className="h-7 rounded-lg text-xs border-dashed"
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Add Point
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      {(job.points || [""]).map((point, pIdx) => (
+                        <div key={pIdx} className="flex items-center gap-2">
+                          <span className="text-slate-400 text-xs font-bold">•</span>
+                          <Input 
+                            value={point} 
+                            onChange={e => {
+                              const updatedJobs = [...jobs];
+                              updatedJobs[idx].points[pIdx] = e.target.value;
+                              setJobs(updatedJobs);
+                            }} 
+                            placeholder="e.g. Reduced latency by 20% by implementing Redis caching" 
+                            className="rounded-xl bg-white flex-1" 
+                          />
+                          {(job.points || [""]).length > 1 && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              type="button"
+                              onClick={() => {
+                                const updatedJobs = [...jobs];
+                                updatedJobs[idx].points = updatedJobs[idx].points.filter((_, i) => i !== pIdx);
+                                setJobs(updatedJobs);
+                              }} 
+                              className="text-rose-500 hover:bg-rose-50 rounded-xl h-8 w-8 shrink-0"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -726,71 +751,135 @@ ${generatedResume.education.map(edu => `### ${edu.institution}
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-slate-500 block mb-1">Project Details / Outcome</label>
-                    <Textarea 
-                      value={proj.description} 
-                      onChange={e => updateProject(idx, "description", e.target.value)} 
-                      placeholder="Created a custom queuing model to handle transactional peaks. Sped up response times." 
-                      className="rounded-xl bg-white resize-none min-h-[80px]" 
-                    />
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-semibold text-slate-500">Project Details / Points</label>
+                      <Button 
+                        size="sm" 
+                        type="button"
+                        variant="outline" 
+                        onClick={() => {
+                          const updatedProjects = [...projects];
+                          updatedProjects[idx].points = [...(updatedProjects[idx].points || []), ""];
+                          setProjects(updatedProjects);
+                        }} 
+                        className="h-7 rounded-lg text-xs border-dashed"
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Add Point
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      {(proj.points || [""]).map((point, pIdx) => (
+                        <div key={pIdx} className="flex items-center gap-2">
+                          <span className="text-slate-400 text-xs font-bold">•</span>
+                          <Input 
+                            value={point} 
+                            onChange={e => {
+                              const updatedProjects = [...projects];
+                              updatedProjects[idx].points[pIdx] = e.target.value;
+                              setProjects(updatedProjects);
+                            }} 
+                            placeholder="e.g. Created a custom queuing model to handle transactional peaks" 
+                            className="rounded-xl bg-white flex-1" 
+                          />
+                          {(proj.points || [""]).length > 1 && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              type="button"
+                              onClick={() => {
+                                const updatedProjects = [...projects];
+                                updatedProjects[idx].points = updatedProjects[idx].points.filter((_, i) => i !== pIdx);
+                                setProjects(updatedProjects);
+                              }} 
+                              className="text-rose-500 hover:bg-rose-50 rounded-xl h-8 w-8 shrink-0"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ))}
             </CardContent>
           </Card>
 
-          {/* Education */}
+          {/* Key Achievements */}
           <Card className="border shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between border-b py-4">
               <div className="flex items-center gap-3">
-                <GraduationCap className="w-5 h-5 text-purple-500" />
+                <Award className="w-5 h-5 text-pink-500" />
                 <div>
-                  <CardTitle className="text-lg">Education History</CardTitle>
-                  <CardDescription>Academic schools and graduation dates</CardDescription>
+                  <CardTitle className="text-lg">Achievements (Optional)</CardTitle>
+                  <CardDescription>Major awards, honors, or career achievements</CardDescription>
                 </div>
               </div>
-              <Button size="sm" variant="outline" onClick={addEducation} className="rounded-xl border-dashed">
+              <Button size="sm" variant="outline" onClick={addAchievement} className="rounded-xl border-dashed">
                 <Plus className="w-4 h-4 mr-1" /> Add
               </Button>
             </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-              {education.map((edu, idx) => (
-                <div key={idx} className="p-4 border rounded-2xl relative space-y-3 bg-slate-50/30">
-                  {education.length > 1 && (
+            <CardContent className="pt-6 space-y-4">
+              {achievements.map((achievement, idx) => (
+                <div key={idx} className="flex items-center gap-3 relative">
+                  <div className="flex-1">
+                    <Input 
+                      value={achievement} 
+                      onChange={e => updateAchievement(idx, e.target.value)} 
+                      placeholder="e.g. Winner of internal Hackathon out of 100+ participants" 
+                      className="rounded-xl bg-white" 
+                    />
+                  </div>
+                  {achievements.length > 1 && (
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      onClick={() => removeEducation(idx)} 
-                      className="absolute right-2 top-2 h-7 w-7 text-rose-500 hover:bg-rose-50"
+                      onClick={() => removeAchievement(idx)} 
+                      className="text-rose-500 hover:bg-rose-50 rounded-xl h-9 w-9"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   )}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="md:col-span-2">
-                      <label className="text-xs font-semibold text-slate-500 block mb-1">Institution</label>
-                      <Input value={edu.institution} onChange={e => updateEducation(idx, "institution", e.target.value)} placeholder="IIT Delhi" className="rounded-xl bg-white" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-slate-500 block mb-1">Graduation Month & Year</label>
-                      <Input 
-                        type="month" 
-                        value={edu.year} 
-                        onChange={e => updateEducation(idx, "year", e.target.value)} 
-                        className="rounded-xl bg-white" 
-                      />
-                    </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Languages */}
+          <Card className="border shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between border-b py-4">
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-5 h-5 text-emerald-500" />
+                <div>
+                  <CardTitle className="text-lg">Languages (Optional)</CardTitle>
+                  <CardDescription>Languages you speak (e.g. English, Hindi, German)</CardDescription>
+                </div>
+              </div>
+              <Button size="sm" variant="outline" onClick={addLanguage} className="rounded-xl border-dashed">
+                <Plus className="w-4 h-4 mr-1" /> Add
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              {languages.map((lang, idx) => (
+                <div key={idx} className="flex items-center gap-3 relative">
+                  <div className="flex-1">
+                    <Input 
+                      value={lang} 
+                      onChange={e => updateLanguage(idx, e.target.value)} 
+                      placeholder="e.g. English" 
+                      className="rounded-xl bg-white" 
+                    />
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="md:col-span-2">
-                      <label className="text-xs font-semibold text-slate-500 block mb-1">Degree & Major</label>
-                      <Input value={edu.degree} onChange={e => updateEducation(idx, "degree", e.target.value)} placeholder="B.Tech in Computer Science" className="rounded-xl bg-white" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-slate-500 block mb-1">Grade / CGPA (Optional)</label>
-                      <Input value={edu.grade || ""} onChange={e => updateEducation(idx, "grade", e.target.value)} placeholder="9.2 CGPA or 92%" className="rounded-xl bg-white" />
-                    </div>
-                  </div>
+                  {languages.length > 1 && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => removeLanguage(idx)} 
+                      className="text-rose-500 hover:bg-rose-50 rounded-xl h-9 w-9"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </CardContent>
@@ -855,6 +944,15 @@ ${generatedResume.education.map(edu => `### ${edu.institution}
                 </Button>
                 <Button 
                   size="sm" 
+                  variant="outline"
+                  className="rounded-xl border-slate-200 flex items-center gap-1.5 hover:bg-slate-50" 
+                  onClick={() => window.print()}
+                >
+                  <Printer className="w-4 h-4" />
+                  Print / Save Selectable PDF
+                </Button>
+                <Button 
+                  size="sm" 
                   className="rounded-xl bg-slate-900 text-white hover:bg-slate-800 flex items-center gap-1.5" 
                   onClick={handleDownloadPdf}
                   disabled={isDownloadingPdf}
@@ -885,10 +983,13 @@ ${generatedResume.education.map(edu => `### ${edu.institution}
                 </div>
               </div>
             ) : (
-              <div className="space-y-6 text-left max-w-full">
+              <div className="text-left max-w-full">
                 {/* Header */}
-                <div className="text-center space-y-1.5 border-b pb-4">
-                  <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{generatedResume.name}</h1>
+                <div className="text-center border-b" style={{ paddingBottom: '24px', marginBottom: '24px' }}>
+                  <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight" style={{ marginBottom: '6px' }}>{generatedResume.name}</h1>
+                  {generatedResume.role && (
+                    <p className="text-sm font-bold text-slate-700 uppercase tracking-wide" style={{ marginBottom: '8px' }}>{generatedResume.role}</p>
+                  )}
                   <div className="text-xs text-slate-500 font-medium flex flex-wrap justify-center gap-x-3 gap-y-1">
                     <span>{generatedResume.contact.email}</span>
                     <span>•</span>
@@ -896,64 +997,64 @@ ${generatedResume.education.map(edu => `### ${edu.institution}
                     {generatedResume.contact.linkedin && (
                       <>
                         <span>•</span>
-                        <span>LinkedIn: {generatedResume.contact.linkedin}</span>
+                        <span>{generatedResume.contact.linkedin}</span>
                       </>
                     )}
                     {generatedResume.contact.github && (
                       <>
                         <span>•</span>
-                        <span>GitHub: {generatedResume.contact.github}</span>
+                        <span>{generatedResume.contact.github}</span>
                       </>
                     )}
                   </div>
                 </div>
 
                 {/* Professional Summary */}
-                <div className="space-y-1.5">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 pb-0.5">Professional Summary</h2>
+                <div style={{ marginBottom: '24px' }}>
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 pb-0.5" style={{ marginBottom: '8px' }}>Professional Summary</h2>
                   <p className="text-xs leading-relaxed text-slate-700">{generatedResume.summary}</p>
                 </div>
 
-                {/* Key Achievements */}
-                {generatedResume.achievements && generatedResume.achievements.length > 0 && (
-                  <div className="space-y-1.5">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 pb-0.5">Key Achievements</h2>
-                    <ul className="list-disc pl-4 space-y-1">
-                      {generatedResume.achievements.map((achievement, aIdx) => (
-                        <li key={aIdx} className="text-xs leading-relaxed text-slate-700">{achievement}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
                 {/* Skills */}
-                <div className="space-y-1.5">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 pb-0.5">Skills & Expertise</h2>
+                <div style={{ marginBottom: '24px' }}>
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 pb-0.5" style={{ marginBottom: '8px' }}>Skills & Expertise</h2>
                   <p className="text-xs leading-relaxed text-slate-700 font-medium">{generatedResume.skills.join(", ")}</p>
                 </div>
 
-                {/* Languages */}
-                {generatedResume.languages && generatedResume.languages.length > 0 && (
-                  <div className="space-y-1.5">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 pb-0.5">Languages</h2>
-                    <p className="text-xs leading-relaxed text-slate-700 font-medium">{generatedResume.languages.join(", ")}</p>
+                {/* Education */}
+                {generatedResume.education && generatedResume.education.length > 0 && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 pb-0.5" style={{ marginBottom: '12px' }}>Education</h2>
+                    <div>
+                      {generatedResume.education.map((edu, idx) => (
+                        <div key={idx} style={{ marginBottom: idx === generatedResume.education.length - 1 ? '0' : '8px' }}>
+                          <div className="flex justify-between text-xs font-bold text-slate-900">
+                            <span>{edu.degree} — {edu.institution}</span>
+                            <span className="font-semibold text-slate-500">{edu.dates}</span>
+                          </div>
+                          {edu.grade && (
+                            <p className="text-[11px] text-slate-600 font-medium" style={{ marginTop: '2px' }}>Grade / GPA: {edu.grade}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
                 {/* Experience */}
                 {generatedResume.experience && generatedResume.experience.length > 0 && (
-                  <div className="space-y-3">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 pb-0.5">Work History</h2>
-                    <div className="space-y-3">
+                  <div style={{ marginBottom: '24px' }}>
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 pb-0.5" style={{ marginBottom: '12px' }}>Experience</h2>
+                    <div>
                       {generatedResume.experience.map((exp, idx) => (
-                        <div key={idx} className="space-y-1">
-                          <div className="flex justify-between text-xs font-bold text-slate-900">
+                        <div key={idx} style={{ marginBottom: idx === generatedResume.experience.length - 1 ? '0' : '16px' }}>
+                          <div className="flex justify-between text-xs font-bold text-slate-900" style={{ marginBottom: '4px' }}>
                             <span>{exp.role} — {exp.company}{exp.location ? ` (${exp.location})` : ""}</span>
                             <span className="font-semibold text-slate-500">{exp.dates}</span>
                           </div>
-                          <ul className="list-disc pl-4 space-y-1">
+                          <ul className="list-disc pl-4">
                             {exp.bullets.map((bullet, bIdx) => (
-                              <li key={bIdx} className="text-xs leading-relaxed text-slate-700">{bullet}</li>
+                              <li key={bIdx} className="text-xs leading-relaxed text-slate-700" style={{ marginBottom: '4px' }}>{bullet}</li>
                             ))}
                           </ul>
                         </div>
@@ -964,18 +1065,18 @@ ${generatedResume.education.map(edu => `### ${edu.institution}
 
                 {/* Projects */}
                 {generatedResume.projects && generatedResume.projects.length > 0 && (
-                  <div className="space-y-3">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 pb-0.5">Projects</h2>
-                    <div className="space-y-3">
+                  <div style={{ marginBottom: '24px' }}>
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 pb-0.5" style={{ marginBottom: '12px' }}>Projects</h2>
+                    <div>
                       {generatedResume.projects.map((proj, idx) => (
-                        <div key={idx} className="space-y-1">
-                          <div className="flex justify-between text-xs font-bold text-slate-900">
+                        <div key={idx} style={{ marginBottom: idx === generatedResume.projects.length - 1 ? '0' : '16px' }}>
+                          <div className="flex justify-between text-xs font-bold text-slate-900" style={{ marginBottom: '4px' }}>
                             <span>{proj.name}</span>
                             <span className="font-semibold text-slate-500">Tech: {proj.techStack}</span>
                           </div>
-                          <ul className="list-disc pl-4 space-y-1">
+                          <ul className="list-disc pl-4">
                             {proj.bullets.map((bullet, bIdx) => (
-                              <li key={bIdx} className="text-xs leading-relaxed text-slate-700">{bullet}</li>
+                              <li key={bIdx} className="text-xs leading-relaxed text-slate-700" style={{ marginBottom: '4px' }}>{bullet}</li>
                             ))}
                           </ul>
                         </div>
@@ -984,23 +1085,23 @@ ${generatedResume.education.map(edu => `### ${edu.institution}
                   </div>
                 )}
 
-                {/* Education */}
-                {generatedResume.education && generatedResume.education.length > 0 && (
-                  <div className="space-y-2">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 pb-0.5">Education</h2>
-                    <div className="space-y-2">
-                      {generatedResume.education.map((edu, idx) => (
-                        <div key={idx} className="space-y-0.5">
-                          <div className="flex justify-between text-xs font-bold text-slate-900">
-                            <span>{edu.degree} — {edu.institution}</span>
-                            <span className="font-semibold text-slate-500">{edu.dates}</span>
-                          </div>
-                          {edu.grade && (
-                            <p className="text-[11px] text-slate-600 font-medium">Grade / GPA: {edu.grade}</p>
-                          )}
-                        </div>
+                {/* Achievements */}
+                {generatedResume.achievements && generatedResume.achievements.length > 0 && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 pb-0.5" style={{ marginBottom: '8px' }}>Achievements</h2>
+                    <ul className="list-disc pl-4">
+                      {generatedResume.achievements.map((achievement, aIdx) => (
+                        <li key={aIdx} className="text-xs leading-relaxed text-slate-700" style={{ marginBottom: '4px' }}>{achievement}</li>
                       ))}
-                    </div>
+                    </ul>
+                  </div>
+                )}
+
+                {/* Languages */}
+                {generatedResume.languages && generatedResume.languages.length > 0 && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 pb-0.5" style={{ marginBottom: '8px' }}>Languages</h2>
+                    <p className="text-xs leading-relaxed text-slate-700 font-medium">{generatedResume.languages.join(", ")}</p>
                   </div>
                 )}
               </div>

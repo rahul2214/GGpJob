@@ -3,8 +3,6 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 
 export const dynamic = 'force-dynamic';
 
-const GROK_API_URL = "https://api.x.ai/v1/chat/completions"
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -73,6 +71,7 @@ Input Details:
 You must reply with ONLY a valid JSON object matching this exact schema:
 {
   "name": "<candidate name>",
+  "role": "<candidate professional title/role, e.g. Software Engineer (derived from input role if provided, otherwise matching experience/templateType)>",
   "contact": {
     "email": "<email>",
     "phone": "<phone>",

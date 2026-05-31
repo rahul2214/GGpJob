@@ -8,13 +8,19 @@ config();
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* config options here */
-   experimental: {
+  transpilePackages: ['@react-pdf/renderer'],
+  experimental: {
     serverComponentsExternalPackages: ['pdf-parse', 'pdfjs-dist']
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals = [...config.externals, 'pdf-parse', 'pdfjs-dist'];
     }
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvas: false,
+      encoding: false,
+    };
     return config;
   },
   typescript: {
