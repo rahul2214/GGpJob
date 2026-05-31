@@ -942,15 +942,7 @@ ${generatedResume.achievements && generatedResume.achievements.length > 0 ? `## 
                   {copiedText ? <Check className="w-4 h-4 mr-1.5 text-emerald-500" /> : <Copy className="w-4 h-4 mr-1.5" />}
                   Copy Markdown
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  className="rounded-xl border-slate-200 flex items-center gap-1.5 hover:bg-slate-50" 
-                  onClick={() => window.print()}
-                >
-                  <Printer className="w-4 h-4" />
-                  Print / Save Selectable PDF
-                </Button>
+
                 <Button 
                   size="sm" 
                   className="rounded-xl bg-slate-900 text-white hover:bg-slate-800 flex items-center gap-1.5" 
