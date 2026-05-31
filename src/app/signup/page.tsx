@@ -109,7 +109,7 @@ export default function SignupPage() {
 
       toast({
         title: "Account Created!",
-        description: "A verification email has been sent. Please check your inbox and verify before logging in.",
+        description: "A verification email has been sent Please check and verify.",
       });
       router.push("/login");
     } catch (error: any) {

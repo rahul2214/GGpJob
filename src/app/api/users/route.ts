@@ -348,7 +348,20 @@ export async function GET(request: Request) {
                         subscription_credits: 2,
                         subscription_allowance: 2
                     } : {}),
-                    ...(targetTable === 'admins' ? { is_super_admin: false } : {})
+                    ...(targetTable === 'admins' ? { is_super_admin: false } : {}),
+                    ...(targetTable === 'recruiters' ? {
+                        company_name: metadata?.companyName || '',
+                        company_website: metadata?.companyWebsite ? (metadata.companyWebsite.startsWith('http') ? metadata.companyWebsite : `https://${metadata.companyWebsite}`) : '',
+                        designation: metadata?.designation || '',
+                        company_logo: metadata?.companyWebsite ? `https://logo.clearbit.com/${metadata.companyWebsite.replace(/^(https?:\/\/)?(www\.)?/, '')}` : null,
+                    } : {}),
+                    ...(targetTable === 'employees' ? {
+                        company_name: metadata?.companyName || '',
+                        company_website: metadata?.companyWebsite ? (metadata.companyWebsite.startsWith('http') ? metadata.companyWebsite : `https://${metadata.companyWebsite}`) : '',
+                        designation: metadata?.designation || '',
+                        department: metadata?.department || '',
+                        company_logo: metadata?.companyWebsite ? `https://logo.clearbit.com/${metadata.companyWebsite.replace(/^(https?:\/\/)?(www\.)?/, '')}` : null,
+                    } : {})
                 }, { onConflict: 'email' })
                 .select()
                 .single();
@@ -442,7 +455,7 @@ const DISALLOWED_DOMAINS = [
 // POST a new user (create/update profile after signup)
 export async function POST(request: Request) {
   try {
-    const { id, name, email, role, phone, domainId } = await request.json();
+    const { id, name, email, role, phone, domainId, companyName, companyWebsite, designation, department } = await request.json();
 
     if (!id || !name || !email || !role) {
         return NextResponse.json({ error: 'Missing required fields for profile creation' }, { status: 400 });
@@ -479,6 +492,23 @@ export async function POST(request: Request) {
         role_id: roleId,
         uuid: id, // Every table (seekers, recruiters, employees, admins) has a uuid column for Auth UID
     };
+
+    if (table === 'recruiters') {
+        if (companyName) dataToSave.company_name = companyName;
+        if (companyWebsite) {
+            dataToSave.company_website = companyWebsite.startsWith('http') ? companyWebsite : `https://${companyWebsite}`;
+            dataToSave.company_logo = `https://logo.clearbit.com/${companyWebsite.replace(/^(https?:\/\/)?(www\.)?/, '')}`;
+        }
+        if (designation) dataToSave.designation = designation;
+    } else if (table === 'employees') {
+        if (companyName) dataToSave.company_name = companyName;
+        if (companyWebsite) {
+            dataToSave.company_website = companyWebsite.startsWith('http') ? companyWebsite : `https://${companyWebsite}`;
+            dataToSave.company_logo = `https://logo.clearbit.com/${companyWebsite.replace(/^(https?:\/\/)?(www\.)?/, '')}`;
+        }
+        if (designation) dataToSave.designation = designation;
+        if (department) dataToSave.department = department;
+    }
 
     let conflictField = 'uuid';
 

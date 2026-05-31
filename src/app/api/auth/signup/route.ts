@@ -10,10 +10,14 @@ const DISALLOWED_DOMAINS = [
 
 export async function POST(request: Request) {
   try {
-    const { name, email, password, role, phone } = await request.json();
+    const { name, email, password, role, phone, companyName, companyWebsite, designation, department } = await request.json();
 
     if (!name || !email || !password || !role) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
+    }
+
+    if ((role === 'Recruiter' || role === 'Employee') && (!companyName || !designation)) {
+      return NextResponse.json({ error: 'Missing required company details.' }, { status: 400 });
     }
 
     // Validate corporate email for Recruiters
@@ -36,6 +40,10 @@ export async function POST(request: Request) {
         name,
         role,
         phone: phone ? `+91${phone}` : undefined,
+        companyName: companyName || undefined,
+        companyWebsite: companyWebsite || undefined,
+        designation: designation || undefined,
+        department: department || undefined,
       },
     });
 
@@ -66,22 +74,51 @@ export async function POST(request: Request) {
         roleId = 4;
     }
 
+    let formattedWebsite = companyWebsite || '';
+    if (formattedWebsite && !/^https?:\/\//i.test(formattedWebsite)) {
+        formattedWebsite = `https://${formattedWebsite}`;
+    }
+
+    const profileInsertData: any = {
+        uuid: authData.user.id,
+        name,
+        email,
+        phone: phone ? `+91${phone}` : '',
+        role_id: roleId,
+        ...(table === 'jobseekers' ? { 
+            plan_type: 'free', 
+            is_paid: false,
+            subscription_credits: 2,
+            subscription_allowance: 2
+        } : {}),
+        ...(table === 'admins' ? { is_super_admin: false } : {}),
+        ...(role === 'Recruiter' ? {
+            company_name: companyName,
+            company_website: formattedWebsite,
+            designation: designation,
+            company_logo: companyWebsite ? `https://logo.clearbit.com/${companyWebsite.replace(/^(https?:\/\/)?(www\.)?/, '')}` : null,
+            is_paid: false,
+            plan_type: 'none',
+            job_post_limit: 1,
+        } : {}),
+        ...(role === 'Employee' ? {
+            company_name: companyName,
+            company_website: formattedWebsite,
+            designation: designation,
+            department: department,
+            company_logo: companyWebsite ? `https://logo.clearbit.com/${companyWebsite.replace(/^(https?:\/\/)?(www\.)?/, '')}` : null,
+            is_paid: false,
+            plan_type: 'none',
+            job_post_limit: 5,
+            trust_score: 100,
+            xp: 0,
+            level: 1
+        } : {})
+    };
+
     const { error: profileError } = await supabaseAdmin
         .from(table)
-        .insert({
-            uuid: authData.user.id,
-            name,
-            email,
-            phone: phone ? `+91${phone}` : '',
-            role_id: roleId,
-            ...(table === 'jobseekers' ? { 
-                plan_type: 'free', 
-                is_paid: false,
-                subscription_credits: 2,
-                subscription_allowance: 2
-            } : {}),
-            ...(table === 'admins' ? { is_super_admin: false } : {})
-        });
+        .insert(profileInsertData);
 
     if (profileError) {
         console.error(`[signup] Failed to create ${table} profile:`, profileError);

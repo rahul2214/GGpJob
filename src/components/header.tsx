@@ -293,6 +293,12 @@ export default function Header() {
                              {isClient && !userLoading && !user && (
                                <>
                                  <SheetClose asChild>
+                                     <Link href="/" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", pathname === '/' && "text-foreground font-bold")}>
+                                         <LayoutGrid className="h-5 w-5" />
+                                         Home
+                                     </Link>
+                                 </SheetClose>
+                                 <SheetClose asChild>
                                      <Link href="/jobs" className={cn("flex items-center gap-3 text-muted-foreground hover:text-foreground", isJobsActive && "text-foreground font-bold")}>
                                          <Search className="h-5 w-5" />
                                          Jobs
@@ -542,6 +548,9 @@ export default function Header() {
             )}
             {isClient && !userLoading && !user && (
               <>
+                <Link href="/" className={`transition-colors hover:text-foreground ${pathname === '/' ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
+                    Home
+                </Link>
                 <Link href="/jobs" className={`transition-colors hover:text-foreground ${isJobsActive ? "text-foreground font-bold border-b-2 border-primary pb-1" : "text-foreground/60"}`}>
                     Jobs
                 </Link>

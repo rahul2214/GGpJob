@@ -69,6 +69,7 @@ export interface User {
   contactEmail?: string;
   contactPhone?: string;
   designation?: string;
+  department?: string;
   education?: Education[];
   experience?: Employment[];
   projects?: Project[];

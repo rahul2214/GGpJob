@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Verification email sent via Firebase.' 
+      message: 'Verification email sent.' 
     });
 
   } catch (error: any) {

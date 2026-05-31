@@ -41,6 +41,14 @@ const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
   phone: z.string().min(10, "Phone number must be at least 10 digits."),
   role: z.enum(["Recruiter", "Employee"]),
+  companyName: z.string().min(2, "Company name must be at least 2 characters."),
+  companyWebsite: z.string()
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => !val || /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(val), {
+      message: "Please enter a valid website domain/URL.",
+    }),
+  designation: z.string().min(2, "Designation must be at least 2 characters."),
   password: z.string()
     .min(8, "Password must be at least 8 characters.")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter.")
@@ -83,8 +91,20 @@ export default function CompanySignupPage() {
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name: "", email: "", phone: "", password: "", confirmPassword: "" },
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      role: "Recruiter",
+      companyName: "",
+      companyWebsite: "",
+      designation: "",
+      password: "",
+      confirmPassword: ""
+    },
   });
+
+  const selectedRole = form.watch("role");
 
   const { isSubmitting } = form.formState;
 
@@ -103,6 +123,9 @@ export default function CompanySignupPage() {
           password: data.password,
           role: data.role,
           phone: data.phone,
+          companyName: data.companyName,
+          companyWebsite: data.companyWebsite || undefined,
+          designation: data.designation,
         }),
       });
 
@@ -114,7 +137,7 @@ export default function CompanySignupPage() {
 
       toast({
         title: "Account Created!",
-        description: "A verification email has been sent from Firebase. Please check your inbox and verify to complete registration.",
+        description: "A verification email has been sent Please check and verify.",
       });
       router.push("/company/login");
     } catch (error: any) {
@@ -263,6 +286,63 @@ export default function CompanySignupPage() {
                   <FormMessage />
                 </FormItem>
               )} />
+
+              {selectedRole && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-4 border-t border-slate-100 pt-4 mt-2"
+                >
+                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Company Information
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="companyName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-700 font-semibold text-sm">Company Name</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="e.g. Google" 
+                            className="h-11 rounded-xl border-slate-200 focus:border-emerald-400 bg-slate-50 focus:bg-white transition-colors" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+
+                    <FormField control={form.control} name="companyWebsite" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-700 font-semibold text-sm">Company Website (Optional)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="e.g. google.com" 
+                            className="h-11 rounded-xl border-slate-200 focus:border-emerald-400 bg-slate-50 focus:bg-white transition-colors" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+
+                  <div>
+                    <FormField control={form.control} name="designation" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-700 font-semibold text-sm">Designation</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder={selectedRole === 'Recruiter' ? "e.g. Tech Recruiter" : "e.g. Senior SWE"} 
+                            className="h-11 rounded-xl border-slate-200 focus:border-emerald-400 bg-slate-50 focus:bg-white transition-colors" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                </motion.div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField control={form.control} name="password" render={({ field }) => (
