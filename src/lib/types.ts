@@ -181,6 +181,8 @@ export interface Job {
   referralStrength?: 'Basic' | 'Strong' | 'Direct HR';
   referralCapacity?: number;
   isApplied?: boolean;
+  minSalary?: number;
+  maxSalary?: number;
 }
 
 export interface ExperienceLevel {

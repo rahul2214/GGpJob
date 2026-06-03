@@ -74,7 +74,7 @@ export async function POST(request: Request) {
         roleId = 4;
     }
 
-    let formattedWebsite = companyWebsite || '';
+    let formattedWebsite = companyWebsite ? companyWebsite.trim() : null;
     if (formattedWebsite && !/^https?:\/\//i.test(formattedWebsite)) {
         formattedWebsite = `https://${formattedWebsite}`;
     }
@@ -110,7 +110,7 @@ export async function POST(request: Request) {
             is_paid: false,
             plan_type: 'none',
             job_post_limit: 5,
-            trust_score: 100,
+            trust_score: 50,
             xp: 0,
             level: 1
         } : {})
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
 
     const { error: profileError } = await supabaseAdmin
         .from(table)
-        .insert(profileInsertData);
+        .upsert(profileInsertData, { onConflict: 'uuid' });
 
     if (profileError) {
         console.error(`[signup] Failed to create ${table} profile:`, profileError);

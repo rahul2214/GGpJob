@@ -267,7 +267,7 @@ export async function GET(request: Request) {
                 jobPostLimit: employee.job_post_limit ?? 5,
                 jobsPostedThisMonth,
                 nextJobsResetAt,
-                trustScore: employee.trust_score ?? 100,
+                trustScore: employee.trust_score ?? 50,
                 // Gamification Fields
                 xp: employee.xp ?? 0,
                 level: employee.level ?? 1,
@@ -351,13 +351,13 @@ export async function GET(request: Request) {
                     ...(targetTable === 'admins' ? { is_super_admin: false } : {}),
                     ...(targetTable === 'recruiters' ? {
                         company_name: metadata?.companyName || '',
-                        company_website: metadata?.companyWebsite ? (metadata.companyWebsite.startsWith('http') ? metadata.companyWebsite : `https://${metadata.companyWebsite}`) : '',
+                        company_website: metadata?.companyWebsite ? (metadata.companyWebsite.startsWith('http') ? metadata.companyWebsite : `https://${metadata.companyWebsite}`) : null,
                         designation: metadata?.designation || '',
                         company_logo: metadata?.companyWebsite ? `https://logo.clearbit.com/${metadata.companyWebsite.replace(/^(https?:\/\/)?(www\.)?/, '')}` : null,
                     } : {}),
                     ...(targetTable === 'employees' ? {
                         company_name: metadata?.companyName || '',
-                        company_website: metadata?.companyWebsite ? (metadata.companyWebsite.startsWith('http') ? metadata.companyWebsite : `https://${metadata.companyWebsite}`) : '',
+                        company_website: metadata?.companyWebsite ? (metadata.companyWebsite.startsWith('http') ? metadata.companyWebsite : `https://${metadata.companyWebsite}`) : null,
                         designation: metadata?.designation || '',
                         department: metadata?.department || '',
                         company_logo: metadata?.companyWebsite ? `https://logo.clearbit.com/${metadata.companyWebsite.replace(/^(https?:\/\/)?(www\.)?/, '')}` : null,
@@ -429,7 +429,7 @@ export async function GET(request: Request) {
             companyWebsite: u.company_website,
             designation: u.designation,
             department: u.department,
-            trustScore: u.trust_score ?? 100,
+            trustScore: u.trust_score ?? (u.role === 'Employee' ? 50 : 100),
             jobsPostedThisMonth: u.jobs_posted_this_month ?? 0,
             jobPostLimit: u.job_post_limit ?? 5,
             isPaid: u.is_paid ?? false,
