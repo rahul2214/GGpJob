@@ -13,7 +13,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
   title: {
-    default: 'JobsDart — Get Referred by Insiders at Google, Microsoft & Top MNCs',
+    default: 'JobsDart — Get Referred by Insiders at Top MNCs India',
     template: '%s | JobsDart',
   },
   description: 'Skip the ATS black hole. JobsDart connects you with verified employees at 500+ MNCs for direct referrals and insider hiring. India\'s referral-first job platform.',
