@@ -99,6 +99,7 @@ You must reply with ONLY a valid JSON object matching this exact schema:
     {
       "name": "<project name>",
       "techStack": "<technologies used (e.g. React, Node.js, AWS)>",
+      "projectLink": "<the project URL link from the input raw projects, or empty string if not provided>",
       "bullets": [
         "<strong descriptive achievement bullet point starting with an action verb, highlighting tech and outcomes>"
       ]

@@ -42,8 +42,8 @@ const getStyles = (template: string) => {
   const contactJustify = (isMinimal || isCompact) ? "flex-start" : "center";
 
   // Spacing
-  const pagePaddingTop = isCompact ? 24 : 36;
-  const pagePaddingBottom = isCompact ? 24 : 36;
+  const pagePaddingTop = isCompact ? 18 : 30;
+  const pagePaddingBottom = isCompact ? 12 : 20;
   const entryBlockMargin = isCompact ? 4 : 8;
   const sectionMargin = isCompact ? 2 : 4;
 
