@@ -9,7 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function inspectColumns() {
     console.log('--- Inspecting Columns ---');
     
-    const tables = ['employees', 'jobseekers', 'jobs', 'applications', 'chat_sessions'];
+    const tables = ['employees', 'jobseekers', 'jobs', 'applications', 'chat_sessions', 'messages'];
     
     for (const table of tables) {
         console.log(`\nTable: ${table}`);

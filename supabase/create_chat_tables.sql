@@ -2,14 +2,15 @@
 CREATE TABLE IF NOT EXISTS public.chat_sessions (
     id BIGSERIAL PRIMARY KEY,
     application_id BIGINT REFERENCES public.applications(id) ON DELETE CASCADE,
-    jobseeker_id UUID NOT NULL, 
-    employee_id UUID NOT NULL, 
+    jobseeker_id bigint NOT NULL, 
+    employee_id bigint NOT NULL, 
     is_unlocked BOOLEAN DEFAULT FALSE,
     msg_count_jobseeker INTEGER DEFAULT 0,
     msg_count_employee INTEGER DEFAULT 0,
     expires_at TIMESTAMP WITH TIME ZONE DEFAULT (now() + interval '24 hours'),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    UNIQUE(application_id)
+    UNIQUE(application_id),
+    CONSTRAINT chat_sessions_jobseeker_id_fkey FOREIGN KEY (jobseeker_id) REFERENCES public.jobseekers (id) ON DELETE CASCADE
 );
 
 -- Store actual messages

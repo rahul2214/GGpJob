@@ -76,7 +76,9 @@ You must reply with ONLY a valid JSON object matching this exact schema:
     "email": "<email>",
     "phone": "<phone>",
     "linkedin": "<linkedin url or empty string>",
-    "github": "<github url or empty string>"
+    "github": "<github url or empty string>",
+    "portfolio": "<portfolio url or empty string>",
+    "location": "<location/city, e.g. Bengaluru, India or empty string>"
   },
   "summary": "<a powerful, 3-line professional summary matching the target template type, refined using the raw summary if provided>",
   "skills": [<array of formatted skills/technologies, categorized or listed nicely>],
@@ -109,7 +111,8 @@ You must reply with ONLY a valid JSON object matching this exact schema:
       "dates": "<graduation year or start - end dates>",
       "grade": "<grade / CGPA / percentage or empty string if not provided>"
     }
-  ]
+  ],
+  "referralCard": "<a short AI-generated referral blurb (150-200 words) written in the first person from the perspective of an employee referee (colleague or alumnus). It should summarize the candidate's core strengths, projects, and impact, serving as a ready-to-use template for submitting a referral internally.>"
 }
 
 IMPORTANT: Return ONLY the JSON object, no markdown code blocks, no explanations. Ensure it is perfectly valid JSON.`;
@@ -133,7 +136,7 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks, no explanations
           }
         ],
         temperature: 0.3,
-        ...(isGroq ? { response_format: { type: "json_object" } } : { max_tokens: 1500 })
+        ...(isGroq ? { response_format: { type: "json_object" } } : { max_tokens: 2500 })
       })
     })
 

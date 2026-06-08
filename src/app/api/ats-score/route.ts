@@ -115,6 +115,13 @@ You must reply with ONLY a valid JSON object matching this exact schema:
   "skillsCoverage": <number between 0 and 100>,
   "experienceImpact": <number between 0 and 100>,
   "recruiterReadability": <number between 0 and 100>,
+  "sectionScores": {
+    "summary": <number between 0 and 100, score for Summary/Objective section>,
+    "experience": <number between 0 and 100, score for Work History/Experience section>,
+    "skills": <number between 0 and 100, score for Skills/Core Competencies section>,
+    "education": <number between 0 and 100, score for Education section>
+  },
+  "weakestSection": "<Exactly one of: Summary, Experience, Skills, Education, representing the section with the lowest score>",
   "missingSkills": [<array of string, representing required skills from JD missing in resume. empty if no JD>],
   "strengths": [<array of string, up to 3 key strengths or matches>],
   "feedback": [<array of string, 3 to 5 actionable suggestions for improvement>],
@@ -196,6 +203,36 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks (e.g., no \`\`\`
       parsedResult.experienceImpact = typeof parsedResult.experienceImpact === 'number' ? Math.min(100, Math.max(0, parsedResult.experienceImpact)) : Math.round(parsedResult.score * 0.9)
       parsedResult.recruiterReadability = typeof parsedResult.recruiterReadability === 'number' ? Math.min(100, Math.max(0, parsedResult.recruiterReadability)) : 85
 
+      // Sanitize section scores
+      if (!parsedResult.sectionScores || typeof parsedResult.sectionScores !== 'object') {
+        parsedResult.sectionScores = {
+          summary: Math.round(parsedResult.score * 0.9),
+          experience: Math.round(parsedResult.score * 0.85),
+          skills: Math.round(parsedResult.score * 0.95),
+          education: 90
+        }
+      } else {
+        parsedResult.sectionScores.summary = typeof parsedResult.sectionScores.summary === 'number' ? Math.min(100, Math.max(0, parsedResult.sectionScores.summary)) : Math.round(parsedResult.score * 0.9)
+        parsedResult.sectionScores.experience = typeof parsedResult.sectionScores.experience === 'number' ? Math.min(100, Math.max(0, parsedResult.sectionScores.experience)) : Math.round(parsedResult.score * 0.85)
+        parsedResult.sectionScores.skills = typeof parsedResult.sectionScores.skills === 'number' ? Math.min(100, Math.max(0, parsedResult.sectionScores.skills)) : Math.round(parsedResult.score * 0.95)
+        parsedResult.sectionScores.education = typeof parsedResult.sectionScores.education === 'number' ? Math.min(100, Math.max(0, parsedResult.sectionScores.education)) : 90
+      }
+
+      // Sanitize weakest section
+      const allowedSections = ["Summary", "Experience", "Skills", "Education"]
+      if (typeof parsedResult.weakestSection !== 'string' || !allowedSections.includes(parsedResult.weakestSection)) {
+        const scores = parsedResult.sectionScores;
+        let minScore = 101;
+        let weakest = "Experience";
+        for (const [sec, val] of Object.entries(scores)) {
+          if (typeof val === 'number' && val < minScore) {
+            minScore = val;
+            weakest = sec.charAt(0).toUpperCase() + sec.slice(1);
+          }
+        }
+        parsedResult.weakestSection = weakest;
+      }
+
       // Sanitize arrays
       parsedResult.missingSkills = Array.isArray(parsedResult.missingSkills) ? parsedResult.missingSkills : []
       parsedResult.strengths = Array.isArray(parsedResult.strengths) ? parsedResult.strengths.slice(0, 3) : ["Good overall formatting"]
@@ -205,7 +242,7 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks (e.g., no \`\`\`
     } catch (parseError) {
       console.error("Failed to parse JSON from AI:", content)
       // Return a fallback response
-      return NextResponse.json({
+      parsedResult = {
         score: 50,
         keywordMatch: 50,
         formattingSafety: 85,
@@ -213,11 +250,18 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks (e.g., no \`\`\`
         skillsCoverage: 45,
         experienceImpact: 45,
         recruiterReadability: 70,
+        sectionScores: {
+          summary: 50,
+          experience: 45,
+          skills: 50,
+          education: 70
+        },
+        weakestSection: "Experience",
         missingSkills: [],
         strengths: ["Resume submitted successfully"],
         feedback: ["Unable to perform detailed analysis. Please try again with a different PDF format."],
         bulletOptimizations: []
-      })
+      }
     }
 
     if (userId && jobseekerRecord) {
@@ -248,8 +292,24 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks (e.g., no \`\`\`
             .eq('id', jobseekerRecord.id)
           console.log(`[ATS_SCORE_API] Charged 1 credit from user: ${userId}`)
         }
+
+        // Store analysis in Supabase (upsert)
+        const { error: upsertErr } = await supabaseAdmin
+          .from('ats_analyses')
+          .upsert({
+            user_id: jobseekerRecord.id,
+            score: parsedResult.score,
+            result_json: parsedResult,
+            analyzed_at: new Date().toISOString()
+          }, { onConflict: 'user_id' })
+        
+        if (upsertErr) {
+          console.error("Failed to save ATS history:", upsertErr)
+        } else {
+          console.log(`[ATS_SCORE_API] Successfully stored analysis history for user: ${userId}`)
+        }
       } catch (dbUpdateError) {
-        console.error("Failed to charge credit / update user metadata:", dbUpdateError)
+        console.error("Failed to charge credit / update user metadata / save history:", dbUpdateError)
       }
     }
 
@@ -257,6 +317,53 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks (e.g., no \`\`\`
 
   } catch (error: any) {
     console.error("ATS Score API Error:", error)
+    return NextResponse.json({ 
+      error: "Internal Server Error",
+      message: error.message 
+    }, { status: 500 })
+  }
+}
+
+// GET method to fetch single cached analysis for a user
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const userId = searchParams.get("userId")
+
+    if (!userId) {
+      return NextResponse.json({ error: "Missing userId parameter" }, { status: 400 })
+    }
+
+    // Resolve UUID to bigint id first
+    const { data: jobseeker, error: jsError } = await supabaseAdmin
+      .from('jobseekers')
+      .select('id')
+      .eq('uuid', userId)
+      .maybeSingle()
+
+    if (jsError) {
+      console.error("Database fetch error for jobseeker:", jsError)
+      return NextResponse.json({ error: "Failed to fetch jobseeker" }, { status: 500 })
+    }
+
+    if (!jobseeker) {
+      return NextResponse.json(null)
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('ats_analyses')
+      .select('*')
+      .eq('user_id', jobseeker.id)
+      .maybeSingle()
+
+    if (error) {
+      console.error("Database fetch error for ATS history:", error)
+      return NextResponse.json({ error: "Failed to fetch history" }, { status: 500 })
+    }
+
+    return NextResponse.json(data || null)
+  } catch (error: any) {
+    console.error("ATS Score History GET Error:", error)
     return NextResponse.json({ 
       error: "Internal Server Error",
       message: error.message 

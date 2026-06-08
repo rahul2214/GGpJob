@@ -77,6 +77,7 @@ export interface User {
   skills?: MasterSkill[];
   skillIds?: string[];
   credits?: number;  // For Job Seekers (Legacy Total)
+  totalCredits?: number; // Unified total credits (subscription + purchased)
   subscriptionCredits?: number;
   purchasedCredits?: number;
   subscriptionAllowance?: number;

@@ -59,16 +59,13 @@ async function getOrCreateSession(appId: string) {
 
     if (!session && !sessionError) {
         // 3. Create session if missing
-        const jobseekerUuid = (appData.jobseekers as any)?.uuid;
-        const posterUuid = (appData.job as any)?.employees?.uuid || (appData.job as any)?.recruiters?.uuid;
-
-        if (jobseekerUuid && posterUuid) {
+        if (jobseekerPk && posterPk) {
             const { data: newSession, error: insertError } = await supabaseAdmin
                 .from('chat_sessions')
                 .insert({
                     application_id: internalAppId,
-                    jobseeker_id: jobseekerUuid,
-                    employee_id: posterUuid,
+                    jobseeker_id: jobseekerPk,
+                    employee_id: posterPk,
                     is_unlocked: !!appData.is_unlocked
                 })
                 .select()
@@ -245,7 +242,7 @@ export async function POST(
 
         // 3. Check message limits for limited access
         if (!isFullAccess) {
-            const isJobseeker = senderId === session.jobseeker_id;
+            const isJobseeker = senderId === session.jobseeker.uuid;
             const currentCount = isJobseeker ? session.msg_count_jobseeker : session.msg_count_employee;
 
             if (currentCount >= 3) {

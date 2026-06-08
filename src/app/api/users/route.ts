@@ -109,6 +109,7 @@ export async function GET(request: Request) {
                 talentSearchExpiresAt: jobseeker.talent_search_expires_at,
                 metadata: jobseeker.metadata,
                 credits: (jobseeker.subscription_credits || 0) + (jobseeker.purchased_credits || 0),
+                totalCredits: (jobseeker.subscription_credits || 0) + (jobseeker.purchased_credits || 0),
                 subscriptionCredits: jobseeker.subscription_credits || 0,
                 purchasedCredits: jobseeker.purchased_credits || 0,
                 subscriptionAllowance: jobseeker.subscription_allowance || 0,
@@ -435,6 +436,7 @@ export async function GET(request: Request) {
             isPaid: u.is_paid ?? false,
             planType: u.plan_type ?? 'none',
             credits: (u.subscription_credits || 0) + (u.purchased_credits || 0),
+            totalCredits: (u.subscription_credits || 0) + (u.purchased_credits || 0),
             isSuperAdmin: u.is_super_admin ?? false,
         };
     }));

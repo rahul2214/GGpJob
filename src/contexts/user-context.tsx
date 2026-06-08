@@ -54,7 +54,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`/api/users?uid=${uid}`, { cache: 'no-store' });
       if (res.ok) {
-        return await res.json();
+        const u = await res.json();
+        if (u) {
+          u.totalCredits = (u.subscriptionCredits || 0) + (u.purchasedCredits || 0);
+        }
+        return u;
       }
       return null;
     } catch (error) {
