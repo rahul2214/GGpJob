@@ -29,6 +29,7 @@ function calculateProfileStats(profile: any, resolvedSkills?: any[]) {
 // Helper to map Supabase snake_case profile to camelCase User type
 async function mapProfileToUser(profile: any): Promise<User> {
     const resolvedResume = profile.resume_url ? await resolveResumeUrl(profile.resume_url) : undefined;
+    const resolvedPhoto = profile.profile_photo_url ? await resolveResumeUrl(profile.profile_photo_url) : undefined;
     
     // Determine role and counts based on table/data present
     const role = profile.roles?.name || profile.role || 'Job Seeker';
@@ -85,6 +86,7 @@ async function mapProfileToUser(profile: any): Promise<User> {
         summary: profile.summary,
         domainId: profile.domains?.uuid || profile.domain_id,
         resumeUrl: resolvedResume,
+        profilePhotoUrl: resolvedPhoto,
         linkedinUrl: profile.linkedin_url,
         githubUrl: profile.github_url,
         portfolioUrl: profile.portfolio_url,

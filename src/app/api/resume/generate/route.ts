@@ -81,7 +81,12 @@ You must reply with ONLY a valid JSON object matching this exact schema:
     "location": "<location/city, e.g. Bengaluru, India or empty string>"
   },
   "summary": "<a powerful, 3-line professional summary matching the target template type, refined using the raw summary if provided>",
-  "skills": [<array of formatted skills/technologies, categorized or listed nicely>],
+  "skills": [
+    {
+      "category": "<e.g., Languages, Frameworks, Databases, Tools>",
+      "skills": ["<skill 1>", "<skill 2>"]
+    }
+  ],
   "languages": [<array of formatted languages, e.g. ["English (Fluent)", "Spanish (Conversational)"] or simply ["English", "Spanish"]>],
   "achievements": [<array of formatted quantified achievements, awards or certifications, refined using raw achievements if provided>],
   "experience": [

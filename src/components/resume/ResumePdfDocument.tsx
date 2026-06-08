@@ -132,6 +132,11 @@ const getStyles = (template: string) => {
       color: textColor,
       lineHeight: 1.45,
     },
+    skillsTextBold: {
+      fontSize: isCompact ? 8.5 : 9.5,
+      color: textColor,
+      fontFamily: fontFamilyBold,
+    },
     entryRow: {
       flexDirection: "row",
       justifyContent: "space-between",
@@ -191,7 +196,7 @@ interface ResumeData {
     location?: string
   }
   summary: string
-  skills: string[]
+  skills: (string | { category: string; skills: string[] })[]
   languages?: string[]
   achievements?: string[]
   experience: {
@@ -295,7 +300,20 @@ export function ResumePdfDocument({ data, template = 'classic-serif' }: Props) {
         {data.skills && data.skills.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Skills</Text>
-            <Text style={styles.skillsText}>{data.skills.join(",  ")}</Text>
+            {typeof data.skills[0] === 'string' ? (
+              <Text style={styles.skillsText}>{(data.skills as any).join(",  ")}</Text>
+            ) : (
+              (data.skills as any).map((cat: any, idx: number) => {
+                const skillsList = Array.isArray(cat.skills) ? cat.skills.filter(Boolean) : [];
+                if (skillsList.length === 0) return null;
+                return (
+                  <Text key={idx} style={styles.skillsText}>
+                    <Text style={styles.skillsTextBold}>{cat.category}: </Text>
+                    {skillsList.join(",  ")}
+                  </Text>
+                );
+              })
+            )}
           </View>
         )}
 

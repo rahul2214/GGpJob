@@ -14,16 +14,76 @@ import { SummaryForm } from "@/components/summary-form";
 import { PersonalInfoFormCombined } from "@/components/personal-info-form-combined";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserCog, ShieldCheck, FileText, Briefcase, Link2, Users, HeartHandshake, Mail, Phone, LayoutDashboard, Trash2, Wallet, Award, Sparkles, Zap, ShieldCheck as TrustIcon } from "lucide-react";
+import { UserCog, ShieldCheck, FileText, Briefcase, Link2, Users, HeartHandshake, Mail, Phone, LayoutDashboard, Trash2, Wallet, Award, Sparkles, Zap, ShieldCheck as TrustIcon, Camera, Loader2 } from "lucide-react";
 import { DeleteAccountButton } from "@/components/delete-account-button";
 import { TrustScoreBadge } from "@/components/trust-score-badge";
 import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
-    const { user, loading } = useUser();
+    const { user, loading, refreshUser } = useUser();
     const router = useRouter();
+    const { toast } = useToast();
     const [activeTab, setActiveTab] = useState<'overview' | 'professional' | 'details' | 'security' | 'edit-details'>('overview');
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !user) return;
+
+        // Validation: Max size 2MB
+        const maxFileSize = 2 * 1024 * 1024;
+        if (file.size > maxFileSize) {
+            toast({
+                title: "Upload Failed",
+                description: "File size exceeds 2MB limit. Please upload a smaller image.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        // Validation: Image only
+        if (!file.type.startsWith("image/")) {
+            toast({
+                title: "Invalid File Type",
+                description: "Only image files are allowed.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        try {
+            setIsUploading(true);
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const res = await fetch(`/api/users/${user.uuid}/profile-photo/upload`, {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || "Failed to upload photo");
+            }
+
+            await refreshUser();
+            toast({
+                title: "Profile Photo Updated",
+                description: "Your profile photo has been successfully updated.",
+            });
+        } catch (error: any) {
+            console.error("Upload error:", error);
+            toast({
+                title: "Upload Error",
+                description: error.message || "An error occurred during photo upload.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     useEffect(() => {
         if (!loading && !user) {
@@ -94,12 +154,36 @@ export default function ProfilePage() {
                             <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden relative group p-6">
                                 {/* Horizontal Avatar & Info */}
                                 <div className="flex flex-row items-center gap-4 mb-6">
-                                    <div className="w-16 h-16 bg-white rounded-2xl p-0.5 shadow-md shrink-0 border border-slate-100">
-                                        <div className="w-full h-full bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center">
-                                            <span className="text-2xl font-black text-white">
-                                                {initials}
-                                            </span>
-                                        </div>
+                                    <div className="w-16 h-16 bg-white rounded-2xl p-0.5 shadow-md shrink-0 border border-slate-100 relative group/avatar overflow-hidden">
+                                        {user.profilePhotoUrl ? (
+                                            <img src={user.profilePhotoUrl} alt={user.name} className="w-full h-full object-cover rounded-xl" />
+                                        ) : (
+                                            <div className="w-full h-full bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center">
+                                                <span className="text-2xl font-black text-white">
+                                                    {initials}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {/* Upload Overlay */}
+                                        {['Job Seeker', 'Employee'].includes(user.role) && (
+                                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer rounded-xl text-white">
+                                                {isUploading ? (
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                ) : (
+                                                    <>
+                                                        <Camera className="w-5 h-5 mb-0.5" />
+                                                        <span className="text-[10px] font-bold">Edit</span>
+                                                    </>
+                                                )}
+                                                <input 
+                                                    type="file" 
+                                                    accept="image/*" 
+                                                    onChange={handlePhotoUpload} 
+                                                    disabled={isUploading} 
+                                                    className="hidden" 
+                                                />
+                                            </label>
+                                        )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h2 className="text-xl font-bold text-slate-800 leading-tight mb-1 truncate">{user.name}</h2>

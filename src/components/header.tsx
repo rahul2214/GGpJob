@@ -49,7 +49,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useUser } from "@/contexts/user-context";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "./ui/separator";
@@ -624,6 +624,7 @@ export default function Header() {
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="rounded-full">
                         <Avatar>
+                            {user.profilePhotoUrl && <AvatarImage src={user.profilePhotoUrl} alt={user.name} className="object-cover" />}
                             <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                         </Avatar>
                         </Button>

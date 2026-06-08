@@ -16,6 +16,7 @@ export interface User {
   locationId?: string;
   domainId?: string;
   resumeUrl?: string;
+  profilePhotoUrl?: string;
   linkedinUrl?: string;
   githubUrl?: string;
   portfolioUrl?: string;

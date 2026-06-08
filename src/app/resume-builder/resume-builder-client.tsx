@@ -52,6 +52,11 @@ interface EducationInput {
   grade?: string;
 }
 
+interface SkillCategory {
+  category: string;
+  skills: string[];
+}
+
 interface ResumeData {
   name: string;
   role?: string;
@@ -64,7 +69,7 @@ interface ResumeData {
     location?: string;
   };
   summary: string;
-  skills: string[];
+  skills: SkillCategory[];
   languages?: string[];
   achievements?: string[];
   experience: {
@@ -114,6 +119,27 @@ const formatUrl = (url?: string) => {
   return `https://${trimmed}`
 }
 
+function normalizeSkills(skills: any): SkillCategory[] {
+  const defaultSkills: SkillCategory[] = [
+    { category: "Languages", skills: [""] },
+    { category: "Frameworks/Libraries", skills: [""] },
+    { category: "Databases", skills: [""] },
+    { category: "Tools/DevOps", skills: [""] }
+  ];
+  if (!skills) return defaultSkills;
+  if (Array.isArray(skills)) {
+    if (skills.length === 0) return defaultSkills;
+    if (typeof skills[0] === 'string') {
+      return [{ category: "Skills", skills: skills }];
+    }
+    return skills.map((cat: any) => ({
+      category: typeof cat.category === 'string' && cat.category.trim() !== "" ? cat.category : "Skills",
+      skills: Array.isArray(cat.skills) ? cat.skills.map((s: any) => typeof s === 'string' ? s : "") : [""]
+    }));
+  }
+  return defaultSkills;
+}
+
 export default function ResumeBuilderPage() {
   const { user, refreshUser } = useUser()
   const router = useRouter()
@@ -159,7 +185,12 @@ export default function ResumeBuilderPage() {
   const [githubUrl, setGithubUrl] = useState("")
   const [portfolioUrl, setPortfolioUrl] = useState("")
   const [location, setLocation] = useState("")
-  const [skills, setSkills] = useState<string[]>([""])
+  const [skills, setSkills] = useState<SkillCategory[]>([
+    { category: "Languages", skills: [""] },
+    { category: "Frameworks/Libraries", skills: [""] },
+    { category: "Databases", skills: [""] },
+    { category: "Tools/DevOps", skills: [""] }
+  ])
   const [professionalSummary, setProfessionalSummary] = useState("")
   const [languages, setLanguages] = useState<string[]>([""])
   const [achievements, setAchievements] = useState<string[]>([""])
@@ -198,7 +229,7 @@ export default function ResumeBuilderPage() {
         if (data.githubUrl !== undefined) setGithubUrl(data.githubUrl)
         if (data.portfolioUrl !== undefined) setPortfolioUrl(data.portfolioUrl)
         if (data.location !== undefined) setLocation(data.location)
-        if (data.skills !== undefined) setSkills(data.skills)
+        if (data.skills !== undefined) setSkills(normalizeSkills(data.skills))
         if (data.professionalSummary !== undefined) setProfessionalSummary(data.professionalSummary)
         if (data.languages !== undefined) setLanguages(data.languages)
         if (data.achievements !== undefined) setAchievements(data.achievements)
@@ -293,7 +324,7 @@ export default function ResumeBuilderPage() {
       setPortfolioUrl(user.portfolioUrl || "")
       setLocation(user.location || "")
       if (user.skills && user.skills.length > 0) {
-        setSkills(user.skills.map(s => s.name))
+        setSkills(normalizeSkills(user.skills.map(s => s.name)))
       }
     }
   }, [user, selectedDraftId])
@@ -333,7 +364,12 @@ export default function ResumeBuilderPage() {
       setGithubUrl(user?.githubUrl || "")
       setPortfolioUrl(user?.portfolioUrl || "")
       setLocation(user?.location || "")
-      setSkills(user?.skills && user.skills.length > 0 ? user.skills.map(s => s.name) : [""])
+      setSkills(user?.skills && user.skills.length > 0 ? normalizeSkills(user.skills.map(s => s.name)) : [
+        { category: "Languages", skills: [""] },
+        { category: "Frameworks/Libraries", skills: [""] },
+        { category: "Databases", skills: [""] },
+        { category: "Tools/DevOps", skills: [""] }
+      ])
       setProfessionalSummary("")
       setLanguages([""])
       setAchievements([""])
@@ -361,7 +397,7 @@ export default function ResumeBuilderPage() {
     setGithubUrl(data.contact?.github || "")
     setPortfolioUrl(data.contact?.portfolio || "")
     setLocation(data.contact?.location || "")
-    setSkills(data.skills && data.skills.length > 0 ? data.skills : [""])
+    setSkills(normalizeSkills(data.skills))
     setProfessionalSummary(data.summary || "")
     setLanguages(data.languages && data.languages.length > 0 ? data.languages : [""])
     setAchievements(data.achievements && data.achievements.length > 0 ? data.achievements : [""])
@@ -448,7 +484,10 @@ export default function ResumeBuilderPage() {
         role,
         contact: { email, phone, linkedin: linkedinUrl, github: githubUrl, portfolio: portfolioUrl, location },
         summary: professionalSummary,
-        skills: skills.map(s => s.trim()).filter(Boolean),
+        skills: skills.map(cat => ({
+          category: cat.category.trim(),
+          skills: cat.skills.map(s => s.trim()).filter(Boolean)
+        })).filter(cat => cat.category || cat.skills.length > 0),
         languages: languages.map(l => l.trim()).filter(Boolean),
         achievements: achievements.map(a => a.trim()).filter(Boolean),
         experience: jobs.filter(j => j.company).map(j => ({
@@ -538,7 +577,7 @@ export default function ResumeBuilderPage() {
     setAiVerbs([])
 
     try {
-      const skillsList = skills.map(s => s.trim()).filter(Boolean).join(", ")
+      const skillsList = skills.flatMap(cat => cat.skills.map(s => s.trim()).filter(Boolean)).join(", ")
       const activeRole = role || templateType
       const textContext = sec === 'experience' ? jobs[jobIdx].points[pIdx] : professionalSummary
 
@@ -596,7 +635,7 @@ export default function ResumeBuilderPage() {
         name,
         role,
         summary: professionalSummary,
-        skills: skills.filter(Boolean),
+        skills: skills.flatMap(cat => cat.skills.map(s => s.trim()).filter(Boolean)),
         experience: jobs.filter(j => j.company).map(j => ({
           company: j.company,
           role: j.role,
@@ -675,11 +714,29 @@ export default function ResumeBuilderPage() {
     setAchievements(updated)
   }
 
-  const addSkill = () => setSkills([...skills, ""])
-  const removeSkill = (index: number) => setSkills(skills.filter((_, i) => i !== index))
-  const updateSkill = (index: number, val: string) => {
+  const addSkillCategory = () => setSkills([...skills, { category: "", skills: [""] }])
+  const removeSkillCategory = (catIdx: number) => setSkills(skills.filter((_, i) => i !== catIdx))
+  const updateCategoryName = (catIdx: number, val: string) => {
     const updated = [...skills]
-    updated[index] = val
+    updated[catIdx].category = val
+    setSkills(updated)
+  }
+  const addSkillToCategory = (catIdx: number) => {
+    const updated = [...skills]
+    updated[catIdx].skills = [...updated[catIdx].skills, ""]
+    setSkills(updated)
+  }
+  const removeSkillFromCategory = (catIdx: number, skillIdx: number) => {
+    const updated = [...skills]
+    updated[catIdx].skills = updated[catIdx].skills.filter((_, i) => i !== skillIdx)
+    if (updated[catIdx].skills.length === 0) {
+      updated[catIdx].skills = [""]
+    }
+    setSkills(updated)
+  }
+  const updateSkillInCategory = (catIdx: number, skillIdx: number, val: string) => {
+    const updated = [...skills]
+    updated[catIdx].skills[skillIdx] = val
     setSkills(updated)
   }
 
@@ -688,7 +745,10 @@ export default function ResumeBuilderPage() {
   const executeGenerate = async () => {
     setIsGenerating(true)
     try {
-      const skillsArray = skills.map(s => s.trim()).filter(Boolean)
+      const skillsArray = skills.map(cat => ({
+        category: cat.category.trim(),
+        skills: cat.skills.map(s => s.trim()).filter(Boolean)
+      })).filter(cat => cat.category || cat.skills.length > 0)
       const experienceList = jobs.filter(j => j.company && j.role).map(j => ({
         company: j.company,
         role: j.role,
@@ -749,7 +809,7 @@ export default function ResumeBuilderPage() {
         if (data.contact.location) setLocation(data.contact.location)
       }
       if (data.summary) setProfessionalSummary(data.summary)
-      if (data.skills && data.skills.length > 0) setSkills(data.skills)
+      if (data.skills && data.skills.length > 0) setSkills(normalizeSkills(data.skills))
       if (data.languages && data.languages.length > 0) setLanguages(data.languages)
       if (data.achievements && data.achievements.length > 0) setAchievements(data.achievements)
 
@@ -853,7 +913,10 @@ export default function ResumeBuilderPage() {
         location: location || ""
       },
       summary: professionalSummary || "",
-      skills: skills.map(s => s.trim()).filter(Boolean),
+      skills: skills.map(cat => ({
+        category: cat.category.trim(),
+        skills: cat.skills.map(s => s.trim()).filter(Boolean)
+      })).filter(cat => cat.category || cat.skills.length > 0),
       languages: languages.map(l => l.trim()).filter(Boolean),
       achievements: achievements.map(a => a.trim()).filter(Boolean),
       experience: jobs.filter(j => j.company || j.role).map(j => ({
@@ -936,7 +999,9 @@ ${exp.points ? exp.points.filter(Boolean).map(b => `* ${b}`).join("\n") : ""}
 ${proj.points ? proj.points.filter(Boolean).map(b => `* ${b}`).join("\n") : ""}
 `).join("\n")
 
-    const skillsStr = skills.filter(Boolean).join(", ")
+    const skillsStr = typeof skills[0] === 'string'
+      ? (skills as any).filter(Boolean).join(", ")
+      : skills.map(cat => `* **${cat.category}**: ${cat.skills.filter(Boolean).join(", ")}`).join("\n")
     const achList = achievements.filter(Boolean).map(a => `* ${a}`).join("\n")
     const langStr = languages.filter(Boolean).join(", ")
 
@@ -1447,36 +1512,64 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
                   <Code className="w-5 h-5 text-amber-500" />
                   <div>
                     <CardTitle className="text-base font-extrabold">2. Skills & Languages</CardTitle>
-                    <CardDescription className="text-xs">Add core skill tags and spoken languages</CardDescription>
+                    <CardDescription className="text-xs">Organize skills into logical groups (e.g. Languages, Frameworks) for higher ATS scoring</CardDescription>
                   </div>
                 </div>
-                <Button size="sm" variant="outline" onClick={addSkill} className="rounded-xl border-dashed h-8 text-xs font-bold">
-                  <Plus className="w-4 h-4 mr-1" /> Add Skill
+                <Button size="sm" variant="outline" onClick={addSkillCategory} className="rounded-xl border-dashed h-8 text-xs font-bold">
+                  <Plus className="w-4 h-4 mr-1" /> Add Category
                 </Button>
               </CardHeader>
               <CardContent className="pt-6 space-y-6">
-                <div className="grid grid-cols-2 gap-3">
-                  {skills.map((skill, idx) => (
-                    <div key={idx} className="flex items-center gap-2 relative group">
+                {skills.map((cat, catIdx) => (
+                  <div key={catIdx} className="p-4 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/60 space-y-4">
+                    <div className="flex items-center justify-between gap-3">
                       <Input
-                        value={skill}
-                        onChange={e => updateSkill(idx, e.target.value)}
-                        placeholder="e.g. React"
-                        className="rounded-xl h-9 text-xs bg-white/50"
+                        value={cat.category}
+                        onChange={e => updateCategoryName(catIdx, e.target.value)}
+                        placeholder="Category (e.g., Languages, Frameworks)"
+                        className="rounded-xl h-9 text-xs font-bold bg-white w-[60%] shrink-0 border-indigo-100"
                       />
-                      {skills.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeSkill(idx)}
-                          className="absolute right-1 text-rose-500 hover:bg-rose-50 rounded-lg h-7 w-7 opacity-60 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => addSkillToCategory(catIdx)} className="h-8 text-[10px] font-extrabold text-indigo-600 hover:bg-white rounded-xl">
+                          <Plus className="w-3.5 h-3.5 mr-0.5" /> Add Skill
                         </Button>
-                      )}
+                        {skills.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeSkillCategory(catIdx)}
+                            className="text-rose-500 hover:bg-rose-50 hover:dark:bg-rose-950/20 rounded-xl h-8 w-8"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  ))}
-                </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      {cat.skills.map((skill, skillIdx) => (
+                        <div key={skillIdx} className="flex items-center gap-2 relative group">
+                          <Input
+                            value={skill}
+                            onChange={e => updateSkillInCategory(catIdx, skillIdx, e.target.value)}
+                            placeholder="e.g. React"
+                            className="rounded-xl h-9 text-xs bg-white/70"
+                          />
+                          {cat.skills.length > 1 && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeSkillFromCategory(catIdx, skillIdx)}
+                              className="absolute right-1 text-rose-500 hover:bg-rose-50 rounded-lg h-7 w-7 opacity-60 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
 
                 <div className="border-t border-slate-200/50 pt-5 space-y-3">
                   <div className="flex items-center justify-between">
@@ -1761,10 +1854,25 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
                     )}
 
                     {/* Skills */}
-                    {skills.filter(Boolean).length > 0 && (
+                    {skills && skills.length > 0 && (
                       <div className={previewSectionMargin}>
                         <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-700 dark:text-slate-400" : "text-slate-905 dark:text-white"} border-b ${previewSectionDividerColor} pb-0.5 ${previewSectionHeaderMargin}`}>Skills & Tech Stack</h2>
-                        <p className={`${previewTextSize} leading-relaxed ${previewTextColor} font-medium`}>{skills.filter(Boolean).join(",  ")}</p>
+                        {typeof (skills as any)[0] === 'string' ? (
+                          <p className={`${previewTextSize} leading-relaxed ${previewTextColor} font-medium`}>{(skills as any).filter(Boolean).join(",  ")}</p>
+                        ) : (
+                          <div className={`${previewTextSize} leading-relaxed ${previewTextColor} font-medium space-y-0.5`}>
+                            {(skills as any).map((cat: any, idx: number) => {
+                              const skillsList = Array.isArray(cat.skills) ? cat.skills.filter(Boolean) : [];
+                              if (skillsList.length === 0) return null;
+                              return (
+                                <div key={idx}>
+                                  <strong className={isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-800 dark:text-slate-200" : "text-slate-950 dark:text-white"}>{cat.category}: </strong>
+                                  <span>{skillsList.join(",  ")}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
 
