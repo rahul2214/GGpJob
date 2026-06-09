@@ -157,10 +157,10 @@ export default function PublicProfilePage() {
             <div className="flex flex-col sm:flex-row gap-5 items-start">
               {/* Avatar */}
               <div className="shrink-0">
-                {(profileUser as any).photoUrl ? (
+                {profileUser.profilePhotoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={(profileUser as any).photoUrl}
+                    src={profileUser.profilePhotoUrl}
                     alt={profileUser.name}
                     className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover ring-4 ring-white shadow-lg"
                   />

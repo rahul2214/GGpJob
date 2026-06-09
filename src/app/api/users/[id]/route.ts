@@ -392,7 +392,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 expected_salary: rest.expectedSalary === '' ? null : rest.expectedSalary,
                 salary_breakdown: rest.salaryBreakdown,
                 notice_period: rest.noticePeriod,
-                preferred_locations: rest.preferredLocations
+                preferred_locations: rest.preferredLocations,
+                metadata: rest.metadata
             });
         }
 

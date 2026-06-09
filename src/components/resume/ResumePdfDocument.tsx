@@ -215,6 +215,7 @@ interface ResumeData {
   education: {
     institution: string
     degree: string
+    fieldOfStudy?: string
     dates: string
     grade?: string
   }[]
@@ -325,7 +326,7 @@ export function ResumePdfDocument({ data, template = 'classic-serif' }: Props) {
               <View key={i} style={styles.entryBlock}>
                 <View style={styles.entryRow}>
                   <Text style={styles.entryTitle}>
-                    {edu.degree} — {edu.institution}
+                    {edu.degree}{edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ""} — {edu.institution}
                   </Text>
                   <Text style={styles.entryDate}>{edu.dates}</Text>
                 </View>

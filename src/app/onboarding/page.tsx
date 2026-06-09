@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { LoaderCircle, FileText, CheckCircle2, UploadCloud, Building2, ChevronRight, Phone, Sparkles, X, ArrowLeft } from "lucide-react";
+import { LoaderCircle, FileText, CheckCircle2, UploadCloud, Building2, ChevronRight, Phone, Sparkles, X, ArrowLeft, GraduationCap, Briefcase, Award, Plus, Trash2, Layers } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/lib/supabase-client";
@@ -32,8 +32,136 @@ export default function OnboardingPage() {
     const [skillSearch, setSkillSearch] = useState("");
     const [linkedinUrl, setLinkedinUrl] = useState<string>("");
     const [githubUrl, setGithubUrl] = useState<string>("");
+    const [portfolioUrl, setPortfolioUrl] = useState<string>("");
     const [isParsing, setIsParsing] = useState(false);
     const [buildMethod, setBuildMethod] = useState<'upload' | 'manual' | null>(null);
+
+    const [education, setEducation] = useState<any[]>([]);
+    const [experience, setExperience] = useState<any[]>([]);
+    const [projects, setProjects] = useState<any[]>([]);
+    const [achievements, setAchievements] = useState<string[]>([]);
+    const [certifications, setCertifications] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (user) {
+            if (user.education && user.education.length > 0 && education.length === 0) {
+                setEducation(user.education.map(e => ({
+                    institution: e.institution || "",
+                    degree: e.degree || "",
+                    fieldOfStudy: e.fieldOfStudy || "",
+                    startDate: e.startDate || "",
+                    endDate: e.endDate || "",
+                    grade: e.grade || "",
+                    description: e.description || "",
+                    isCurrent: !!e.isCurrent
+                })));
+            }
+            if (user.experience && user.experience.length > 0 && experience.length === 0) {
+                setExperience(user.experience.map(e => ({
+                    company: e.company || "",
+                    title: e.title || "",
+                    location: e.location || "",
+                    employmentType: e.employmentType || "Full-time",
+                    startDate: e.startDate || "",
+                    endDate: e.endDate || "",
+                    isCurrent: !!e.isCurrent,
+                    description: e.description || ""
+                })));
+            }
+            if (user.projects && user.projects.length > 0 && projects.length === 0) {
+                setProjects(user.projects.map(p => ({
+                    name: p.name || "",
+                    description: p.description || "",
+                    url: p.url || "",
+                    startDate: p.startDate || "",
+                    endDate: p.endDate || ""
+                })));
+            }
+            if (user.metadata?.achievements && Array.isArray(user.metadata.achievements) && achievements.length === 0) {
+                setAchievements(user.metadata.achievements);
+            }
+            if (user.metadata?.certifications && Array.isArray(user.metadata.certifications) && certifications.length === 0) {
+                setCertifications(user.metadata.certifications);
+            }
+            if (user.portfolioUrl && !portfolioUrl) {
+                setPortfolioUrl(user.portfolioUrl);
+            }
+        }
+    }, [user]);
+
+    const addEducation = () => {
+        setEducation(prev => [...prev, {
+            institution: "",
+            degree: "",
+            fieldOfStudy: "",
+            startDate: "",
+            endDate: "",
+            grade: "",
+            description: "",
+            isCurrent: false
+        }]);
+    };
+    const updateEducation = (index: number, fields: any) => {
+        setEducation(prev => prev.map((item, idx) => idx === index ? { ...item, ...fields } : item));
+    };
+    const removeEducation = (index: number) => {
+        setEducation(prev => prev.filter((_, idx) => idx !== index));
+    };
+
+    const addExperience = () => {
+        setExperience(prev => [...prev, {
+            company: "",
+            title: "",
+            location: "",
+            employmentType: "Full-time",
+            startDate: "",
+            endDate: "",
+            isCurrent: false,
+            description: ""
+        }]);
+    };
+    const updateExperience = (index: number, fields: any) => {
+        setExperience(prev => prev.map((item, idx) => idx === index ? { ...item, ...fields } : item));
+    };
+    const removeExperience = (index: number) => {
+        setExperience(prev => prev.filter((_, idx) => idx !== index));
+    };
+
+    const addProject = () => {
+        setProjects(prev => [...prev, {
+            name: "",
+            description: "",
+            url: "",
+            startDate: "",
+            endDate: ""
+        }]);
+    };
+    const updateProject = (index: number, fields: any) => {
+        setProjects(prev => prev.map((item, idx) => idx === index ? { ...item, ...fields } : item));
+    };
+    const removeProject = (index: number) => {
+        setProjects(prev => prev.filter((_, idx) => idx !== index));
+    };
+
+    const addAchievement = () => {
+        setAchievements(prev => [...prev, ""]);
+    };
+    const updateAchievement = (index: number, val: string) => {
+        setAchievements(prev => prev.map((item, idx) => idx === index ? val : item));
+    };
+    const removeAchievement = (index: number) => {
+        setAchievements(prev => prev.filter((_, idx) => idx !== index));
+    };
+
+    const addCertification = () => {
+        setCertifications(prev => [...prev, ""]);
+    };
+    const updateCertification = (index: number, val: string) => {
+        setCertifications(prev => prev.map((item, idx) => idx === index ? val : item));
+    };
+    const removeCertification = (index: number) => {
+        setCertifications(prev => prev.filter((_, idx) => idx !== index));
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -90,6 +218,9 @@ export default function OnboardingPage() {
             if (data.githubUrl) {
                 setGithubUrl(data.githubUrl);
             }
+            if (data.portfolioUrl) {
+                setPortfolioUrl(data.portfolioUrl);
+            }
             
             // 4. Skills matching against masterSkills
             if (data.skills && data.skills.length > 0 && masterSkills.length > 0) {
@@ -120,9 +251,32 @@ export default function OnboardingPage() {
                 }
             }
 
+            // 5. Education
+            if (data.education && data.education.length > 0) {
+                setEducation(data.education);
+            }
+            
+            // 6. Experience
+            if (data.experience && data.experience.length > 0) {
+                setExperience(data.experience);
+            }
+
+            // 7. Projects
+            if (data.projects && data.projects.length > 0) {
+                setProjects(data.projects);
+            }
+
+            // 8. Achievements & Certifications
+            if (data.achievements && data.achievements.length > 0) {
+                setAchievements(data.achievements);
+            }
+            if (data.certifications && data.certifications.length > 0) {
+                setCertifications(data.certifications);
+            }
+
             toast({
                 title: "Resume Parsed Successfully! ✨",
-                description: "We have auto-filled your phone, domain, socials, and skills based on your resume.",
+                description: "We have auto-filled your profile details, education, experience, projects, and skills based on your resume.",
             });
         } catch (error: any) {
             console.error(error);
@@ -239,24 +393,41 @@ export default function OnboardingPage() {
                 setUploadProgress(70);
             }
 
-            // 2. Save Domain ID and Phone if needed
+            // 2. Save Domain, Phone, and all other details
             const finalPhone = (user.phone && user.phone.length >= 10) ? user.phone : phone;
             const finalDomainId = user.domainId || selectedDomain;
-            if (!user.domainId || !user.phone || user.phone.length < 10) {
-                const profileRes = await fetch(`/api/users/${user.uuid}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-                        name: user.name, 
-                        email: user.email, 
-                        phone: finalPhone, 
-                        domainId: finalDomainId,
-                        linkedinUrl: linkedinUrl || user.linkedinUrl,
-                        githubUrl: githubUrl || user.githubUrl
-                    }),
-                });
-                if (!profileRes.ok) throw new Error("Failed to save profile info.");
-            }
+            
+            // Clean empty entries from education, experience, projects, achievements, certifications
+            const finalEducation = education.filter(e => e.institution || e.degree || e.fieldOfStudy);
+            const finalExperience = experience.filter(e => e.company || e.title);
+            const finalProjects = projects.filter(p => p.name || p.description);
+            const finalAchievements = achievements.filter(Boolean);
+            const finalCertifications = certifications.filter(Boolean);
+
+            const finalMetadata = {
+                ...(user.metadata || {}),
+                achievements: finalAchievements,
+                certifications: finalCertifications,
+            };
+
+            const profileRes = await fetch(`/api/users/${user.uuid}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    name: user.name, 
+                    email: user.email, 
+                    phone: finalPhone, 
+                    domainId: finalDomainId,
+                    linkedinUrl: linkedinUrl || user.linkedinUrl,
+                    githubUrl: githubUrl || user.githubUrl,
+                    education: finalEducation,
+                    experience: finalExperience,
+                    projects: finalProjects,
+                    metadata: finalMetadata,
+                    role: user.role
+                }),
+            });
+            if (!profileRes.ok) throw new Error("Failed to save profile info.");
 
             // 3. Save Skills subcollection if needed
             if (!user.profileStats?.hasSkills && selectedSkillIds.length > 0) {
@@ -660,12 +831,420 @@ export default function OnboardingPage() {
                         </div>
                     )}
 
+                    {/* Education Details */}
+                    <div className="space-y-4 pt-6 border-t border-slate-100">
+                        <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                            <GraduationCap className="w-5 h-5 text-indigo-600 animate-pulse" />
+                            Education Details
+                        </h3>
+                        {education.map((edu, idx) => (
+                            <motion.div 
+                                key={idx} 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 space-y-4 relative group"
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => removeEducation(idx)}
+                                    className="absolute top-4 right-4 p-2 text-slate-400 hover:text-red-500 rounded-xl hover:bg-red-50 transition-colors"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600">School / Institution</label>
+                                        <Input
+                                            placeholder="e.g. Stanford University"
+                                            value={edu.institution || ""}
+                                            onChange={(e) => updateEducation(idx, { institution: e.target.value })}
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600">Degree</label>
+                                        <Input
+                                            placeholder="e.g. Bachelor of Science"
+                                            value={edu.degree || ""}
+                                            onChange={(e) => updateEducation(idx, { degree: e.target.value })}
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600">Field of Study</label>
+                                        <Input
+                                            placeholder="e.g. Computer Science"
+                                            value={edu.fieldOfStudy || ""}
+                                            onChange={(e) => updateEducation(idx, { fieldOfStudy: e.target.value })}
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600">Grade / CGPA</label>
+                                        <Input
+                                            placeholder="e.g. 3.8/4.0 or 85%"
+                                            value={edu.grade || ""}
+                                            onChange={(e) => updateEducation(idx, { grade: e.target.value })}
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600">Start Date (YYYY-MM)</label>
+                                        <Input
+                                            placeholder="YYYY-MM (e.g. 2020-09)"
+                                            value={edu.startDate || ""}
+                                            onChange={(e) => updateEducation(idx, { startDate: e.target.value })}
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        />
+                                    </div>
+                                    {!edu.isCurrent && (
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-slate-600">End Date (YYYY-MM)</label>
+                                            <Input
+                                                placeholder="YYYY-MM (e.g. 2024-06)"
+                                                value={edu.endDate || ""}
+                                                onChange={(e) => updateEducation(idx, { endDate: e.target.value })}
+                                                className="h-11 rounded-xl border-slate-200 bg-white"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-2 pt-1">
+                                    <input
+                                        type="checkbox"
+                                        id={`edu-current-${idx}`}
+                                        checked={!!edu.isCurrent}
+                                        onChange={(e) => updateEducation(idx, { isCurrent: e.target.checked, endDate: e.target.checked ? "" : edu.endDate })}
+                                        className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                    />
+                                    <label htmlFor={`edu-current-${idx}`} className="text-xs font-semibold text-slate-600 cursor-pointer">
+                                        I am currently studying here
+                                    </label>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-600">Description</label>
+                                    <textarea
+                                        placeholder="Achievements, coursework, or extra-curricular activities..."
+                                        value={edu.description || ""}
+                                        onChange={(e) => updateEducation(idx, { description: e.target.value })}
+                                        rows={2}
+                                        className="w-full p-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-indigo-400 transition-colors"
+                                    />
+                                </div>
+                            </motion.div>
+                        ))}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={addEducation}
+                            className="w-full py-5 rounded-2xl border-dashed border-2 hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2 font-bold text-xs"
+                        >
+                            <Plus className="w-4 h-4" /> Add Education
+                        </Button>
+                    </div>
+
+                    {/* Work Experience */}
+                    <div className="space-y-4 pt-6 border-t border-slate-100">
+                        <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                            <Briefcase className="w-5 h-5 text-emerald-600 animate-pulse" />
+                            Work Experience
+                        </h3>
+                        {experience.map((exp, idx) => (
+                            <motion.div 
+                                key={idx} 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 space-y-4 relative group"
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => removeExperience(idx)}
+                                    className="absolute top-4 right-4 p-2 text-slate-400 hover:text-red-500 rounded-xl hover:bg-red-50 transition-colors"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600">Company Name</label>
+                                        <Input
+                                            placeholder="e.g. Acme Corp"
+                                            value={exp.company || ""}
+                                            onChange={(e) => updateExperience(idx, { company: e.target.value })}
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600">Job Title</label>
+                                        <Input
+                                            placeholder="e.g. Software Engineer"
+                                            value={exp.title || ""}
+                                            onChange={(e) => updateExperience(idx, { title: e.target.value })}
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600">Location</label>
+                                        <Input
+                                            placeholder="e.g. Bengaluru, India or Remote"
+                                            value={exp.location || ""}
+                                            onChange={(e) => updateExperience(idx, { location: e.target.value })}
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600">Employment Type</label>
+                                        <Select
+                                            onValueChange={(val) => updateExperience(idx, { employmentType: val })}
+                                            value={exp.employmentType || "Full-time"}
+                                        >
+                                            <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-lg border-slate-100 shadow-xl">
+                                                <SelectItem value="Full-time">Full-time</SelectItem>
+                                                <SelectItem value="Part-time">Part-time</SelectItem>
+                                                <SelectItem value="Contract">Contract</SelectItem>
+                                                <SelectItem value="Internship">Internship</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600">Start Date (YYYY-MM)</label>
+                                        <Input
+                                            placeholder="YYYY-MM (e.g. 2021-06)"
+                                            value={exp.startDate || ""}
+                                            onChange={(e) => updateExperience(idx, { startDate: e.target.value })}
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        />
+                                    </div>
+                                    {!exp.isCurrent && (
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-slate-600">End Date (YYYY-MM)</label>
+                                            <Input
+                                                placeholder="YYYY-MM (e.g. 2023-12)"
+                                                value={exp.endDate || ""}
+                                                onChange={(e) => updateExperience(idx, { endDate: e.target.value })}
+                                                className="h-11 rounded-xl border-slate-200 bg-white"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-2 pt-1">
+                                    <input
+                                        type="checkbox"
+                                        id={`exp-current-${idx}`}
+                                        checked={!!exp.isCurrent}
+                                        onChange={(e) => updateExperience(idx, { isCurrent: e.target.checked, endDate: e.target.checked ? "" : exp.endDate })}
+                                        className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                    />
+                                    <label htmlFor={`exp-current-${idx}`} className="text-xs font-semibold text-slate-600 cursor-pointer">
+                                        I currently work here
+                                    </label>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-600">Description</label>
+                                    <textarea
+                                        placeholder="Describe your achievements, roles, and tech stack used..."
+                                        value={exp.description || ""}
+                                        onChange={(e) => updateExperience(idx, { description: e.target.value })}
+                                        rows={3}
+                                        className="w-full p-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-indigo-400 transition-colors"
+                                    />
+                                </div>
+                            </motion.div>
+                        ))}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={addExperience}
+                            className="w-full py-5 rounded-2xl border-dashed border-2 hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2 font-bold text-xs"
+                        >
+                            <Plus className="w-4 h-4" /> Add Work Experience
+                        </Button>
+                    </div>
+
+                    {/* Projects */}
+                    <div className="space-y-4 pt-6 border-t border-slate-100">
+                        <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                            <Layers className="w-5 h-5 text-indigo-600 animate-pulse" />
+                            Projects
+                        </h3>
+                        {projects.map((proj, idx) => (
+                            <motion.div 
+                                key={idx} 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 space-y-4 relative group"
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => removeProject(idx)}
+                                    className="absolute top-4 right-4 p-2 text-slate-400 hover:text-red-500 rounded-xl hover:bg-red-50 transition-colors"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600">Project Name</label>
+                                        <Input
+                                            placeholder="e.g. Portfolio Website"
+                                            value={proj.name || ""}
+                                            onChange={(e) => updateProject(idx, { name: e.target.value })}
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600">Project Link / URL</label>
+                                        <Input
+                                            placeholder="e.g. https://github.com/..."
+                                            value={proj.url || ""}
+                                            onChange={(e) => updateProject(idx, { url: e.target.value })}
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600">Start Date (YYYY-MM)</label>
+                                        <Input
+                                            placeholder="YYYY-MM (e.g. 2023-01)"
+                                            value={proj.startDate || ""}
+                                            onChange={(e) => updateProject(idx, { startDate: e.target.value })}
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600">End Date (YYYY-MM)</label>
+                                        <Input
+                                            placeholder="YYYY-MM (e.g. 2023-03)"
+                                            value={proj.endDate || ""}
+                                            onChange={(e) => updateProject(idx, { endDate: e.target.value })}
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-600">Description</label>
+                                    <textarea
+                                        placeholder="Describe the project objective, your role, and the tech stack used..."
+                                        value={proj.description || ""}
+                                        onChange={(e) => updateProject(idx, { description: e.target.value })}
+                                        rows={2}
+                                        className="w-full p-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-indigo-400 transition-colors"
+                                    />
+                                </div>
+                            </motion.div>
+                        ))}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={addProject}
+                            className="w-full py-5 rounded-2xl border-dashed border-2 hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2 font-bold text-xs"
+                        >
+                            <Plus className="w-4 h-4" /> Add Project
+                        </Button>
+                    </div>
+
+                    {/* Achievements & Certifications */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
+                        {/* Achievements */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                                <Award className="w-5 h-5 text-amber-500 animate-pulse" />
+                                Achievements
+                            </h3>
+                            <div className="space-y-2">
+                                {achievements.map((ach, idx) => (
+                                    <div key={idx} className="flex items-center gap-2">
+                                        <Input
+                                            placeholder="e.g. Won Hackathon 2025"
+                                            value={ach || ""}
+                                            onChange={(e) => updateAchievement(idx, e.target.value)}
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeAchievement(idx)}
+                                            className="p-2.5 text-slate-400 hover:text-red-500 rounded-xl hover:bg-red-50 transition-colors shrink-0"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={addAchievement}
+                                className="w-full py-4 rounded-xl border-dashed hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-1.5 font-bold text-xs"
+                            >
+                                <Plus className="w-3.5 h-3.5" /> Add Achievement
+                            </Button>
+                        </div>
+
+                        {/* Certifications */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                                <Award className="w-5 h-5 text-indigo-500 animate-pulse" />
+                                Certifications
+                            </h3>
+                            <div className="space-y-2">
+                                {certifications.map((cert, idx) => (
+                                    <div key={idx} className="flex items-center gap-2">
+                                        <Input
+                                            placeholder="e.g. AWS Certified Solutions Architect"
+                                            value={cert || ""}
+                                            onChange={(e) => updateCertification(idx, e.target.value)}
+                                            className="h-11 rounded-xl border-slate-200 bg-white"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeCertification(idx)}
+                                            className="p-2.5 text-slate-400 hover:text-red-500 rounded-xl hover:bg-red-50 transition-colors shrink-0"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={addCertification}
+                                className="w-full py-4 rounded-xl border-dashed hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-1.5 font-bold text-xs"
+                            >
+                                <Plus className="w-3.5 h-3.5" /> Add Certification
+                            </Button>
+                        </div>
+                    </div>
+
                     {/* Submit */}
-                    <div className="pt-4">
+                    <div className="pt-6 border-t border-slate-100">
                         <Button
                             type="submit"
                             disabled={isSubmitting || uploadProgress !== null}
-                            className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-slateigo-800 text-white font-bold text-lg shadow-xl shadow-slate-900/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100"
+                            className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-lg shadow-xl shadow-slate-900/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100"
                         >
                             {isSubmitting ? (
                                 <>

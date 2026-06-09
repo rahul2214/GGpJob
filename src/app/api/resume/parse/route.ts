@@ -52,7 +52,9 @@ export async function POST(req: NextRequest) {
     const truncatedResume = resumeText.length > 12000 ? resumeText.substring(0, 12000) + "..." : resumeText;
 
     const prompt = `You are an expert resume parser. Extract structured profile data from the candidate's resume.
-Extract the phone number, standard professional domain, linkedin url, github url, and key skills.
+Extract the phone number, standard professional domain, linkedin url, github url, personal portfolio/website url, key skills, education details, experience details, project details, achievements, and certifications.
+
+Resumes may contain hyperlinks that are extracted and appended as '[Hyperlinks in PDF: ...]'. Look at these hyperlinks carefully to resolve the full URLs for linkedin, github, portfolio, and projects.
 
 You must reply with ONLY a valid JSON object matching this exact schema:
 {
@@ -60,7 +62,43 @@ You must reply with ONLY a valid JSON object matching this exact schema:
   "domain": "<most suitable job domain, choose exactly one from: Software Engineering, Product Management, Marketing, Sales, Data Science, Design, Finance, Human Resources, Operations. Default to Software Engineering if uncertain>",
   "linkedinUrl": "<extracted linkedin profile url, empty string if not found>",
   "githubUrl": "<extracted github profile url, empty string if not found>",
-  "skills": [<array of strings representing key skills/technologies found, up to 15 items>]
+  "portfolioUrl": "<extracted personal portfolio or website url, empty string if not found>",
+  "skills": [<array of strings representing key skills/technologies found, up to 15 items>],
+  "education": [
+    {
+      "institution": "<school/university name>",
+      "degree": "<degree, e.g. B.Tech, BS, MS, High School>",
+      "fieldOfStudy": "<field of study or major, e.g. Computer Science>",
+      "startDate": "<start date in YYYY-MM format, or YYYY format if month not available, empty if not found>",
+      "endDate": "<end date in YYYY-MM format, or YYYY format, empty if current or not found>",
+      "grade": "<CGPA/percentage/grade, empty if not found>",
+      "description": "<optional notes, descriptions or details about this education, empty if not found>",
+      "isCurrent": <true if currently studying here, false otherwise>
+    }
+  ],
+  "experience": [
+    {
+      "company": "<company name>",
+      "title": "<job title / designation>",
+      "location": "<location/city, empty if not found>",
+      "employmentType": "<choose one from: Full-time, Part-time, Contract, Internship. Default to Full-time if uncertain>",
+      "startDate": "<start date in YYYY-MM format, or YYYY format, empty if not found>",
+      "endDate": "<end date in YYYY-MM format, or YYYY format, empty if current or not found>",
+      "isCurrent": <true if currently working here, false otherwise>,
+      "description": "<detailed description of duties/responsibilities/achievements, empty if not found>"
+    }
+  ],
+  "projects": [
+    {
+      "name": "<project name>",
+      "description": "<short description of the project, what you built and tech used>",
+      "url": "<project URL/link, e.g. github repo, live link, or matching hyperlink from the PDF, empty if not found>",
+      "startDate": "<start date in YYYY-MM format, or YYYY format, empty if not found>",
+      "endDate": "<end date in YYYY-MM format, or YYYY format, empty if not found>"
+    }
+  ],
+  "achievements": [<array of strings representing key achievements, awards, or key highlights found in the resume>],
+  "certifications": [<array of strings representing names of certifications, licenses, or courses completed>]
 }
 
 Resume Text:
@@ -89,7 +127,7 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks, no explanations
           }
         ],
         temperature: 0.1,
-        ...(isGroq ? { response_format: { type: "json_object" } } : { max_tokens: 600 })
+        ...(isGroq ? { response_format: { type: "json_object" } } : { max_tokens: 1500 })
       })
     })
 
@@ -123,7 +161,41 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks, no explanations
       parsedResult.domain = parsedResult.domain || "Software Engineering"
       parsedResult.linkedinUrl = parsedResult.linkedinUrl || ""
       parsedResult.githubUrl = parsedResult.githubUrl || ""
+      parsedResult.portfolioUrl = parsedResult.portfolioUrl || ""
       parsedResult.skills = Array.isArray(parsedResult.skills) ? parsedResult.skills : []
+      
+      parsedResult.education = Array.isArray(parsedResult.education) ? parsedResult.education.map((edu: any) => ({
+        institution: edu.institution || "",
+        degree: edu.degree || "",
+        fieldOfStudy: edu.fieldOfStudy || "",
+        startDate: edu.startDate || "",
+        endDate: edu.isCurrent ? "" : (edu.endDate || ""),
+        grade: edu.grade || "",
+        description: edu.description || "",
+        isCurrent: !!edu.isCurrent
+      })) : []
+
+      parsedResult.experience = Array.isArray(parsedResult.experience) ? parsedResult.experience.map((exp: any) => ({
+        company: exp.company || "",
+        title: exp.title || "",
+        location: exp.location || "",
+        employmentType: ["Full-time", "Part-time", "Contract", "Internship"].includes(exp.employmentType) ? exp.employmentType : "Full-time",
+        startDate: exp.startDate || "",
+        endDate: exp.isCurrent ? "" : (exp.endDate || ""),
+        isCurrent: !!exp.isCurrent,
+        description: exp.description || ""
+      })) : []
+
+      parsedResult.projects = Array.isArray(parsedResult.projects) ? parsedResult.projects.map((proj: any) => ({
+        name: proj.name || "",
+        description: proj.description || "",
+        url: proj.url || "",
+        startDate: proj.startDate || "",
+        endDate: proj.endDate || ""
+      })) : []
+
+      parsedResult.achievements = Array.isArray(parsedResult.achievements) ? parsedResult.achievements.filter((a: any) => typeof a === 'string') : []
+      parsedResult.certifications = Array.isArray(parsedResult.certifications) ? parsedResult.certifications.filter((c: any) => typeof c === 'string') : []
 
     } catch (parseError) {
       console.error("Failed to parse JSON from parser AI:", content)
@@ -132,7 +204,13 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks, no explanations
         domain: "Software Engineering",
         linkedinUrl: "",
         githubUrl: "",
-        skills: []
+        portfolioUrl: "",
+        skills: [],
+        education: [],
+        experience: [],
+        projects: [],
+        achievements: [],
+        certifications: []
       })
     }
 

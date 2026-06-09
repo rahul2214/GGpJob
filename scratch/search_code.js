@@ -1,34 +1,35 @@
 const fs = require('fs');
 const path = require('path');
 
-function walkDir(dir, callback) {
-  fs.readdirSync(dir).forEach(f => {
-    let dirPath = path.join(dir, f);
-    let isDirectory = fs.statSync(dirPath).isDirectory();
-    if (isDirectory) {
-      if (f !== 'node_modules' && f !== '.next' && f !== '.git') {
-        walkDir(dirPath, callback);
-      }
-    } else {
-      callback(dirPath);
-    }
-  });
+const rootDir = 'c:/Users/Rahul Naik G/OneDrive - Dhruv Compusoft Consultancy Pvt Ltd/Desktop/sample/design/job portal';
+
+function walk(dir) {
+    let results = [];
+    const list = fs.readdirSync(dir);
+    list.forEach(file => {
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+        if (stat && stat.isDirectory()) {
+            if (!file.startsWith('.') && file !== 'node_modules' && file !== '.next') {
+                results = results.concat(walk(filePath));
+            }
+        } else {
+            if (file.endsWith('.ts') || file.endsWith('.tsx') || file.endsWith('.js')) {
+                results.push(filePath);
+            }
+        }
+    });
+    return results;
 }
 
-console.log('Searching code for references...');
-const rootPath = path.join(__dirname, '..', 'src');
-walkDir(rootPath, filePath => {
-  if (filePath.endsWith('.ts') || filePath.endsWith('.tsx') || filePath.endsWith('.js') || filePath.endsWith('.json')) {
-    const content = fs.readFileSync(filePath, 'utf8');
-    if (content.includes('x.ai') || content.includes('groq') || content.includes('grok')) {
-      console.log(`Found in: ${filePath}`);
-      // Find matching lines
-      const lines = content.split('\n');
-      lines.forEach((line, idx) => {
-        if (line.includes('x.ai') || line.includes('groq') || line.includes('grok')) {
-          console.log(`  Line ${idx + 1}: ${line.trim()}`);
-        }
-      });
+const files = walk(rootDir);
+console.log(`Found ${files.length} code files. Searching...`);
+
+for (const file of files) {
+    const content = fs.readFileSync(file, 'utf8');
+    const hasAchievements = content.includes('achievements') || content.includes('Achievements');
+    const hasCertifications = content.includes('certifications') || content.includes('Certifications');
+    if (hasAchievements || hasCertifications) {
+        console.log(`File: ${path.relative(rootDir, file)} | achievements: ${hasAchievements} | certifications: ${hasCertifications}`);
     }
-  }
-});
+}

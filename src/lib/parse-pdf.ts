@@ -42,9 +42,22 @@ export async function parsePDF(buffer: Buffer): Promise<{ text: string }> {
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
-      const pageText = textContent.items
+      let pageText = textContent.items
         .map((item: any) => item.str)
         .join(' ');
+      
+      try {
+        const annotations = await page.getAnnotations();
+        const links = annotations
+          .filter((annot: any) => annot && annot.subtype === 'Link' && (annot.url || annot.unsafeUrl))
+          .map((annot: any) => annot.url || annot.unsafeUrl);
+        if (links.length > 0) {
+          pageText += "\n[Hyperlinks in PDF: " + links.join(", ") + "]\n";
+        }
+      } catch (annotError) {
+        console.error(`[parsePDF] Error parsing annotations on page ${i}:`, annotError);
+      }
+      
       fullText += pageText + '\n';
     }
     

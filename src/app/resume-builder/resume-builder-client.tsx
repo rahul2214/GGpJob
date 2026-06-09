@@ -48,6 +48,7 @@ interface ProjectInput {
 interface EducationInput {
   institution: string;
   degree: string;
+  fieldOfStudy: string;
   year: string;
   grade?: string;
 }
@@ -87,6 +88,7 @@ interface ResumeData {
   education: {
     institution: string;
     degree: string;
+    fieldOfStudy?: string;
     dates: string;
     grade?: string;
   }[];
@@ -202,7 +204,7 @@ export default function ResumeBuilderPage() {
     { name: "", techStack: "", projectLink: "", points: [""] }
   ])
   const [education, setEducation] = useState<EducationInput[]>([
-    { institution: "", degree: "", year: "", grade: "" }
+    { institution: "", degree: "", fieldOfStudy: "", year: "", grade: "" }
   ])
 
   // Result State
@@ -375,7 +377,7 @@ export default function ResumeBuilderPage() {
       setAchievements([""])
       setJobs([{ company: "", role: "", startDate: "", endDate: "", location: "", points: [""], currentlyWorkHere: false }])
       setProjects([{ name: "", techStack: "", points: [""] }])
-      setEducation([{ institution: "", degree: "", year: "", grade: "" }])
+      setEducation([{ institution: "", degree: "", fieldOfStudy: "", year: "", grade: "" }])
       setGeneratedResume(null)
       setGapResult(null)
       setVisualTemplate("classic-serif")
@@ -453,11 +455,12 @@ export default function ResumeBuilderPage() {
       setEducation(data.education.map((edu: any) => ({
         institution: edu.institution || "",
         degree: edu.degree || "",
+        fieldOfStudy: edu.fieldOfStudy || "",
         year: edu.dates || "",
         grade: edu.grade || ""
       })))
     } else {
-      setEducation([{ institution: "", degree: "", year: "", grade: "" }])
+      setEducation([{ institution: "", degree: "", fieldOfStudy: "", year: "", grade: "" }])
     }
 
     // If it was already synthesized, set the preview
@@ -506,6 +509,7 @@ export default function ResumeBuilderPage() {
         education: education.filter(e => e.institution).map(e => ({
           institution: e.institution,
           degree: e.degree,
+          fieldOfStudy: e.fieldOfStudy,
           dates: e.year,
           grade: e.grade
         })),
@@ -690,7 +694,7 @@ export default function ResumeBuilderPage() {
     setProjects(updated)
   }
 
-  const addEducation = () => setEducation([...education, { institution: "", degree: "", year: "", grade: "" }])
+  const addEducation = () => setEducation([...education, { institution: "", degree: "", fieldOfStudy: "", year: "", grade: "" }])
   const removeEducation = (index: number) => setEducation(education.filter((_, i) => i !== index))
   const updateEducation = (index: number, field: keyof EducationInput, val: string) => {
     const updated = [...education]
@@ -766,6 +770,7 @@ export default function ResumeBuilderPage() {
       const educationList = education.filter(e => e.institution).map(e => ({
         institution: e.institution,
         degree: e.degree,
+        fieldOfStudy: e.fieldOfStudy,
         year: e.year,
         grade: e.grade
       }))
@@ -857,6 +862,7 @@ export default function ResumeBuilderPage() {
         setEducation(data.education.map((edu: any) => ({
           institution: edu.institution || "",
           degree: edu.degree || "",
+          fieldOfStudy: edu.fieldOfStudy || "",
           year: edu.dates || "",
           grade: edu.grade || ""
         })))
@@ -937,6 +943,7 @@ export default function ResumeBuilderPage() {
       education: education.filter(e => e.institution || e.degree).map(e => ({
         institution: e.institution || "",
         degree: e.degree || "",
+        fieldOfStudy: e.fieldOfStudy || "",
         dates: e.year || "",
         grade: e.grade || ""
       }))
@@ -985,7 +992,7 @@ export default function ResumeBuilderPage() {
       portfolioUrl ? `Portfolio: ${portfolioUrl}` : ""
     ].filter(Boolean).join(" | ")
 
-    const formattedEdu = education.filter(e => e.institution).map(edu => `### ${edu.degree || "Degree"} — ${edu.institution}
+    const formattedEdu = education.filter(e => e.institution).map(edu => `### ${edu.degree || "Degree"}${edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ""} — ${edu.institution}
 *${edu.year || ""}*${edu.grade ? `\n*Grade: ${edu.grade}*` : ""}
 `).join("\n")
 
@@ -1642,10 +1649,14 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
                         <Input type="month" value={edu.year} onChange={e => updateEducation(idx, "year", e.target.value)} className="rounded-xl h-9 text-xs bg-white/50" />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Degree & Major</label>
-                        <Input value={edu.degree} onChange={e => updateEducation(idx, "degree", e.target.value)} placeholder="B.Tech in Computer Science" className="rounded-xl h-9 text-xs bg-white/50" />
+                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Degree</label>
+                        <Input value={edu.degree} onChange={e => updateEducation(idx, "degree", e.target.value)} placeholder="B.Tech" className="rounded-xl h-9 text-xs bg-white/50" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Field of Study</label>
+                        <Input value={edu.fieldOfStudy} onChange={e => updateEducation(idx, "fieldOfStudy", e.target.value)} placeholder="Computer Science" className="rounded-xl h-9 text-xs bg-white/50" />
                       </div>
                       <div>
                         <label className="text-[10px] font-bold text-slate-400 block mb-1">Grade (Optional)</label>
@@ -1943,7 +1954,7 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
                           {education.filter(e => e.institution || e.degree).map((edu, idx) => (
                             <div key={idx}>
                               <div className={`flex justify-between ${previewTextSize} font-bold ${isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-800 dark:text-white" : "text-slate-950 dark:text-white"}`}>
-                                <span>{edu.degree || "Degree"} — {edu.institution || "Institution"}</span>
+                                <span>{edu.degree || "Degree"}{edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ""} — {edu.institution || "Institution"}</span>
                                 <span className="font-semibold text-slate-500 dark:text-slate-400">{edu.year}</span>
                               </div>
                               {edu.grade && (
