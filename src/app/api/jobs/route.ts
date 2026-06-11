@@ -62,9 +62,6 @@ function mapJobToFrontend(job: any): any {
         hiredApplicantCount: job.hiredApplicantCount ?? 0,
         employeeTrustScore: (job.employees || job.employees?.[0])?.trust_score ?? 100,
         employeeEmail: (job.employees || job.employees?.[0])?.email ?? null,
-        creditsRequired: job.credits_required || 5,
-        referralStrength: job.referral_strength || 'Basic',
-        referralCapacity: job.referral_capacity,
         requiredSkills: job.skill_names || [],
     };
 }
@@ -646,10 +643,7 @@ export async function POST(request: Request) {
       company_website: user.company_website || data.companyWebsite || null,
       address: user.company_address || data.address || null,
       job_link: data.jobLink || null,
-      is_consultancy: !!data.isConsultancy,
-      credits_required: data.creditsRequired || 5,
-      referral_strength: data.referralStrength || 'Basic',
-      referral_capacity: data.referralCapacity || null
+      is_consultancy: !!data.isConsultancy
     };
     
     const { data: newJob, error: insertError } = await supabaseAdmin

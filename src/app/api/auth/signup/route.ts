@@ -10,7 +10,7 @@ const DISALLOWED_DOMAINS = [
 
 export async function POST(request: Request) {
   try {
-    const { name, email, password, role, phone, companyName, companyWebsite, designation, department } = await request.json();
+    const { name, email, password, role, phone, companyName, companyWebsite, designation, department, referralCode } = await request.json();
 
     if (!name || !email || !password || !role) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
@@ -27,6 +27,43 @@ export async function POST(request: Request) {
         return NextResponse.json({
           error: 'Recruiters must use a corporate email address (Gmail/Yahoo etc. are not allowed).',
         }, { status: 400 });
+      }
+    }
+
+    // Validate referral code if provided for Job Seekers
+    let referredById = null;
+    let referrerProfile = null;
+
+    if (role === 'Job Seeker' && referralCode) {
+      const { data: referrer, error: referrerErr } = await supabaseAdmin
+        .from('jobseekers')
+        .select('id, uuid, name, plan_type, referral_count')
+        .eq('referral_code', referralCode.trim())
+        .maybeSingle();
+
+      if (referrerErr || !referrer) {
+        return NextResponse.json({ error: 'Invalid referral code.' }, { status: 400 });
+      }
+      referredById = referrer.id;
+      referrerProfile = referrer;
+    }
+
+    // Generate unique referral code for the new user if they are a Job Seeker
+    let newReferralCode = null;
+    if (role === 'Job Seeker') {
+      let attempts = 0;
+      let isUnique = false;
+      while (!isUnique && attempts < 5) {
+        newReferralCode = 'JD' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const { data: existing } = await supabaseAdmin
+          .from('jobseekers')
+          .select('uuid')
+          .eq('referral_code', newReferralCode)
+          .maybeSingle();
+        if (!existing) {
+          isUnique = true;
+        }
+        attempts++;
       }
     }
 
@@ -89,7 +126,10 @@ export async function POST(request: Request) {
             plan_type: 'free', 
             is_paid: false,
             subscription_credits: 2,
-            subscription_allowance: 2
+            subscription_allowance: 2,
+            referral_code: newReferralCode,
+            referral_count: 0,
+            referred_by: referredById
         } : {}),
         ...(table === 'admins' ? { is_super_admin: false } : {}),
         ...(role === 'Recruiter' ? {
@@ -124,6 +164,57 @@ export async function POST(request: Request) {
         console.error(`[signup] Failed to create ${table} profile:`, profileError);
         // We don't throw here to avoid failing the whole signup if just the profile row fails,
         // but we log it so it can be fixed. The Self-Healing GET will handle it later.
+    } else if (referredById && referrerProfile) {
+      // ✅ SUCCESSFUL PROFILE CREATION & REFERRAL LINKED - REWARD REFERRER
+      try {
+        // 1. Award 2 credits to the referrer
+        const { error: rpcError } = await supabaseAdmin.rpc('add_purchased_credits', {
+          p_user_id: referrerProfile.id,
+          p_amount: 2,
+        });
+
+        if (rpcError) {
+          console.error('[signup] RPC add_purchased_credits failed, performing manual fallback:', rpcError);
+          
+          // Fallback: manual update of purchased_credits
+          const { data: currentReferrer } = await supabaseAdmin
+            .from('jobseekers')
+            .select('purchased_credits')
+            .eq('id', referrerProfile.id)
+            .single();
+          
+          await supabaseAdmin
+            .from('jobseekers')
+            .update({
+              purchased_credits: (currentReferrer?.purchased_credits || 0) + 2,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', referrerProfile.id);
+        }
+
+        // Send a system notification to the referrer about the 2 credits bonus
+        await supabaseAdmin.from('notifications').insert({
+          user_pk: referrerProfile.id,
+          message: `You earned 2 credits for referring ${name || 'a new user'}!`,
+          type: 'referral_bonus',
+          created_at: new Date().toISOString(),
+        });
+
+        // 2. Increment the referrer's referral_count column natively
+        const newCount = (referrerProfile.referral_count || 0) + 1;
+        const { error: updateReferrerErr } = await supabaseAdmin
+          .from('jobseekers')
+          .update({ referral_count: newCount })
+          .eq('id', referrerProfile.id);
+
+        if (updateReferrerErr) {
+          console.error('[signup] Failed to update referrer referral_count:', updateReferrerErr);
+        }
+
+
+      } catch (rewardErr) {
+        console.error('[signup] Error processing referrer rewards:', rewardErr);
+      }
     }
 
     // Trigger Firebase email verification

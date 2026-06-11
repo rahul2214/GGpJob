@@ -11,6 +11,9 @@ export interface User {
   role: Role;
   roleId?: number;
   metadata?: any;
+  referralCode?: string;
+  referredBy?: number;
+  referralCount?: number;
   headline?: string;
   summary?: string;
   locationId?: string;
@@ -179,9 +182,6 @@ export interface Job {
   expiresAt?: string;
   appExpiresAt?: string;
   maxApplies?: number;
-  creditsRequired?: number;
-  referralStrength?: 'Basic' | 'Strong' | 'Direct HR';
-  referralCapacity?: number;
   isApplied?: boolean;
   minSalary?: number;
   maxSalary?: number;

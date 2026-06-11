@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { Job, Application } from "@/lib/types";
 import JobCard from "../job-card";
 import { Button } from "../ui/button";
-import { Search, ArrowRight, BriefcaseBusiness, Star, ThumbsUp, Bell, Zap, Loader2, ShieldCheck, CheckCircle, MessageSquare, Trophy, AlertCircle, Clock, Coins, Sparkles } from "lucide-react";
+import { Search, ArrowRight, BriefcaseBusiness, Star, ThumbsUp, Bell, Zap, Loader2, ShieldCheck, CheckCircle, MessageSquare, Trophy, AlertCircle, Clock, Coins, Sparkles, Gift, Copy, Share2 } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
+import { supabase } from "@/lib/supabase-client";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Link from "next/link";
 import { Skeleton } from "../ui/skeleton";
@@ -42,10 +43,45 @@ const JobCardSkeleton = () => (
 );
 
 export default function JobSeekerDashboard() {
-  const { user } = useUser();
+  const { user, refreshUser } = useUser();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
+
+  const [copied, setCopied] = useState(false);
+  const referralCount = user?.referralCount || 0;
+
+  const handleCopyLink = () => {
+    if (!user?.referralCode) return;
+    const shareUrl = `${window.location.origin}/signup?ref=${user.referralCode}`;
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    toast({
+      title: "Link Copied!",
+      description: "Share this link with your friends to earn credits.",
+    });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShare = async () => {
+    if (!user?.referralCode) return;
+    const shareUrl = `${window.location.origin}/signup?ref=${user.referralCode}`;
+    const shareData = {
+      title: 'Join JobsDart',
+      text: 'Get direct employee referrals at top MNCs! Sign up using my referral link to get started:',
+      url: shareUrl
+    };
+
+    if (typeof window !== 'undefined' && navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        handleCopyLink();
+      }
+    } else {
+      handleCopyLink();
+    }
+  };
 
   const { applications: userApplications, mutateApplications } = useApplications(
     user ? { userId: user.uuid, requesterId: user.uuid } : undefined
@@ -153,12 +189,12 @@ export default function JobSeekerDashboard() {
             <p className="text-indigo-200 text-sm md:text-base">New jobs are waiting.</p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link href="/jobs" className="bg-white text-indigo-700 font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-transform hover:scale-105 active:scale-95">Browse Jobs</Link>
-            <Link href="/ats-score" className="bg-indigo-500/50 hover:bg-indigo-500/70 border border-white/20 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-transform hover:scale-105 active:scale-95 flex items-center gap-1.5">
+            <Link href="/jobs" prefetch={false} className="bg-white text-indigo-700 font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-transform hover:scale-105 active:scale-95">Browse Jobs</Link>
+            <Link href="/ats-score" prefetch={false} className="bg-indigo-500/50 hover:bg-indigo-500/70 border border-white/20 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-transform hover:scale-105 active:scale-95 flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-indigo-200 fill-indigo-200" />
               ATS Checker
             </Link>
-            <Link href="/resume-builder" className="bg-purple-500/50 hover:bg-purple-500/70 border border-white/20 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-transform hover:scale-105 active:scale-95 flex items-center gap-1.5">
+            <Link href="/resume-builder" prefetch={false} className="bg-purple-500/50 hover:bg-purple-500/70 border border-white/20 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-transform hover:scale-105 active:scale-95 flex items-center gap-1.5">
               <Zap className="w-4 h-4 text-purple-200 fill-purple-200" />
               Resume Builder
             </Link>
@@ -172,40 +208,65 @@ export default function JobSeekerDashboard() {
           {user && <ProfileStrength user={user} />}
         </div>
 
-        {/* Action Required */}
-        {/* {topActionItem && (
-          <div className="lg:col-span-4 rounded-2xl border-2 border-indigo-100 bg-white shadow-md p-5 h-full relative overflow-hidden flex flex-col">
-            <div className="relative z-10 flex-1">
-              <div className="flex items-center gap-2 text-indigo-700 font-bold mb-4">
-                <AlertCircle className="w-5 h-5" />
-                Action Required ({actionRequiredItems.length})
+        {/* Refer & Earn Widget */}
+        <div className="lg:col-span-4 h-full">
+          <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/20 p-6 shadow-md relative overflow-hidden flex flex-col h-full min-h-[340px]">
+            {/* Background design accents */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-500/5 rounded-full blur-xl translate-y-1/2 -translate-x-1/2" />
+
+            <div className="relative z-10 flex-grow flex flex-col justify-between space-y-4">
+              <div className="flex items-center gap-2 text-indigo-700 font-bold">
+                <Gift className="w-5 h-5 text-indigo-600 animate-bounce" />
+                <span className="text-base font-extrabold tracking-tight">Refer & Earn</span>
               </div>
-              <div className="space-y-4">
-                <div className={cn(
-                  "w-12 h-12 rounded-2xl flex items-center justify-center", 
-                  topActionItem.color === 'emerald' ? "bg-emerald-100 text-emerald-600" : 
-                  topActionItem.color === 'rose' ? "bg-rose-100 text-rose-600" :
-                  "bg-indigo-100 text-indigo-600"
-                )}>
-                   <ActionIcon className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-800 text-base">{topActionItem.title}</h3>
-                  <p className="text-sm text-slate-600 mt-1">{topActionItem.description}</p>
-                </div>
-                {topActionItem.href ? (
-                  <Button asChild className="w-full bg-indigo-600 text-white rounded-xl font-bold shadow-md hover:bg-indigo-700 transition-all">
-                    <Link href={topActionItem.href}>{topActionItem.actionLabel}</Link>
-                  </Button>
-                ) : (
-                  <Button onClick={topActionItem.onAction} className="w-full bg-indigo-600 text-white rounded-xl font-bold shadow-md hover:bg-indigo-700 transition-all">
-                    {topActionItem.actionLabel}
-                  </Button>
-                )}
+
+              <div className="space-y-1">
+                <h3 className="font-bold text-slate-800 text-base">Get 2 Credits per Friend</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Invite your friends to join JobsDart. You earn <span className="font-bold text-indigo-600">2 credits</span> for every friend who registers using your referral link!
+                </p>
               </div>
+
+              {/* Referrals Count Box */}
+              <div className="space-y-2 bg-white/70 backdrop-blur-sm rounded-xl p-3.5 border border-indigo-50/50 flex justify-between items-center text-xs font-bold text-slate-700">
+                <span>Total Friends Referred</span>
+                <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full text-xs font-black">{referralCount !== null ? referralCount : '...'}</span>
+              </div>
+
+              {/* Referral Code Box */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Your Referral Link</span>
+                <div className="flex gap-2">
+                  <div className="flex-1 bg-slate-50 border border-slate-200/50 rounded-xl px-3 py-2 flex items-center justify-between font-mono text-xs text-slate-600 font-bold select-all overflow-hidden text-ellipsis whitespace-nowrap">
+                    {user?.referralCode ? `${typeof window !== 'undefined' ? window.location.origin : ''}/signup?ref=${user.referralCode}` : 'Generating link...'}
+                  </div>
+                  <Button 
+                    onClick={handleCopyLink} 
+                    disabled={!user?.referralCode}
+                    variant="outline"
+                    className={cn(
+                      "rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 transition-all active:scale-95 shrink-0",
+                      copied && "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                    )}
+                  >
+                    {copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Share Button */}
+              <Button
+                onClick={handleShare}
+                disabled={!user?.referralCode}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md shadow-indigo-100 hover:shadow-indigo-200 transition-all py-5 flex items-center justify-center gap-2 group active:scale-98"
+              >
+                <Share2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                Invite Friends
+              </Button>
             </div>
           </div>
-        )} */}
+        </div>
       </div>
 
       {/* Recommended Jobs */}
@@ -228,7 +289,7 @@ export default function JobSeekerDashboard() {
           <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-slate-800 text-lg">Recommended For You</h2>
-              <Link href="/jobs?view=recommended" className="text-sm font-bold text-indigo-600 hover:underline">View All</Link>
+              <Link href="/jobs?view=recommended" prefetch={false} className="text-sm font-bold text-indigo-600 hover:underline">View All</Link>
             </div>
             <Carousel className="w-full">
               <CarouselContent className="-ml-3">
@@ -269,7 +330,7 @@ export default function JobSeekerDashboard() {
                   <h2 className="font-bold text-slate-800 text-lg">Referral Opportunities</h2>
                   <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] uppercase font-bold px-2 py-0.5">High Success Rate</Badge>
               </div>
-              <Link href="/jobs?isReferral=true" className="text-sm font-bold text-indigo-600 hover:underline">Explore More</Link>
+              <Link href="/jobs?isReferral=true" prefetch={false} className="text-sm font-bold text-indigo-600 hover:underline">Explore More</Link>
             </div>
             <Carousel className="w-full">
               <CarouselContent className="-ml-3">

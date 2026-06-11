@@ -154,35 +154,47 @@ export default function ProfilePage() {
                             <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden relative group p-6">
                                 {/* Horizontal Avatar & Info */}
                                 <div className="flex flex-row items-center gap-4 mb-6">
-                                    <div className="w-16 h-16 bg-white rounded-2xl p-0.5 shadow-md shrink-0 border border-slate-100 relative group/avatar overflow-hidden">
-                                        {user.profilePhotoUrl ? (
-                                            <img src={user.profilePhotoUrl} alt={user.name} className="w-full h-full object-cover rounded-xl" />
-                                        ) : (
-                                            <div className="w-full h-full bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center">
-                                                <span className="text-2xl font-black text-white">
-                                                    {initials}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {/* Upload Overlay */}
+                                    <div className="relative group/avatar shrink-0">
+                                        <div className="w-16 h-16 bg-white rounded-2xl p-0.5 shadow-md border border-slate-100 relative overflow-hidden">
+                                            {user.profilePhotoUrl ? (
+                                                <img src={user.profilePhotoUrl} alt={user.name} className="w-full h-full object-cover rounded-xl" />
+                                            ) : (
+                                                <div className="w-full h-full bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center">
+                                                    <span className="text-2xl font-black text-white">
+                                                        {initials}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {/* Upload Overlay */}
+                                            {['Job Seeker', 'Employee'].includes(user.role) && (
+                                                <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer rounded-xl text-white">
+                                                    {isUploading ? (
+                                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                                    ) : (
+                                                        <>
+                                                            <Camera className="w-5 h-5 mb-0.5" />
+                                                            <span className="text-[10px] font-bold">Edit</span>
+                                                        </>
+                                                    )}
+                                                    <input 
+                                                        type="file" 
+                                                        accept="image/*" 
+                                                        onChange={handlePhotoUpload} 
+                                                        disabled={isUploading} 
+                                                        className="hidden" 
+                                                    />
+                                                </label>
+                                            )}
+                                        </div>
+                                        {/* Edit Icon Badge at Bottom Right */}
                                         {['Job Seeker', 'Employee'].includes(user.role) && (
-                                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer rounded-xl text-white">
+                                            <div className="absolute -bottom-1 -right-1 bg-white border border-slate-200 shadow-md rounded-full p-1.5 text-indigo-600 pointer-events-none z-10 flex items-center justify-center">
                                                 {isUploading ? (
-                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                                 ) : (
-                                                    <>
-                                                        <Camera className="w-5 h-5 mb-0.5" />
-                                                        <span className="text-[10px] font-bold">Edit</span>
-                                                    </>
+                                                    <Camera className="w-3.5 h-3.5" />
                                                 )}
-                                                <input 
-                                                    type="file" 
-                                                    accept="image/*" 
-                                                    onChange={handlePhotoUpload} 
-                                                    disabled={isUploading} 
-                                                    className="hidden" 
-                                                />
-                                            </label>
+                                            </div>
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">

@@ -86,6 +86,25 @@ export async function GET(request: Request) {
             const expiryDate = new Date();
             expiryDate.setFullYear(expiryDate.getFullYear() + 5);
             (profileData as any).plan_expires_at = expiryDate.toISOString();
+
+            // Generate unique referral code for the new user
+            let referralCodeGenerated = '';
+            let attempts = 0;
+            let isUnique = false;
+            while (!isUnique && attempts < 5) {
+              referralCodeGenerated = 'JD' + Math.random().toString(36).substring(2, 8).toUpperCase();
+              const { data: existing } = await supabaseAdmin
+                .from('jobseekers')
+                .select('uuid')
+                .eq('referral_code', referralCodeGenerated)
+                .maybeSingle();
+              if (!existing) {
+                isUnique = true;
+              }
+              attempts++;
+            }
+            (profileData as any).referral_code = referralCodeGenerated;
+            (profileData as any).referral_count = 0;
         }
 
         const { error: insertError } = await supabaseAdmin

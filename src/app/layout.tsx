@@ -8,6 +8,7 @@ import Footer from '@/components/footer';
 import { UserProvider } from '@/contexts/user-context';
 import { Suspense } from 'react';
 import CareerAssistant from '@/components/chat/CareerAssistant';
+import ReferralTracker from '@/components/referral-tracker';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -94,6 +95,7 @@ export default function RootLayout({
       <head />
       <body className={cn('relative h-full font-sans antialiased', inter.variable)}>
         <UserProvider>
+          <ReferralTracker />
           <div className="flex flex-col min-h-screen">
             <Suspense fallback={<div className="h-16 border-b bg-card" />}>
               <Header />

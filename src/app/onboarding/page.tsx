@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { LoaderCircle, FileText, CheckCircle2, UploadCloud, Building2, ChevronRight, Phone, Sparkles, X, ArrowLeft, GraduationCap, Briefcase, Award, Plus, Trash2, Layers } from "lucide-react";
+import { LoaderCircle, FileText, CheckCircle2, UploadCloud, Building2, ChevronRight, Phone, Sparkles, X, ArrowLeft, GraduationCap, Briefcase, Award, Plus, Trash2, Layers, Globe } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/lib/supabase-client";
@@ -85,6 +85,12 @@ export default function OnboardingPage() {
             }
             if (user.portfolioUrl && !portfolioUrl) {
                 setPortfolioUrl(user.portfolioUrl);
+            }
+            if (user.linkedinUrl && !linkedinUrl) {
+                setLinkedinUrl(user.linkedinUrl);
+            }
+            if (user.githubUrl && !githubUrl) {
+                setGithubUrl(user.githubUrl);
             }
         }
     }, [user]);
@@ -420,6 +426,7 @@ export default function OnboardingPage() {
                     domainId: finalDomainId,
                     linkedinUrl: linkedinUrl || user.linkedinUrl,
                     githubUrl: githubUrl || user.githubUrl,
+                    portfolioUrl: portfolioUrl || user.portfolioUrl,
                     education: finalEducation,
                     experience: finalExperience,
                     projects: finalProjects,
@@ -692,8 +699,8 @@ export default function OnboardingPage() {
                         </div>
                     )}
 
-                    {/* Social Links */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Social & Portfolio Links */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-3">
                             <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                                 <Building2 className="w-4 h-4 text-blue-500" />
@@ -716,6 +723,18 @@ export default function OnboardingPage() {
                                 className="h-14 rounded-2xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors text-base"
                                 value={githubUrl}
                                 onChange={(e) => setGithubUrl(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-3">
+                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <Globe className="w-4 h-4 text-sky-500" />
+                                Portfolio URL (Optional)
+                            </label>
+                            <Input
+                                placeholder="https://yourportfolio.com"
+                                className="h-14 rounded-2xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors text-base"
+                                value={portfolioUrl}
+                                onChange={(e) => setPortfolioUrl(e.target.value)}
                             />
                         </div>
                     </div>

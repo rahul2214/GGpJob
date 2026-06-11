@@ -114,6 +114,9 @@ async function mapProfileToUser(profile: any): Promise<User> {
         talentSearchExpiresAt: profile.talent_search_expires_at,
         location: profile.location_id || undefined,
         metadata: profile.metadata,
+        referralCode: profile.referral_code,
+        referredBy: profile.referred_by ? Number(profile.referred_by) : undefined,
+        referralCount: profile.referral_count || 0,
         companyName: profile.company_name,
         companyLogo: profile.company_logo,
         companyWebsite: profile.company_website,
@@ -393,7 +396,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 salary_breakdown: rest.salaryBreakdown,
                 notice_period: rest.noticePeriod,
                 preferred_locations: rest.preferredLocations,
-                metadata: rest.metadata
+                metadata: rest.metadata,
+                referral_code: rest.referralCode,
+                referred_by: rest.referredBy ? Number(rest.referredBy) : null,
+                referral_count: rest.referralCount
             });
         }
 
@@ -639,6 +645,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         if (body.name) updateData.name = body.name;
         if (body.email) updateData.email = body.email;
         if (body.phone) updateData.phone = body.phone;
+        if (body.metadata && table === 'jobseekers') updateData.metadata = body.metadata;
+        if (body.referralCode && table === 'jobseekers') updateData.referral_code = body.referralCode;
+        if (body.referredBy && table === 'jobseekers') updateData.referred_by = Number(body.referredBy);
+        if (body.referralCount !== undefined && table === 'jobseekers') updateData.referral_count = body.referralCount;
         
         updateData.updated_at = new Date().toISOString();
 
