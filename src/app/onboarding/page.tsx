@@ -42,6 +42,93 @@ export default function OnboardingPage() {
     const [achievements, setAchievements] = useState<string[]>([]);
     const [certifications, setCertifications] = useState<string[]>([]);
 
+    const [referralCode, setReferralCode] = useState("");
+    const [referrerName, setReferrerName] = useState<string | null>(null);
+    const [referrerId, setReferrerId] = useState<number | null>(null);
+    const [isValidatingCode, setIsValidatingCode] = useState(false);
+    const [showReferralStep, setShowReferralStep] = useState(true);
+    const [referralMessage, setReferralMessage] = useState<{ text: string; type: 'success' | 'warning' | 'error' } | null>(null);
+
+    useEffect(() => {
+        if (user) {
+            if (user.referredBy) {
+                setShowReferralStep(false);
+            }
+            const stored = localStorage.getItem('jobsdart_referral_code');
+            if (stored && !user.referredBy && !referralCode) {
+                setReferralCode(stored);
+            }
+        }
+    }, [user]);
+
+    const handleVerifyCode = async () => {
+        if (!referralCode.trim() || !user) return;
+        setIsValidatingCode(true);
+        setReferralMessage(null);
+        try {
+            // 1. Validate the code
+            const valRes = await fetch('/api/referral/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ referralCode: referralCode.trim() }),
+            });
+            const valData = await valRes.json();
+
+            if (!valRes.ok) {
+                setReferralMessage({
+                    text: valData.error || "Invalid referral code.",
+                    type: 'error'
+                });
+                return;
+            }
+
+            const referrer = valData.referrer;
+            setReferrerId(referrer.id);
+            setReferrerName(referrer.name);
+
+            // 2. Try to claim immediately (will succeed if already email-verified)
+            const claimRes = await fetch('/api/referral/claim', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    referralCode: referralCode.trim(),
+                    userUuid: user.uuid
+                }),
+            });
+
+            if (claimRes.ok) {
+                setReferralMessage({
+                    text: `Code applied! You were successfully referred by ${referrer.name}.`,
+                    type: 'success'
+                });
+                localStorage.removeItem('jobsdart_referral_code');
+            } else {
+                const claimData = await claimRes.json();
+                // If it failed due to email verification, that is expected for unverified users
+                if (claimRes.status === 400 && claimData.error?.toLowerCase().includes('confirm')) {
+                    setReferralMessage({
+                        text: `Code verified! Referral from ${referrer.name} will be active once you verify your email.`,
+                        type: 'warning'
+                    });
+                    localStorage.setItem('jobsdart_referral_code', referralCode.trim());
+                } else {
+                    setReferralMessage({
+                        text: claimData.error || "Code validated, but could not claim referral.",
+                        type: 'error'
+                    });
+                }
+            }
+        } catch (err) {
+            console.error("Verification error:", err);
+            setReferralMessage({
+                text: "An error occurred while verifying the code.",
+                type: 'error'
+            });
+        } finally {
+            setIsValidatingCode(false);
+        }
+    };
+
     useEffect(() => {
         if (user) {
             if (user.education && user.education.length > 0 && education.length === 0) {
@@ -431,7 +518,8 @@ export default function OnboardingPage() {
                     experience: finalExperience,
                     projects: finalProjects,
                     metadata: finalMetadata,
-                    role: user.role
+                    role: user.role,
+                    referredBy: referrerId || undefined
                 }),
             });
             if (!profileRes.ok) throw new Error("Failed to save profile info.");
@@ -471,6 +559,129 @@ export default function OnboardingPage() {
     };
 
     if (loading || !user) return null;
+
+    if (showReferralStep && !user.referredBy) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-hidden">
+                {/* Background Aesthetics */}
+                <div className="absolute top-0 -left-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 -right-20 w-[500px] h-[500px] bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="w-full max-w-xl bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 lg:p-12 relative z-10"
+                >
+                    <div className="text-center mb-8 mt-4">
+                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-200">
+                            <Sparkles className="w-8 h-8 text-white animate-pulse" />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-800 tracking-tight mb-3">
+                            Got a referral code?
+                        </h1>
+                        <p className="text-slate-500 text-sm font-medium">
+                            If a friend referred you, enter their code below to claim your rewards.
+                        </p>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="space-y-3">
+                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <Award className="w-4 h-4 text-indigo-500" />
+                                Referral Code
+                            </label>
+                            <div className="flex gap-3">
+                                <Input
+                                    placeholder="e.g. JD123456"
+                                    className="h-14 rounded-2xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors text-base font-semibold uppercase placeholder:normal-case"
+                                    value={referralCode}
+                                    onChange={(e) => {
+                                        setReferralCode(e.target.value);
+                                        setReferralMessage(null);
+                                    }}
+                                    disabled={isValidatingCode || !!referrerId}
+                                />
+                                {!referrerId ? (
+                                    <Button
+                                        type="button"
+                                        disabled={!referralCode.trim() || isValidatingCode}
+                                        onClick={handleVerifyCode}
+                                        className="h-14 px-6 rounded-2xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-lg shadow-indigo-200"
+                                    >
+                                        {isValidatingCode ? (
+                                            <LoaderCircle className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            "Apply"
+                                        )}
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        type="button"
+                                        onClick={() => {
+                                            setReferrerId(null);
+                                            setReferrerName(null);
+                                            setReferralCode("");
+                                            setReferralMessage(null);
+                                        }}
+                                        className="h-14 px-6 rounded-2xl border-2 border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-50 transition-colors flex items-center gap-2"
+                                    >
+                                        Clear
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+
+                        {referralMessage && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className={`p-4 rounded-2xl border text-sm font-medium flex items-start gap-3 ${
+                                    referralMessage.type === 'success'
+                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                                        : referralMessage.type === 'warning'
+                                        ? 'bg-amber-50 border-amber-200 text-amber-800'
+                                        : 'bg-rose-50 border-rose-200 text-rose-800'
+                                }`}
+                            >
+                                <CheckCircle2 className={`w-5 h-5 shrink-0 mt-0.5 ${
+                                    referralMessage.type === 'success'
+                                        ? 'text-emerald-500'
+                                        : referralMessage.type === 'warning'
+                                        ? 'text-amber-500'
+                                        : 'text-rose-500'
+                                }`} />
+                                <div>
+                                    {referralMessage.text}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        <div className="flex gap-4 pt-4 border-t border-slate-100">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => {
+                                    localStorage.removeItem('jobsdart_referral_code');
+                                    setShowReferralStep(false);
+                                }}
+                                className="flex-1 h-14 rounded-2xl text-slate-500 hover:text-slate-800 font-bold hover:bg-slate-50 transition-colors"
+                            >
+                                Skip
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={() => setShowReferralStep(false)}
+                                className="flex-1 h-14 rounded-2xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200"
+                            >
+                                Continue
+                            </Button>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        );
+    }
 
     const needsDomain = !user.domainId;
     const needsPhone = !user.phone || user.phone.length < 10;

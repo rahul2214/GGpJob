@@ -341,7 +341,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             Object.assign(updateData, {
                 company_name: rest.companyName,
                 company_website: rest.companyWebsite,
-                ...(table === 'recruiters' && { company_size_id: numericCompanySizeId }),
+                ...(table === 'recruiters' && rest.companySizeId !== undefined && { company_size_id: numericCompanySizeId }),
                 company_overview: rest.companyOverview,
                 company_address: rest.companyAddress,
                 company_linkedin_url: rest.companyLinkedinUrl,
@@ -398,10 +398,16 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 preferred_locations: rest.preferredLocations,
                 metadata: rest.metadata,
                 referral_code: rest.referralCode,
-                referred_by: rest.referredBy ? Number(rest.referredBy) : null,
                 referral_count: rest.referralCount
             });
+
+            if (rest.referredBy !== undefined) {
+                updateData.referred_by = rest.referredBy ? Number(rest.referredBy) : null;
+            }
         }
+
+        // Clean undefined values from updateData to prevent database update errors/clearing
+        Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
         let selectString = '*, roles(name)';
         if (table === 'jobseekers') {

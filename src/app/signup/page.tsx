@@ -51,7 +51,6 @@ const formSchema = z.object({
     .regex(/[0-9]/, "Password must contain at least one number.")
     .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character."),
   confirmPassword: z.string(),
-  referralCode: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -79,15 +78,17 @@ export default function SignupPage() {
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name: "", email: "", phone: "", password: "", confirmPassword: "", referralCode: "" },
+    defaultValues: { name: "", email: "", phone: "", password: "", confirmPassword: "" },
   });
 
   useEffect(() => {
-    const storedCode = localStorage.getItem('jobsdart_referral_code');
-    if (storedCode) {
-      form.setValue('referralCode', storedCode);
+    // Capture and store referral parameters in localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref') || urlParams.get('referrer');
+    if (refCode) {
+      localStorage.setItem('jobsdart_referral_code', refCode.trim());
     }
-  }, [form]);
+  }, []);
 
   const { isSubmitting } = form.formState;
 
@@ -106,7 +107,6 @@ export default function SignupPage() {
           password: data.password,
           role: 'Job Seeker',
           phone: data.phone,
-          referralCode: data.referralCode || undefined,
         }),
       });
 
@@ -115,9 +115,6 @@ export default function SignupPage() {
       if (!res.ok) {
         throw new Error(result.error || 'Signup failed.');
       }
-
-      // Clear the stored referral code since it was consumed
-      localStorage.removeItem('jobsdart_referral_code');
 
       toast({
         title: "Account Created!",
@@ -288,16 +285,6 @@ export default function SignupPage() {
                 </FormItem>
               )} />
 
-              {/* Referral Code Field */}
-              <FormField control={form.control} name="referralCode" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-slate-700 font-semibold text-sm">Referral Code (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. JD123456" className="h-11 rounded-xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
 
               {/* Password + Confirm */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

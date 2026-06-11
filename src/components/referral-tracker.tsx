@@ -63,11 +63,20 @@ function TrackerContent() {
               await refreshUser();
             } else {
               console.warn('[ReferralTracker] Claim failed:', data.error);
-              // If it's a validation error that should not be retried, we keep it removed.
-              // If it's another error, since we already removed it, it won't retry. This is safe.
+              // If it failed because they haven't verified their email yet, or it's a server/network error,
+              // restore the code to localStorage so they can claim it after verification.
+              const isUnverified = response.status === 400 && data.error?.toLowerCase().includes('confirm');
+              const isTransient = response.status >= 500;
+              
+              if (isUnverified || isTransient) {
+                localStorage.setItem('jobsdart_referral_code', storedCode);
+                console.log('[ReferralTracker] Restored referral code to localStorage for retry.');
+              }
             }
           } catch (err) {
             console.error('[ReferralTracker] Claim request failed:', err);
+            // Restore on network failure/exception
+            localStorage.setItem('jobsdart_referral_code', storedCode);
           }
         };
 

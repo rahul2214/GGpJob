@@ -22,6 +22,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Referred user profile not found.' }, { status: 404 });
     }
 
+    // Ensure user is verified (email confirmed) before claiming
+    const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.getUserById(userUuid);
+    const authUser = authData?.user;
+    if (authErr || !authUser || !authUser.email_confirmed_at) {
+      return NextResponse.json({ error: 'You must confirm your email verification before claiming a referral.' }, { status: 400 });
+    }
+
     // Check if referral has already been claimed (using column referred_by)
     if (newUser.referred_by) {
       return NextResponse.json({ error: 'Referral already claimed.' }, { status: 400 });
