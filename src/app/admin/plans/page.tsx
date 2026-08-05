@@ -24,10 +24,6 @@ const PLAN_METADATA: Record<string, { name: string; type: string; category: stri
   'popular_pack': { name: 'Popular Credit Pack', type: 'Credits', category: 'Job Seeker Pack', description: '60 credits for referrals and topups' },
   'pro_pack': { name: 'Pro Credit Pack', type: 'Credits', category: 'Job Seeker Pack', description: '150 credits for referrals and topups' },
   
-  'employee_starter': { name: 'Starter Boost Pack', type: 'Credits', category: 'Employee Pack', description: '50 boost credits for matching referrers' },
-  'employee_double': { name: 'Double Boost Pack', type: 'Credits', category: 'Employee Pack', description: '100 boost credits for matching referrers' },
-  'employee_pro': { name: 'Pro Boost Pack', type: 'Credits', category: 'Employee Pack', description: '250 boost credits for matching referrers' },
-  'employee_enterprise': { name: 'Enterprise Boost Pack', type: 'Credits', category: 'Employee Pack', description: '600 boost credits for matching referrers' },
 };
 
 export default function AdminPlansPage() {
@@ -153,18 +149,13 @@ export default function AdminPlansPage() {
   const categories = {
     'Recruiter': [] as string[],
     'Job Seeker': [] as string[],
-    'Job Seeker Pack': [] as string[],
-    'Employee Pack': [] as string[],
-    'Other': [] as string[]
+    'Job Seeker Pack': [] as string[]
   };
 
   Object.keys(prices).forEach(key => {
     const meta = PLAN_METADATA[key];
-    const category = meta ? meta.category : 'Other';
-    if (categories[category as keyof typeof categories]) {
-      categories[category as keyof typeof categories].push(key);
-    } else {
-      categories['Other'].push(key);
+    if (meta && categories[meta.category as keyof typeof categories]) {
+      categories[meta.category as keyof typeof categories].push(key);
     }
   });
 
@@ -189,7 +180,7 @@ export default function AdminPlansPage() {
       </div>
 
       {Object.entries(categories).map(([categoryName, keys]) => {
-        if (keys.length === 0) return null;
+        if (keys.length === 0 || categoryName === 'Other') return null;
         return (
           <div key={categoryName} className="space-y-4">
             <h2 className="text-xl font-extrabold text-slate-800 border-b pb-2 flex items-center gap-2">

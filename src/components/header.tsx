@@ -157,7 +157,6 @@ export default function Header() {
     { href: "/admin/users", label: "Manage Users", icon: UserCog },
     { href: "/admin/jobs", label: "Manage Jobs", icon: BriefcaseBusiness },
     { href: "/admin/disputes", label: "Hiring Disputes", icon: ShieldCheck },
-    { href: "/admin/domains", label: "Manage Domains", icon: Layers },
     { href: "/admin/skills", label: "Manage Skills", icon: Wrench },
     { href: "/admin/locations", label: "Manage Locations", icon: MapPin },
     { href: "/admin/employment-types", label: "Employment Types", icon: Network },

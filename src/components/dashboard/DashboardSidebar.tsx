@@ -109,7 +109,6 @@ const NAV_CONFIG: Record<string, NavSection[]> = {
         { icon: UserCog, label: "Locations Registry", href: "/admin/locations" },
         { icon: Database, label: "Skills Catalog", href: "/admin/skills" },
         { icon: PlusCircle, label: "Coupon Codes", href: "/admin/coupons" },
-        { icon: Bookmark, label: "Allowed Domains", href: "/admin/domains" },
         { icon: LayoutGrid, label: "Employment Types", href: "/admin/employment-types" },
         { icon: BarChart2, label: "Experience Levels", href: "/admin/experience-levels" },
         { icon: Settings, label: "Workplace Settings", href: "/admin/workplace-types" },

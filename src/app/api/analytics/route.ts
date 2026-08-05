@@ -29,9 +29,6 @@ export async function GET(request: NextRequest) {
         const to = searchParams.get('to');
         const userId = searchParams.get('userId');
 
-        // Security: If userId is provided, verify it. 
-        // Note: For now, we skip if userId is missing to remain compatible with old frontend, 
-        // but we recommend the frontend always sends it.
         if (userId) {
             const isAdmin = await checkAdmin(userId);
             if (!isAdmin) {
@@ -39,15 +36,12 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // 1. Fetch Summary Counts (All-time totals for headline metrics)
+        // 1. Fetch Summary Counts
         const [
             totalJobSeekers,
             totalRecruiters,
             totalEmployees,
             totalApplications,
-            totalReferralJobs,
-            totalDirectJobsResult,
-            // Period counts
             periodJobSeekers,
             periodRecruiters,
             periodEmployees,
@@ -57,40 +51,78 @@ export async function GET(request: NextRequest) {
             getCount('recruiters', null, null, 'created_at'),
             getCount('employees', null, null, 'created_at'),
             getCount('applications', null, null, 'applied_at'),
-            // Referral Jobs (All-time)
-            (async () => {
-                const { count } = await supabaseAdmin.from('jobs').select('*', { count: 'exact', head: true }).eq('is_referral', true);
-                return count || 0;
-            })(),
-            // Direct Jobs (All-time)
-            (async () => {
-                const { count } = await supabaseAdmin.from('jobs').select('*', { count: 'exact', head: true }).eq('is_referral', false);
-                return count || 0;
-            })(),
-            // Period counts
             getCount('jobseekers', from, to, 'created_at'),
             getCount('recruiters', from, to, 'created_at'),
             getCount('employees', from, to, 'created_at'),
             getCount('applications', from, to, 'applied_at')
         ]);
 
-        // 2. Fetch Grouped Data for Charts (All-time distribution for robust analytics view)
-        
-        // Jobs Grouping by Industry (replaces domain grouping)
-        const { data: jobsByIndustryRaw, error: jobsErr } = await supabaseAdmin
+        // Referral & Direct Jobs counts (safe against missing is_referral column)
+        let totalReferralJobs = 0;
+        let totalDirectJobsResult = 0;
+
+        try {
+            const { count: refCount, error: refErr } = await supabaseAdmin
+                .from('jobs')
+                .select('*', { count: 'exact', head: true })
+                .eq('is_referral', true);
+
+            if (!refErr && refCount !== null) {
+                totalReferralJobs = refCount;
+            }
+        } catch {
+            totalReferralJobs = 0;
+        }
+
+        try {
+            const { count: dirCount, error: dirErr } = await supabaseAdmin
+                .from('jobs')
+                .select('*', { count: 'exact', head: true })
+                .eq('is_referral', false);
+
+            if (!dirErr && dirCount !== null) {
+                totalDirectJobsResult = dirCount;
+            } else {
+                const { count: totalJobs } = await supabaseAdmin
+                    .from('jobs')
+                    .select('*', { count: 'exact', head: true });
+                totalDirectJobsResult = totalJobs || 0;
+            }
+        } catch {
+            const { count: totalJobs } = await supabaseAdmin
+                .from('jobs')
+                .select('*', { count: 'exact', head: true });
+            totalDirectJobsResult = totalJobs || 0;
+        }
+
+        // 2. Fetch Grouped Data for Charts
+        let jobsByIndustryRaw: any[] | null = null;
+        const { data: rawWithRef, error: jobsErr } = await supabaseAdmin
             .from('jobs')
             .select('is_referral, industry');
-        if (jobsErr) console.error('[API_ANALYTICS] Jobs query error:', jobsErr);
+
+        if (jobsErr) {
+            // Column is_referral does not exist on DB schema; fallback to selecting industry only
+            const { data: rawWithoutRef } = await supabaseAdmin
+                .from('jobs')
+                .select('industry');
+            jobsByIndustryRaw = rawWithoutRef || [];
+        } else {
+            jobsByIndustryRaw = rawWithRef || [];
+        }
 
         const directJobsByIndustryMap: Record<string, number> = {};
         const referralJobsByIndustryMap: Record<string, number> = {};
         jobsByIndustryRaw?.forEach((j: any) => {
             const name = j.industry || 'Other';
-            if (j.is_referral) referralJobsByIndustryMap[name] = (referralJobsByIndustryMap[name] || 0) + 1;
-            else directJobsByIndustryMap[name] = (directJobsByIndustryMap[name] || 0) + 1;
+            if (j.is_referral) {
+                referralJobsByIndustryMap[name] = (referralJobsByIndustryMap[name] || 0) + 1;
+            } else {
+                directJobsByIndustryMap[name] = (directJobsByIndustryMap[name] || 0) + 1;
+            }
         });
 
-        // Users Grouping by Country (replaces domain grouping)
+        // Users Grouping by Country
         const { data: usersByCountryRaw } = await supabaseAdmin
             .from('jobseekers')
             .select('country');
@@ -101,13 +133,14 @@ export async function GET(request: NextRequest) {
             usersByCountryMap[name] = (usersByCountryMap[name] || 0) + 1;
         });
 
-        if (usersByCountryRaw === null) console.warn('[API_ANALYTICS] Jobseekers query returned null. Check RLS or schema.');
-
         // Applications Grouping by Industry
-        const { data: appsByIndustryRaw, error: appsErr } = await supabaseAdmin
-            .from('applications')
-            .select('jobs!job_pk(industry)');
-        if (appsErr) console.error('[API_ANALYTICS] Applications query error:', appsErr);
+        let appsByIndustryRaw: any[] | null = null;
+        try {
+            const { data: appsData } = await supabaseAdmin
+                .from('applications')
+                .select('jobs!job_pk(industry)');
+            appsByIndustryRaw = appsData;
+        } catch {}
 
         const appsByIndustryMap: Record<string, number> = {};
         appsByIndustryRaw?.forEach((a: any) => {
@@ -120,7 +153,6 @@ export async function GET(request: NextRequest) {
             .from('applications')
             .select('status_id');
 
-        // Fallback Status Map
         const statusMap: Record<number, string> = {
             1: 'Applied',
             2: 'Profile Viewed',
@@ -144,6 +176,12 @@ export async function GET(request: NextRequest) {
             Object.entries(map).map(([name, value]) => ({ name, value }))
                 .sort((a, b) => b.value - a.value);
 
+        const directJobsChartData = formatMap(directJobsByIndustryMap);
+        const referralJobsChartData = formatMap(referralJobsByIndustryMap);
+        const usersCountryChartData = formatMap(usersByCountryMap);
+        const appsIndustryChartData = formatMap(appsByIndustryMap);
+        const appsStatusChartData = formatMap(appsByStatusMap);
+
         return NextResponse.json({
             totalJobSeekers,
             totalRecruiters,
@@ -155,11 +193,16 @@ export async function GET(request: NextRequest) {
             periodRecruiters,
             periodEmployees,
             periodApplications,
-            directJobsByIndustry: formatMap(directJobsByIndustryMap),
-            referralJobsByIndustry: formatMap(referralJobsByIndustryMap),
-            usersByCountry: formatMap(usersByCountryMap),
-            applicationsByIndustry: formatMap(appsByIndustryMap),
-            applicationsByStatus: formatMap(appsByStatusMap)
+            directJobsByIndustry: directJobsChartData,
+            referralJobsByIndustry: referralJobsChartData,
+            usersByCountry: usersCountryChartData,
+            applicationsByIndustry: appsIndustryChartData,
+            applicationsByStatus: appsStatusChartData,
+            // Aliases for compatibility
+            directJobsByDomain: directJobsChartData,
+            referralJobsByDomain: referralJobsChartData,
+            usersByDomain: usersCountryChartData,
+            applicationsByDomain: appsIndustryChartData
         });
 
     } catch (e: any) {
@@ -170,3 +213,4 @@ export async function GET(request: NextRequest) {
         }, { status: 500 });
     }
 }
+

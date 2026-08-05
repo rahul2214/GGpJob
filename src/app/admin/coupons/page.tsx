@@ -223,7 +223,7 @@ export default function AdminCouponsPage() {
                     </optgroup>
                     <optgroup label="Credit Packs">
                         <option value="mini">Mini Pack (10 Cr)</option>
-                        <option value="basic_pack">Basic Pack (25 Cr)</option>
+                        
                         <option value="popular_pack">Popular Pack (60 Cr)</option>
                         <option value="pro_pack">Pro Pack (150 Cr)</option>
                     </optgroup>
@@ -297,8 +297,7 @@ export default function AdminCouponsPage() {
                                       coupon.applicablePlan === 'basic' ? 'RC - Basic' : 
                                       coupon.applicablePlan === 'premium' ? 'RC - Premium' : 
                                       coupon.applicablePlan === 'pro' ? 'RC - Pro' : 
-                                     coupon.applicablePlan === 'mini' ? 'Credits - Mini' : 
-                                     coupon.applicablePlan === 'basic_pack' ? 'Credits - Basic' : 
+                                     coupon.applicablePlan === 'mini' ? 'Credits - Mini' :  
                                      coupon.applicablePlan === 'popular_pack' ? 'Credits - Popular' : 
                                      coupon.applicablePlan === 'pro_pack' ? 'Credits - Pro' : coupon.applicablePlan}
                                 </Badge>
