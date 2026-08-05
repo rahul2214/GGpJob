@@ -1,0 +1,143 @@
+
+> nextn@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+[R2_INIT] Bucket: jobsdart
+[R2_INIT] Endpoint: https://9b56888ded8d9aee1d36d4e967318e16.r2.cloudflarestorage.com
+[R2_INIT] AccessKeyID length: 32
+[R2_INIT] SecretKey length: 64
+ ⚠ Using edge runtime on a page currently disables static generation for that page
+[R2_INIT] Bucket: jobsdart
+[R2_INIT] Endpoint: https://9b56888ded8d9aee1d36d4e967318e16.r2.cloudflarestorage.com
+[R2_INIT] AccessKeyID length: 32
+[R2_INIT] SecretKey length: 64
+[R2_INIT] Bucket: jobsdart
+[R2_INIT] Endpoint: https://9b56888ded8d9aee1d36d4e967318e16.r2.cloudflarestorage.com
+[R2_INIT] AccessKeyID length: 32
+[R2_INIT] SecretKey length: 64
+[R2_INIT] Bucket: jobsdart
+[R2_INIT] Endpoint: https://9b56888ded8d9aee1d36d4e967318e16.r2.cloudflarestorage.com
+[R2_INIT] AccessKeyID length: 32
+[R2_INIT] SecretKey length: 64
+[R2_INIT] Bucket: jobsdart
+[R2_INIT] Endpoint: https://9b56888ded8d9aee1d36d4e967318e16.r2.cloudflarestorage.com
+[R2_INIT] AccessKeyID length: 32
+[R2_INIT] SecretKey length: 64
+[R2_INIT] Bucket: jobsdart
+[R2_INIT] Endpoint: https://9b56888ded8d9aee1d36d4e967318e16.r2.cloudflarestorage.com
+[R2_INIT] AccessKeyID length: 32
+[R2_INIT] SecretKey length: 64
+[R2_INIT] Bucket: jobsdart
+[R2_INIT] Endpoint: https://9b56888ded8d9aee1d36d4e967318e16.r2.cloudflarestorage.com
+[R2_INIT] AccessKeyID length: 32
+[R2_INIT] SecretKey length: 64
+   Generating static pages (0/101) ...
+Error fetching company sizes: {
+  message: 'Error: Dynamic server usage: no-store fetch https://vmghmqemuznipykgocxl.supabase.co/rest/v1/company_sizes?select=*&order=id.asc /api/company-sizes',
+  details: 'Error: Dynamic server usage: no-store fetch https://vmghmqemuznipykgocxl.supabase.co/rest/v1/company_sizes?select=*&order=id.asc /api/company-sizes\n' +
+    '    at C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:2:10769\n' +
+    '    at C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:2:18389\n' +
+    '    at e.with (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:1:772)\n' +
+    '    at e.with (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:1:1861)\n' +
+    '    at e.startActiveSpan (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:1:18258)\n' +
+    '    at e.startActiveSpan (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:1:18614)\n' +
+    '    at C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:2:17922\n' +
+    '    at e.with (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:1:772)\n' +
+    '    at e.with (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:1:1861)\n' +
+    '    at h.trace (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:2:17876)',
+  hint: '',
+  code: ''
+}
+[API_BENEFITS_GET] Error: {
+  message: 'Error: Dynamic server usage: no-store fetch https://vmghmqemuznipykgocxl.supabase.co/rest/v1/benefits?select=*&order=name.asc /api/benefits',
+  details: 'Error: Dynamic server usage: no-store fetch https://vmghmqemuznipykgocxl.supabase.co/rest/v1/benefits?select=*&order=name.asc /api/benefits\n' +
+    '    at C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\node_modules\\next\\dist\\compiled\\next-server\\app-route.runtime.prod.js:6:37206\n' +
+    '    at C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\node_modules\\next\\dist\\server\\lib\\trace\\tracer.js:140:36\n' +
+    '    at NoopContextManager.with (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\node_modules\\@opentelemetry\\api\\build\\src\\context\\NoopContextManager.js:25:19)\n' +
+    '    at ContextAPI.with (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\node_modules\\@opentelemetry\\api\\build\\src\\api\\context.js:60:46)\n' +
+    '    at NoopTracer.startActiveSpan (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\node_modules\\@opentelemetry\\api\\build\\src\\trace\\NoopTracer.js:65:31)\n' +
+    '    at ProxyTracer.startActiveSpan (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\node_modules\\@opentelemetry\\api\\build\\src\\trace\\ProxyTracer.js:36:24)\n' +
+    '    at C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\node_modules\\next\\dist\\server\\lib\\trace\\tracer.js:122:103\n' +
+    '    at NoopContextManager.with (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\node_modules\\@opentelemetry\\api\\build\\src\\context\\NoopContextManager.js:25:19)\n' +
+    '    at ContextAPI.with (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\node_modules\\@opentelemetry\\api\\build\\src\\api\\context.js:60:46)\n' +
+    '    at NextTracerImpl.trace (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\node_modules\\next\\dist\\server\\lib\\trace\\tracer.js:122:28)',
+  hint: '',
+  code: ''
+}
+[API_LEADERBOARD] Error: B [Error]: Dynamic server usage: Route /api/employees/leaderboard couldn't be rendered statically because it used `request.url`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at u (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\.next\server\app\api\employees\leaderboard\route.js:1:1387)
+    at C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\@opentelemetry\api\build\src\context\NoopContextManager.js:25:19)
+    at ContextAPI.with (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\@opentelemetry\api\build\src\api\context.js:60:46)
+    at NoopTracer.startActiveSpan (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\@opentelemetry\api\build\src\trace\NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\@opentelemetry\api\build\src\trace\ProxyTracer.js:36:24)
+    at C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\server\lib\trace\tracer.js:122:103 {
+  description: "Route /api/employees/leaderboard couldn't be rendered statically because it used `request.url`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[API_SEED_LOCATIONS] Error: {
+  message: 'Error: Dynamic server usage: no-store fetch https://vmghmqemuznipykgocxl.supabase.co/rest/v1/locations?select=name /api/seed-locations',
+  details: 'Error: Dynamic server usage: no-store fetch https://vmghmqemuznipykgocxl.supabase.co/rest/v1/locations?select=name /api/seed-locations\n' +
+    '    at C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:2:10769\n' +
+    '    at C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:2:18389\n' +
+    '    at e.with (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:1:772)\n' +
+    '    at e.with (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:1:1861)\n' +
+    '    at e.startActiveSpan (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:1:18258)\n' +
+    '    at e.startActiveSpan (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:1:18614)\n' +
+    '    at C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:2:17922\n' +
+    '    at e.with (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:1:772)\n' +
+    '    at e.with (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:1:1861)\n' +
+    '    at h.trace (C:\\Users\\Rahul naik Gugulothu\\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\\Desktop\\sample\\design\\JobPortal\\.next\\server\\chunks\\8948.js:2:17876)',
+  hint: '',
+  code: ''
+}
+   Generating static pages (25/101) 
+[WALLET_TX_GET] Error: B [Error]: Dynamic server usage: Route /api/wallet/transactions couldn't be rendered statically because it used `request.url`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at l (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\.next\server\app\api\wallet\transactions\route.js:1:555)
+    at C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\@opentelemetry\api\build\src\context\NoopContextManager.js:25:19)
+    at ContextAPI.with (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\@opentelemetry\api\build\src\api\context.js:60:46)
+    at NoopTracer.startActiveSpan (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\@opentelemetry\api\build\src\trace\NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\@opentelemetry\api\build\src\trace\ProxyTracer.js:36:24)
+    at C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\server\lib\trace\tracer.js:122:103 {
+  description: "Route /api/wallet/transactions couldn't be rendered statically because it used `request.url`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[R2_INIT] Bucket: jobsdart
+[R2_INIT] Endpoint: https://9b56888ded8d9aee1d36d4e967318e16.r2.cloudflarestorage.com
+[R2_INIT] AccessKeyID length: 32
+[R2_INIT] SecretKey length: 64
+   Generating static pages (50/101) 
+   Generating static pages (75/101) 
+ ✓ Generating static pages (101/101)
+   Finalizing page optimization ...
+   Collecting build traces ...
+Error: UNKNOWN: unknown error, read
+    at async readFileHandle (node:internal/fs/promises:1261:24)
+    at async Job.readFile (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\build\collect-build-traces.js:331:32)
+    at async Job.emitDependency (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\compiled\@vercel\nft\index.js:1:40028)
+    at async Job.maybeEmitDep (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\compiled\@vercel\nft\index.js:1:37013)
+    at async Promise.all (index 3)
+    at async Job.emitDependency (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\compiled\@vercel\nft\index.js:1:40278)
+    at async Job.maybeEmitDep (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\compiled\@vercel\nft\index.js:1:37013)
+    at async Promise.all (index 0)
+    at async Job.emitDependency (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\compiled\@vercel\nft\index.js:1:40278)
+    at async Job.maybeEmitDep (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\compiled\@vercel\nft\index.js:1:37013) {
+  errno: -4094,
+  code: 'UNKNOWN',
+  syscall: 'read'
+}

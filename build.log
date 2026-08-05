@@ -1,0 +1,38 @@
+
+> nextn@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env
+
+   Creating an optimized production build ...
+Browserslist: caniuse-lite is outdated. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+[R2_INIT] Bucket: jobsdart
+[R2_INIT] Endpoint: https://9b56888ded8d9aee1d36d4e967318e16.r2.cloudflarestorage.com
+[R2_INIT] AccessKeyID length: 32
+[R2_INIT] SecretKey length: 64
+ ⚠ Using edge runtime on a page currently disables static generation for that page
+Error: "createFunction" expected a handler function as the second argument. Triggers belong in the first argument: createFunction({ id, triggers: { event: "..." } }, handler)
+    at e._createFunction (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\.next\server\app\api\inngest\route.js:3:9729)
+    at e.createFunction (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\.next\server\app\api\inngest\route.js:3:9519)
+    at 82510 (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\.next\server\app\api\inngest\route.js:7:12938)
+    at t (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\.next\server\webpack-runtime.js:1:143)
+    at n (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\.next\server\app\api\inngest\route.js:7:42633)
+    at C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\.next\server\app\api\inngest\route.js:7:42676
+    at t.X (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\.next\server\webpack-runtime.js:1:1285)
+    at C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\.next\server\app\api\inngest\route.js:7:42646
+    at Object.<anonymous> (C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\.next\server\app\api\inngest\route.js:7:42704)
+    at Module._compile (node:internal/modules/cjs/loader:1944:14)
+
+> Build error occurred
+Error: Failed to collect page data for /api/inngest
+    at C:\Users\Rahul naik Gugulothu\OneDrive - Dhruv Compusoft Consultancy Pvt Ltd\Desktop\sample\design\JobPortal\node_modules\next\dist\build\utils.js:1269:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  type: 'Error'
+}
