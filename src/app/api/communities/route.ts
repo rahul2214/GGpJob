@@ -29,13 +29,22 @@ export async function GET(request: NextRequest) {
     // Fetch joined communities for the user if userId is provided
     let joinedCommunityIds = new Set<string>();
     if (userId) {
-      const { data: joined } = await supabaseAdmin
-        .from('community_members')
-        .select('community_id')
-        .eq('user_uuid', userId);
-      
-      if (joined) {
-        joined.forEach((j: any) => joinedCommunityIds.add(String(j.community_id)));
+      // Resolve auth uuid → jobseeker_id
+      const { data: js } = await supabaseAdmin
+        .from('jobseekers')
+        .select('id')
+        .eq('uuid', userId)
+        .maybeSingle();
+
+      if (js?.id) {
+        const { data: joined } = await supabaseAdmin
+          .from('community_members')
+          .select('community_id')
+          .eq('jobseeker_id', js.id);
+
+        if (joined) {
+          joined.forEach((j: any) => joinedCommunityIds.add(String(j.community_id)));
+        }
       }
     }
 

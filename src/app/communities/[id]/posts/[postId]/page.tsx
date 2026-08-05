@@ -5,11 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, Sparkles, Loader2, ArrowLeft, Heart,
-  Calendar, CheckCircle, Reply, Trash2, Edit2, ShieldAlert
+  Calendar, CheckCircle, Reply, Trash2, Edit2, ShieldAlert, AlertTriangle
 } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -68,6 +70,19 @@ export default function PostDetailPage() {
   const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
 
+  // Post edit / delete states
+  const [isEditingPost, setIsEditingPost] = useState(false);
+  const [editPostTitle, setEditPostTitle] = useState("");
+  const [editPostContent, setEditPostContent] = useState("");
+  const [submittingPostEdit, setSubmittingPostEdit] = useState(false);
+  const [showDeletePostConfirm, setShowDeletePostConfirm] = useState(false);
+  const [deletingPost, setDeletingPost] = useState(false);
+
+  // Comment edit states
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
+  const [submittingCommentEdit, setSubmittingCommentEdit] = useState(false);
+
   const fetchPostDetails = async () => {
     try {
       setLoading(true);
@@ -113,6 +128,69 @@ export default function PostDetailPage() {
     }
   };
 
+  // --- Post Edit & Delete Handlers ---
+  const openEditPostDialog = () => {
+    if (!post) return;
+    setEditPostTitle(post.title);
+    setEditPostContent(post.content);
+    setIsEditingPost(true);
+  };
+
+  const handleUpdatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !post || !editPostTitle.trim() || !editPostContent.trim()) return;
+
+    setSubmittingPostEdit(true);
+    try {
+      const res = await fetch(`/api/communities/posts/${postId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editPostTitle,
+          content: editPostContent,
+          userUuid: user.uuid
+        })
+      });
+
+      if (res.ok) {
+        toast({ title: "✓ Post Updated!" });
+        setPost(prev => prev ? { ...prev, title: editPostTitle, content: editPostContent } : null);
+        setIsEditingPost(false);
+      } else {
+        const err = await res.json();
+        toast({ title: "Error", description: err.error || "Failed to update post", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSubmittingPostEdit(false);
+    }
+  };
+
+  const handleDeletePost = async () => {
+    if (!user || !post) return;
+    setDeletingPost(true);
+    try {
+      const res = await fetch(`/api/communities/posts/${postId}?userUuid=${user.uuid}`, {
+        method: "DELETE"
+      });
+
+      if (res.ok) {
+        toast({ title: "Post deleted successfully" });
+        router.push(`/communities/${post.communityId}`);
+      } else {
+        const err = await res.json();
+        toast({ title: "Error", description: err.error || "Failed to delete post", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setDeletingPost(false);
+      setShowDeletePostConfirm(false);
+    }
+  };
+
+  // --- Comment Handlers ---
   const handleAddComment = async (e: React.FormEvent, parentId: number | null = null) => {
     e.preventDefault();
     const content = parentId ? replyText : newComment;
@@ -138,7 +216,6 @@ export default function PostDetailPage() {
         } else {
           setNewComment("");
         }
-        // Reload comments
         const commRes = await fetch(`/api/communities/posts/${postId}/comments`);
         if (commRes.ok) setComments(await commRes.json());
       }
@@ -174,6 +251,42 @@ export default function PostDetailPage() {
     }
   };
 
+  const startEditComment = (comment: Comment) => {
+    setEditingCommentId(comment.id);
+    setEditCommentText(comment.content);
+  };
+
+  const handleSaveCommentEdit = async (commentId: number) => {
+    if (!user || !editCommentText.trim()) return;
+
+    setSubmittingCommentEdit(true);
+    try {
+      const res = await fetch(`/api/communities/posts/${postId}/comments`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          commentId,
+          content: editCommentText,
+          userUuid: user.uuid
+        })
+      });
+
+      if (res.ok) {
+        toast({ title: "✓ Comment Updated" });
+        setComments(prev => prev.map(c => c.id === commentId ? { ...c, content: editCommentText } : c));
+        setEditingCommentId(null);
+        setEditCommentText("");
+      } else {
+        const err = await res.json();
+        toast({ title: "Error", description: err.error || "Failed to update comment", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSubmittingCommentEdit(false);
+    }
+  };
+
   const handleDeleteComment = async (commentId: number) => {
     if (!user) return;
     try {
@@ -189,7 +302,6 @@ export default function PostDetailPage() {
     }
   };
 
-  // Reconstruct nested comment lists (returns roots with children maps)
   const roots = comments.filter(c => c.parentId === null);
   const repliesGroup = new Map<number, Comment[]>();
   comments.forEach(c => {
@@ -251,7 +363,28 @@ export default function PostDetailPage() {
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              {isPostCreator && (
+                <div className="flex items-center gap-1 mr-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={openEditPostDialog}
+                    className="h-8 px-3 text-xs font-bold text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/40 rounded-xl gap-1.5"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" /> Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowDeletePostConfirm(true)}
+                    className="h-8 px-3 text-xs font-bold text-rose-600 border-rose-200 hover:bg-rose-50 dark:border-rose-900/40 dark:hover:bg-rose-950/40 rounded-xl gap-1.5"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                  </Button>
+                </div>
+              )}
+
               {post.isPinned && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border border-amber-200/30">
                   Pin
@@ -286,6 +419,67 @@ export default function PostDetailPage() {
 
         </div>
 
+        {/* --- Edit Post Dialog --- */}
+        <Dialog open={isEditingPost} onOpenChange={setIsEditingPost}>
+          <DialogContent className="max-w-2xl bg-white dark:bg-slate-950 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-900 shadow-2xl">
+            <DialogHeader className="mb-4">
+              <DialogTitle className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                <Edit2 className="w-6 h-6 text-indigo-600" />
+                Edit Discussion Post
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleUpdatePost} className="space-y-5">
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-wider text-slate-400">Post Title</label>
+                <Input 
+                  placeholder="Post title..." 
+                  value={editPostTitle} 
+                  onChange={e => setEditPostTitle(e.target.value)} 
+                  required 
+                  className="h-12 rounded-xl text-sm font-semibold"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-wider text-slate-400">Post Description</label>
+                <Textarea 
+                  placeholder="Post description..." 
+                  value={editPostContent} 
+                  onChange={e => setEditPostContent(e.target.value)} 
+                  required 
+                  className="min-h-40 rounded-2xl text-sm font-medium leading-relaxed"
+                />
+              </div>
+              <div className="flex gap-4 pt-4 border-t border-slate-100/50">
+                <Button type="button" variant="outline" onClick={() => setIsEditingPost(false)} className="flex-1 h-12 rounded-xl font-bold text-xs uppercase">Cancel</Button>
+                <Button type="submit" disabled={submittingPostEdit} className="flex-grow h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase shadow-lg shadow-indigo-500/25">
+                  {submittingPostEdit ? <Loader2 className="w-5 h-5 animate-spin" /> : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* --- Delete Post Confirmation Dialog --- */}
+        <Dialog open={showDeletePostConfirm} onOpenChange={setShowDeletePostConfirm}>
+          <DialogContent className="max-w-md bg-white dark:bg-slate-950 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-900 shadow-2xl">
+            <DialogHeader className="mb-4">
+              <DialogTitle className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                <AlertTriangle className="w-6 h-6 text-rose-500" />
+                Delete Post
+              </DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 leading-relaxed mt-2">
+                Are you sure you want to delete this discussion post? All associated replies and comments will be removed permanently.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex gap-4 pt-4 border-t border-slate-100/50">
+              <Button type="button" variant="outline" onClick={() => setShowDeletePostConfirm(false)} className="flex-1 h-12 rounded-xl font-bold text-xs uppercase">Cancel</Button>
+              <Button type="button" onClick={handleDeletePost} disabled={deletingPost} className="flex-grow h-12 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase shadow-lg shadow-rose-500/25">
+                {deletingPost ? <Loader2 className="w-5 h-5 animate-spin" /> : "Yes, Delete"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Discussions Comments Section */}
         <div className="max-w-4xl space-y-6">
           
@@ -315,6 +509,8 @@ export default function PostDetailPage() {
             <div className="space-y-4">
               {roots.map(comment => {
                 const subReplies = repliesGroup.get(comment.id) || [];
+                const isEditingThisComment = editingCommentId === comment.id;
+
                 return (
                   <div key={comment.id} className="space-y-3">
                     
@@ -352,16 +548,59 @@ export default function PostDetailPage() {
                             </span>
                           )}
                           {user?.uuid === comment.authorUuid && (
-                            <button onClick={() => handleDeleteComment(comment.id)} className="p-1.5 hover:text-rose-500 text-slate-400 transition-colors">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button 
+                                onClick={() => startEditComment(comment)} 
+                                className="p-1.5 hover:text-indigo-600 text-slate-400 transition-colors rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+                                title="Edit Comment"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteComment(comment.id)} 
+                                className="p-1.5 hover:text-rose-500 text-slate-400 transition-colors rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                                title="Delete Comment"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
 
-                      <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm font-medium leading-relaxed mb-4 pl-1">
-                        {comment.content}
-                      </p>
+                      {/* Comment Content / Inline Edit Form */}
+                      {isEditingThisComment ? (
+                        <div className="space-y-3 mb-4 pl-1">
+                          <Textarea 
+                            value={editCommentText}
+                            onChange={e => setEditCommentText(e.target.value)}
+                            required
+                            className="min-h-24 text-xs font-semibold rounded-xl"
+                          />
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleSaveCommentEdit(comment.id)} 
+                              disabled={submittingCommentEdit || !editCommentText.trim()}
+                              className="h-8 text-[10px] uppercase font-bold px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white"
+                            >
+                              {submittingCommentEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save"}
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => setEditingCommentId(null)}
+                              className="h-8 text-[10px] uppercase font-bold px-3 rounded-lg"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm font-medium leading-relaxed mb-4 pl-1">
+                          {comment.content}
+                        </p>
+                      )}
 
                       <div className="flex items-center justify-between border-t border-slate-200/10 pt-3 text-[10px] font-black uppercase tracking-wider text-slate-400">
                         {user && (
@@ -393,30 +632,76 @@ export default function PostDetailPage() {
                     )}
 
                     {/* Nested Sub-replies */}
-                    {subReplies.map(reply => (
-                      <div key={reply.id} className="ml-10 bg-slate-50/50 dark:bg-slate-950/20 rounded-3xl border border-slate-200/30 dark:border-slate-800/30 p-5 shadow-sm">
-                        <div className="flex items-center justify-between gap-4 mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100/50 dark:border-indigo-900/30 flex items-center justify-center font-bold text-[#3525cd] text-xs shrink-0">
-                              {reply.author.name.charAt(0).toUpperCase()}
+                    {subReplies.map(reply => {
+                      const isEditingSubReply = editingCommentId === reply.id;
+
+                      return (
+                        <div key={reply.id} className="ml-10 bg-slate-50/50 dark:bg-slate-950/20 rounded-3xl border border-slate-200/30 dark:border-slate-800/30 p-5 shadow-sm">
+                          <div className="flex items-center justify-between gap-4 mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100/50 dark:border-indigo-900/30 flex items-center justify-center font-bold text-[#3525cd] text-xs shrink-0">
+                                {reply.author.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{reply.author.name}</span>
+                                <span className="block text-[10px] text-slate-400 font-semibold">{reply.author.role}</span>
+                              </div>
                             </div>
-                            <div>
-                              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{reply.author.name}</span>
-                              <span className="block text-[10px] text-slate-400 font-semibold">{reply.author.role}</span>
-                            </div>
+                            {user?.uuid === reply.authorUuid && (
+                              <div className="flex items-center gap-1">
+                                <button 
+                                  onClick={() => startEditComment(reply)} 
+                                  className="p-1.5 hover:text-indigo-600 text-slate-400 transition-colors rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+                                  title="Edit Reply"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteComment(reply.id)} 
+                                  className="p-1.5 hover:text-rose-500 text-slate-400 transition-colors rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                                  title="Delete Reply"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
                           </div>
-                          {user?.uuid === reply.authorUuid && (
-                            <button onClick={() => handleDeleteComment(reply.id)} className="p-1.5 hover:text-rose-500 text-slate-400 transition-colors">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+
+                          {isEditingSubReply ? (
+                            <div className="space-y-3 mb-2 pl-1">
+                              <Textarea 
+                                value={editCommentText}
+                                onChange={e => setEditCommentText(e.target.value)}
+                                required
+                                className="min-h-20 text-xs font-semibold rounded-xl"
+                              />
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleSaveCommentEdit(reply.id)} 
+                                  disabled={submittingCommentEdit || !editCommentText.trim()}
+                                  className="h-7 text-[10px] uppercase font-bold px-3 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                                >
+                                  {submittingCommentEdit ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  onClick={() => setEditingCommentId(null)}
+                                  className="h-7 text-[10px] uppercase font-bold px-3 rounded-lg"
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm font-medium leading-relaxed pl-1">
+                              {reply.content}
+                            </p>
                           )}
                         </div>
-
-                        <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm font-medium leading-relaxed pl-1">
-                          {reply.content}
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
 
                   </div>
                 );

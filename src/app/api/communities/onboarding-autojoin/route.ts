@@ -49,17 +49,28 @@ export async function POST(request: NextRequest) {
       matchedCommIds.push(...fallbackComms);
     }
 
-    // 2. Perform batch insertions
+    // 2. Resolve uuid → jobseeker_id (only jobseekers can join)
+    const { data: js } = await supabaseAdmin
+      .from('jobseekers')
+      .select('id')
+      .eq('uuid', userUuid)
+      .maybeSingle();
+
+    if (!js?.id) {
+      return NextResponse.json({ success: true, count: 0, reason: 'not_a_jobseeker' });
+    }
+
+    // 3. Perform batch insertions
     const insertRows = matchedCommIds.map((commId: number) => ({
       community_id: commId,
-      user_uuid: userUuid,
+      jobseeker_id: js.id,
       role: 'member'
     }));
 
     if (insertRows.length > 0) {
       const { error } = await supabaseAdmin
         .from('community_members')
-        .upsert(insertRows, { onConflict: 'community_id,user_uuid' });
+        .upsert(insertRows, { onConflict: 'community_id,jobseeker_id' });
 
       if (error) throw error;
     }

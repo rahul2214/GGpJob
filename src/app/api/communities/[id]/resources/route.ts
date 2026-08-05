@@ -32,12 +32,22 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: 'Title, Resource Type, and Creator UUID are required' }, { status: 400 });
     }
 
-    // Verify creator is member
+    // Verify creator is member (jobseeker)
+    const { data: js } = await supabaseAdmin
+      .from('jobseekers')
+      .select('id')
+      .eq('uuid', creatorUuid)
+      .maybeSingle();
+
+    if (!js?.id) {
+      return NextResponse.json({ error: 'Only jobseeker members can contribute resources.' }, { status: 403 });
+    }
+
     const { data: member } = await supabaseAdmin
       .from('community_members')
       .select('id')
       .eq('community_id', id)
-      .eq('user_uuid', creatorUuid)
+      .eq('jobseeker_id', js.id)
       .maybeSingle();
 
     if (!member) {

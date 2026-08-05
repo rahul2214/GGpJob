@@ -27,16 +27,25 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     let isJoined = false;
     let userRole = 'none';
     if (userId) {
-      const { data: member } = await supabaseAdmin
-        .from('community_members')
-        .select('role')
-        .eq('community_id', id)
-        .eq('user_uuid', userId)
+      // Resolve auth uuid → jobseeker_id
+      const { data: js } = await supabaseAdmin
+        .from('jobseekers')
+        .select('id')
+        .eq('uuid', userId)
         .maybeSingle();
 
-      if (member) {
-        isJoined = true;
-        userRole = member.role;
+      if (js?.id) {
+        const { data: member } = await supabaseAdmin
+          .from('community_members')
+          .select('role')
+          .eq('community_id', id)
+          .eq('jobseeker_id', js.id)
+          .maybeSingle();
+
+        if (member) {
+          isJoined = true;
+          userRole = member.role;
+        }
       }
     }
 

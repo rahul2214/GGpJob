@@ -23,12 +23,26 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     // Fetch event registrations
     const eventIds = events.map((e: any) => e.id);
+
+    // Resolve auth uuid → jobseeker_id for membership check
+    let jobseekerId: number | null = null;
+    if (userId) {
+      const { data: js } = await supabaseAdmin
+        .from('jobseekers')
+        .select('id')
+        .eq('uuid', userId)
+        .maybeSingle();
+      jobseekerId = js?.id ?? null;
+    }
+
     const [
       { data: registrations },
       { data: userMember }
     ] = await Promise.all([
       supabaseAdmin.from('community_event_registrations').select('*').in('event_id', eventIds),
-      userId ? supabaseAdmin.from('community_members').select('role').eq('community_id', id).eq('user_uuid', userId).maybeSingle() : { data: null }
+      jobseekerId
+        ? supabaseAdmin.from('community_members').select('role').eq('community_id', id).eq('jobseeker_id', jobseekerId).maybeSingle()
+        : { data: null }
     ]);
 
     const regMap = new Map<number, any[]>();
@@ -82,20 +96,22 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
     // Check user membership role
-    const { data: member } = await supabaseAdmin
-      .from('community_members')
-      .select('role')
-      .eq('community_id', id)
-      .eq('user_uuid', creatorUuid)
-      .maybeSingle();
-
-    const { data: seeker } = await supabaseAdmin
+    const { data: jsCreator } = await supabaseAdmin
       .from('jobseekers')
-      .select('role')
+      .select('id, role')
       .eq('uuid', creatorUuid)
       .maybeSingle();
 
-    const isAuthorizedDirectly = member?.role === 'moderator' || member?.role === 'admin' || seeker?.role === 'Admin' || seeker?.role === 'Super Admin';
+    const { data: member } = jsCreator?.id
+      ? await supabaseAdmin
+          .from('community_members')
+          .select('role')
+          .eq('community_id', id)
+          .eq('jobseeker_id', jsCreator.id)
+          .maybeSingle()
+      : { data: null };
+
+    const isAuthorizedDirectly = member?.role === 'moderator' || member?.role === 'admin' || jsCreator?.role === 'Admin' || jsCreator?.role === 'Super Admin';
 
     const { data: newEvent, error } = await supabaseAdmin
       .from('community_events')

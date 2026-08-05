@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   MessageSquare, Plus, Loader2, ArrowLeft,
-  Users, CheckCircle, Heart, AlertTriangle, Megaphone
+  Users, CheckCircle, Heart, AlertTriangle, Megaphone,
+  Edit2, Trash2
 } from "lucide-react";
 import * as Icons from "lucide-react";
 import { useUser } from "@/contexts/user-context";
@@ -32,6 +33,7 @@ interface Community {
 interface Post {
   id: number;
   uuid: string;
+  authorUuid: string;
   title: string;
   content: string;
   postType: string;
@@ -77,6 +79,14 @@ export default function CommunityDetailPage() {
   const [creatingPost, setCreatingPost] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showLeaveConfirmDialog, setShowLeaveConfirmDialog] = useState(false);
+
+  // Edit / Delete post state
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [updatingPost, setUpdatingPost] = useState(false);
+  const [deletingPost, setDeletingPost] = useState<Post | null>(null);
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
 
   const fetchDetails = async () => {
     try {
@@ -195,6 +205,67 @@ export default function CommunityDetailPage() {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setCreatingPost(false);
+    }
+  };
+
+  const openEditModal = (p: Post) => {
+    setEditingPost(p);
+    setEditTitle(p.title);
+    setEditContent(p.content);
+  };
+
+  const handleUpdatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !editingPost || !editTitle.trim() || !editContent.trim()) return;
+
+    setUpdatingPost(true);
+    try {
+      const res = await fetch(`/api/communities/posts/${editingPost.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editTitle,
+          content: editContent,
+          userUuid: user.uuid
+        })
+      });
+
+      if (res.ok) {
+        toast({ title: "✓ Post Updated!" });
+        setEditingPost(null);
+        loadPosts();
+      } else {
+        const err = await res.json();
+        toast({ title: "Error", description: err.error || "Failed to update post", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setUpdatingPost(false);
+    }
+  };
+
+  const handleDeletePost = async () => {
+    if (!user || !deletingPost) return;
+
+    setIsDeletingPost(true);
+    try {
+      const res = await fetch(`/api/communities/posts/${deletingPost.id}?userUuid=${user.uuid}`, {
+        method: "DELETE"
+      });
+
+      if (res.ok) {
+        toast({ title: "Post deleted" });
+        setDeletingPost(null);
+        loadPosts();
+      } else {
+        const err = await res.json();
+        toast({ title: "Error", description: err.error || "Failed to delete post", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsDeletingPost(false);
     }
   };
 
@@ -451,7 +522,34 @@ export default function CommunityDetailPage() {
                           </div>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
+                          {user?.uuid === post.authorUuid && (
+                            <div className="flex items-center gap-1 mr-1">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  openEditModal(post);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-lg transition-colors"
+                                title="Edit Post"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setDeletingPost(post);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+                                title="Delete Post"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+
                           {post.isPinned && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border border-amber-200/30">
                               <Megaphone className="w-2.5 h-2.5" /> Pin
@@ -515,6 +613,68 @@ export default function CommunityDetailPage() {
         </div>
 
       </div>
+
+      {/* --- Edit Post Modal --- */}
+      <Dialog open={!!editingPost} onOpenChange={(open) => !open && setEditingPost(null)}>
+        <DialogContent className="max-w-2xl bg-white dark:bg-slate-950 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-900 shadow-2xl">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Edit2 className="w-6 h-6 text-indigo-600" />
+              Edit Post
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdatePost} className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-400">Post Title</label>
+              <Input 
+                placeholder="Post title..." 
+                value={editTitle} 
+                onChange={e => setEditTitle(e.target.value)} 
+                required 
+                className="h-12 rounded-xl text-sm font-semibold"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-400">Post Description</label>
+              <Textarea 
+                placeholder="Post description..." 
+                value={editContent} 
+                onChange={e => setEditContent(e.target.value)} 
+                required 
+                className="min-h-40 rounded-2xl text-sm font-medium leading-relaxed"
+              />
+            </div>
+            <div className="flex gap-4 pt-4 border-t border-slate-100/50">
+              <Button type="button" variant="outline" onClick={() => setEditingPost(null)} className="flex-1 h-12 rounded-xl font-bold text-xs uppercase">Cancel</Button>
+              <Button type="submit" disabled={updatingPost} className="flex-grow h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase shadow-lg shadow-indigo-500/25">
+                {updatingPost ? <Loader2 className="w-5 h-5 animate-spin" /> : "Save Changes"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* --- Delete Post Modal --- */}
+      <Dialog open={!!deletingPost} onOpenChange={(open) => !open && setDeletingPost(null)}>
+        <DialogContent className="max-w-md bg-white dark:bg-slate-950 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-900 shadow-2xl">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <AlertTriangle className="w-6 h-6 text-rose-500" />
+              Delete Post
+            </DialogTitle>
+            <DialogDescription className="text-sm text-slate-500 leading-relaxed mt-2">
+              Are you sure you want to delete <strong>&quot;{deletingPost?.title}&quot;</strong>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-4 pt-4 border-t border-slate-100/50">
+            <Button type="button" variant="outline" onClick={() => setDeletingPost(null)} className="flex-1 h-12 rounded-xl font-bold text-xs uppercase">Cancel</Button>
+            <Button type="button" onClick={handleDeletePost} disabled={isDeletingPost} className="flex-grow h-12 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase shadow-lg shadow-rose-500/25">
+              {isDeletingPost ? <Loader2 className="w-5 h-5 animate-spin" /> : "Yes, Delete"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

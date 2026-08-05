@@ -241,22 +241,24 @@ export async function DELETE(request: NextRequest) {
     let isAuthorized = isCommentAuthor || isPostAuthor;
 
     if (!isAuthorized) {
-      // Check moderator role
-      const { data: member } = await supabaseAdmin
-        .from('community_members')
-        .select('role')
-        .eq('community_id', (comment.community_posts as any).community_id)
-        .eq('user_uuid', userUuid)
-        .maybeSingle();
-
-      const { data: seeker } = await supabaseAdmin
+      // Check moderator role — resolve uuid → jobseeker_id first
+      const { data: jsUser } = await supabaseAdmin
         .from('jobseekers')
-        .select('role')
+        .select('id, role')
         .eq('uuid', userUuid)
         .maybeSingle();
 
-      if (member?.role === 'moderator' || member?.role === 'admin' || seeker?.role === 'Admin' || seeker?.role === 'Super Admin') {
-        isAuthorized = true;
+      if (jsUser?.id) {
+        const { data: member } = await supabaseAdmin
+          .from('community_members')
+          .select('role')
+          .eq('community_id', (comment.community_posts as any).community_id)
+          .eq('jobseeker_id', jsUser.id)
+          .maybeSingle();
+
+        if (member?.role === 'moderator' || member?.role === 'admin' || jsUser?.role === 'Admin' || jsUser?.role === 'Super Admin') {
+          isAuthorized = true;
+        }
       }
     }
 

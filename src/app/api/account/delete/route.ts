@@ -129,10 +129,18 @@ export async function DELETE(request: NextRequest) {
       }
 
       // Remove from community memberships
-      await supabaseAdmin
-        .from('community_members')
-        .delete()
-        .or(`user_id.eq.${userUuid},member_id.eq.${userUuid}`);
+      const { data: jsForDel } = await supabaseAdmin
+        .from('jobseekers')
+        .select('id')
+        .eq('uuid', userUuid)
+        .maybeSingle();
+
+      if (jsForDel?.id) {
+        await supabaseAdmin
+          .from('community_members')
+          .delete()
+          .eq('jobseeker_id', jsForDel.id);
+      }
     } catch (err) {
       console.error('[ACCOUNT_DELETE] Community handling error:', err);
     }
