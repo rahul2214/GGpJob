@@ -201,23 +201,27 @@ export default function RecommendationSections() {
   return (
     <div className="space-y-8 my-8">
 
-      {/* 1. Recommended For You */}
-      <JobSectionCarousel
-        title="Recommended For You"
-        subtitle="AI-matched roles customized for your profile"
-        icon={<Sparkles className="w-5 h-5" />}
-        jobs={recommendedForYou}
-      />
+      {/* 1. Recommended For You — logged-in only */}
+      {user && (
+        <JobSectionCarousel
+          title="Recommended For You"
+          subtitle="AI-matched roles customized for your profile"
+          icon={<Sparkles className="w-5 h-5" />}
+          jobs={recommendedForYou}
+        />
+      )}
 
-      {/* 2. Jobs Near You */}
-      <JobSectionCarousel
-        title="Jobs Near You"
-        subtitle="Opportunities in your preferred country, state, and city"
-        icon={<MapPin className="w-5 h-5 text-emerald-500" />}
-        jobs={jobsNearYou.length > 0 ? jobsNearYou : recommendedForYou}
-      />
+      {/* 2. Jobs Near You — logged-in only */}
+      {user && jobsNearYou.length > 0 && (
+        <JobSectionCarousel
+          title="Jobs Near You"
+          subtitle="Opportunities in your preferred country, state, and city"
+          icon={<MapPin className="w-5 h-5 text-emerald-500" />}
+          jobs={jobsNearYou}
+        />
+      )}
 
-      {/* 3. Remote Jobs */}
+      {/* 3. Remote Jobs — visible to all */}
       <JobSectionCarousel
         title="Remote Jobs"
         subtitle="Work from anywhere worldwide"
@@ -225,15 +229,17 @@ export default function RecommendationSections() {
         jobs={remoteJobs}
       />
 
-      {/* 4. Recently Posted */}
-      <JobSectionCarousel
-        title="Recently Posted"
-        subtitle="Fresh job openings published in the last few days"
-        icon={<Clock className="w-5 h-5 text-amber-500" />}
-        jobs={recentlyPosted}
-      />
+      {/* 4. Recently Posted — logged-in only */}
+      {user && (
+        <JobSectionCarousel
+          title="Recently Posted"
+          subtitle="Fresh job openings published in the last few days"
+          icon={<Clock className="w-5 h-5 text-amber-500" />}
+          jobs={recentlyPosted}
+        />
+      )}
 
-      {/* 5. Top Companies Hiring */}
+      {/* 5. Top Companies Hiring — visible to all */}
       {topCompanies.length > 0 && (
         <div className="rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm mb-8">
           <div className="flex items-center gap-3 mb-6">
@@ -247,7 +253,7 @@ export default function RecommendationSections() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {topCompanies.map((comp, idx) => (
-              <div 
+              <div
                 key={idx}
                 onClick={() => router.push(`/jobs?search=${encodeURIComponent(comp.companyName)}`)}
                 className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/60 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-400 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:scale-105"
@@ -273,29 +279,33 @@ export default function RecommendationSections() {
         </div>
       )}
 
-      {/* 6. Based on Skills */}
-      <JobSectionCarousel
-        title="Based on Skills"
-        subtitle="Roles requesting candidate skills in your profile"
-        icon={<Award className="w-5 h-5 text-indigo-500" />}
-        jobs={matchingSkills}
-      />
+      {/* 6. Based on Skills — logged-in only */}
+      {user && (
+        <JobSectionCarousel
+          title="Based on Skills"
+          subtitle="Roles requesting skills listed in your profile"
+          icon={<Award className="w-5 h-5 text-indigo-500" />}
+          jobs={matchingSkills}
+        />
+      )}
 
-      {/* 8. Internship Opportunities */}
+      {/* 8. Internship Opportunities — visible to all */}
       <JobSectionCarousel
         title="Internship Opportunities"
         subtitle="Early career & entry-level internship roles"
         icon={<GraduationCap className="w-5 h-5 text-purple-500" />}
-        jobs={internshipJobs.length > 0 ? internshipJobs : recommendedForYou.slice(0, 5)}
+        jobs={internshipJobs.length > 0 ? internshipJobs : recentlyPosted.slice(0, 5)}
       />
 
-      {/* 11. Visa Sponsorship Jobs */}
-      <JobSectionCarousel
-        title="Visa Sponsorship Jobs"
-        subtitle="International roles offering work visa sponsorship"
-        icon={<ShieldCheck className="w-5 h-5 text-rose-500" />}
-        jobs={visaJobs.length > 0 ? visaJobs : recommendedForYou.slice(3, 8)}
-      />
+      {/* 11. Visa Sponsorship Jobs — logged-in only */}
+      {user && visaJobs.length > 0 && (
+        <JobSectionCarousel
+          title="Visa Sponsorship Jobs"
+          subtitle="International roles offering work visa sponsorship"
+          icon={<ShieldCheck className="w-5 h-5 text-rose-500" />}
+          jobs={visaJobs}
+        />
+      )}
 
     </div>
   );
