@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   MessageSquare, Plus, Loader2, ArrowLeft,
   Users, CheckCircle, Heart, AlertTriangle, Megaphone,
-  Edit2, Trash2
+  Edit2, Trash2, Share2
 } from "lucide-react";
 import * as Icons from "lucide-react";
 import { useUser } from "@/contexts/user-context";
@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { CommunityShareModal } from "@/components/community-share-modal";
 
 interface Community {
   id: number;
@@ -33,6 +34,7 @@ interface Community {
 interface Post {
   id: number;
   uuid: string;
+  communityId?: number;
   authorUuid: string;
   title: string;
   content: string;
@@ -70,6 +72,9 @@ export default function CommunityDetailPage() {
   // Discussions state
   const [posts, setPosts] = useState<Post[]>([]);
   const [loadingTab, setLoadingTab] = useState(false);
+
+  // Share state
+  const [sharingPost, setSharingPost] = useState<any | null>(null);
 
   // New Post Dialog Form
   const [postTitle, setPostTitle] = useState("");
@@ -591,6 +596,22 @@ export default function CommunityDetailPage() {
                             <MessageSquare className="w-4 h-4 text-slate-400" />
                             {post.commentCount} Replies
                           </span>
+                          <button 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSharingPost({
+                                title: post.title,
+                                content: post.content,
+                                communityId: post.communityId || comm.id,
+                                postId: post.id
+                              });
+                            }}
+                            className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors"
+                          >
+                            <Share2 className="w-4 h-4 text-slate-400 hover:text-indigo-600" />
+                            Share
+                          </button>
                         </div>
 
                         <span className="text-[10px] text-slate-400/80">
@@ -674,6 +695,13 @@ export default function CommunityDetailPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* --- Share Post Modal --- */}
+      <CommunityShareModal
+        open={!!sharingPost}
+        onOpenChange={(open) => !open && setSharingPost(null)}
+        post={sharingPost}
+      />
 
     </div>
   );

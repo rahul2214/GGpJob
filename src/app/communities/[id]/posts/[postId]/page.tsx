@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, Sparkles, Loader2, ArrowLeft, Heart,
-  Calendar, CheckCircle, Reply, Trash2, Edit2, ShieldAlert, AlertTriangle
+  Calendar, CheckCircle, Reply, Trash2, Edit2, ShieldAlert, AlertTriangle, Share2
 } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { CommunityShareModal } from "@/components/community-share-modal";
 
 interface Post {
   id: number;
@@ -77,6 +78,9 @@ export default function PostDetailPage() {
   const [submittingPostEdit, setSubmittingPostEdit] = useState(false);
   const [showDeletePostConfirm, setShowDeletePostConfirm] = useState(false);
   const [deletingPost, setDeletingPost] = useState(false);
+
+  // Share modal state
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Comment edit states
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
@@ -405,15 +409,24 @@ export default function PostDetailPage() {
             {post.content}
           </div>
 
-          {/* Likes, bookmark count */}
+          {/* Likes & Share row */}
           <div className="flex items-center justify-between border-t border-slate-200/30 dark:border-slate-800/30 pt-4 text-xs font-black uppercase tracking-widest text-slate-400">
-            <button 
-              onClick={handlePostLike}
-              className="flex items-center gap-1.5 hover:text-rose-500 transition-colors"
-            >
-              <Heart className="w-4.5 h-4.5 text-slate-400 hover:text-rose-500" />
-              {post.likesCount} Likes
-            </button>
+            <div className="flex items-center gap-6">
+              <button 
+                onClick={handlePostLike}
+                className="flex items-center gap-1.5 hover:text-rose-500 transition-colors"
+              >
+                <Heart className="w-4.5 h-4.5 text-slate-400 hover:text-rose-500" />
+                {post.likesCount} Likes
+              </button>
+              <button 
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors"
+              >
+                <Share2 className="w-4.5 h-4.5 text-slate-400 hover:text-indigo-600" />
+                Share
+              </button>
+            </div>
             <span className="text-[10px] text-slate-400/80">Posted {new Date(post.createdAt).toLocaleDateString()}</span>
           </div>
 
@@ -718,6 +731,18 @@ export default function PostDetailPage() {
         </div>
 
       </div>
+
+      {/* --- Share Modal --- */}
+      <CommunityShareModal
+        open={showShareModal}
+        onOpenChange={setShowShareModal}
+        post={post ? {
+          title: post.title,
+          content: post.content,
+          communityId: post.communityId,
+          postId: post.id
+        } : null}
+      />
     </div>
   );
 }

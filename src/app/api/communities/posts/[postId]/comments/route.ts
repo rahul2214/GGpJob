@@ -144,7 +144,7 @@ export async function PUT(request: NextRequest) {
     // Fetch comment and parent post to check authorization
     const { data: existingComment } = await supabaseAdmin
       .from('community_comments')
-      .select('*, community_posts(author_uuid)')
+      .select('*, community_posts(jobseeker_id, author_uuid)')
       .eq('id', commentId)
       .single();
 
@@ -152,7 +152,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Comment not found' }, { status: 404 });
     }
 
-    const isPostAuthor = (existingComment.community_posts as any)?.author_uuid === userUuid;
+    const postRef = existingComment.community_posts as any;
+    const isPostAuthor = (requestingAuthorId !== null && postRef?.jobseeker_id === requestingAuthorId) ||
+      postRef?.author_uuid === userUuid;
     const isCommentAuthor = requestingAuthorId !== null && existingComment.author_id === requestingAuthorId;
 
     let updatedComment;
@@ -227,7 +229,7 @@ export async function DELETE(request: NextRequest) {
 
     const { data: comment } = await supabaseAdmin
       .from('community_comments')
-      .select('*, community_posts(community_id, author_uuid)')
+      .select('*, community_posts(community_id, jobseeker_id, author_uuid)')
       .eq('id', commentId)
       .single();
 
@@ -235,9 +237,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Comment not found' }, { status: 404 });
     }
 
-    // Comment author (by int8 id) or post author (by uuid) can delete
+    // Comment author (by int8 id) or post author (by int8 jobseeker_id or uuid) can delete
+    const postRefDel = comment.community_posts as any;
     const isCommentAuthor = requestingAuthorId !== null && comment.author_id === requestingAuthorId;
-    const isPostAuthor = (comment.community_posts as any)?.author_uuid === userUuid;
+    const isPostAuthor = (requestingAuthorId !== null && postRefDel?.jobseeker_id === requestingAuthorId) ||
+      postRefDel?.author_uuid === userUuid;
     let isAuthorized = isCommentAuthor || isPostAuthor;
 
     if (!isAuthorized) {

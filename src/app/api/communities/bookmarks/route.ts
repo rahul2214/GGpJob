@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { decrypt } from '@/lib/encryption';
 
 // GET bookmarked posts for a user
 export async function GET(request: NextRequest) {
@@ -32,7 +33,13 @@ export async function GET(request: NextRequest) {
 
     if (postsError) throw postsError;
 
-    return NextResponse.json(posts || []);
+    const mappedPosts = (posts || []).map((p: any) => ({
+      ...p,
+      title: decrypt(p.title),
+      content: decrypt(p.content)
+    }));
+
+    return NextResponse.json(mappedPosts);
   } catch (err: any) {
     console.error('[BOOKMARKS_GET] Error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
