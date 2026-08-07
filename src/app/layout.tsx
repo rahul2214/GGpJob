@@ -93,6 +93,23 @@ export default function RootLayout({
     <html lang="en-IN" className="h-full">
       <head>
         <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'JobsDart',
+              url: 'https://jobsdart.in',
+              description: "Skip the ATS. Connect with verified employees at Google, Microsoft, Amazon & 500+ MNCs for direct referrals.",
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: 'https://jobsdart.in/jobs?search={search_term_string}',
+                'query-input': 'required name=search_term_string',
+              },
+            }),
+          }}
+        />
+        <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {

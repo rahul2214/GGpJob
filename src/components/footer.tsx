@@ -19,11 +19,33 @@ export default function Footer() {
                             The world's premium referral network. Connect directly with verified insiders at top tech companies worldwide and skip the ATS black hole.
                         </p>
                         <div className="flex gap-4">
-                            {[Twitter, Linkedin].map((Icon, i) => (
-                                <a key={i} href="#" className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-violet-400 hover:bg-white/10 transition-colors">
-                                    <Icon className="w-4 h-4" />
-                                </a>
-                            ))}
+                            <a
+                                href="https://www.linkedin.com/company/jobsdart"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="JobsDart LinkedIn"
+                                className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-violet-400 hover:bg-white/10 transition-colors"
+                            >
+                                <Linkedin className="w-4 h-4" />
+                            </a>
+                            <a
+                                href="https://twitter.com/jobsdart"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="JobsDart Twitter"
+                                className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-violet-400 hover:bg-white/10 transition-colors"
+                            >
+                                <Twitter className="w-4 h-4" />
+                            </a>
+                            <a
+                                href="https://jobsdart.in"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="JobsDart Platform"
+                                className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-violet-400 hover:bg-white/10 transition-colors"
+                            >
+                                <Globe className="w-4 h-4" />
+                            </a>
                         </div>
                     </div>
 

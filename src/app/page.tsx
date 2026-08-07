@@ -1,75 +1,54 @@
-"use client";
-
-import { useUser } from '@/contexts/user-context';
-import { useRouter } from 'next/navigation';
-import JobSeekerDashboard from "@/components/dashboards/job-seeker-dashboard";
-import RecruiterDashboard from "@/components/dashboards/recruiter-dashboard";
-import { Skeleton } from '@/components/ui/skeleton';
+import type { Metadata } from 'next';
 import JobPortalHome from '@/components/home/JobPortalHome';
+import HomeClientDashboard from '@/components/home/HomeClientDashboard';
+
+export const metadata: Metadata = {
+  title: 'JobsDart — Bypass ATS & Get Referred at Top MNCs in India',
+  description: 'Skip the ATS black hole. JobsDart connects job seekers directly with verified employees and recruiters at Google, Microsoft, Amazon & 500+ MNCs for direct referrals and insider hiring.',
+  keywords: [
+    'employee referral jobs India',
+    'bypass ATS India',
+    'insider referral platform',
+    'MNC jobs Bengaluru',
+    'job referral Google Microsoft',
+    'direct hiring India',
+    'referral jobs 2025',
+    'get referred MNC India',
+    'job portal India referral',
+    'ATS bypass jobs'
+  ],
+  metadataBase: new URL('https://jobsdart.in'),
+  alternates: {
+    canonical: 'https://jobsdart.in',
+  },
+  openGraph: {
+    title: 'JobsDart — Bypass ATS & Get Referred at Top MNCs in India',
+    description: 'Skip the ATS. Connect with verified employees at Google, Microsoft, Amazon & 500+ MNCs for direct referrals. India\'s referral-first job platform.',
+    url: 'https://jobsdart.in',
+    siteName: 'JobsDart',
+    locale: 'en_IN',
+    type: 'website',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'JobsDart — Get Referred by Insiders at Top MNCs',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'JobsDart — Bypass ATS & Get Referred at Top MNCs in India',
+    description: 'Skip the ATS. Direct referrals from verified employees at Google, Microsoft & 500+ MNCs.',
+    images: ['/og-image.png'],
+  },
+};
 
 export default function Home() {
-  const { user, loading } = useUser();
-  const router = useRouter();
-
-  if (loading) {
-    return (
-      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="space-y-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-8 pt-12">
-            <div className="w-full md:w-1/2 space-y-4">
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-8 w-3/4" />
-              <Skeleton className="h-12 w-full rounded-full" />
-            </div>
-            <div className="w-full md:w-1/2">
-              <Skeleton className="h-64 w-full rounded-lg" />
-            </div>
-          </div>
-          <div className="space-y-4 pt-12">
-            <Skeleton className="h-10 w-1/3 mx-auto" />
-            <Skeleton className="h-6 w-1/2 mx-auto" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8">
-              <Skeleton className="h-48 w-full rounded-lg" />
-              <Skeleton className="h-48 w-full rounded-lg" />
-              <Skeleton className="h-48 w-full rounded-lg" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const renderDashboard = () => {
-    if (!user) {
-       return <JobPortalHome />;
-    }
-    
-    let dashboardComponent;
-    switch(user.role) {
-      case "Job Seeker":
-        dashboardComponent = <JobSeekerDashboard />;
-        break;
-      case "Recruiter":
-        dashboardComponent = <RecruiterDashboard />;
-        break;
-      case "Admin":
-      case "Super Admin":
-        router.push('/admin/dashboard');
-        return (
-             <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-                <p>Redirecting to Admin Dashboard...</p>
-             </div>
-        )
-      default:
-         router.push('/login');
-         return null;
-    }
-    return dashboardComponent;
-  }
-
   return (
-    <div>
-      {renderDashboard()}
-    </div>
+    <main className="min-h-screen bg-white dark:bg-[hsl(220_65%_6%)]">
+      <HomeClientDashboard fallback={<JobPortalHome />} />
+    </main>
   );
 }

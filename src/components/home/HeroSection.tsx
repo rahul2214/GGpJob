@@ -66,15 +66,14 @@ export function HeroSection() {
                     <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="max-w-2xl lg:col-span-7">
 
                         <motion.div variants={fadeInUp}>
-                            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-6 leading-[1.05]">
-                                Bypass the global ATS.<br />
-                                Get Hired by <span className="text-gradient-hero">Top Companies.</span>
+                            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-6 leading-[1.08]">
+                                Bypass the ATS Black Hole — <br />
+                                Get Referred by <span className="text-gradient-hero">Top MNC Insiders.</span>
                             </h1>
                         </motion.div>
                         
-                        <motion.p variants={fadeInUp} className="text-slate-600 dark:text-slate-300 mb-10 text-lg">
-                           Connect directly with verified recruiters across 50+ countries. 
-                           No borders. No middleman. Secure your interview at top tech companies worldwide.
+                        <motion.p variants={fadeInUp} className="text-slate-600 dark:text-slate-300 mb-6 text-base md:text-lg leading-relaxed">
+                            JobsDart is India&apos;s premier employee referral and career platform connecting job seekers directly with verified insiders, senior engineers, and recruiters at 500+ top MNCs including Google, Microsoft, Amazon, Meta, and Stripe. Skip traditional ATS resume screeners and land direct interviews with verified employee referrals worldwide.
                         </motion.p>
 
                         <motion.form variants={fadeInUp} onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 bg-white dark:bg-white/5 backdrop-blur-md p-2 rounded-2xl border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-2xl max-w-xl">

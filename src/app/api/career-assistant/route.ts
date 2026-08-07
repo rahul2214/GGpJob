@@ -139,13 +139,13 @@ export async function POST(req: NextRequest) {
     if (isSubmitAction && activeJobId) {
       if (!userProfile) {
         return NextResponse.json({
-          message: `🔒 **Authentication Required**: Please sign in as a Job Seeker to apply for jobs directly via chatbot. (Debug: userId=${userId}, userRole=${userRole}, userProfile=${userProfile ? JSON.stringify(userProfile) : 'null'})`,
-          suggestions: ["Recommend Jobs"]
+          message: `🔒 **Authentication Required**: Please [Sign In](/login) or [Register](/signup) as a Job Seeker to apply for jobs directly via chatbot.`,
+          suggestions: ["Recommend Jobs", "Sign In / Register"]
         });
       }
       if (userRole !== "Job Seeker") {
         return NextResponse.json({
-          message: `⚠️ **Invalid Role**: Only Job Seekers can apply for jobs. (Debug: role=${userRole})`,
+          message: `⚠️ **Invalid Role**: Only registered Job Seekers can apply for jobs directly via the AI assistant.`,
           suggestions: ["Recommend Jobs"]
         });
       }
@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
         const resData = await appRes.json();
         if (appRes.ok) {
           return NextResponse.json({
-            message: `🎉 **Success!** Your application for **${activeJobContext?.title || "the job"}** at **${activeJobContext?.company || "slice"}** has been successfully submitted to the database!\n\nYou can track the status in your applications dashboard. Would you like to:`,
+            message: `🎉 **Success!** Your application for **${activeJobContext?.title || "the job"}** at **${activeJobContext?.company || "the company"}** has been successfully submitted to the database!\n\nYou can track the status in your applications dashboard. Would you like to:`,
             suggestions: ["View Application Status", "Get a Referral", "Recommend Jobs"]
           });
         } else {
@@ -325,7 +325,7 @@ Context:
             workStatus: userProfile.work_status,
             resumeUrl: userProfile.resume_url,
           })
-        : "Guest Job Seeker"
+        : "Guest Job Seeker (Not Logged In)"
     }
 - Current Job Detail Context (Active Page): ${activeJobContext ? JSON.stringify(activeJobContext) : "None"}
 - Live Active Regular Jobs on Platform: ${JSON.stringify(recentJobs)}
@@ -336,8 +336,9 @@ Context:
 Aesthetic & Behavioral Guidelines:
 1. Keep replies concise, highly professional, and action-oriented. Never write long essays. Bullet points, bold headers, and short paragraphs are preferred.
 2. ALWAYS provide quick-reply suggestion choices (exactly 3 to 5 items) that follow up naturally on the current action.
-3. For Job Seekers:
-   - "Find Jobs": Recommend from the live active jobs matching their skills. Provide match percentages and highlight missing skills.
+3. For Job Seekers & Guests:
+   - For Logged-in Job Seekers: Recommend live active jobs matching their skills. Provide real match percentages based on skill overlap.
+   - For Guest Users (Not Logged In): Explicitly state that they are browsing as a Guest. List featured active job openings on JobsDart (Title, Company, Location, Salary) with [View Details](/jobs/{uuid}) links, and invite them to [Sign In](/login) or [Register](/signup) to get personalized AI match scores tailored to their skills. DO NOT generate fake candidate match percentages (e.g. "80% match") for Guest users without a profile!
    - "Improve Resume / ATS Score": Provide actionable objective reviews, keywords to include, action verbs, and bullet optimization.
    - "Interview Prep": Offer HR/technical mock questions, company prep (e.g. TCS, Infosys, Accenture), or technical quizzes.
    - "Direct Applications": Guide candidates on direct job applications and recruiter interactions.
@@ -349,7 +350,7 @@ Aesthetic & Behavioral Guidelines:
    - "System Analytics": Summarize platform activity and transaction counts.
 6. If recommending, viewing, or applying for a job, ALWAYS provide a markdown link in your message using the job's public uuid: [Apply Here](/jobs/{uuid}) or [View Details](/jobs/{uuid}) to help users take action quickly.
 7. Important: You must keep track of context using the conversation history. If the user clicks "Apply for the job" or asks a follow-up, use the history to determine which job they are referring to and provide the correct action link, e.g. [Apply for the job](/jobs/{uuid}).
-8. If action is specified, focus the response primarily on satisfying that specific action.
+8. NEVER include internal technical debug information, database variables, or raw JSON states in user messages.
 9. ABSOLUTE RULE — NEVER VIOLATE: JobsDart is a 100% self-contained platform. It is STRICTLY FORBIDDEN to mention, suggest, reference, or imply the existence of any external job platforms such as LinkedIn, Indeed, Glassdoor, Naukri, Shine, or any other third-party site.
 10. The output MUST be a JSON object matching this schema:
 {

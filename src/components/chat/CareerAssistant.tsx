@@ -148,6 +148,34 @@ export default function CareerAssistant() {
   };
 
   const handleQuickAction = (suggestion: string) => {
+    const sLower = suggestion.toLowerCase();
+
+    if (sLower === "sign in" || sLower === "login" || sLower.includes("sign in") || sLower.includes("login") || sLower.includes("sign in / register")) {
+      router.push("/login");
+      setIsOpen(false);
+      return;
+    }
+    if (sLower === "register" || sLower === "sign up" || sLower.includes("register") || sLower.includes("sign up")) {
+      router.push("/signup");
+      setIsOpen(false);
+      return;
+    }
+    if (sLower.includes("view profile") || sLower.includes("edit profile")) {
+      router.push("/profile");
+      setIsOpen(false);
+      return;
+    }
+    if (sLower.includes("explore jobs") || sLower.includes("browse jobs") || sLower.includes("view featured jobs")) {
+      router.push("/jobs");
+      setIsOpen(false);
+      return;
+    }
+    if (sLower.includes("edit resume") || sLower.includes("update resume")) {
+      router.push("/profile");
+      setIsOpen(false);
+      return;
+    }
+
     let actionKey = "";
     if (suggestion.includes("Recommend Jobs")) actionKey = "find_jobs";
     else if (suggestion.includes("Improve Resume") || suggestion.includes("ATS")) actionKey = "improve_resume";
@@ -331,13 +359,27 @@ export default function CareerAssistant() {
                               className="space-y-1"
                               onClick={(e) => {
                                 const target = e.target as HTMLElement;
-                                // Check if it's a link click
-                                if (target.tagName === "A" || target.closest("a")) {
-                                  const anchor = target.tagName === "A" ? target : target.closest("a");
-                                  const href = anchor?.getAttribute("href");
-                                  if (href && href.startsWith("/")) {
+                                const anchor = target.tagName === "A" ? target : target.closest("a");
+                                if (anchor) {
+                                  const href = anchor.getAttribute("href");
+                                  if (href) {
                                     e.preventDefault();
-                                    router.push(href);
+                                    if (href.startsWith("/")) {
+                                      router.push(href);
+                                      setIsOpen(false);
+                                      return;
+                                    }
+                                    try {
+                                      const urlObj = new URL(href);
+                                      if (urlObj.origin === window.location.origin || urlObj.hostname.includes("jobsdart") || urlObj.hostname === "localhost") {
+                                        router.push(urlObj.pathname + urlObj.search);
+                                        setIsOpen(false);
+                                        return;
+                                      }
+                                      window.open(href, "_blank", "noopener,noreferrer");
+                                    } catch (err) {
+                                      window.location.href = href;
+                                    }
                                   }
                                 }
                               }}
