@@ -49,7 +49,7 @@ export default function OnboardingPage() {
     const [referrerName, setReferrerName] = useState<string | null>(null);
     const [referrerId, setReferrerId] = useState<number | null>(null);
     const [isValidatingCode, setIsValidatingCode] = useState(false);
-    const [showReferralStep, setShowReferralStep] = useState(true);
+    const [showReferralStep, setShowReferralStep] = useState(false);
     const [referralMessage, setReferralMessage] = useState<{ text: string; type: 'success' | 'warning' | 'error' } | null>(null);
 
     // Communities selections
@@ -57,12 +57,52 @@ export default function OnboardingPage() {
     const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
     const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
 
+    const dismissReferralStep = async () => {
+        setShowReferralStep(false);
+        if (user) {
+            try {
+                const targetId = user.id || user.uuid;
+                if (targetId) {
+                    const updatedMeta = {
+                        ...(user.metadata || {}),
+                        hasSeenReferralPrompt: true,
+                        referralStepDismissed: true,
+                    };
+                    setUser({
+                        ...user,
+                        metadata: updatedMeta
+                    });
+                    await fetch(`/api/users/${targetId}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            role: 'Job Seeker',
+                            metadata: updatedMeta
+                        })
+                    });
+                }
+            } catch (err) {
+                console.warn('[ONBOARDING] Failed to save referral prompt dismissal to database:', err);
+            }
+        }
+    };
+
     useEffect(() => {
         if (user) {
-            if (user.referredBy) {
+            // 100% Database metadata check
+            const isDismissedDb = !!(
+                user.referredBy ||
+                user.metadata?.hasSeenReferralPrompt ||
+                user.metadata?.referralStepDismissed
+            );
+
+            if (isDismissedDb) {
                 setShowReferralStep(false);
+            } else {
+                setShowReferralStep(true);
             }
-            const stored = localStorage.getItem('jobsdart_referral_code');
+
+            const stored = typeof window !== 'undefined' ? localStorage.getItem('jobsdart_referral_code') : null;
             if (stored && !user.referredBy && !referralCode) {
                 setReferralCode(stored);
             }
@@ -109,16 +149,22 @@ export default function OnboardingPage() {
                     text: `Code applied! You were successfully referred by ${referrer.name}.`,
                     type: 'success'
                 });
-                localStorage.removeItem('jobsdart_referral_code');
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('jobsdart_referral_code');
+                }
+                setTimeout(() => {
+                    dismissReferralStep();
+                }, 1000);
             } else {
                 const claimData = await claimRes.json();
-                // If it failed due to email verification, that is expected for unverified users
                 if (claimRes.status === 400 && claimData.error?.toLowerCase().includes('confirm')) {
                     setReferralMessage({
                         text: `Code verified! Referral from ${referrer.name} will be active once you verify your email.`,
                         type: 'warning'
                     });
-                    localStorage.setItem('jobsdart_referral_code', referralCode.trim());
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('jobsdart_referral_code', referralCode.trim());
+                    }
                 } else {
                     setReferralMessage({
                         text: claimData.error || "Code validated, but could not claim referral.",
@@ -669,17 +715,14 @@ export default function OnboardingPage() {
                             <Button
                                 type="button"
                                 variant="ghost"
-                                onClick={() => {
-                                    localStorage.removeItem('jobsdart_referral_code');
-                                    setShowReferralStep(false);
-                                }}
+                                onClick={dismissReferralStep}
                                 className="flex-1 h-14 rounded-2xl text-slate-500 hover:text-slate-800 font-bold hover:bg-slate-50 transition-colors"
                             >
                                 Skip
                             </Button>
                             <Button
                                 type="button"
-                                onClick={() => setShowReferralStep(false)}
+                                onClick={dismissReferralStep}
                                 className="flex-1 h-14 rounded-2xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200"
                             >
                                 Continue
