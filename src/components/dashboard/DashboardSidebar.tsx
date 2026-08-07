@@ -18,6 +18,7 @@ import {
   LogOut,
   PlusCircle,
   Briefcase,
+  Mail,
   Trophy,
   MessageSquare,
   Wallet,
@@ -89,6 +90,7 @@ const NAV_CONFIG: Record<string, NavSection[]> = {
       items: [
         { icon: LayoutDashboard, label: "Overview", href: "/admin/dashboard" },
         { icon: Coins, label: "Revenue Dashboard", href: "/admin/revenue" },
+        { icon: Mail, label: "Candidate CRM & AI Emails", href: "/admin/crm" },
         { icon: Users, label: "User Accounts", href: "/admin/users" },
         { icon: UserCog, label: "Deleted Accounts", href: "/admin/deleted-users" },
         { icon: MessageSquareQuote, label: "Feedback Center", href: "/admin/feedback" },

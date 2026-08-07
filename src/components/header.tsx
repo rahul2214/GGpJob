@@ -23,6 +23,7 @@ import {
   BarChart3,
   Award,
   Network,
+  Mail,
   MapPin,
   X,
   Search,
@@ -153,6 +154,7 @@ export default function Header() {
   const adminNavItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
     { href: "/admin/revenue", label: "Revenue Analytics", icon: Coins },
+    { href: "/admin/crm", label: "Candidate CRM & AI Emails", icon: Mail },
     { href: "/jobs/post", label: "Post Job", icon: PlusCircle },
     { href: "/admin/users", label: "Manage Users", icon: UserCog },
     { href: "/admin/jobs", label: "Manage Jobs", icon: BriefcaseBusiness },
