@@ -73,7 +73,7 @@ export function HeroSection() {
                         </motion.div>
                         
                         <motion.p variants={fadeInUp} className="text-slate-600 dark:text-slate-300 mb-6 text-base md:text-lg leading-relaxed">
-                           JobsDart connects job seekers with verified employees, senior professionals, and recruiters at top companies worldwide. Discover jobs, build ATS-friendly resumes, and accelerate your career.
+                            Bypass the ATS black hole with JobsDart. Get referred by verified top MNC insiders and senior tech employees at Google, Microsoft, Amazon, Meta, and 500+ leading companies worldwide. Land direct interviews, check ATS scores, build your resume, and find top jobs faster.
                         </motion.p>
 
                         <motion.form variants={fadeInUp} onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 bg-white dark:bg-white/5 backdrop-blur-md p-2 rounded-2xl border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-2xl max-w-xl">

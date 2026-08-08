@@ -208,7 +208,12 @@ export function JobsGrid() {
                         <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
                           {roleTitle}
                         </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{company}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{company}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed line-clamp-2">
+                          {job.description && typeof job.description === 'string' && job.description.length > 20 
+                            ? job.description.replace(/<[^>]*>/g, '').substring(0, 110) + '...' 
+                            : `Direct hiring opening at ${company}. Apply with ATS resume optimization and connect with verified employee insiders.`}
+                        </p>
                       </div>
                     </div>
                     {isRef && (
