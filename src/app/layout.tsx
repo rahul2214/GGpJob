@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     default: 'JobsDart — Get Referred by Insiders at Top MNCs India',
     template: '%s | JobsDart',
   },
-  description: 'Skip the ATS black hole. JobsDart connects you with verified employees at 500+ MNCs for direct referrals and insider hiring. India\'s referral-first job platform.',
+  description: 'Find jobs faster with JobsDart, an AI-powered job portal for job seekers. Discover global jobs, build your resume, check ATS scores, and get hired.',
   keywords: [
     'employee referral jobs India',
     'bypass ATS India',
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://jobsdart.in'),
   openGraph: {
     title: 'JobsDart — Get Referred by Insiders at Top MNCs',
-    description: 'Skip the ATS. Connect with verified employees at Google, Microsoft, Amazon & 500+ MNCs for direct referrals. India\'s referral-first job platform.',
+    description: 'Find jobs faster with JobsDart, an AI-powered job portal for job seekers. Discover global jobs, build your resume, check ATS scores, and get hired.',
     url: 'https://jobsdart.in',
     siteName: 'JobsDart',
     locale: 'en_IN',
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'JobsDart — Get Referred by Insiders at Top MNCs',
-    description: 'Skip the ATS. Direct referrals from verified employees at Google, Microsoft & 500+ MNCs.',
+    description: 'Find jobs faster with JobsDart, an AI-powered job portal for job seekers. Discover global jobs, build your resume, check ATS scores, and get hired.',
     images: ['/og-image.png'],
   },
   icons: {

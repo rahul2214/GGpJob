@@ -73,7 +73,7 @@ export function HeroSection() {
                         </motion.div>
                         
                         <motion.p variants={fadeInUp} className="text-slate-600 dark:text-slate-300 mb-6 text-base md:text-lg leading-relaxed">
-                            JobsDart is India&apos;s premier employee referral and career platform connecting job seekers directly with verified insiders, senior engineers, and recruiters at 500+ top MNCs including Google, Microsoft, Amazon, Meta, and Stripe. Skip traditional ATS resume screeners and land direct interviews with verified employee referrals worldwide.
+                           JobsDart connects job seekers with verified employees, senior professionals, and recruiters at top companies worldwide. Discover jobs, build ATS-friendly resumes, and accelerate your career.
                         </motion.p>
 
                         <motion.form variants={fadeInUp} onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 bg-white dark:bg-white/5 backdrop-blur-md p-2 rounded-2xl border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-2xl max-w-xl">
