@@ -556,3 +556,50 @@ export function updateCandidatePreference(email: string, frequency: string, isUn
     updatedAt: new Date().toISOString(),
   };
 }
+
+/**
+ * Filters Candidate Audience based on the 7-Campaign Segmentation Engine
+ */
+export function filterCandidatesByCampaignType(
+  candidates: CRMCandidate[],
+  campaignType: CampaignType
+): CRMCandidate[] {
+  return candidates.filter((c) => {
+    if (c.isUnsubscribed || c.emailFrequency === 'PAUSED') return false;
+
+    switch (campaignType) {
+      case 'JOB_RECOMMENDATIONS':
+      case 'AI_JOB_RECOMMENDATION':
+        // Active candidates with skills profile
+        return c.skills && c.skills.length > 0;
+
+      case 'FEATURE_EDUCATION':
+        // Candidates who haven't used ATS checker feature yet
+        return c.engagementScore < 75;
+
+      case 'RESUME_BUILDER':
+        // Candidates with incomplete profile or missing resume
+        return !c.headline || c.engagementScore < 50;
+
+      case 'COMMUNITY':
+        // Candidates with new or passive lifecycle stage
+        return c.lifecycleStage === 'NEW_ONBOARDED' || c.lifecycleStage === 'PASSIVE_SEEKER';
+
+      case 'PRODUCT_UPDATES':
+      case 'WEEKLY_DIGEST':
+        // All active platform candidates
+        return c.lifecycleStage !== 'UNSUBSCRIBED';
+
+      case 'CONVERSION':
+        // High-engagement free users
+        return c.engagementScore >= 50 && c.lifecycleStage !== 'UNSUBSCRIBED';
+
+      case 'RE_ENGAGEMENT':
+        // Inactive or dormant candidates
+        return c.lifecycleStage === 'DORMANT' || c.engagementScore < 40;
+
+      default:
+        return true;
+    }
+  });
+}

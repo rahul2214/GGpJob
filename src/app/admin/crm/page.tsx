@@ -8,7 +8,7 @@ import {
   Users, Mail, Sparkles, RefreshCw, Send, CheckCircle2,
   AlertTriangle, ShieldCheck, Zap, BarChart3, Filter, Search,
   ArrowUpRight, Clock, Eye, MousePointerClick, ShieldAlert, Cpu,
-  Settings, Check, X, ChevronRight, ExternalLink, Loader2
+  Settings, Check, X, ChevronRight, ExternalLink, Loader2, Play
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import type { CRMCandidate, CRMEmailLog, CRMAnalyticsSummary, LifecycleStage } from "@/lib/crm/types";
+import type { CRMCandidate, CRMEmailLog, CRMAnalyticsSummary, CampaignType } from "@/lib/crm/types";
+import { CAMPAIGN_STRUCTURE_CATALOG, renderCRMTemplate } from "@/lib/crm/template-engine";
+import { filterCandidatesByCampaignType } from "@/lib/crm/candidate-crm";
 
 export default function AdminCRMPage() {
   const { user, loading: userLoading } = useUser();
@@ -39,6 +41,10 @@ export default function AdminCRMPage() {
   const [isSendingRecommendations, setIsSendingRecommendations] = useState(false);
   const [testEmail, setTestEmail] = useState("");
   const [isSendingTest, setIsSendingTest] = useState(false);
+  const [executingCampaignType, setExecutingCampaignType] = useState<string | null>(null);
+
+  // Template Preview Dialog State
+  const [activePreviewTemplate, setActivePreviewTemplate] = useState<{ title: string; html: string } | null>(null);
 
   const isAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
 
@@ -125,10 +131,36 @@ export default function AdminCRMPage() {
     }
   };
 
+  const handleExecuteCampaign = async (campaignType: CampaignType) => {
+    setExecutingCampaignType(campaignType);
+    try {
+      const res = await fetch("/api/crm/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campaignType }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Campaign execution failed");
+
+      toast({
+        title: "🚀 Campaign Dispatched via Brevo",
+        description: data.message,
+      });
+      fetchCRMData();
+    } catch (err: any) {
+      toast({
+        title: "Campaign Execution Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setExecutingCampaignType(null);
+    }
+  };
+
   const handleSendTestEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!testEmail.trim()) return;
-
+    if (!testEmail) return;
     setIsSendingTest(true);
     try {
       const res = await fetch("/api/crm/send-recommendations", {
@@ -137,14 +169,12 @@ export default function AdminCRMPage() {
         body: JSON.stringify({ email: testEmail }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Test dispatch failed");
+      if (!res.ok) throw new Error(data.error || "Failed to send test email.");
 
       toast({
-        title: "✓ Test AI Digest Sent!",
-        description: `Digest email dispatched via Brevo to ${testEmail}`,
+        title: "✓ Test AI Recommendation Sent",
+        description: `Dispatched live sample email to ${testEmail}`,
       });
-      setTestEmail("");
-      fetchCRMData();
     } catch (err: any) {
       toast({
         title: "Test Failed",
@@ -154,6 +184,38 @@ export default function AdminCRMPage() {
     } finally {
       setIsSendingTest(false);
     }
+  };
+
+  const handlePreviewCampaignTemplate = (templateId: string, label: string) => {
+    const sampleCandidate = candidates[0] || {
+      id: 'demo',
+      uuid: 'demo-uuid',
+      name: 'Sarah Jenkins',
+      email: 'sarah.jenkins@example.com',
+      role: 'Job Seeker',
+      headline: 'Senior Full Stack Engineer',
+      skills: ['React', 'Node.js', 'TypeScript', 'AWS', 'PostgreSQL'],
+      currentCity: 'Bengaluru',
+      country: 'India',
+      preferredJobTitles: ['Senior Engineer'],
+      preferredLocations: ['Remote'],
+      lifecycleStage: 'HIGHLY_ENGAGED',
+      engagementScore: 88,
+      brevoSyncStatus: 'SYNCED',
+      emailFrequency: 'WEEKLY',
+      isUnsubscribed: false,
+      totalEmailsSent: 4,
+      totalEmailsOpened: 3,
+      totalEmailsClicked: 2,
+      totalApplicationsSubmitted: 1,
+      createdAt: new Date().toISOString(),
+    };
+
+    const { subject, htmlContent } = renderCRMTemplate(templateId, sampleCandidate);
+    setActivePreviewTemplate({
+      title: `${label} — Subject: ${subject}`,
+      html: htmlContent,
+    });
   };
 
   // Filter candidates
@@ -191,10 +253,10 @@ export default function AdminCRMPage() {
             <span className="p-2 rounded-2xl bg-indigo-600/30 text-indigo-400 border border-indigo-500/30">
               <Sparkles className="w-6 h-6" />
             </span>
-            <h1 className="text-3xl font-black tracking-tight">JobsDart CRM & Brevo AI Automation</h1>
+            <h1 className="text-3xl font-black tracking-tight">JobsDart CRM & Brevo Automation</h1>
           </div>
           <p className="text-slate-300 text-sm max-w-2xl leading-relaxed">
-            AI-powered Candidate CRM engine with automated Brevo email delivery, job match scoring, engagement tracking, and anti-spam deliverability controls.
+            Enterprise 7-Campaign Segmentation Engine with automated Brevo email delivery, ATS score nudges, community engagement, and CAN-SPAM deliverability controls.
           </p>
         </div>
 
@@ -248,10 +310,10 @@ export default function AdminCRMPage() {
             </div>
             <div className="mt-3">
               <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {summary?.openRatePercentage || 0}% <span className="text-xs font-bold text-slate-400">Open Rate</span>
+                {summary?.deliveryRatePercentage ?? 100}%
               </span>
-              <span className="block text-[11px] font-bold text-slate-400 mt-1">
-                {summary?.deliveryRatePercentage || 100}% Delivery Rate ({summary?.totalEmailsSent || 0} Total Sent)
+              <span className="block text-[11px] font-bold text-blue-600 mt-1">
+                {summary?.openRatePercentage ?? 0}% Open Rate | {summary?.clickRatePercentage ?? 0}% Click Rate
               </span>
             </div>
           </CardContent>
@@ -260,15 +322,15 @@ export default function AdminCRMPage() {
         <Card className="rounded-2xl border-slate-200/70 dark:border-slate-800/70 shadow-sm hover:shadow-md transition-all">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-400">Click & Conversion</span>
-              <MousePointerClick className="w-4 h-4 text-purple-600" />
+              <span className="text-xs font-black uppercase tracking-wider text-slate-400">App Conversion</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             </div>
             <div className="mt-3">
-              <span className="text-3xl font-black text-purple-600 dark:text-purple-400 tracking-tight">
-                {summary?.conversionRatePercentage || 18.2}%
+              <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                {summary?.conversionRatePercentage ?? 0}%
               </span>
               <span className="block text-[11px] font-bold text-slate-500 mt-1">
-                {summary?.clickRatePercentage || 42.5}% CTR (Click-Through Rate)
+                {summary?.totalApplicationsConverted || 0} Direct Job Applications
               </span>
             </div>
           </CardContent>
@@ -277,23 +339,23 @@ export default function AdminCRMPage() {
         <Card className="rounded-2xl border-slate-200/70 dark:border-slate-800/70 shadow-sm hover:shadow-md transition-all">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-400">Bounce & Spam Rate</span>
-              <ShieldAlert className="w-4 h-4 text-amber-500" />
+              <span className="text-xs font-black uppercase tracking-wider text-slate-400">Bounce & Spam</span>
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
             </div>
             <div className="mt-3">
               <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {summary?.bounceRatePercentage || 0.8}% <span className="text-xs font-bold text-slate-400">Bounce</span>
+                {summary?.bounceRatePercentage ?? 0}%
               </span>
-              <span className="block text-[11px] font-bold text-slate-400 mt-1">
-                {summary?.spamComplaintRatePercentage || 0.05}% Spam | {summary?.unsubscribeRatePercentage || 0.4}% Opt-Out
+              <span className="block text-[11px] font-bold text-amber-600 mt-1">
+                {summary?.spamComplaintRatePercentage ?? 0}% Spam | {summary?.unsubscribeRatePercentage ?? 0}% Opt-Out
               </span>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/70 dark:border-slate-800/70 shadow-sm">
+      {/* Control Actions Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/70 dark:border-slate-800/70">
         <div className="flex items-center gap-3">
           <Button
             onClick={handleSyncToBrevo}
@@ -310,7 +372,7 @@ export default function AdminCRMPage() {
             className="h-11 rounded-xl bg-slate-900 hover:bg-black dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider shadow-md"
           >
             {isSendingRecommendations ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2 text-amber-400" />}
-            Run AI Recommendation Campaign
+            Run AI Job Recommendation
           </Button>
         </div>
 
@@ -318,14 +380,14 @@ export default function AdminCRMPage() {
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline" className="h-11 rounded-xl font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">
-              <Mail className="w-4 h-4 mr-2 text-indigo-600" /> Send Test AI Digest
+              <Mail className="w-4 h-4 mr-2 text-indigo-600" /> Send Test Email Digest
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md rounded-3xl p-6">
             <DialogHeader>
               <DialogTitle className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-indigo-600" />
-                Dispatch Test AI Recommendation
+                Dispatch Test Recommendation Email
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500 mt-1">
                 Enter your email address to receive a live sample AI job recommendation digest email dispatched via Brevo API.
@@ -358,21 +420,99 @@ export default function AdminCRMPage() {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="directory" className="space-y-6">
+      <Tabs defaultValue="campaigns" className="space-y-6">
         <TabsList className="bg-slate-100 dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-800">
+          <TabsTrigger value="campaigns" className="rounded-xl font-bold text-xs px-5 py-2.5">
+            <Sparkles className="w-4 h-4 mr-2 text-indigo-600" /> 7-Campaign Segmentation Engine
+          </TabsTrigger>
           <TabsTrigger value="directory" className="rounded-xl font-bold text-xs px-5 py-2.5">
             <Users className="w-4 h-4 mr-2" /> Candidate Directory ({filteredCandidates.length})
           </TabsTrigger>
           <TabsTrigger value="engine" className="rounded-xl font-bold text-xs px-5 py-2.5">
-            <Cpu className="w-4 h-4 mr-2 text-indigo-600" /> AI Recommendation Engine
+            <Cpu className="w-4 h-4 mr-2 text-indigo-600" /> AI Match Matrix
           </TabsTrigger>
           <TabsTrigger value="logs" className="rounded-xl font-bold text-xs px-5 py-2.5">
-            <Mail className="w-4 h-4 mr-2 text-emerald-600" /> Email Logs & Webhook Stream
+            <Mail className="w-4 h-4 mr-2 text-emerald-600" /> Email Dispatch Logs
           </TabsTrigger>
           <TabsTrigger value="deliverability" className="rounded-xl font-bold text-xs px-5 py-2.5">
             <ShieldCheck className="w-4 h-4 mr-2 text-amber-500" /> Anti-Spam & Deliverability
           </TabsTrigger>
         </TabsList>
+
+        {/* --- TAB 0: 7-Campaign Segmentation Engine --- */}
+        <TabsContent value="campaigns" className="space-y-6">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/70 dark:border-slate-800/70">
+            <div className="mb-6">
+              <h2 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-indigo-600" /> JobsDart Recommended 7-Campaign Communication Architecture
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Separate communication streams into dedicated targeted campaigns to maximize open rates and comply with CAN-SPAM regulations.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {CAMPAIGN_STRUCTURE_CATALOG.map((camp) => {
+                const targetAudience = filterCandidatesByCampaignType(candidates, camp.type);
+
+                return (
+                  <Card key={camp.type} className="rounded-2xl border-slate-200/80 dark:border-slate-800 p-5 flex flex-col justify-between hover:shadow-lg transition-all border-t-4 border-t-indigo-600">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl">{camp.icon}</span>
+                        <Badge variant="outline" className="font-extrabold text-[10px] uppercase tracking-wider text-indigo-600 bg-indigo-50 dark:bg-indigo-950/50">
+                          {camp.recommendedFrequency}
+                        </Badge>
+                      </div>
+
+                      <div>
+                        <h3 className="font-extrabold text-slate-900 dark:text-white text-base">{camp.label}</h3>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5 line-clamp-1">Subject: &quot;{camp.exampleSubject}&quot;</p>
+                      </div>
+
+                      <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Trigger:</span>
+                          <span className="font-bold text-slate-700 dark:text-slate-300 line-clamp-1">{camp.triggerCondition}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Eligible Audience:</span>
+                          <span className="font-extrabold text-emerald-600">{targetAudience.length} candidates</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handlePreviewCampaignTemplate(camp.defaultTemplateId, camp.label)}
+                        className="flex-1 h-9 rounded-xl text-xs font-bold"
+                      >
+                        <Eye className="w-3.5 h-3.5 mr-1 text-slate-500" /> Preview
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        onClick={() => handleExecuteCampaign(camp.type)}
+                        disabled={executingCampaignType !== null || targetAudience.length === 0}
+                        className="flex-1 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs"
+                      >
+                        {executingCampaignType === camp.type ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <>
+                            <Play className="w-3.5 h-3.5 mr-1" /> Execute
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </TabsContent>
 
         {/* --- TAB 1: Candidate Directory --- */}
         <TabsContent value="directory" className="space-y-6">
@@ -448,52 +588,52 @@ export default function AdminCRMPage() {
                               );
                             })}
                             {c.skills.length > 3 && (
-                              <span className="text-[10px] font-bold text-slate-400 px-1">+{c.skills.length - 3}</span>
+                              <span className="text-[10px] text-slate-400 font-bold">+{c.skills.length - 3}</span>
                             )}
                           </div>
                         </td>
                         <td className="py-4 px-6">
                           <Badge
                             className={cn(
-                              "font-extrabold text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg",
-                              c.lifecycleStage === "HIGHLY_ENGAGED" && "bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400 border border-purple-200/50",
-                              c.lifecycleStage === "ACTIVE_SEEKER" && "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/50",
-                              c.lifecycleStage === "PASSIVE_SEEKER" && "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200/50",
-                              c.lifecycleStage === "NEW_ONBOARDED" && "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/50",
-                              c.lifecycleStage === "DORMANT" && "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
-                              c.lifecycleStage === "UNSUBSCRIBED" && "bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400"
+                              "font-black text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full border",
+                              c.lifecycleStage === "HIGHLY_ENGAGED" && "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300",
+                              c.lifecycleStage === "ACTIVE_SEEKER" && "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300",
+                              c.lifecycleStage === "PASSIVE_SEEKER" && "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300",
+                              c.lifecycleStage === "NEW_ONBOARDED" && "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300",
+                              c.lifecycleStage === "DORMANT" && "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300",
+                              c.lifecycleStage === "UNSUBSCRIBED" && "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300"
                             )}
                           >
-                            {c.lifecycleStage.replace("_", " ")}
+                            {c.lifecycleStage.replace('_', ' ')}
                           </Badge>
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-2">
-                            <span className="font-black text-slate-900 dark:text-white text-xs">{c.engagementScore}</span>
-                            <div className="w-16 bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                            <div className="w-16 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                               <div
                                 className={cn(
                                   "h-full rounded-full",
-                                  c.engagementScore >= 80 ? "bg-purple-600" : c.engagementScore >= 55 ? "bg-emerald-500" : "bg-amber-500"
+                                  c.engagementScore >= 75 ? "bg-emerald-500" : c.engagementScore >= 50 ? "bg-indigo-500" : "bg-amber-500"
                                 )}
                                 style={{ width: `${c.engagementScore}%` }}
                               />
                             </div>
+                            <span className="font-extrabold text-xs text-slate-900 dark:text-white">{c.engagementScore}</span>
                           </div>
                         </td>
                         <td className="py-4 px-6">
-                          <span className="inline-flex items-center gap-1 font-bold text-[11px] text-emerald-600">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Synced
-                          </span>
+                          <Badge variant="outline" className={cn("font-extrabold text-[10px]", c.brevoSyncStatus === "SYNCED" ? "text-emerald-600 border-emerald-200" : "text-amber-600 border-amber-200")}>
+                            {c.brevoSyncStatus}
+                          </Badge>
                         </td>
                         <td className="py-4 px-6 text-right">
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => handleRunAIRecommendations(c.id)}
-                            className="h-8 rounded-lg font-bold text-[11px] text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+                            className="h-8 text-xs font-bold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
                           >
-                            <Sparkles className="w-3 h-3 mr-1" /> Send AI Match
+                            Send Email
                           </Button>
                         </td>
                       </tr>
@@ -508,7 +648,6 @@ export default function AdminCRMPage() {
         {/* --- TAB 2: AI Recommendation Engine --- */}
         <TabsContent value="engine" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Algorithm Weights Matrix */}
             <Card className="lg:col-span-2 rounded-2xl border-slate-200/70 dark:border-slate-800/70 p-6">
               <div className="flex items-center justify-between mb-4 border-b pb-3 border-slate-100 dark:border-slate-800">
                 <div>
@@ -545,7 +684,6 @@ export default function AdminCRMPage() {
               </div>
             </Card>
 
-            {/* Recommendation Sample Card Preview */}
             <Card className="rounded-2xl border-slate-200/70 dark:border-slate-800/70 p-6 bg-slate-50/50 dark:bg-slate-900/30">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-500" /> Live AI Match Sample
@@ -689,6 +827,21 @@ export default function AdminCRMPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* HTML Template Live Preview Dialog */}
+      <Dialog open={!!activePreviewTemplate} onOpenChange={() => setActivePreviewTemplate(null)}>
+        <DialogContent className="max-w-3xl rounded-3xl p-6 max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-slate-900 dark:text-white">
+              {activePreviewTemplate?.title}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto mt-4 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl bg-white">
+            <div dangerouslySetInnerHTML={{ __html: activePreviewTemplate?.html || '' }} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

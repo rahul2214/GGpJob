@@ -29,11 +29,29 @@ export type EmailDeliveryStatus =
   | 'SPAM';
 
 export type CampaignType =
-  | 'AI_JOB_RECOMMENDATION'
+  | 'JOB_RECOMMENDATIONS'
+  | 'FEATURE_EDUCATION'
+  | 'RESUME_BUILDER'
+  | 'COMMUNITY'
+  | 'PRODUCT_UPDATES'
+  | 'CONVERSION'
   | 'RE_ENGAGEMENT'
+  // Backward compatibility aliases
+  | 'AI_JOB_RECOMMENDATION'
   | 'ONBOARDING_WELCOME'
   | 'WEEKLY_DIGEST'
   | 'URGENT_JOB_ALERT';
+
+export interface CampaignCategoryDefinition {
+  type: CampaignType;
+  icon: string;
+  label: string;
+  exampleSubject: string;
+  triggerCondition: string;
+  recommendedFrequency: string;
+  defaultTemplateId: string;
+  targetAudienceRule: string;
+}
 
 export interface CRMCandidate {
   id: number | string;
