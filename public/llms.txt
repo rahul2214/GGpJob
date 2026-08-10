@@ -1,0 +1,28 @@
+# JobsDart — AI Job Portal & Direct Employee Referral Platform
+
+> JobsDart (https://jobsdart.in) is an AI-powered job portal and employee referral network connecting job seekers directly with verified recruiters, hiring managers, and employee insiders at top MNCs including Microsoft, Google, Amazon Web Services, Meta, Apple, Stripe, Salesforce, Netflix, and Tesla.
+
+## Core Features & Capabilities
+
+- **AI Resume & ATS Optimization**: Analyze resume ATS compatibility against specific job postings with instant score feedback.
+- **Direct Employee Referrals**: Bypass traditional ATS black holes by requesting direct candidate referrals from verified company insiders.
+- **Real-Time Global MNC Jobs**: Search live active job openings across software engineering, AI/ML, cloud architecture, product management, and design.
+- **Interactive AI Career Assistant**: 24/7 AI chatbot assisting job seekers with job matching, resume recommendations, and mock interview practice.
+
+## Core URLs & Resources
+
+- **Homepage**: https://jobsdart.in/
+- **Job Search & Listings**: https://jobsdart.in/jobs
+- **AI Resume Builder & ATS Checker**: https://jobsdart.in/resume
+- **Direct Employee Referral Portal**: https://jobsdart.in/referral
+- **Community Circles**: https://jobsdart.in/community
+- **Candidate Login / Register**: https://jobsdart.in/login
+- **Enterprise Recruiter Portal**: https://jobsdart.in/recruiter
+
+## Contact & Location
+
+- **Organization**: JobsDart
+- **Parent Company**: Veltria / Dhruv Compusoft Consultancy Pvt Ltd
+- **Headquarters**: Bengaluru, Karnataka, India
+- **Website**: https://jobsdart.in
+- **Email**: support@jobsdart.in

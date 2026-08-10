@@ -8,12 +8,256 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { intelligentSearchJobs } from '@/lib/intelligent-search';
 
 const FALLBACK_JOBS = [
-  { id: "1", title: "Senior Full Stack Engineer", companyName: "Stripe", companyLogo: "🦓", location: "Remote, USA", type: "Full-time", salaryMin: 140000, salaryMax: 190000, isReferral: false, domain: "Engineering", benefits: ["React", "Node.js", "Postgres"] },
-  { id: "2", title: "Staff Machine Learning Engineer", companyName: "DeepMind", companyLogo: "🧠", location: "London / Remote", type: "Full-time", salaryMin: 150000, salaryMax: 210000, isReferral: false, domain: "Engineering", benefits: ["Python", "PyTorch", "MLOps"] },
-  { id: "3", title: "Product Manager — Growth", companyName: "Notion", companyLogo: "📐", location: "San Francisco, CA", type: "Hybrid", salaryMin: 130000, salaryMax: 170000, isReferral: false, domain: "Product", benefits: ["PLG", "Analytics", "B2B SaaS"] },
-  { id: "4", title: "Senior iOS Engineer", companyName: "Spotify", location: "Stockholm / Remote", type: "Remote", salaryMin: 110000, salaryMax: 145000, isReferral: false, domain: "Engineering", benefits: ["Swift", "SwiftUI", "XCTest"] },
-  { id: "5", title: "UX Design Lead", companyName: "Figma", companyLogo: "🎨", location: "New York, NY", type: "Hybrid", salaryMin: 150000, salaryMax: 200000, isReferral: false, domain: "Design", benefits: ["Figma", "Design Systems", "Research"] },
-  { id: "6", title: "DevOps / Platform Engineer", companyName: "HashiCorp", location: "Remote, Global", type: "Remote", salaryMin: 125000, salaryMax: 165000, isReferral: false, domain: "Engineering", benefits: ["Terraform", "Kubernetes", "GCP"] },
+  {
+    id: "mnc-1",
+    uuid: "mnc-microsoft-101",
+    title: "Principal Cloud Solutions Architect — Enterprise Azure",
+    companyName: "Microsoft",
+    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo_%282012%29.svg",
+    companyWebsite: "https://www.microsoft.com",
+    companyLinkedinUrl: "https://www.linkedin.com/company/microsoft",
+    location: "Redmond, WA / Remote, USA",
+    country: "United States",
+    remoteType: "Hybrid",
+    type: "Full-time",
+    employmentType: "Full-Time",
+    salaryMin: 175000,
+    salaryMax: 240000,
+    salaryCurrency: "USD",
+    minExperience: 7,
+    maxExperience: 15,
+    isReferral: true,
+    visaSponsorship: true,
+    domain: "Engineering",
+    jobLink: "https://careers.microsoft.com/us/en/job/1684920/Principal-Cloud-Solutions-Architect",
+    description: "Architect scalable, high-availability multi-region cloud infrastructure on Microsoft Azure for Fortune 500 enterprise customers.",
+    benefits: ["Azure", "Kubernetes", "Terraform", "C#", "Cloud Architecture"]
+  },
+  {
+    id: "mnc-2",
+    uuid: "mnc-google-102",
+    title: "Senior Staff AI & LLM Systems Engineer",
+    companyName: "Google",
+    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg",
+    companyWebsite: "https://about.google",
+    companyLinkedinUrl: "https://www.linkedin.com/company/google",
+    location: "Mountain View, CA / London, UK",
+    country: "United States",
+    remoteType: "Hybrid",
+    type: "Full-time",
+    employmentType: "Full-Time",
+    salaryMin: 190000,
+    salaryMax: 260000,
+    salaryCurrency: "USD",
+    minExperience: 6,
+    maxExperience: 12,
+    isReferral: true,
+    visaSponsorship: true,
+    domain: "Engineering",
+    jobLink: "https://careers.google.com/jobs/results/148290381023019/Senior-Staff-AI-Engineer",
+    description: "Design distributed TPU/GPU training infrastructure and vLLM inference frameworks powering Gemini models across Google Cloud.",
+    benefits: ["PyTorch", "JAX", "C++", "Python", "LLM", "Distributed Systems"]
+  },
+  {
+    id: "mnc-3",
+    uuid: "mnc-aws-103",
+    title: "Lead Full Stack Engineer — Global Payments",
+    companyName: "Amazon Web Services (AWS)",
+    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg",
+    companyWebsite: "https://aws.amazon.com",
+    companyLinkedinUrl: "https://www.linkedin.com/company/amazon-web-services",
+    location: "Bengaluru, KA, India / Hybrid",
+    country: "India",
+    remoteType: "Hybrid",
+    type: "Full-time",
+    employmentType: "Full-Time",
+    salaryMin: 135000,
+    salaryMax: 185000,
+    salaryCurrency: "USD",
+    minExperience: 5,
+    maxExperience: 10,
+    isReferral: true,
+    visaSponsorship: true,
+    domain: "Engineering",
+    jobLink: "https://amazon.jobs/en/jobs/2591029/Lead-Full-Stack-Engineer",
+    description: "Drive low-latency checkout systems and multi-currency processing handling 50,000+ RPS with 99.999% reliability.",
+    benefits: ["React", "TypeScript", "Java", "AWS", "DynamoDB", "Node.js"]
+  },
+  {
+    id: "mnc-4",
+    uuid: "mnc-meta-104",
+    title: "Staff Machine Learning Infrastructure Engineer",
+    companyName: "Meta",
+    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg",
+    companyWebsite: "https://www.meta.com",
+    companyLinkedinUrl: "https://www.linkedin.com/company/meta",
+    location: "Menlo Park, CA / Remote",
+    country: "United States",
+    remoteType: "Remote",
+    type: "Full-time",
+    employmentType: "Full-Time",
+    salaryMin: 180000,
+    salaryMax: 250000,
+    salaryCurrency: "USD",
+    minExperience: 6,
+    maxExperience: 14,
+    isReferral: true,
+    visaSponsorship: true,
+    domain: "Engineering",
+    jobLink: "https://www.metacareers.com/jobs/9281039581023/Staff-ML-Infrastructure-Engineer",
+    description: "Optimize PyTorch compiler pipelines (TorchDynamo, Inductor) and distributed fault-tolerance for 32k+ H100 GPU clusters.",
+    benefits: ["PyTorch", "C++", "Python", "MLOps", "GPU Clusters"]
+  },
+  {
+    id: "mnc-5",
+    uuid: "mnc-stripe-105",
+    title: "Senior Backend Payments & Treasury Engineer",
+    companyName: "Stripe",
+    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg",
+    companyWebsite: "https://stripe.com",
+    companyLinkedinUrl: "https://www.linkedin.com/company/stripe",
+    location: "San Francisco, CA / Dublin, Ireland",
+    country: "United States",
+    remoteType: "Remote",
+    type: "Full-time",
+    employmentType: "Full-Time",
+    salaryMin: 160000,
+    salaryMax: 220000,
+    salaryCurrency: "USD",
+    minExperience: 4,
+    maxExperience: 9,
+    isReferral: true,
+    visaSponsorship: true,
+    domain: "Engineering",
+    jobLink: "https://stripe.com/jobs/listing/senior-backend-payments-engineer/581092",
+    description: "Design zero-downtime financial ledger systems with multi-currency reconciliation across 45+ countries.",
+    benefits: ["Ruby", "Go", "Java", "PostgreSQL", "API Design"]
+  },
+  {
+    id: "mnc-6",
+    uuid: "mnc-apple-106",
+    title: "Lead iOS & Systems Performance Engineer",
+    companyName: "Apple",
+    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg",
+    companyWebsite: "https://www.apple.com",
+    companyLinkedinUrl: "https://www.linkedin.com/company/apple",
+    location: "Cupertino, CA / Munich, Germany",
+    country: "United States",
+    remoteType: "On-site",
+    type: "Full-time",
+    employmentType: "Full-Time",
+    salaryMin: 170000,
+    salaryMax: 235000,
+    salaryCurrency: "USD",
+    minExperience: 5,
+    maxExperience: 11,
+    isReferral: true,
+    visaSponsorship: true,
+    domain: "Engineering",
+    jobLink: "https://jobs.apple.com/en-us/details/200492810/Lead-iOS-Systems-Performance-Engineer",
+    description: "Lead low-level Swift & C++ performance optimization for iOS, macOS, and visionOS frameworks on Apple Silicon.",
+    benefits: ["Swift", "C++", "Metal", "iOS", "visionOS", "Apple Silicon"]
+  },
+  {
+    id: "mnc-7",
+    uuid: "mnc-salesforce-107",
+    title: "Principal DevOps & Kubernetes Specialist",
+    companyName: "Salesforce",
+    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg",
+    companyWebsite: "https://www.salesforce.com",
+    companyLinkedinUrl: "https://www.linkedin.com/company/salesforce",
+    location: "Hyderabad, TS, India / Remote",
+    country: "India",
+    remoteType: "Remote",
+    type: "Full-time",
+    employmentType: "Full-Time",
+    salaryMin: 130000,
+    salaryMax: 175000,
+    salaryCurrency: "USD",
+    minExperience: 6,
+    maxExperience: 12,
+    isReferral: true,
+    visaSponsorship: true,
+    domain: "Engineering",
+    jobLink: "https://salesforce.wd1.myworkdayjobs.com/External_Career_Site/job/Hyderabad/Principal-DevOps-Engineer_JR198203",
+    description: "Automate Kubernetes cluster orchestration, GitOps pipelines, and mesh networking across Hyperforce AWS/GCP regions.",
+    benefits: ["Kubernetes", "DevOps", "ArgoCD", "Terraform", "AWS"]
+  },
+  {
+    id: "mnc-8",
+    uuid: "mnc-netflix-108",
+    title: "Senior Data Engineer — Streaming Analytics",
+    companyName: "Netflix",
+    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",
+    companyWebsite: "https://www.netflix.com",
+    companyLinkedinUrl: "https://www.linkedin.com/company/netflix",
+    location: "Los Gatos, CA / Remote",
+    country: "United States",
+    remoteType: "Hybrid",
+    type: "Full-time",
+    employmentType: "Full-Time",
+    salaryMin: 200000,
+    salaryMax: 280000,
+    salaryCurrency: "USD",
+    minExperience: 5,
+    maxExperience: 10,
+    isReferral: true,
+    visaSponsorship: true,
+    domain: "Data",
+    jobLink: "https://jobs.netflix.com/jobs/281093849/Senior-Data-Engineer",
+    description: "Architect real-time streaming telemetry data pipelines processing trillions of events per day using Flink and Spark.",
+    benefits: ["Apache Spark", "Apache Flink", "Python", "Scala", "AWS", "Trino"]
+  },
+  {
+    id: "mnc-9",
+    uuid: "mnc-tesla-109",
+    title: "Autopilot Embedded Software & Control Engineer",
+    companyName: "Tesla",
+    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/e/e8/Tesla_logo.png",
+    companyWebsite: "https://www.tesla.com",
+    companyLinkedinUrl: "https://www.linkedin.com/company/tesla-motors",
+    location: "Austin, TX / Palo Alto, CA",
+    country: "United States",
+    remoteType: "On-site",
+    type: "Full-time",
+    employmentType: "Full-Time",
+    salaryMin: 155000,
+    salaryMax: 215000,
+    salaryCurrency: "USD",
+    minExperience: 4,
+    maxExperience: 10,
+    isReferral: true,
+    visaSponsorship: true,
+    domain: "Engineering",
+    jobLink: "https://www.tesla.com/careers/search/job/autopilot-embedded-software-engineer-219403",
+    description: "Write hard real-time C++ embedded control software for Tesla Full Self-Driving (FSD) onboard computers.",
+    benefits: ["C++", "Embedded C", "RTOS", "CAN Bus", "Autonomous Driving"]
+  },
+  {
+    id: "mnc-10",
+    uuid: "mnc-adobe-110",
+    title: "Senior UX Architect & Design Systems Lead",
+    companyName: "Adobe",
+    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/7/7b/Adobe_Systems_logo_2020.svg",
+    companyWebsite: "https://www.adobe.com",
+    companyLinkedinUrl: "https://www.linkedin.com/company/adobe",
+    location: "San Jose, CA / Singapore / Remote",
+    country: "United States",
+    remoteType: "Remote",
+    type: "Full-time",
+    employmentType: "Full-Time",
+    salaryMin: 145000,
+    salaryMax: 195000,
+    salaryCurrency: "USD",
+    minExperience: 5,
+    maxExperience: 12,
+    isReferral: true,
+    visaSponsorship: true,
+    domain: "Design",
+    jobLink: "https://adobe.wd5.myworkdayjobs.com/external_experienced/job/San-Jose/Senior-UX-Architect_R139201",
+    description: "Design accessible, modular Spectrum design system components and define UX guidelines for Firefly generative AI creation workflows.",
+    benefits: ["Figma", "UX Architecture", "Design Systems", "User Research"]
+  }
 ];
 
 const CATEGORIES = ["All", "Engineering", "Product", "Design", "Data", "Management"];
@@ -30,13 +274,22 @@ const cardVariants = {
 
 function formatSalary(job: any): string {
   if (job.salaryMin || job.salaryMax) {
-    const min = job.salaryMin ? `$${Math.round(job.salaryMin / 1000)}k` : '';
-    const max = job.salaryMax ? `$${Math.round(job.salaryMax / 1000)}k` : '';
-    if (min && max) return `${min}–${max}`;
-    if (min) return `${min}+`;
-    if (max) return `Up to ${max}`;
+    const isINR = job.salaryCurrency === 'INR';
+    if (isINR) {
+      const minL = job.salaryMin ? `₹${(job.salaryMin / 100000).toFixed(1)} Lakhs` : '';
+      const maxL = job.salaryMax ? `₹${(job.salaryMax / 100000).toFixed(1)} Lakhs` : '';
+      if (minL && maxL) return `${minL} – ${maxL}`;
+      if (minL) return `${minL}+`;
+      if (maxL) return `Up to ${maxL}`;
+    } else {
+      const min = job.salaryMin ? `$${Math.round(job.salaryMin / 1000)}k` : '';
+      const max = job.salaryMax ? `$${Math.round(job.salaryMax / 1000)}k` : '';
+      if (min && max) return `${min} – ${max}`;
+      if (min) return `${min}+`;
+      if (max) return `Up to ${max}`;
+    }
   }
-  return job.salary || "$120k–$160k";
+  return job.salary || "$120k – $160k";
 }
 
 export function JobsGrid() {
@@ -50,14 +303,25 @@ export function JobsGrid() {
     async function fetchRecentJobs() {
       try {
         setLoading(true);
-        const res = await fetch('/api/jobs?limit=6');
+        const res = await fetch('/api/jobs?limit=10');
         if (res.ok) {
           const data = await res.json();
           const jobsList = Array.isArray(data) ? data : (data.recommended || []);
           if (jobsList && jobsList.length > 0) {
-            setDbJobs(jobsList.slice(0, 6));
+            setDbJobs(jobsList.slice(0, 10));
           } else {
-            setDbJobs(FALLBACK_JOBS);
+            // Fetch live active MNC job openings directly from live API feed
+            const liveRes = await fetch('/api/jobs/seed-mnc');
+            if (liveRes.ok) {
+              const liveData = await liveRes.json();
+              if (liveData?.jobs && liveData.jobs.length > 0) {
+                setDbJobs(liveData.jobs);
+              } else {
+                setDbJobs(FALLBACK_JOBS);
+              }
+            } else {
+              setDbJobs(FALLBACK_JOBS);
+            }
           }
         } else {
           setDbJobs(FALLBACK_JOBS);

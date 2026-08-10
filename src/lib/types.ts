@@ -253,7 +253,7 @@ export interface Job {
   requirements?: string[];
   responsibilities?: string[];
   qualifications?: string[];
-  sections?: { title: string; items: string[] }[];
+  sections?: { title: string; items?: string[]; content?: string }[];
   benefits?: string[];
   benefitIds?: string[];
   skillIds?: string[];

@@ -13,11 +13,12 @@ export async function generateMetadata(
   const id = params.id;
 
   try {
+    const isNumericId = /^\d+$/.test(id);
     const { data: jobData, error } = await supabaseAdmin
         .from('jobs')
         .select('*')
-        .eq('id', id)
-        .single();
+        .eq(isNumericId ? 'id' : 'uuid', id)
+        .maybeSingle();
     
     if (error || !jobData) {
         return {

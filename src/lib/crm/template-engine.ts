@@ -55,7 +55,7 @@ export const CAMPAIGN_STRUCTURE_CATALOG: CampaignCategoryDefinition[] = [
     type: 'PRODUCT_UPDATES',
     icon: '🚀',
     label: 'Product Updates',
-    exampleSubject: 'What\'s new on JobsDart: AI Mock Interviews & Employee Referrals',
+    exampleSubject: 'What\'s new on JobsDart: AI Mock Interviews',
     triggerCondition: 'New feature released on JobsDart platform',
     recommendedFrequency: 'Monthly Newsletter',
     defaultTemplateId: 'tpl_product_updates',
@@ -65,7 +65,7 @@ export const CAMPAIGN_STRUCTURE_CATALOG: CampaignCategoryDefinition[] = [
     type: 'CONVERSION',
     icon: '💰',
     label: 'Premium Conversion',
-    exampleSubject: 'Unlock Premium JobsDart features: Direct Employee Referrals & Priority Chat',
+    exampleSubject: 'Unlock Premium JobsDart features: Direct Employee & Priority Chat',
     triggerCondition: 'Free user with high engagement score (Score >= 50)',
     recommendedFrequency: 'Carefully Targeted Upsell',
     defaultTemplateId: 'tpl_conversion',
@@ -90,7 +90,7 @@ export const EMAIL_TEMPLATE_CATALOG: Record<string, EmailTemplateDefinition> = {
     name: '🎯 Job Recommendations Digest',
     category: 'JOB_RECOMMENDATIONS',
     subject: '🎯 5 new {{TOP_SKILL}} jobs matching your profile, {{FIRSTNAME}}',
-    description: 'Daily/Weekly job alert email with AI match scores and direct employee referral badges.',
+    description: 'Daily/Weekly job alert email with AI match scores.',
     tags: ['job-recommendation', 'daily-alert'],
     htmlLayout: ({ candidate, jobsHtml, origin }) => `
       <!DOCTYPE html>
@@ -183,7 +183,7 @@ export const EMAIL_TEMPLATE_CATALOG: Record<string, EmailTemplateDefinition> = {
             </div>
             <p style="font-size:15px; font-weight:600; color:#334155;">Hi ${candidate.name.split(' ')[0]},</p>
             <p style="font-size:14px; color:#475569; line-height:1.6;">
-              Candidates with an uploaded or AI-generated resume get <strong>4x more employee referral invitations</strong> and recruiter responses on JobsDart.
+              Candidates with an uploaded or AI-generated resume and get recruiter responses on JobsDart.
             </p>
             <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:18px; margin:20px 0; text-align:center;">
               <h4 style="margin:0 0 6px 0; color:#1e40af; font-size:15px;">Need an ATS-Ready Resume?</h4>
@@ -219,7 +219,7 @@ export const EMAIL_TEMPLATE_CATALOG: Record<string, EmailTemplateDefinition> = {
             </div>
             <p style="font-size:15px; font-weight:600; color:#334155;">Hi ${candidate.name.split(' ')[0]},</p>
             <p style="font-size:14px; color:#475569; line-height:1.6;">
-              Join active tech circles to discuss salary benchmarks, interview experiences, and employee referral opportunities in real time.
+              Join active tech circles to discuss salary benchmarks, interview experiences in real time.
             </p>
             <div style="text-align:center; margin:24px 0;">
               <a href="${origin}/communities" style="display:inline-block; background:#d97706; color:#ffffff; font-size:14px; font-weight:800; padding:12px 26px; border-radius:10px; text-decoration:none;">
@@ -238,7 +238,7 @@ export const EMAIL_TEMPLATE_CATALOG: Record<string, EmailTemplateDefinition> = {
     id: 'tpl_product_updates',
     name: '🚀 Product Updates Newsletter',
     category: 'PRODUCT_UPDATES',
-    subject: 'What\'s new on JobsDart: AI Mock Interviews & Fast-Track Referrals',
+    subject: 'What\'s new on JobsDart: AI Mock Interviews',
     description: 'Monthly product newsletter highlighting new features and portal additions.',
     tags: ['product-update', 'monthly-newsletter'],
     htmlLayout: ({ candidate, origin }) => `
@@ -256,7 +256,6 @@ export const EMAIL_TEMPLATE_CATALOG: Record<string, EmailTemplateDefinition> = {
             </p>
             <ul style="font-size:13px; color:#334155; line-height:1.8; margin:16px 0; padding-left:20px;">
               <li><strong>🤖 AI Mock Interview Practice:</strong> Simulate technical & HR interview rounds with real-time feedback.</li>
-              <li><strong>⚡ Instant Employee Referral Matching:</strong> Directly request referrals from verified MNC insiders.</li>
               <li><strong>📊 Live Salary Benchmarking:</strong> View transparent compensation data across top tech roles.</li>
             </ul>
             <div style="text-align:center; margin:24px 0;">
@@ -276,7 +275,7 @@ export const EMAIL_TEMPLATE_CATALOG: Record<string, EmailTemplateDefinition> = {
     id: 'tpl_conversion',
     name: '💰 Premium Features Conversion',
     category: 'CONVERSION',
-    subject: 'Unlock Unlimited Employee Referrals & Priority Recruiter Chat, {{FIRSTNAME}}',
+    subject: 'Unlock Unlimited Recruiter Chat, {{FIRSTNAME}}',
     description: 'Carefully targeted upgrade nudge for highly engaged candidates.',
     tags: ['conversion', 'premium-upsell'],
     htmlLayout: ({ candidate, origin }) => `

@@ -1,0 +1,29 @@
+# JobsDart — Full System Specification & Documentation for AI Assistants
+
+JobsDart is a modern, web-scale job portal and employee referral platform engineered to streamline hiring for candidates, recruiters, and employee insiders globally.
+
+## Platform Architecture & Features
+
+### 1. Direct Employee Referrals
+Candidates can browse verified job postings from top global MNCs and request employee referrals from verified employees working at companies like Google, Microsoft, AWS, Meta, Apple, Stripe, Salesforce, Netflix, Tesla, and Adobe.
+
+### 2. AI Resume Builder & ATS Score Checker
+Using AI analysis, JobsDart parses candidate resumes, computes ATS match scores against target job descriptions, highlights missing technical skills, and optimizes resume formatting to maximize callback rates.
+
+### 3. Real-Time Global Job Search
+JobsDart streams live job postings across global engineering hubs (Bengaluru, London, San Francisco, Seattle, Berlin, Singapore, Remote) with filters for salary ranges, workplace type (Remote, Hybrid, On-site), visa sponsorship, and experience levels.
+
+### 4. Interactive AI Career Assistant
+An integrated AI assistant guides candidates through job matching, customized interview prep, salary negotiation benchmarks, and profile completion.
+
+### 5. Verified Recruiter & CRM Engine
+Recruiters and hiring managers can manage candidate pools, automate Brevo email drip campaigns, track referral conversions, and schedule interview rounds.
+
+## Official Web Links
+- Main Website: https://jobsdart.in
+- Job Openings: https://jobsdart.in/jobs
+- Candidate Dashboard: https://jobsdart.in/dashboard
+- Employee Referral Portal: https://jobsdart.in/referral
+- Resume Optimization: https://jobsdart.in/resume
+- Community Discussions: https://jobsdart.in/community
+- Recruiter Portal: https://jobsdart.in/recruiter

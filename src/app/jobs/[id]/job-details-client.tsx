@@ -95,7 +95,7 @@ function JobDetailsContent() {
 
     const isAdminView = searchParams.get('view') === 'admin';
 
-    const appliedJobIds = useMemo(() => new Set(userApplications.map(app => app.jobId)), [userApplications]);
+    const appliedJobIds = useMemo(() => new Set((userApplications || []).map(app => app.jobId)), [userApplications]);
 
     const isCorporateEmail = useCallback((email?: string | null) => {
         if (!email) return false;
@@ -106,10 +106,10 @@ function JobDetailsContent() {
 
     // Filter related jobs: remove those the user has already applied to
     const relatedJobs = useMemo(() => {
-        if (user?.role === 'Job Seeker' && allRelatedJobs.length > 0) {
-            return allRelatedJobs.filter(j => !appliedJobIds.has(j.uuid));
+        if (user?.role === 'Job Seeker' && (allRelatedJobs || []).length > 0) {
+            return (allRelatedJobs || []).filter(j => !appliedJobIds.has(j.uuid));
         }
-        return allRelatedJobs;
+        return allRelatedJobs || [];
     }, [allRelatedJobs, appliedJobIds, user]);
 
     // Calculate candidate skill match compatibility
@@ -135,7 +135,7 @@ function JobDetailsContent() {
                 const appRes = await fetch(`/api/applications?userId=${user?.uuid}&jobId=${id}`);
                 if (appRes.ok) {
                     const apps = await appRes.json();
-                    if (apps.length > 0) {
+                    if (Array.isArray(apps) && apps.length > 0) {
                         setCurrentAppId(apps[0].id.toString());
                         setCurrentAppStatus(apps[0].statusId);
                     }
@@ -158,13 +158,7 @@ function JobDetailsContent() {
 
         const fetchSecondaryData = async () => {
             try {
-                // 1. Removed: Fetch User Applications (Redundant - handled by main job details API)
-                // setUserApplications is now set during fetchJobInfo if data.isApplied is true
-                // Similar jobs exclusion is handled server-side by the /api/jobs?similar=true endpoint
-
-                // 2. Fetch Related Jobs (Personalized if user exists)
                 if (job || loading) {
-                    // Start related jobs fetch once we have basic job info (domain)
                     const baseUrl = '/api/jobs';
                     let query = '';
                     if (user) {
@@ -175,10 +169,13 @@ function JobDetailsContent() {
                         const relRes = await fetch(baseUrl + query, { cache: 'no-store' });
                         if (relRes.ok) {
                             const data = await relRes.json();
-                            const filtered = data
-                                .filter((j: Job) => (j.id !== job?.id && j.uuid !== job?.uuid))
-                                .slice(0, 4); // Show up to 4 similar jobs
-                            setAllRelatedJobs(filtered);
+                            const jobsList = Array.isArray(data) ? data : (data.jobs || data.recommended || []);
+                            if (Array.isArray(jobsList)) {
+                                const filtered = jobsList
+                                    .filter((j: Job) => (j.id !== job?.id && j.uuid !== job?.uuid))
+                                    .slice(0, 4);
+                                setAllRelatedJobs(filtered);
+                            }
                         }
                     }
                 }
@@ -188,7 +185,7 @@ function JobDetailsContent() {
         };
 
         fetchSecondaryData();
-    }, [user, id, job?.id]);
+    }, [id, job, user, loading]);
 
     useEffect(() => {
         const sentinel = footerSentinelRef.current;
@@ -640,19 +637,27 @@ function JobDetailsContent() {
                                     </div>
 
                                     {/* Dynamic Sections (Responsibilities, Qualifications, etc.) */}
-                                    {job.sections && job.sections.map((section, sIndex) => (
+                                    {job.sections && Array.isArray(job.sections) && job.sections.map((section, sIndex) => (
                                         <div key={sIndex} className="mt-8 border-t pt-8">
-                                            <h3 className="text-lg font-bold mb-4 text-slate-900">
-                                                {section.title}
-                                            </h3>
-                                            <ul className="space-y-3">
-                                                {section.items.map((item, iIndex) => (
-                                                    <li key={iIndex} className="flex items-start gap-3 text-sm text-gray-600">
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0 mt-2" />
-                                                        <span>{item}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                            {section.title && (
+                                                <h3 className="text-lg font-bold mb-4 text-slate-900">
+                                                    {section.title}
+                                                </h3>
+                                            )}
+                                            {section.items && Array.isArray(section.items) ? (
+                                                <ul className="space-y-3">
+                                                    {section.items.map((item: any, iIndex: number) => (
+                                                        <li key={iIndex} className="flex items-start gap-3 text-sm text-gray-600">
+                                                            <div className="h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0 mt-2" />
+                                                            <span>{item}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : section.content ? (
+                                                <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
+                                                    {section.content}
+                                                </div>
+                                            ) : null}
                                         </div>
                                     ))}
 
