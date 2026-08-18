@@ -25,6 +25,7 @@ import { MultiSelectFilter } from "./multi-select-filter";
 import { COUNTRY_CODES, parsePhoneNumber } from "@/utils/country-codes";
 import { CountryCodeSelect } from "./country-code-select";
 import { Switch } from "@/components/ui/switch";
+import { LocationCascadeSelector } from "@/components/location/LocationCascadeSelector";
 
 const PillSelect = ({ value, onChange, options, className = "" }: { value?: string, onChange: (v: string) => void, options: string[], className?: string }) => (
     <div className={`flex flex-wrap gap-2 ${className}`}>
@@ -281,10 +282,11 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                 companyOverview: data.companyOverview === '' ? null : data.companyOverview,
             };
 
+            const { countryId, stateId, cityId, ...userClean } = user as any;
             const response = await fetch(`/api/users/${user.uuid}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...user, ...cleanedData }),
+                body: JSON.stringify({ ...userClean, ...cleanedData }),
             });
 
             if (!response.ok) {
@@ -361,12 +363,27 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Notice Period</span>
                                 <span className="text-sm text-slate-800 font-medium">{user.noticePeriod || "Not specified"}</span>
                             </div>
-                            <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
-                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Current Location</span>
-                                <span className="text-sm text-slate-800 font-medium">
-                                    {[user.currentArea, user.currentCity].filter(Boolean).join(', ') || "Not specified"}
-                                </span>
-                            </div>
+                            <div className="flex flex-col gap-1.5 border-b border-slate-100 pb-3">
+                                 <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1">
+                                     <MapPin className="w-3.5 h-3.5" /> Location Hierarchy (Country &rarr; State &rarr; City)
+                                 </span>
+                                 <div className="bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-2 text-xs">
+                                     <div>
+                                         <span className="text-slate-500 font-semibold uppercase tracking-wider text-[10px] block">Country</span>
+                                         <span className="font-bold text-slate-900 dark:text-white text-sm">{user.country || "Not specified"}</span>
+                                     </div>
+                                     <div>
+                                         <span className="text-slate-500 font-semibold uppercase tracking-wider text-[10px] block">State / Province</span>
+                                         <span className="font-bold text-slate-900 dark:text-white text-sm">{user.state || "Not specified"}</span>
+                                     </div>
+                                     <div>
+                                         <span className="text-slate-500 font-semibold uppercase tracking-wider text-[10px] block">City / Metro</span>
+                                         <span className="font-bold text-slate-900 dark:text-white text-sm">
+                                             {user.currentCity || "Not specified"}
+                                         </span>
+                                     </div>
+                                 </div>
+                             </div>
                             <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
                                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Preferred Locations</span>
                                 <span className="text-sm text-slate-800 font-medium">
@@ -450,30 +467,24 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                         </FormItem>
                     )}
                 />
-                <FormField
-                    control={form.control}
-                    name="country"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Country</FormLabel>
-                            <FormControl>
-                                <Select value={field.value || ""} onValueChange={field.onChange}>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select your country" />
-                                    </SelectTrigger>
-                                    <SelectContent className="max-h-[200px] overflow-y-auto">
-                                        {COUNTRY_CODES.map((c) => (
-                                            <SelectItem key={`${c.code}-${c.name}`} value={c.name}>
-                                                {c.flag} {c.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-2 my-2">
+                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 mb-2">
+                        <MapPin className="w-4 h-4" /> Location Hierarchy (Country &rarr; State &rarr; City)
+                    </h4>
+                    <LocationCascadeSelector
+                        initialCountry={form.watch("country") || user.country || ""}
+                        initialState={form.watch("state") || user.state || ""}
+                        initialCity={form.watch("currentCity") || user.currentCity || ""}
+                        onChange={(val) => {
+                            form.setValue("country", val.countryName || "");
+                            form.setValue("state", val.stateName || "");
+                            form.setValue("currentCity", val.cityName || "");
+                            form.setValue("countryId" as any, val.countryId ? Number(val.countryId) : null);
+                            form.setValue("stateId" as any, val.stateId ? Number(val.stateId) : null);
+                            form.setValue("cityId" as any, val.cityId ? Number(val.cityId) : null);
+                        }}
+                    />
+                </div>
                 {user.role === 'Job Seeker' && (
                     <FormField
                         control={form.control}
@@ -493,36 +504,6 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
 
                 {user.role === 'Job Seeker' && (
                     <>
-
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            <FormField
-                                control={form.control}
-                                name="state"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-slate-600">State / Province</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="e.g. California / Karnataka" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="currentCity"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-slate-600">Current City</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="e.g. Bengaluru / San Francisco" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
 
                         <div className="pt-4 border-t border-slate-100 mt-6">
                             <h4 className="font-semibold text-slate-800 mb-4 tracking-tight text-lg flex items-center gap-2">

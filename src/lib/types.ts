@@ -1,5 +1,41 @@
 export type Role = "Job Seeker" | "Recruiter" | "Admin" | "Super Admin";
 
+export interface JobseekerAchievement {
+  id?: number;
+  jobseekerId?: number;
+  jobseekerUuid?: string;
+  title: string;
+  description?: string;
+  issuer?: string;
+  dateAchieved?: string;
+  createdAt?: string;
+}
+
+export interface JobseekerCertification {
+  id?: number;
+  jobseekerId?: number;
+  jobseekerUuid?: string;
+  name: string;
+  issuingOrganization?: string;
+  issueDate?: string;
+  expirationDate?: string;
+  credentialId?: string;
+  credentialUrl?: string;
+  createdAt?: string;
+}
+
+export interface JobseekerPreferredLocation {
+  id?: number;
+  jobseekerId?: number;
+  countryId: number;
+  stateProvinceId?: number | null;
+  cityId?: number | null;
+  countryName?: string;
+  stateName?: string;
+  cityName?: string;
+  formattedLocation?: string;
+}
+
 export interface User {
   id: number;     // Numeric Primary Key
   uuid: string;   // Public UUID (links to auth.users)
@@ -97,11 +133,12 @@ export interface User {
   companyLinkedinUrl?: string;
   contactEmail?: string;
   contactPhone?: string;
-  department?: string;
   education?: Education[];
   experience?: Employment[];
   projects?: Project[];
   languages?: Language[];
+  achievements?: (JobseekerAchievement | string)[];
+  certifications?: (JobseekerCertification | string)[];
   skills?: MasterSkill[];
   skillIds?: string[];
   credits?: number;  // For Job Seekers (Legacy Total)

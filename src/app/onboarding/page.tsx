@@ -17,6 +17,7 @@ import { isOnboardingComplete } from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
 import { COUNTRY_CODES } from "@/utils/country-codes";
 import { CountryCodeSelect } from "@/components/country-code-select";
+import { LocationCascadeSelector } from "@/components/location/LocationCascadeSelector";
 
 
 export default function OnboardingPage() {
@@ -26,6 +27,11 @@ export default function OnboardingPage() {
 
     const [masterSkills, setMasterSkills] = useState<MasterSkill[]>([]);
     const [selectedCountry, setSelectedCountry] = useState<string>("");
+    const [selectedState, setSelectedState] = useState<string>("");
+    const [selectedCity, setSelectedCity] = useState<string>("");
+    const [selectedCountryId, setSelectedCountryId] = useState<string | number | undefined>(undefined);
+    const [selectedStateId, setSelectedStateId] = useState<string | number | undefined>(undefined);
+    const [selectedCityId, setSelectedCityId] = useState<string | number | undefined>(undefined);
     const [phone, setPhone] = useState<string>("");
     const [countryCode, setCountryCode] = useState<string>("+91");
     const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -550,7 +556,12 @@ export default function OnboardingPage() {
                     linkedinUrl: linkedinUrl || user.linkedinUrl,
                     githubUrl: githubUrl || user.githubUrl,
                     portfolioUrl: portfolioUrl || user.portfolioUrl,
-                    country: user.country || selectedCountry || undefined,
+                    country: selectedCountry || user.country || undefined,
+                    state: selectedState || user.state || undefined,
+                    currentCity: selectedCity || user.currentCity || undefined,
+                    countryId: selectedCountryId || undefined,
+                    stateId: selectedStateId || undefined,
+                    cityId: selectedCityId || undefined,
                     education: finalEducation,
                     experience: finalExperience,
                     projects: finalProjects,
@@ -749,15 +760,57 @@ export default function OnboardingPage() {
     const needsAchievements = !user.metadata?.achievements || user.metadata.achievements.length === 0;
     const needsCertifications = !user.metadata?.certifications || user.metadata.certifications.length === 0;
 
-    const totalSteps = [needsPhone, needsResume, needsSkills, needsCountry].filter(Boolean).length;
-    // Progress tracking (this is just cosmetic — based on filled fields)
-    const stepsLeft = [
-        needsPhone && phone.length < 10,
-        needsResume && !resumeFile,
-        needsSkills && selectedSkillIds.length === 0,
-        needsCountry && !selectedCountry,
-    ].filter(Boolean).length;
-    const progressPct = totalSteps > 0 ? Math.round(((totalSteps - stepsLeft) / totalSteps) * 100) : 100;
+    // Accurate weighted profile completion score (0-100%)
+    const calculateProgressPct = () => {
+        let score = 0;
+
+        // 1. Phone number (15%)
+        const currentPhone = phone || user?.phone || "";
+        if (currentPhone.replace(/\D/g, "").length >= 7) {
+            score += 15;
+        }
+
+        // 2. Location Hierarchy (20%)
+        const cName = selectedCountry || user?.country;
+        const sName = selectedState || user?.state;
+        const ciName = selectedCity || user?.currentCity;
+        if (cName && sName && ciName) {
+            score += 20;
+        } else if (cName && sName) {
+            score += 13;
+        } else if (cName) {
+            score += 7;
+        }
+
+        // 3. Resume (20%)
+        if (resumeFile || user?.resumeUrl) {
+            score += 20;
+        }
+
+        // 4. Skills (20%)
+        if (selectedSkillIds.length > 0 || user?.profileStats?.hasSkills) {
+            score += 20;
+        }
+
+        // 5. Education (10%)
+        if (education.length > 0 || user?.profileStats?.hasEducation || (user?.education && user.education.length > 0)) {
+            score += 10;
+        }
+
+        // 6. Work Experience (10%)
+        if (experience.length > 0 || user?.profileStats?.hasEmployment || (user?.experience && user.experience.length > 0)) {
+            score += 10;
+        }
+
+        // 7. Social / Portfolio Links (5%)
+        if (linkedinUrl || githubUrl || portfolioUrl || user?.linkedinUrl || user?.githubUrl || user?.portfolioUrl) {
+            score += 5;
+        }
+
+        return Math.min(100, Math.max(0, score));
+    };
+
+    const progressPct = calculateProgressPct();
 
     if (buildMethod === null) {
         return (
@@ -929,31 +982,26 @@ export default function OnboardingPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-8">
 
-                    {/* Country Selector */}
-                    {needsCountry && (
-                        <div className="space-y-3">
-                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                <Globe className="w-4 h-4 text-indigo-500" />
-                                Select your Country
-                            </label>
-                            <Select onValueChange={setSelectedCountry} value={selectedCountry}>
-                                <SelectTrigger className="h-14 rounded-2xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white text-base transition-all">
-                                    <SelectValue placeholder="Select country" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl border-slate-100 shadow-xl max-h-[300px] overflow-y-auto">
-                                    <SelectItem value="IN" className="py-3 px-4 rounded-lg cursor-pointer focus:bg-indigo-50 focus:text-indigo-700">🇮🇳 India</SelectItem>
-                                    <SelectItem value="US" className="py-3 px-4 rounded-lg cursor-pointer focus:bg-indigo-50 focus:text-indigo-700">🇺🇸 United States</SelectItem>
-                                    <SelectItem value="GB" className="py-3 px-4 rounded-lg cursor-pointer focus:bg-indigo-50 focus:text-indigo-700">🇬🇧 United Kingdom</SelectItem>
-                                    <SelectItem value="CA" className="py-3 px-4 rounded-lg cursor-pointer focus:bg-indigo-50 focus:text-indigo-700">🇨🇦 Canada</SelectItem>
-                                    <SelectItem value="AU" className="py-3 px-4 rounded-lg cursor-pointer focus:bg-indigo-50 focus:text-indigo-700">🇦🇺 Australia</SelectItem>
-                                    <SelectItem value="DE" className="py-3 px-4 rounded-lg cursor-pointer focus:bg-indigo-50 focus:text-indigo-700">🇪🇺 Germany</SelectItem>
-                                    <SelectItem value="FR" className="py-3 px-4 rounded-lg cursor-pointer focus:bg-indigo-50 focus:text-indigo-700">🇪🇺 France</SelectItem>
-                                    <SelectItem value="AE" className="py-3 px-4 rounded-lg cursor-pointer focus:bg-indigo-50 focus:text-indigo-700">🇦🇪 United Arab Emirates</SelectItem>
-                                    <SelectItem value="JP" className="py-3 px-4 rounded-lg cursor-pointer focus:bg-indigo-50 focus:text-indigo-700">🇯🇵 Japan</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    )}
+                    {/* Location Hierarchy Selector */}
+                    <div className="space-y-3 bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                        <label className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-1">
+                            <Globe className="w-4 h-4 text-indigo-500" />
+                            Select your Primary Location
+                        </label>
+                        <LocationCascadeSelector
+                            initialCountry={selectedCountry || user?.country || ""}
+                            initialState={selectedState || user?.state || ""}
+                            initialCity={selectedCity || user?.currentCity || ""}
+                            onChange={(val) => {
+                                setSelectedCountry(val.countryName || "");
+                                setSelectedState(val.stateName || "");
+                                setSelectedCity(val.cityName || "");
+                                setSelectedCountryId(val.countryId || undefined);
+                                setSelectedStateId(val.stateId || undefined);
+                                setSelectedCityId(val.cityId || undefined);
+                            }}
+                        />
+                    </div>
 
                     {/* Phone */}
                     {needsPhone && (

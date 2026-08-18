@@ -7,7 +7,6 @@ export function isOnboardingComplete(user: any): boolean {
         user?.resumeUrl &&
         user?.phone &&
         user?.phone.length >= 10 &&
-        user?.profileStats?.hasSkills &&
-        user?.country
+        user?.profileStats?.hasSkills
     );
 }

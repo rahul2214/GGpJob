@@ -242,37 +242,6 @@ export function PersonalInfoFormCombined({ user, onSuccess }: PersonalInfoFormCo
                   )}
               />
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                  control={form.control}
-                  name="country"
-                  render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>Country</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value || ''}>
-                              <FormControl>
-                                  <SelectTrigger className="rounded-xl border-slate-200 focus:ring-indigo-500">
-                                      <SelectValue placeholder="Select country" />
-                                  </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                  <SelectItem value="IN">🇮🇳 India (INR)</SelectItem>
-                                  <SelectItem value="US">🇺🇸 United States (USD)</SelectItem>
-                                  <SelectItem value="GB">🇬🇧 United Kingdom (GBP)</SelectItem>
-                                  <SelectItem value="CA">🇨🇦 Canada (CAD)</SelectItem>
-                                  <SelectItem value="AU">🇦🇺 Australia (AUD)</SelectItem>
-                                  <SelectItem value="DE">🇪🇺 Germany (EUR)</SelectItem>
-                                  <SelectItem value="FR">🇪🇺 France (EUR)</SelectItem>
-                                  <SelectItem value="AE">🇦🇪 United Arab Emirates (AED)</SelectItem>
-                                  <SelectItem value="JP">🇯🇵 Japan (JPY)</SelectItem>
-                              </SelectContent>
-                          </Select>
-                          <FormMessage />
-                      </FormItem>
-                  )}
-              />
-          </div>
         </div>
 
         {/* Section 2: Diversity and Inclusion */}

@@ -107,12 +107,32 @@ async function mapProfileToUser(profile: any): Promise<User> {
         annualSalary: profile.annual_salary,
         expectedSalary: profile.expected_salary,
         salaryBreakdown: profile.salary_breakdown,
-        noticePeriod: profile.notice_period,
-        preferredLocations: profile.preferred_locations || [],
-        isPaid: profile.is_paid,
-        country: profile.country || profile.metadata?.country,
-        state: profile.state || profile.metadata?.state,
-        currentCity: profile.current_city || profile.metadata?.currentCity,
+        preferredLocations: (profile.jobseeker_preferred_locations && profile.jobseeker_preferred_locations.length > 0)
+            ? profile.jobseeker_preferred_locations.map((pl: any) => {
+                const parts = [
+                    pl.cities?.name,
+                    pl.states_provinces?.name,
+                    pl.countries?.name
+                ].filter(Boolean);
+                return parts.join(', ');
+              })
+            : (profile.preferred_locations || profile.metadata?.preferredLocations || []),
+        jobseekerPreferredLocations: (profile.jobseeker_preferred_locations || []).map((pl: any) => ({
+            id: pl.id,
+            countryId: pl.country_id,
+            stateProvinceId: pl.state_province_id,
+            cityId: pl.city_id,
+            countryName: pl.countries?.name,
+            stateName: pl.states_provinces?.name,
+            cityName: pl.cities?.name,
+            formattedLocation: [pl.cities?.name, pl.states_provinces?.name, pl.countries?.name].filter(Boolean).join(', ')
+        })),
+        country: profile.countries?.name || profile.country || null,
+        state: profile.states_provinces?.name || profile.state || null,
+        currentCity: profile.cities?.name || profile.current_city || null,
+        countryId: profile.current_country_id || null,
+        stateId: profile.current_state_province_id || null,
+        cityId: profile.current_city_id || null,
         preferredJobTitles: profile.preferred_job_titles || profile.metadata?.preferredJobTitles || [],
         preferredSalaryMin: profile.preferred_salary_min ?? profile.metadata?.preferredSalaryMin,
         preferredSalaryMax: profile.preferred_salary_max ?? profile.metadata?.preferredSalaryMax,
@@ -120,9 +140,9 @@ async function mapProfileToUser(profile: any): Promise<User> {
         remotePreference: profile.remote_preference || profile.metadata?.remotePreference || 'any',
         employmentTypes: profile.employment_types || profile.metadata?.employmentTypes || [],
         preferredIndustries: profile.preferred_industries || profile.metadata?.preferredIndustries || [],
-        openToRelocate: profile.open_to_relocate ?? profile.metadata?.openToRelocate ?? false,
-        openToRelocation: profile.open_to_relocate ?? profile.metadata?.openToRelocate ?? false,
-        openWorldwide: profile.open_worldwide ?? profile.metadata?.openWorldwide ?? false,
+        openToRelocate: profile.open_to_relocate ?? false,
+        openToRelocation: profile.open_to_relocate ?? false,
+        openWorldwide: profile.open_worldwide ?? false,
         workAuthorization: profile.work_authorization || profile.metadata?.workAuthorization || [],
         visaRequirement: profile.visa_requirement || profile.metadata?.visaRequirement || '',
         preferredLanguages: profile.preferred_languages || profile.metadata?.preferredLanguages || [],
@@ -160,6 +180,26 @@ async function mapProfileToUser(profile: any): Promise<User> {
             endDate: p.end_date
         })),
         languages: profile.languages || [],
+        achievements: (profile.jobseeker_achievements && profile.jobseeker_achievements.length > 0)
+            ? profile.jobseeker_achievements.map((a: any) => ({
+                id: a.id,
+                title: a.title,
+                description: a.description,
+                issuer: a.issuer,
+                dateAchieved: a.date_achieved
+              }))
+            : profile.metadata?.achievements || [],
+        certifications: (profile.jobseeker_certifications && profile.jobseeker_certifications.length > 0)
+            ? profile.jobseeker_certifications.map((c: any) => ({
+                id: c.id,
+                name: c.name,
+                issuingOrganization: c.issuing_organization,
+                issueDate: c.issue_date,
+                expirationDate: c.expiration_date,
+                credentialId: c.credential_id,
+                credentialUrl: c.credential_url
+              }))
+            : profile.metadata?.certifications || [],
         skills: resolvedSkills,
         skillIds: profile.skill_ids || [],
         profileStats,
@@ -232,7 +272,13 @@ export async function GET(request: Request, { params }: { params: { id: string }
                 projects(*),
                 languages(*),
                 jobseeker_personal_details(*),
-                jobseeker_skills(proficiency_level, years_experience, skills(id, uuid, name))
+                jobseeker_skills(proficiency_level, years_experience, skills(id, uuid, name)),
+                countries:current_country_id(id, name, code),
+                states_provinces:current_state_province_id(id, name, code),
+                cities:current_city_id(id, name, is_featured),
+                jobseeker_achievements:jobseeker_achievements!jobseeker_id(*),
+                jobseeker_certifications:jobseeker_certifications!jobseeker_id(*),
+                jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name))
             `)
             .eq(column, idValue)
             .maybeSingle();
@@ -325,14 +371,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             updated_at: new Date().toISOString()
         };
 
-        if (rest.country !== undefined) {
-            updateData.country = rest.country;
-        }
         if (rest.preferredCurrency !== undefined) {
             updateData.preferred_currency = rest.preferredCurrency;
         }
 
         if (table === 'recruiters' || table === 'employees') {
+            if (rest.country !== undefined) {
+                updateData.country = rest.country;
+            }
             let numericCompanySizeId = null;
             if (rest.companySizeId) {
                 const isUuid = typeof rest.companySizeId === 'string' && rest.companySizeId.includes('-');
@@ -358,16 +404,54 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             });
         }
 
-
         if (table === 'jobseekers') {
-            const selectString = '*, roles(name)';
-            
+            // Resolve foreign keys for location hierarchy
+            let cId = rest.countryId ? Number(rest.countryId) : null;
+            let sId = rest.stateId ? Number(rest.stateId) : null;
+            let ciId = rest.cityId ? Number(rest.cityId) : null;
+
+            const cleanCountryName = rest.country ? rest.country.split('(')[0].trim() : '';
+            const cleanStateName = rest.state ? rest.state.trim() : '';
+            const cleanCityName = rest.currentCity ? rest.currentCity.split('★')[0].trim() : '';
+
+            // 1. Resolve Country
+            if (cleanCountryName) {
+                const { data: cObj } = await supabaseAdmin
+                    .from('countries')
+                    .select('id')
+                    .or(`name.ilike.${cleanCountryName},code.ilike.${cleanCountryName}`)
+                    .maybeSingle();
+                if (cObj) cId = cObj.id;
+            }
+
+            // 2. Resolve State (prefer cleanStateName over stale rest.stateId)
+            if (cleanStateName && cId) {
+                const { data: sObj } = await supabaseAdmin
+                    .from('states_provinces')
+                    .select('id')
+                    .eq('country_id', cId)
+                    .ilike('name', cleanStateName)
+                    .maybeSingle();
+                if (sObj) sId = sObj.id;
+            } else if (!cleanStateName) {
+                sId = null;
+            }
+
+            // 3. Resolve City (prefer cleanCityName over stale rest.cityId)
+            if (cleanCityName && sId) {
+                const { data: ciObj } = await supabaseAdmin
+                    .from('cities')
+                    .select('id')
+                    .eq('state_province_id', sId)
+                    .ilike('name', cleanCityName)
+                    .maybeSingle();
+                if (ciObj) ciId = ciObj.id;
+            } else if (!cleanCityName) {
+                ciId = null;
+            }
 
             const mergedMetadata = {
                 ...(rest.metadata || {}),
-                country: rest.country ?? rest.metadata?.country,
-                state: rest.state ?? rest.metadata?.state,
-                currentCity: rest.currentCity ?? rest.metadata?.currentCity,
                 preferredJobTitles: rest.preferredJobTitles ?? rest.metadata?.preferredJobTitles ?? [],
                 preferredSalaryMin: rest.preferredSalaryMin ?? rest.metadata?.preferredSalaryMin,
                 preferredSalaryMax: rest.preferredSalaryMax ?? rest.metadata?.preferredSalaryMax,
@@ -375,12 +459,20 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 remotePreference: rest.remotePreference ?? rest.metadata?.remotePreference ?? 'any',
                 employmentTypes: rest.employmentTypes ?? rest.metadata?.employmentTypes ?? [],
                 preferredIndustries: rest.preferredIndustries ?? rest.metadata?.preferredIndustries ?? [],
-                openToRelocate: rest.openToRelocate ?? rest.openToRelocation ?? rest.metadata?.openToRelocate ?? false,
-                openWorldwide: rest.openWorldwide ?? rest.metadata?.openWorldwide ?? false,
                 workAuthorization: rest.workAuthorization ?? rest.metadata?.workAuthorization ?? [],
                 visaRequirement: rest.visaRequirement ?? rest.metadata?.visaRequirement ?? '',
                 preferredLanguages: rest.preferredLanguages ?? rest.metadata?.preferredLanguages ?? [],
             };
+
+            // Ensure location, achievements, certifications, openToRelocate, and openWorldwide are NOT stored in metadata
+            delete mergedMetadata.country;
+            delete mergedMetadata.state;
+            delete mergedMetadata.currentCity;
+            delete mergedMetadata.achievements;
+            delete mergedMetadata.certifications;
+            delete mergedMetadata.openToRelocate;
+            delete mergedMetadata.openToRelocation;
+            delete mergedMetadata.openWorldwide;
 
             Object.assign(updateData, {
                 headline: rest.headline,
@@ -392,22 +484,33 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 work_status: rest.workStatus,
                 experience_years: rest.experienceYears === '' ? null : rest.experienceYears,
                 experience_months: rest.experienceMonths === '' ? null : rest.experienceMonths,
-                current_city: rest.currentCity,
-                country: rest.country,
                 current_area: rest.currentArea,
                 annual_salary: rest.annualSalary === '' ? null : rest.annualSalary,
                 expected_salary: rest.expectedSalary === '' ? null : rest.expectedSalary,
                 salary_breakdown: rest.salaryBreakdown,
                 notice_period: rest.noticePeriod,
-                preferred_locations: rest.preferredLocations,
                 metadata: mergedMetadata,
                 referral_code: rest.referralCode,
-                referral_count: rest.referralCount
+                referral_count: rest.referralCount,
+                ...(rest.openToRelocate !== undefined && { open_to_relocate: rest.openToRelocate }),
+                ...(rest.openToRelocation !== undefined && { open_to_relocate: rest.openToRelocation }),
+                ...(rest.openWorldwide !== undefined && { open_worldwide: rest.openWorldwide }),
+                ...(rest.country !== undefined || rest.countryId !== undefined ? { current_country_id: cId } : {}),
+                ...(rest.state !== undefined || rest.stateId !== undefined ? { current_state_province_id: sId } : {}),
+                ...(rest.currentCity !== undefined || rest.cityId !== undefined ? { current_city_id: ciId } : {}),
             });
 
             if (rest.referredBy !== undefined) {
                 updateData.referred_by = rest.referredBy ? Number(rest.referredBy) : null;
             }
+
+            // Remove non-existent column fields for jobseekers table
+            delete updateData.country;
+            delete updateData.state;
+            delete updateData.current_city;
+            delete updateData.currentCity;
+            delete updateData.preferred_locations;
+            delete updateData.preferredLocations;
         }
 
         // Clean undefined values from updateData to prevent database update errors/clearing
@@ -423,7 +526,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 projects(*),
                 languages(*),
                 jobseeker_personal_details(*),
-                jobseeker_skills(skills(id, uuid, name))
+                jobseeker_skills(skills(id, uuid, name)),
+                countries:current_country_id(id, name, code),
+                states_provinces:current_state_province_id(id, name, code),
+                cities:current_city_id(id, name, is_featured),
+                jobseeker_achievements:jobseeker_achievements!jobseeker_id(*),
+                jobseeker_certifications:jobseeker_certifications!jobseeker_id(*),
+                jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name))
             `;
         } else if (table === 'recruiters') {
             selectString = '*, roles(name), company_sizes(uuid, name)';
@@ -623,6 +732,110 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 }
             }
 
+            // 6. Achievements (Relational Sync)
+            if (Array.isArray(rest.achievements)) {
+                try {
+                    await supabaseAdmin.from('jobseeker_achievements').delete().or(`jobseeker_id.eq.${userPk},jobseeker_uuid.eq.${profile.uuid}`);
+                    if (rest.achievements.length > 0) {
+                        const achievementRows = rest.achievements.map((a: any) => {
+                            if (typeof a === 'string') {
+                                return {
+                                    jobseeker_id: userPk,
+                                    jobseeker_uuid: profile.uuid,
+                                    title: a.trim(),
+                                    description: null,
+                                    issuer: null,
+                                    date_achieved: null
+                                };
+                            }
+                            return {
+                                jobseeker_id: userPk,
+                                jobseeker_uuid: profile.uuid,
+                                title: (a.title || a.name || '').trim(),
+                                description: a.description || null,
+                                issuer: a.issuer || a.issuingOrganization || null,
+                                date_achieved: normalizeDate(a.dateAchieved || a.issueDate)
+                            };
+                        }).filter((row: any) => row.title);
+
+                        if (achievementRows.length > 0) {
+                            await supabaseAdmin.from('jobseeker_achievements').insert(achievementRows);
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Could not sync jobseeker_achievements table:", err);
+                }
+            }
+
+            // 7. Certifications (Relational Sync)
+            if (Array.isArray(rest.certifications)) {
+                try {
+                    await supabaseAdmin.from('jobseeker_certifications').delete().or(`jobseeker_id.eq.${userPk},jobseeker_uuid.eq.${profile.uuid}`);
+                    if (rest.certifications.length > 0) {
+                        const certificationRows = rest.certifications.map((c: any) => {
+                            if (typeof c === 'string') {
+                                return {
+                                    jobseeker_id: userPk,
+                                    jobseeker_uuid: profile.uuid,
+                                    name: c.trim(),
+                                    issuing_organization: null,
+                                    issue_date: null,
+                                    expiration_date: null,
+                                    credential_id: null,
+                                    credential_url: null
+                                };
+                            }
+                            return {
+                                jobseeker_id: userPk,
+                                jobseeker_uuid: profile.uuid,
+                                name: (c.name || c.title || '').trim(),
+                                issuing_organization: c.issuingOrganization || c.issuer || null,
+                                issue_date: normalizeDate(c.issueDate || c.dateAchieved),
+                                expiration_date: normalizeDate(c.expirationDate),
+                                credential_id: c.credentialId || null,
+                                credential_url: c.credentialUrl || null
+                            };
+                        }).filter((row: any) => row.name);
+
+                        if (certificationRows.length > 0) {
+                            await supabaseAdmin.from('jobseeker_certifications').insert(certificationRows);
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Could not sync jobseeker_certifications table:", err);
+                }
+            }
+
+            // 8. Preferred Locations (Relational Sync)
+            if (Array.isArray(rest.preferredLocations)) {
+                try {
+                    await supabaseAdmin.from('jobseeker_preferred_locations').delete().eq('jobseeker_id', userPk);
+                    if (rest.preferredLocations.length > 0) {
+                        const locationRows: any[] = [];
+                        for (const loc of rest.preferredLocations) {
+                            if (typeof loc === 'object' && loc !== null) {
+                                const cId = loc.countryId || loc.country_id;
+                                const sId = loc.stateProvinceId || loc.stateId || loc.state_province_id;
+                                const ciId = loc.cityId || loc.city_id;
+                                if (cId) {
+                                    locationRows.push({
+                                        jobseeker_id: userPk,
+                                        country_id: Number(cId),
+                                        state_province_id: sId ? Number(sId) : null,
+                                        city_id: ciId ? Number(ciId) : null
+                                    });
+                                }
+                            }
+                        }
+                        if (locationRows.length > 0) {
+                            await supabaseAdmin.from('jobseeker_preferred_locations').insert(locationRows);
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Could not sync jobseeker_preferred_locations table:", err);
+                }
+            }
+
             // Final re-fetch to get everything joined and mapped correctly after relational sync
             const { data: finalProfile } = await supabaseAdmin
                 .from('jobseekers')
@@ -634,7 +847,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                     projects(*),
                     languages(*),
                     jobseeker_personal_details(*),
-                    jobseeker_skills(skills(id, uuid, name))
+                    jobseeker_skills(skills(id, uuid, name)),
+                    countries:current_country_id(id, name, code),
+                    states_provinces:current_state_province_id(id, name, code),
+                    cities:current_city_id(id, name, is_featured),
+                    jobseeker_achievements:jobseeker_achievements!jobseeker_id(*),
+                    jobseeker_certifications:jobseeker_certifications!jobseeker_id(*),
+                    jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name))
                 `)
                 .eq(column, idValue)
                 .single();

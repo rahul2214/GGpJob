@@ -19,7 +19,22 @@ export async function GET(request: Request) {
             // Jobseekers (heavy query) - Proactively check and reset credits if needed
             (async () => {
                 await supabaseAdmin.rpc('check_and_reset_credits_by_uuid', { p_uuid: uid });
-                return supabaseAdmin.from('jobseekers').select('*, roles(name), education(*), experience(*), projects(*), languages(*), jobseeker_personal_details(*), jobseeker_skills(proficiency_level, years_experience, skills(id, uuid, name))').eq('uuid', uid).maybeSingle();
+                return supabaseAdmin.from('jobseekers').select(`
+                    *, 
+                    roles(name), 
+                    education(*), 
+                    experience(*), 
+                    projects(*), 
+                    languages(*), 
+                    jobseeker_personal_details(*), 
+                    jobseeker_skills(proficiency_level, years_experience, skills(id, uuid, name)),
+                    countries:current_country_id(id, name, code),
+                    states_provinces:current_state_province_id(id, name, code),
+                    cities:current_city_id(id, name, is_featured),
+                    jobseeker_achievements:jobseeker_achievements!jobseeker_id(*),
+                    jobseeker_certifications:jobseeker_certifications!jobseeker_id(*),
+                    jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name))
+                `).eq('uuid', uid).maybeSingle();
             })(),
             // Recruiters
             supabaseAdmin.from('recruiters').select('*, roles(name)').eq('uuid', uid).maybeSingle(),
@@ -46,6 +61,28 @@ export async function GET(request: Request) {
                 resolvedSkills = jobseeker.skills;
             }
 
+            const mappedPreferredLocations = (jobseeker.jobseeker_preferred_locations && jobseeker.jobseeker_preferred_locations.length > 0)
+                ? jobseeker.jobseeker_preferred_locations.map((pl: any) => {
+                    const parts = [
+                        pl.cities?.name,
+                        pl.states_provinces?.name,
+                        pl.countries?.name
+                    ].filter(Boolean);
+                    return parts.join(', ');
+                  })
+                : (jobseeker.preferred_locations || jobseeker.metadata?.preferredLocations || []);
+
+            const mappedJobseekerPreferredLocations = (jobseeker.jobseeker_preferred_locations || []).map((pl: any) => ({
+                id: pl.id,
+                countryId: pl.country_id,
+                stateProvinceId: pl.state_province_id,
+                cityId: pl.city_id,
+                countryName: pl.countries?.name,
+                stateName: pl.states_provinces?.name,
+                cityName: pl.cities?.name,
+                formattedLocation: [pl.cities?.name, pl.states_provinces?.name, pl.countries?.name].filter(Boolean).join(', ')
+            }));
+
             const user: any = {
                 id: jobseeker.id,
                 uuid: jobseeker.uuid,
@@ -55,16 +92,21 @@ export async function GET(request: Request) {
                 role: (jobseeker as any).roles?.name || jobseeker.role || 'Job Seeker',
                 roleId: jobseeker.role_id,
                 headline: jobseeker.headline,
-                country: jobseeker.country,
-                state: jobseeker.state,
+                country: jobseeker.countries?.name || jobseeker.country || null,
+                state: jobseeker.states_provinces?.name || jobseeker.state || null,
+                currentCity: jobseeker.cities?.name || jobseeker.current_city || null,
+                countryId: jobseeker.current_country_id || null,
+                stateId: jobseeker.current_state_province_id || null,
+                preferredLocations: mappedPreferredLocations,
+                jobseekerPreferredLocations: mappedJobseekerPreferredLocations,
                 preferredJobTitles: jobseeker.preferred_job_titles || [],
                 preferredSalaryMin: jobseeker.preferred_salary_min,
                 preferredSalaryMax: jobseeker.preferred_salary_max,
                 remotePreference: jobseeker.remote_preference || 'any',
                 employmentTypes: jobseeker.employment_types || [],
                 preferredIndustries: jobseeker.preferred_industries || [],
-                openToRelocate: jobseeker.open_to_relocate || false,
-                openWorldwide: jobseeker.open_worldwide || false,
+                openToRelocate: jobseeker.open_to_relocate ?? false,
+                openWorldwide: jobseeker.open_worldwide ?? false,
                 workAuthorization: jobseeker.work_authorization || [],
                 visaRequirement: jobseeker.visa_requirement,
                 preferredLanguages: jobseeker.preferred_languages || [],
@@ -84,7 +126,6 @@ export async function GET(request: Request) {
                 workStatus: jobseeker.work_status,
                 experienceYears: jobseeker.experience_years,
                 experienceMonths: jobseeker.experience_months,
-                currentCity: jobseeker.current_city,
                 currentArea: jobseeker.current_area,
                 annualSalary: jobseeker.annual_salary,
                 expectedSalary: jobseeker.expected_salary,
@@ -99,6 +140,26 @@ export async function GET(request: Request) {
                 deletedAt: jobseeker.deleted_at,
                 preferredCurrency: jobseeker.preferred_currency || 'INR',
                 metadata: jobseeker.metadata,
+                achievements: (jobseeker.jobseeker_achievements && jobseeker.jobseeker_achievements.length > 0)
+                    ? jobseeker.jobseeker_achievements.map((a: any) => ({
+                        id: a.id,
+                        title: a.title,
+                        description: a.description,
+                        issuer: a.issuer,
+                        dateAchieved: a.date_achieved
+                      }))
+                    : jobseeker.metadata?.achievements || [],
+                certifications: (jobseeker.jobseeker_certifications && jobseeker.jobseeker_certifications.length > 0)
+                    ? jobseeker.jobseeker_certifications.map((c: any) => ({
+                        id: c.id,
+                        name: c.name,
+                        issuingOrganization: c.issuing_organization,
+                        issueDate: c.issue_date,
+                        expirationDate: c.expiration_date,
+                        credentialId: c.credential_id,
+                        credentialUrl: c.credential_url
+                      }))
+                    : jobseeker.metadata?.certifications || [],
                 referralCode: jobseeker.referral_code,
                 referredBy: jobseeker.referred_by ? Number(jobseeker.referred_by) : undefined,
                 referralCount: jobseeker.referral_count || 0,

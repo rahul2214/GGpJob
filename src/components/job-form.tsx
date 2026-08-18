@@ -24,6 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import type { JobType, WorkplaceType, Job, Location, MasterSkill, CompanySize } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
 import { MultiSelectFilter } from "./multi-select-filter";
+import { LocationCascadeSelector } from "@/components/location/LocationCascadeSelector";
 
 // ─── Schema ────────────────────────────────────────────────────────────────
 
@@ -602,45 +603,17 @@ export function JobForm({ job }: JobFormProps) {
         <div className="pt-4 border-t border-slate-200 mt-6 space-y-4">
           <h3 className="font-semibold text-lg text-slate-800 dark:text-slate-200">International Job Targeting & Visa Settings</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FormField
-              control={form.control}
-              name="country"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Country</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. United States / India" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="state"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>State / Province</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. California / Karnataka" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="city"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>City</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. San Francisco / Bengaluru" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-3">Job Location Hierarchy (Country &rarr; State &rarr; City)</h4>
+            <LocationCascadeSelector
+              initialCountry={form.watch("country") || ""}
+              initialState={form.watch("state") || ""}
+              initialCity={form.watch("city") || ""}
+              onChange={(val) => {
+                form.setValue("country", val.countryName || "");
+                form.setValue("state", val.stateName || "");
+                form.setValue("city", val.cityName || "");
+              }}
             />
           </div>
 
