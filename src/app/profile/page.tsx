@@ -195,11 +195,7 @@ export default function ProfilePage() {
                                 </div>
 
                                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">{user.name}</h2>
-                                <div className="flex items-center justify-center gap-2 mt-1 mb-3">
-                                    <BadgeRole role={user.role} />
-                                </div>
-
-                                <div className="space-y-1 text-xs text-slate-500 font-medium w-full border-t border-slate-100 pt-3 mt-1">
+                                <div className="space-y-1 text-xs font-medium w-full border-slate-100 mt-1">
                                     <div className="flex items-center justify-center gap-1.5 text-slate-600">
                                         <Mail className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                                         <span className="truncate">{user.email}</span>
