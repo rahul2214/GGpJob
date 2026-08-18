@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import type { User } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { Lightbulb, CheckCircle2, Plus, ArrowRight, Sparkles, Trophy, Crown, Check } from 'lucide-react';
+import { Lightbulb, CheckCircle2, Plus, ArrowRight, Sparkles, Trophy, Crown, Check, MapPin, FileText, Briefcase, GraduationCap, Code2, Award, BookmarkCheck, Globe } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from './ui/card';
@@ -17,33 +17,114 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
 
     const { completion, missingSections } = useMemo(() => {
         let score = 0;
-        const totalPoints = 12;
         const missing: string[] = [];
 
-        // 1. Basic info from user object
-        if (user.name) score++;
-        if (user.email) score++;
-        if (user.phone) score++;
-        if (user.headline) score++; else missing.push('headline');
-        if (user.summary) score++; else missing.push('summary');
-        if (user.locationId) score++; else missing.push('location');
-        if (user.domainId) score++; else missing.push('domain');
-        
-        // 2. Resume
-        if (user.resumeUrl) score++; else missing.push('resume');
-
-        // 3. Stats from profileStats (calculated on server)
-        if (user.profileStats) {
-            if (user.profileStats.hasEducation) score++; else missing.push('education');
-            if (user.profileStats.hasEmployment) score++; else missing.push('work experience');
-            if (user.profileStats.hasProjects) score++; else missing.push('projects');
-            if (user.profileStats.hasSkills) score++; else missing.push('skills');
+        // 1. Location Hierarchy (15%)
+        const hasLocation = Boolean(
+            (user.country || user.countryId) &&
+            (user.state || user.stateId) &&
+            (user.currentCity || user.cityId)
+        );
+        if (hasLocation) {
+            score += 15;
         } else {
-            missing.push('profile details');
+            missing.push('location hierarchy');
+        }
+
+        // 2. Resume Upload (15%)
+        if (user.resumeUrl) {
+            score += 15;
+        } else {
+            missing.push('resume');
+        }
+
+        // 3. Key Skills (15%)
+        const hasSkills = Boolean(
+            (user.skills && user.skills.length > 0) ||
+            user.profileStats?.hasSkills
+        );
+        if (hasSkills) {
+            score += 15;
+        } else {
+            missing.push('skills');
+        }
+
+        // 4. Work Experience (15%)
+        const hasExperience = Boolean(
+            (user.experience && user.experience.length > 0) ||
+            user.profileStats?.hasEmployment
+        );
+        if (hasExperience) {
+            score += 15;
+        } else {
+            missing.push('work experience');
+        }
+
+        // 5. Education Details (10%)
+        const hasEducation = Boolean(
+            (user.education && user.education.length > 0) ||
+            user.profileStats?.hasEducation
+        );
+        if (hasEducation) {
+            score += 10;
+        } else {
+            missing.push('education');
+        }
+
+        // 6. Projects Portfolio (10%)
+        const hasProjects = Boolean(
+            (user.projects && user.projects.length > 0) ||
+            user.profileStats?.hasProjects
+        );
+        if (hasProjects) {
+            score += 10;
+        } else {
+            missing.push('projects');
+        }
+
+        // 7. Headline & Summary (5%)
+        if (user.headline || user.summary) {
+            score += 5;
+        } else {
+            missing.push('headline & summary');
+        }
+
+        // 8. Job & Location Preferences (5%)
+        const hasPreferences = Boolean(
+            (user.preferredLocations && user.preferredLocations.length > 0) ||
+            (user.jobseekerPreferredLocations && user.jobseekerPreferredLocations.length > 0) ||
+            (user.preferredJobTitles && user.preferredJobTitles.length > 0)
+        );
+        if (hasPreferences) {
+            score += 5;
+        } else {
+            missing.push('location & job preferences');
+        }
+
+        // 9. Certifications (5%)
+        const hasCertifications = Boolean(
+            (user.certifications && user.certifications.length > 0) ||
+            user.profileStats?.hasCertifications
+        );
+        if (hasCertifications) {
+            score += 5;
+        } else {
+            missing.push('certifications');
+        }
+
+        // 10. Achievements (5%)
+        const hasAchievements = Boolean(
+            (user.achievements && user.achievements.length > 0) ||
+            user.profileStats?.hasAchievements
+        );
+        if (hasAchievements) {
+            score += 5;
+        } else {
+            missing.push('achievements');
         }
 
         return {
-            completion: Math.min(100, Math.round((score / totalPoints) * 100)),
+            completion: Math.min(100, score),
             missingSections: missing
         };
     }, [user]);
@@ -52,7 +133,7 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
         if (percentage < 50) {
             return {
                 text: "Beginner",
-                description: "Complete your profile to stand out to verified employees.",
+                description: "Complete your profile to stand out to verified employers & recruiters.",
                 color: "bg-rose-50 text-rose-600 border-rose-200/60 dark:bg-rose-950/20 dark:text-rose-400",
                 gradient: "from-rose-500 to-orange-500",
                 shadow: "shadow-rose-500/10",
@@ -63,7 +144,7 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
         if (percentage < 80) {
             return {
                 text: "Intermediate",
-                description: "Almost there! Complete more sections to double your referral odds.",
+                description: "Great progress! Complete remaining boosters to double your referral odds.",
                 color: "bg-amber-50 text-amber-600 border-amber-200/60 dark:bg-amber-950/20 dark:text-amber-400",
                 gradient: "from-amber-500 to-indigo-500",
                 shadow: "shadow-amber-500/10",
@@ -73,7 +154,7 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
         }
         return {
             text: "Profile All-Star",
-            description: "Elite profile strength. Max visibility for referrals & hiring managers.",
+            description: "Elite profile strength. Max visibility for referrals & top hiring managers.",
             color: "bg-emerald-50 text-emerald-600 border-emerald-200/60 dark:bg-emerald-950/20 dark:text-emerald-400",
             gradient: "from-indigo-600 via-purple-600 to-pink-500",
             shadow: "shadow-indigo-500/10",
@@ -84,17 +165,17 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
 
     const info = getStrengthInfo(completion);
 
-    const sectionMeta: Record<string, { label: string; boost: number }> = {
-        headline: { label: "Professional Headline", boost: 8 },
-        summary: { label: "About Summary", boost: 8 },
-        location: { label: "Current Location", boost: 8 },
-        domain: { label: "Industry Domain", boost: 8 },
-        resume: { label: "Upload Resume", boost: 8 },
-        education: { label: "Education Details", boost: 8 },
-        'work experience': { label: "Work Experience", boost: 8 },
-        skills: { label: "Key Skills", boost: 8 },
-        projects: { label: "Project Details", boost: 8 },
-        'profile details': { label: "Profile Setup", boost: 8 },
+    const sectionMeta: Record<string, { label: string; boost: number; icon: any }> = {
+        'location hierarchy': { label: "Location Hierarchy (Country, State, City)", boost: 15, icon: MapPin },
+        resume: { label: "Upload Resume / CV", boost: 15, icon: FileText },
+        skills: { label: "Key Skills & Proficiencies", boost: 15, icon: Code2 },
+        'work experience': { label: "Work Experience History", boost: 15, icon: Briefcase },
+        education: { label: "Education & Degrees", boost: 10, icon: GraduationCap },
+        projects: { label: "Projects & Portfolio", boost: 10, icon: Code2 },
+        'headline & summary': { label: "Headline & About Summary", boost: 5, icon: FileText },
+        'location & job preferences': { label: "Preferred Locations & Job Titles", boost: 5, icon: Globe },
+        certifications: { label: "Certifications & Licenses", boost: 5, icon: Award },
+        achievements: { label: "Achievements & Honors", boost: 5, icon: BookmarkCheck },
     };
 
     // Calculate circular progress parameters
@@ -120,7 +201,7 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
                                 <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
                             )}
                         </div>
-                        <p className="text-xs text-slate-500 leading-normal max-w-[200px]">
+                        <p className="text-xs text-slate-500 leading-normal max-w-[220px]">
                             {info.description}
                         </p>
                     </div>
@@ -188,9 +269,11 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
                             <span className="text-[10px] font-bold text-slate-400">Next milestones</span>
                         </div>
 
-                        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1 scrollbar-thin">
+                        <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin">
                             {missingSections.map((sect) => {
-                                const meta = sectionMeta[sect] || { label: sect, boost: 8 };
+                                const meta = sectionMeta[sect] || { label: sect, boost: 5, icon: Plus };
+                                const IconComponent = meta.icon || Plus;
+
                                 return (
                                     <button
                                         key={sect}
@@ -198,8 +281,8 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
                                         className="w-full flex items-center justify-between p-3 rounded-2xl bg-white border border-slate-150 hover:border-indigo-300 hover:bg-indigo-50/10 transition-all duration-200 group text-left shadow-sm"
                                     >
                                         <div className="flex items-center gap-2.5 min-w-0">
-                                            <div className="w-6 h-6 rounded-lg bg-slate-100 group-hover:bg-indigo-50 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 transition-colors">
-                                                <Plus className="w-3.5 h-3.5 transition-transform group-hover:rotate-90" />
+                                            <div className="w-7 h-7 rounded-xl bg-slate-100 group-hover:bg-indigo-50 flex items-center justify-center text-slate-500 group-hover:text-indigo-600 transition-colors">
+                                                <IconComponent className="w-3.5 h-3.5" />
                                             </div>
                                             <span className="text-xs font-bold text-slate-700 group-hover:text-slate-900 transition-colors truncate">
                                                 Add {meta.label}

@@ -120,6 +120,10 @@ export interface User {
     hasProjects: boolean;
     hasLanguages: boolean;
     hasSummary: boolean;
+    hasLocationHierarchy?: boolean;
+    hasAchievements?: boolean;
+    hasCertifications?: boolean;
+    hasPreferredLocations?: boolean;
   };
   // Relational data
   // Company/Recruiter Fields

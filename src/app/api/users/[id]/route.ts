@@ -25,7 +25,17 @@ function calculateProfileStats(profile: any, resolvedSkills?: any[]) {
                    (Array.isArray(profile.skills) && profile.skills.length > 0),
         hasProjects: Array.isArray(profile.projects) && profile.projects.length > 0,
         hasLanguages: Array.isArray(profile.languages) && profile.languages.length > 0,
-        hasSummary: !!profile.summary
+        hasSummary: !!profile.summary || !!profile.headline,
+        hasLocationHierarchy: Boolean(profile.current_country_id || profile.countries?.name || profile.country) &&
+                              Boolean(profile.current_state_province_id || profile.states_provinces?.name || profile.state) &&
+                              Boolean(profile.current_city_id || profile.cities?.name || profile.current_city),
+        hasAchievements: (Array.isArray(profile.jobseeker_achievements) && profile.jobseeker_achievements.length > 0) ||
+                         (Array.isArray(profile.achievements) && profile.achievements.length > 0),
+        hasCertifications: (Array.isArray(profile.jobseeker_certifications) && profile.jobseeker_certifications.length > 0) ||
+                           (Array.isArray(profile.certifications) && profile.certifications.length > 0),
+        hasPreferredLocations: (Array.isArray(profile.jobseeker_preferred_locations) && profile.jobseeker_preferred_locations.length > 0) ||
+                               (Array.isArray(profile.preferred_locations) && profile.preferred_locations.length > 0) ||
+                               (Array.isArray(profile.preferredLocations) && profile.preferredLocations.length > 0)
     };
 }
 
