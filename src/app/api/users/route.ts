@@ -33,7 +33,8 @@ export async function GET(request: Request) {
                     cities:current_city_id(id, name, is_featured),
                     jobseeker_achievements:jobseeker_achievements!jobseeker_id(*),
                     jobseeker_certifications:jobseeker_certifications!jobseeker_id(*),
-                    jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name))
+                    jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name)),
+                    visa_requirements:visa_requirement_id(id, name)
                 `).eq('uuid', uid).maybeSingle();
             })(),
             // Recruiters
@@ -108,7 +109,8 @@ export async function GET(request: Request) {
                 openToRelocate: jobseeker.open_to_relocate ?? false,
                 openWorldwide: jobseeker.open_worldwide ?? false,
                 workAuthorization: jobseeker.work_authorization || [],
-                visaRequirement: jobseeker.visa_requirement,
+                visaRequirementId: jobseeker.visa_requirement_id || jobseeker.visa_requirements?.id || undefined,
+                visaRequirement: jobseeker.visa_requirements?.name || jobseeker.visa_requirement || '',
                 preferredLanguages: jobseeker.preferred_languages || [],
                 resumeUrl: await resolveResumeUrl(jobseeker.resume_url),
                 profilePhotoUrl: await resolveResumeUrl(jobseeker.profile_photo_url) || undefined,

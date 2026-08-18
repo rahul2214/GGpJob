@@ -303,15 +303,101 @@ export default function ResumeBuilderPage() {
     generatedResume
   ])
 
-  // Set initial contact details from user profile
+  // Populate form fields from user profile
+  const populateFromUserProfile = (usr: any) => {
+    if (!usr) return
+
+    setName(usr.name || "")
+    setRole(usr.headline || "")
+    setEmail(usr.email || "")
+    setPhone(usr.phone || "")
+    setLinkedinUrl(usr.linkedinUrl || "")
+    setGithubUrl(usr.githubUrl || "")
+    setPortfolioUrl(usr.portfolioUrl || "")
+
+    const formattedLoc = [usr.currentCity, usr.state, usr.country]
+      .filter(Boolean)
+      .join(", ") || usr.location || ""
+    setLocation(formattedLoc)
+
+    if (usr.summary) {
+      setProfessionalSummary(usr.summary)
+    }
+
+    // Populate Experience
+    if (usr.experience && Array.isArray(usr.experience) && usr.experience.length > 0) {
+      setJobs(usr.experience.map((exp: any) => ({
+        company: exp.company || "",
+        role: exp.title || exp.role || "",
+        startDate: exp.startDate || exp.start_date || "",
+        endDate: (exp.isCurrent || exp.is_current) ? "" : (exp.endDate || exp.end_date || ""),
+        location: exp.location || "",
+        points: exp.description ? exp.description.split('\n').filter(Boolean) : [""],
+        currentlyWorkHere: Boolean(exp.isCurrent || exp.is_current)
+      })))
+    }
+
+    // Populate Projects
+    if (usr.projects && Array.isArray(usr.projects) && usr.projects.length > 0) {
+      setProjects(usr.projects.map((proj: any) => ({
+        name: proj.name || "",
+        techStack: proj.techStack || proj.tech_stack || "",
+        projectLink: proj.url || proj.projectLink || proj.project_link || "",
+        points: proj.description ? proj.description.split('\n').filter(Boolean) : [""]
+      })))
+    }
+
+    // Populate Education
+    if (usr.education && Array.isArray(usr.education) && usr.education.length > 0) {
+      setEducation(usr.education.map((edu: any) => {
+        let yr = ""
+        const sDate = (edu.startDate || edu.start_date || "").substring(0, 4)
+        const eDate = (edu.isCurrent || edu.is_current) ? "Present" : (edu.endDate || edu.end_date || "").substring(0, 4)
+        if (sDate || eDate) {
+          yr = sDate ? `${sDate} - ${eDate}` : eDate
+        }
+        return {
+          institution: edu.institution || edu.school || "",
+          degree: edu.degree || "",
+          fieldOfStudy: edu.fieldOfStudy || edu.field_of_study || "",
+          year: yr,
+          grade: edu.grade || ""
+        }
+      }))
+    }
+
+    // Populate Skills
+    if (usr.skills && Array.isArray(usr.skills) && usr.skills.length > 0) {
+      const skillNames = usr.skills.map((s: any) => typeof s === 'string' ? s : s.name).filter(Boolean)
+      if (skillNames.length > 0) {
+        setSkills(normalizeSkills(skillNames))
+      }
+    }
+
+    // Populate Languages
+    if (usr.languages && Array.isArray(usr.languages) && usr.languages.length > 0) {
+      const langNames = usr.languages.map((l: any) => typeof l === 'string' ? l : l.language || l.name).filter(Boolean)
+      if (langNames.length > 0) {
+        setLanguages(langNames)
+      }
+    }
+
+    // Populate Achievements
+    if (usr.achievements && Array.isArray(usr.achievements) && usr.achievements.length > 0) {
+      const achNames = usr.achievements.map((a: any) => typeof a === 'string' ? a : a.title || a.description || a.name).filter(Boolean)
+      if (achNames.length > 0) {
+        setAchievements(achNames)
+      }
+    }
+  }
+
+  // Set initial contact and profile details from user profile
   useEffect(() => {
     if (user && selectedDraftId === 'new') {
-      // Avoid overwriting work-in-progress inputs loaded from localStorage
       const savedWip = localStorage.getItem("jobsdart_resume_builder_wip")
       if (savedWip) {
         try {
           const parsed = JSON.parse(savedWip)
-          // If name, email, or phone has already been entered/restored, do not overwrite with profile
           if (parsed.name || parsed.email || parsed.phone) {
             return
           }
@@ -320,17 +406,7 @@ export default function ResumeBuilderPage() {
         }
       }
 
-      setName(user.name || "")
-      setRole(user.headline || "")
-      setEmail(user.email || "")
-      setPhone(user.phone || "")
-      setLinkedinUrl(user.linkedinUrl || "")
-      setGithubUrl(user.githubUrl || "")
-      setPortfolioUrl(user.portfolioUrl || "")
-      setLocation(user.location || "")
-      if (user.skills && user.skills.length > 0) {
-        setSkills(normalizeSkills(user.skills.map(s => s.name)))
-      }
+      populateFromUserProfile(user)
     }
   }, [user, selectedDraftId])
 
@@ -358,29 +434,27 @@ export default function ResumeBuilderPage() {
   const handleLoadDraft = (draftId: string) => {
     setSelectedDraftId(draftId)
     if (draftId === 'new') {
-      // Reset form states
+      // Reset form states and populate from user profile
       setDraftTitle("My Resume")
       setTemplateType("Software Engineer")
-      setName(user?.name || "")
-      setRole(user?.headline || "")
-      setEmail(user?.email || "")
-      setPhone(user?.phone || "")
-      setLinkedinUrl(user?.linkedinUrl || "")
-      setGithubUrl(user?.githubUrl || "")
-      setPortfolioUrl(user?.portfolioUrl || "")
-      setLocation(user?.location || "")
-      setSkills(user?.skills && user.skills.length > 0 ? normalizeSkills(user.skills.map(s => s.name)) : [
-        { category: "Languages", skills: [""] },
-        { category: "Frameworks/Libraries", skills: [""] },
-        { category: "Databases", skills: [""] },
-        { category: "Tools/DevOps", skills: [""] }
-      ])
-      setProfessionalSummary("")
-      setLanguages([""])
-      setAchievements([""])
-      setJobs([{ company: "", role: "", startDate: "", endDate: "", location: "", points: [""], currentlyWorkHere: false }])
-      setProjects([{ name: "", techStack: "", points: [""] }])
-      setEducation([{ institution: "", degree: "", fieldOfStudy: "", year: "", grade: "" }])
+      if (user) {
+        populateFromUserProfile(user)
+      } else {
+        setName("")
+        setRole("")
+        setEmail("")
+        setPhone("")
+        setLinkedinUrl("")
+        setGithubUrl("")
+        setPortfolioUrl("")
+        setLocation("")
+        setProfessionalSummary("")
+        setLanguages([""])
+        setAchievements([""])
+        setJobs([{ company: "", role: "", startDate: "", endDate: "", location: "", points: [""], currentlyWorkHere: false }])
+        setProjects([{ name: "", techStack: "", points: [""] }])
+        setEducation([{ institution: "", degree: "", fieldOfStudy: "", year: "", grade: "" }])
+      }
       setGeneratedResume(null)
       setGapResult(null)
       setVisualTemplate("classic-serif")
@@ -1164,6 +1238,20 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
         </div>
 
         <div className="flex items-center gap-3 flex-1 sm:flex-none justify-end">
+          {user && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                populateFromUserProfile(user)
+                toast({ title: "Profile Auto-Filled! ✨", description: "All experience, projects, education, summary & skills imported from your profile." })
+              }}
+              className="border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100 text-indigo-700 font-bold h-9 rounded-xl text-xs flex items-center gap-1.5 shadow-sm"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              Sync from Profile
+            </Button>
+          )}
           <Input
             value={draftTitle}
             onChange={e => setDraftTitle(e.target.value)}

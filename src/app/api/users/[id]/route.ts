@@ -83,9 +83,19 @@ async function mapProfileToUser(profile: any): Promise<User> {
             // Pending rewards: earnings currently held for review
             pendingRewards = payouts
                 .filter((p: any) => p.method === 'system' && (p.status === 'held' || p.status === 'delayed' || p.status === 'pending'))
-                .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
         }
     }
+
+    const cleanMetadata = { ...(profile.metadata || {}) };
+    delete cleanMetadata.country;
+    delete cleanMetadata.state;
+    delete cleanMetadata.currentCity;
+    delete cleanMetadata.achievements;
+    delete cleanMetadata.certifications;
+    delete cleanMetadata.openToRelocate;
+    delete cleanMetadata.openToRelocation;
+    delete cleanMetadata.openWorldwide;
+    delete cleanMetadata.visaRequirement;
 
     const baseObj = {
         id: profile.id,       // BIGINT primary key
@@ -154,11 +164,12 @@ async function mapProfileToUser(profile: any): Promise<User> {
         openToRelocation: profile.open_to_relocate ?? false,
         openWorldwide: profile.open_worldwide ?? false,
         workAuthorization: profile.work_authorization || profile.metadata?.workAuthorization || [],
-        visaRequirement: profile.visa_requirement || profile.metadata?.visaRequirement || '',
+        visaRequirementId: profile.visa_requirement_id || profile.visa_requirements?.id || undefined,
+        visaRequirement: profile.visa_requirements?.name || profile.visa_requirement || profile.metadata?.visaRequirement || '',
         preferredLanguages: profile.preferred_languages || profile.metadata?.preferredLanguages || [],
         planExpiresAt: profile.plan_expires_at,
         location: profile.location_id || undefined,
-        metadata: profile.metadata,
+        metadata: cleanMetadata,
         referralCode: profile.referral_code,
         referredBy: profile.referred_by ? Number(profile.referred_by) : undefined,
         referralCount: profile.referral_count || 0,
@@ -288,7 +299,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
                 cities:current_city_id(id, name, is_featured),
                 jobseeker_achievements:jobseeker_achievements!jobseeker_id(*),
                 jobseeker_certifications:jobseeker_certifications!jobseeker_id(*),
-                jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name))
+                jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name)),
+                visa_requirements:visa_requirement_id(id, name)
             `)
             .eq(column, idValue)
             .maybeSingle();
@@ -460,6 +472,49 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 ciId = null;
             }
 
+            // 4. Resolve Visa Requirement ID
+            let vReqId = rest.visaRequirementId ? Number(rest.visaRequirementId) : null;
+            const cleanVisaName = rest.visaRequirement ? rest.visaRequirement.trim() : '';
+
+            if (!vReqId && cleanVisaName) {
+                try {
+                    const { data: vObj } = await supabaseAdmin
+                        .from('visa_requirements')
+                        .select('id, name')
+                        .or(`name.ilike.${cleanVisaName},name.ilike.%${cleanVisaName}%`)
+                        .maybeSingle();
+
+                    if (vObj) {
+                        vReqId = vObj.id;
+                    } else {
+                        const lower = cleanVisaName.toLowerCase();
+                        let fallbackQuery = '';
+                        if (lower.includes('no sponsorship') || lower.includes('citizen') || lower.includes('pr')) {
+                            fallbackQuery = 'No Visa Sponsorship Required';
+                        } else if (lower.includes('h1b')) {
+                            fallbackQuery = 'Requires H1B Sponsorship';
+                        } else if (lower.includes('green card')) {
+                            fallbackQuery = 'Requires Green Card / PR';
+                        } else if (lower.includes('student') || lower.includes('opt') || lower.includes('cpt')) {
+                            fallbackQuery = 'Student Visa (OPT / CPT)';
+                        } else if (lower.includes('permit') || lower.includes('visa sponsorship') || lower.includes('sponsorship')) {
+                            fallbackQuery = 'Need Work Permit / Visa Sponsorship';
+                        }
+
+                        if (fallbackQuery) {
+                            const { data: fbObj } = await supabaseAdmin
+                                .from('visa_requirements')
+                                .select('id')
+                                .eq('name', fallbackQuery)
+                                .maybeSingle();
+                            if (fbObj) vReqId = fbObj.id;
+                        }
+                    }
+                } catch (e) {
+                    // Ignore lookup error if visa_requirements table is pending schema sync
+                }
+            }
+
             const mergedMetadata = {
                 ...(rest.metadata || {}),
                 preferredJobTitles: rest.preferredJobTitles ?? rest.metadata?.preferredJobTitles ?? [],
@@ -470,11 +525,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 employmentTypes: rest.employmentTypes ?? rest.metadata?.employmentTypes ?? [],
                 preferredIndustries: rest.preferredIndustries ?? rest.metadata?.preferredIndustries ?? [],
                 workAuthorization: rest.workAuthorization ?? rest.metadata?.workAuthorization ?? [],
-                visaRequirement: rest.visaRequirement ?? rest.metadata?.visaRequirement ?? '',
                 preferredLanguages: rest.preferredLanguages ?? rest.metadata?.preferredLanguages ?? [],
             };
 
-            // Ensure location, achievements, certifications, openToRelocate, and openWorldwide are NOT stored in metadata
+            // Ensure location, achievements, certifications, openToRelocate, openWorldwide, and visaRequirement are NOT stored in metadata
             delete mergedMetadata.country;
             delete mergedMetadata.state;
             delete mergedMetadata.currentCity;
@@ -483,6 +537,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             delete mergedMetadata.openToRelocate;
             delete mergedMetadata.openToRelocation;
             delete mergedMetadata.openWorldwide;
+            delete mergedMetadata.visaRequirement;
+            delete mergedMetadata.visaRequirementId;
 
             Object.assign(updateData, {
                 headline: rest.headline,
@@ -502,6 +558,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 metadata: mergedMetadata,
                 referral_code: rest.referralCode,
                 referral_count: rest.referralCount,
+                ...(vReqId !== null ? { visa_requirement_id: vReqId } : {}),
                 ...(rest.openToRelocate !== undefined && { open_to_relocate: rest.openToRelocate }),
                 ...(rest.openToRelocation !== undefined && { open_to_relocate: rest.openToRelocation }),
                 ...(rest.openWorldwide !== undefined && { open_worldwide: rest.openWorldwide }),
@@ -521,6 +578,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             delete updateData.currentCity;
             delete updateData.preferred_locations;
             delete updateData.preferredLocations;
+            delete updateData.visa_requirement;
+            delete updateData.visaRequirement;
         }
 
         // Clean undefined values from updateData to prevent database update errors/clearing

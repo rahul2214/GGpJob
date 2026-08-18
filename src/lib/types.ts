@@ -82,6 +82,7 @@ export interface User {
   openWorldwide?: boolean;
   workAuthorization?: string[];
   visaRequirement?: string;
+  visaRequirementId?: number;
   preferredLanguages?: string[];
   domainId?: string;
   domainPk?: number;
@@ -110,8 +111,12 @@ export interface User {
   deletedAt?: string;
   scheduledDeleteAt?: string;
   country?: string;
+  countryId?: number;
   state?: string;
+  stateId?: number;
   city?: string;
+  cityId?: number;
+  jobseekerPreferredLocations?: JobseekerPreferredLocation[];
   // Profile completion stats
   profileStats?: {
     hasEducation: boolean;
@@ -463,4 +468,11 @@ export interface PersonalDetails {
     disabilityStatus?: string;
     militaryExperience?: string;
     careerBreak?: string;
+}
+
+export interface VisaRequirement {
+    id: number;
+    name: string;
+    description?: string;
+    createdAt?: string;
 }

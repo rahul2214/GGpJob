@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { useEffect, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "next/navigation";
-import { User, CompanySize } from "@/lib/types";
+import { User, CompanySize, VisaRequirement } from "@/lib/types";
 import { MultiSelectFilter } from "./multi-select-filter";
 import { COUNTRY_CODES, parsePhoneNumber } from "@/utils/country-codes";
 import { CountryCodeSelect } from "./country-code-select";
@@ -119,6 +119,7 @@ const formSchema = z.object({
     openWorldwide: z.boolean().optional(),
     workAuthorization: z.array(z.string()).optional(),
     visaRequirement: z.string().optional(),
+    visaRequirementId: z.number().nullable().optional(),
     preferredLanguages: z.array(z.string()).optional(),
 });
 
@@ -134,6 +135,7 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
     const { setUser } = useUser();
     const [companySizes, setCompanySizes] = useState<CompanySize[]>([]);
     const [locations, setLocations] = useState<any[]>([]);
+    const [visaRequirements, setVisaRequirements] = useState<VisaRequirement[]>([]);
     const isMobile = useIsMobile();
     const router = useRouter();
 
@@ -143,12 +145,14 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [sizesRes, locationsRes] = await Promise.all([
+                const [sizesRes, locationsRes, visaRes] = await Promise.all([
                     fetch('/api/company-sizes'),
-                    fetch('/api/locations')
+                    fetch('/api/locations'),
+                    fetch('/api/visa-requirements')
                 ]);
                 setCompanySizes(await sizesRes.json());
                 setLocations(await locationsRes.json());
+                setVisaRequirements(await visaRes.json());
             } catch (error) {
                 console.error("Failed to fetch form data", error);
             }
@@ -282,7 +286,7 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                 companyOverview: data.companyOverview === '' ? null : data.companyOverview,
             };
 
-            const { countryId, stateId, cityId, ...userClean } = user as any;
+            const { countryId, stateId, cityId, visaRequirementId, ...userClean } = user as any;
             const response = await fetch(`/api/users/${user.uuid}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
@@ -594,25 +598,45 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                             <FormField
                                 control={form.control}
                                 name="visaRequirement"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-slate-600">Visa / Sponsorship Requirement</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value || ""}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select visa status" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="No sponsorship required">No sponsorship required (Citizen / PR)</SelectItem>
-                                                <SelectItem value="Requires visa sponsorship">Requires visa sponsorship</SelectItem>
-                                                <SelectItem value="Student visa / OPT">Student visa / OPT</SelectItem>
-                                                <SelectItem value="Open to work permit">Open to work permit</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
+                                render={({ field }) => {
+                                    const currentId = form.watch("visaRequirementId");
+                                    const currentName = field.value || "";
+
+                                    // Match by ID or Name
+                                    const activeObj = visaRequirements.find(
+                                        v => (currentId && v.id === currentId) || v.name.toLowerCase() === currentName.toLowerCase()
+                                    );
+
+                                    return (
+                                        <FormItem>
+                                            <FormLabel className="text-slate-600">Visa / Sponsorship Requirement</FormLabel>
+                                            <Select 
+                                                onValueChange={(val) => {
+                                                    const matched = visaRequirements.find(v => v.id.toString() === val || v.name === val);
+                                                    const vName = matched ? matched.name : val;
+                                                    const vId = matched ? matched.id : null;
+                                                    field.onChange(vName);
+                                                    form.setValue("visaRequirementId", vId);
+                                                }} 
+                                                value={activeObj ? activeObj.id.toString() : (currentId ? currentId.toString() : currentName)}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select visa status" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {visaRequirements.map((v) => (
+                                                        <SelectItem key={v.id} value={v.id.toString()}>
+                                                            {v.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    );
+                                }}
                             />
                         </div>
 
