@@ -38,7 +38,7 @@ export async function GET(request: Request) {
                 `).eq('uuid', uid).maybeSingle();
             })(),
             // Recruiters
-            supabaseAdmin.from('recruiters').select('*, roles(name)').eq('uuid', uid).maybeSingle(),
+            supabaseAdmin.from('recruiters').select('*, roles(name), company_sizes(uuid, name), countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name, is_featured)').eq('uuid', uid).maybeSingle(),
             // Admins
             supabaseAdmin.from('admins').select('*, roles(name)').eq('uuid', uid).maybeSingle()
         ]);

@@ -423,9 +423,57 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         }
 
         if (table === 'recruiters' || table === 'employees') {
-            if (rest.country !== undefined) {
-                updateData.country = rest.country;
+            // Remove non-existent text location columns for recruiters/employees tables
+            delete updateData.country;
+            delete updateData.state;
+            delete updateData.city;
+            delete updateData.currentCity;
+
+            // Resolve foreign keys for location hierarchy
+            let cId = rest.countryId ? Number(rest.countryId) : null;
+            let sId = rest.stateId ? Number(rest.stateId) : null;
+            let ciId = rest.cityId ? Number(rest.cityId) : null;
+
+            const cleanCountryName = rest.country ? rest.country.split('(')[0].trim() : '';
+            const cleanStateName = rest.state ? rest.state.trim() : '';
+            const cleanCityName = rest.currentCity || rest.city ? (rest.currentCity || rest.city).split('★')[0].trim() : '';
+
+            // 1. Resolve Country
+            if (cleanCountryName && !cId) {
+                const { data: cObj } = await supabaseAdmin
+                    .from('countries')
+                    .select('id')
+                    .or(`name.ilike.${cleanCountryName},code.ilike.${cleanCountryName}`)
+                    .maybeSingle();
+                if (cObj) cId = cObj.id;
             }
+
+            // 2. Resolve State
+            if (cleanStateName && cId && !sId) {
+                const { data: sObj } = await supabaseAdmin
+                    .from('states_provinces')
+                    .select('id')
+                    .eq('country_id', cId)
+                    .ilike('name', cleanStateName)
+                    .maybeSingle();
+                if (sObj) sId = sObj.id;
+            }
+
+            // 3. Resolve City
+            if (cleanCityName && sId && !ciId) {
+                const { data: ciObj } = await supabaseAdmin
+                    .from('cities')
+                    .select('id')
+                    .eq('state_province_id', sId)
+                    .ilike('name', cleanCityName)
+                    .maybeSingle();
+                if (ciObj) ciId = ciObj.id;
+            }
+
+            if (cId !== null) updateData.country_id = cId;
+            if (sId !== null) updateData.state_province_id = sId;
+            if (ciId !== null) updateData.city_id = ciId;
+
             let numericCompanySizeId = null;
             if (rest.companySizeId) {
                 const isUuid = typeof rest.companySizeId === 'string' && rest.companySizeId.includes('-');
@@ -441,13 +489,19 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 }
             }
 
+            const formatUrl = (val?: string | null) => {
+                if (!val || typeof val !== 'string' || !val.trim()) return null;
+                const trimmed = val.trim();
+                return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+            };
+
             Object.assign(updateData, {
                 company_name: rest.companyName,
-                company_website: rest.companyWebsite,
+                company_website: rest.companyWebsite !== undefined ? formatUrl(rest.companyWebsite) : undefined,
                 ...(rest.companySizeId !== undefined && { company_size_id: numericCompanySizeId }),
                 company_overview: rest.companyOverview,
                 company_address: rest.companyAddress,
-                company_linkedin_url: rest.companyLinkedinUrl,
+                company_linkedin_url: rest.companyLinkedinUrl !== undefined ? formatUrl(rest.companyLinkedinUrl) : undefined,
             });
         }
 
@@ -607,7 +661,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name))
             `;
         } else if (table === 'recruiters') {
-            selectString = '*, roles(name), company_sizes(uuid, name)';
+            selectString = '*, roles(name), company_sizes(uuid, name), countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name, is_featured)';
         } else if (table === 'employees') {
             selectString = '*, roles(name), company_sizes(uuid, name)';
         }
@@ -618,7 +672,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 ? selectString 
                 : selectString.replace('languages(*)', 'languages(*), jobseeker_personal_details(*)');
         } else if (table === 'recruiters') {
-            finalSelect = '*, roles(name), company_sizes(uuid, name)';
+            finalSelect = selectString;
         } else if (table === 'employees') {
             finalSelect = '*, roles(name), company_sizes(uuid, name)';
         }

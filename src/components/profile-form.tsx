@@ -266,7 +266,13 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
     const onSubmit = async (data: ProfileFormValues) => {
         try {
             const fullPhone = data.phone ? `${countryCode}${data.phone.replace(/\D/g, '')}` : '';
-            // Clean up the data before sending: convert empty strings to null for numeric fields
+            const formatUrl = (val?: string | null) => {
+                if (!val || !val.trim()) return null;
+                const trimmed = val.trim();
+                return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+            };
+
+            // Clean up the data before sending: convert empty strings to null for numeric/url fields
             const cleanedData = {
                 ...data,
                 phone: fullPhone,
@@ -276,12 +282,12 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                 expectedSalary: data.expectedSalary === '' ? null : data.expectedSalary,
                 preferredSalaryMin: data.preferredSalaryMin === '' ? null : data.preferredSalaryMin,
                 preferredSalaryMax: data.preferredSalaryMax === '' ? null : data.preferredSalaryMax,
-                linkedinUrl: data.linkedinUrl === '' ? null : data.linkedinUrl,
-                githubUrl: data.githubUrl === '' ? null : data.githubUrl,
-                portfolioUrl: data.portfolioUrl === '' ? null : data.portfolioUrl,
+                linkedinUrl: formatUrl(data.linkedinUrl),
+                githubUrl: formatUrl(data.githubUrl),
+                portfolioUrl: formatUrl(data.portfolioUrl),
                 companySizeId: data.companySizeId === '' ? null : data.companySizeId,
-                companyWebsite: data.companyWebsite === '' ? null : data.companyWebsite,
-                companyLinkedinUrl: data.companyLinkedinUrl === '' ? null : data.companyLinkedinUrl,
+                companyWebsite: formatUrl(data.companyWebsite),
+                companyLinkedinUrl: formatUrl(data.companyLinkedinUrl),
                 companyAddress: data.companyAddress === '' ? null : data.companyAddress,
                 companyOverview: data.companyOverview === '' ? null : data.companyOverview,
             };
@@ -543,35 +549,6 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                                     </FormItem>
                                 )}
                             />
-                            <FormField
-                                control={form.control}
-                                name="preferredSalaryMin"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-slate-600">Min Salary Expectation</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" placeholder="e.g. 50000" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="preferredSalaryMax"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-slate-600">Max Salary Expectation</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" placeholder="e.g. 120000" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             <FormField
                                 control={form.control}
                                 name="remotePreference"
