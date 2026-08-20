@@ -19,6 +19,8 @@ import { DeleteAccountButton } from "@/components/delete-account-button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { CurrencySelector } from "@/components/currency-selector";
+import { AchievementsForm } from "@/components/achievements-form";
+import { CertificationsForm } from "@/components/certifications-form";
 
 export default function ProfilePage() {
     const { user, loading, refreshUser } = useUser();
@@ -354,7 +356,13 @@ export default function ProfilePage() {
                                         <ConfigCard index={2} title="My Resume" subtitle="Upload or link your resume for recruiters." icon={Link2} color="sky">
                                             <ResumeForm user={user} />
                                         </ConfigCard>
-                                        <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp}>
+                                        <ConfigCard index={3} title="Achievements & Honors" subtitle="Manage your awards, recognitions, and key accomplishments." icon={Award} color="emerald">
+                                             <AchievementsForm user={user} />
+                                         </ConfigCard>
+                                         <ConfigCard index={4} title="Certifications & Licenses" subtitle="Manage your verified licenses, courses, and professional credentials." icon={Award} color="indigo">
+                                             <CertificationsForm user={user} />
+                                         </ConfigCard>
+                                        <motion.div custom={5} initial="hidden" animate="visible" variants={fadeUp}>
                                             <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.015)] p-6 lg:p-8">
                                                 <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                                                     <Briefcase className="w-6 h-6 text-fuchsia-500" />

@@ -807,13 +807,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             // 6. Achievements (Relational Sync)
             if (Array.isArray(rest.achievements)) {
                 try {
-                    await supabaseAdmin.from('jobseeker_achievements').delete().or(`jobseeker_id.eq.${userPk},jobseeker_uuid.eq.${profile.uuid}`);
+                    await supabaseAdmin.from('jobseeker_achievements').delete().eq('jobseeker_id', userPk);
                     if (rest.achievements.length > 0) {
                         const achievementRows = rest.achievements.map((a: any) => {
                             if (typeof a === 'string') {
                                 return {
                                     jobseeker_id: userPk,
-                                    jobseeker_uuid: profile.uuid,
                                     title: a.trim(),
                                     description: null,
                                     issuer: null,
@@ -822,7 +821,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                             }
                             return {
                                 jobseeker_id: userPk,
-                                jobseeker_uuid: profile.uuid,
                                 title: (a.title || a.name || '').trim(),
                                 description: a.description || null,
                                 issuer: a.issuer || a.issuingOrganization || null,
@@ -831,7 +829,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                         }).filter((row: any) => row.title);
 
                         if (achievementRows.length > 0) {
-                            await supabaseAdmin.from('jobseeker_achievements').insert(achievementRows);
+                            const { error: insErr } = await supabaseAdmin.from('jobseeker_achievements').insert(achievementRows);
+                            if (insErr) console.error("Error inserting jobseeker_achievements:", insErr);
                         }
                     }
                 } catch (err) {
@@ -842,13 +841,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             // 7. Certifications (Relational Sync)
             if (Array.isArray(rest.certifications)) {
                 try {
-                    await supabaseAdmin.from('jobseeker_certifications').delete().or(`jobseeker_id.eq.${userPk},jobseeker_uuid.eq.${profile.uuid}`);
+                    await supabaseAdmin.from('jobseeker_certifications').delete().eq('jobseeker_id', userPk);
                     if (rest.certifications.length > 0) {
                         const certificationRows = rest.certifications.map((c: any) => {
                             if (typeof c === 'string') {
                                 return {
                                     jobseeker_id: userPk,
-                                    jobseeker_uuid: profile.uuid,
                                     name: c.trim(),
                                     issuing_organization: null,
                                     issue_date: null,
@@ -859,7 +857,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                             }
                             return {
                                 jobseeker_id: userPk,
-                                jobseeker_uuid: profile.uuid,
                                 name: (c.name || c.title || '').trim(),
                                 issuing_organization: c.issuingOrganization || c.issuer || null,
                                 issue_date: normalizeDate(c.issueDate || c.dateAchieved),
@@ -870,7 +867,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                         }).filter((row: any) => row.name);
 
                         if (certificationRows.length > 0) {
-                            await supabaseAdmin.from('jobseeker_certifications').insert(certificationRows);
+                            const { error: insErr } = await supabaseAdmin.from('jobseeker_certifications').insert(certificationRows);
+                            if (insErr) console.error("Error inserting jobseeker_certifications:", insErr);
                         }
                     }
                 } catch (err) {
@@ -1033,13 +1031,12 @@ export async function PATCH(request: Request, { params }: { params: { id: string
             const userPk = profile.id;
             if (Array.isArray(body.achievements)) {
                 try {
-                    await supabaseAdmin.from('jobseeker_achievements').delete().or(`jobseeker_id.eq.${userPk},jobseeker_uuid.eq.${profile.uuid}`);
+                    await supabaseAdmin.from('jobseeker_achievements').delete().eq('jobseeker_id', userPk);
                     if (body.achievements.length > 0) {
                         const achievementRows = body.achievements.map((a: any) => {
                             if (typeof a === 'string') {
                                 return {
                                     jobseeker_id: userPk,
-                                    jobseeker_uuid: profile.uuid,
                                     title: a.trim(),
                                     description: null,
                                     issuer: null,
@@ -1048,7 +1045,6 @@ export async function PATCH(request: Request, { params }: { params: { id: string
                             }
                             return {
                                 jobseeker_id: userPk,
-                                jobseeker_uuid: profile.uuid,
                                 title: (a.title || a.name || '').trim(),
                                 description: a.description || null,
                                 issuer: a.issuer || a.issuingOrganization || null,
@@ -1057,7 +1053,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
                         }).filter((row: any) => row.title);
 
                         if (achievementRows.length > 0) {
-                            await supabaseAdmin.from('jobseeker_achievements').insert(achievementRows);
+                            const { error: insErr } = await supabaseAdmin.from('jobseeker_achievements').insert(achievementRows);
+                            if (insErr) console.error("Error inserting jobseeker_achievements:", insErr);
                         }
                     }
                 } catch (err) {
@@ -1067,13 +1064,12 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
             if (Array.isArray(body.certifications)) {
                 try {
-                    await supabaseAdmin.from('jobseeker_certifications').delete().or(`jobseeker_id.eq.${userPk},jobseeker_uuid.eq.${profile.uuid}`);
+                    await supabaseAdmin.from('jobseeker_certifications').delete().eq('jobseeker_id', userPk);
                     if (body.certifications.length > 0) {
                         const certificationRows = body.certifications.map((c: any) => {
                             if (typeof c === 'string') {
                                 return {
                                     jobseeker_id: userPk,
-                                    jobseeker_uuid: profile.uuid,
                                     name: c.trim(),
                                     issuing_organization: null,
                                     issue_date: null,
@@ -1084,7 +1080,6 @@ export async function PATCH(request: Request, { params }: { params: { id: string
                             }
                             return {
                                 jobseeker_id: userPk,
-                                jobseeker_uuid: profile.uuid,
                                 name: (c.name || c.title || '').trim(),
                                 issuing_organization: c.issuingOrganization || c.issuer || null,
                                 issue_date: normalizeDate(c.issueDate || c.dateAchieved),
@@ -1095,7 +1090,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
                         }).filter((row: any) => row.name);
 
                         if (certificationRows.length > 0) {
-                            await supabaseAdmin.from('jobseeker_certifications').insert(certificationRows);
+                            const { error: insErr } = await supabaseAdmin.from('jobseeker_certifications').insert(certificationRows);
+                            if (insErr) console.error("Error inserting jobseeker_certifications:", insErr);
                         }
                     }
                 } catch (err) {
