@@ -640,30 +640,7 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                             />
                         </div>
 
-                        <FormField
-                            control={form.control}
-                            name="employmentTypes"
-                            render={({ field }) => (
-                                <FormItem className="mt-4">
-                                    <FormLabel className="text-slate-600">Employment Types</FormLabel>
-                                    <FormControl>
-                                        <MultiSelectFilter
-                                            title="Employment Types"
-                                            options={[
-                                                { value: 'Full-time', label: 'Full-time' },
-                                                { value: 'Part-time', label: 'Part-time' },
-                                                { value: 'Contract', label: 'Contract' },
-                                                { value: 'Internship', label: 'Internship' },
-                                                { value: 'Walk-in Interview', label: 'Walk-in Interview' },
-                                            ]}
-                                            selectedValues={field.value || []}
-                                            onChange={field.onChange}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+
 
                         <FormField
                             control={form.control}

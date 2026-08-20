@@ -32,7 +32,7 @@ export function FaqSection() {
                         Platform <span className="text-gradient-primary">Rules & FAQs</span>
                     </h2>
                     <p className="section-subheading mx-auto">
-                        Clear answers about credit refunds, verification, and reputation scores.
+                        Clear answers about credit refunds, verification, and platform rules.
                     </p>
                 </motion.div>
 

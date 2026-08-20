@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     }
     const isGroq = apiKey.startsWith("gsk_");
     const apiUrl = isGroq ? "https://api.groq.com/openai/v1/chat/completions" : "https://api.x.ai/v1/chat/completions";
-    const apiModel = isGroq ? "llama-3.3-70b-versatile" : "grok-2-latest";
+    const apiModel = isGroq ? "openai/gpt-oss-120b" : "grok-2-latest";
 
     const prompt = `You are an expert resume writer and technical recruiter. Create an optimized, ATS-safe resume based on the user's details and the selected template guidelines.
 Synthesize raw bullet points/descriptions into powerful, quantified achievements using active verbs.

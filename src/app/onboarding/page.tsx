@@ -224,11 +224,11 @@ export default function OnboardingPage() {
                     endDate: p.endDate || ""
                 })));
             }
-            if (user.metadata?.achievements && Array.isArray(user.metadata.achievements) && achievements.length === 0) {
-                setAchievements(user.metadata.achievements);
+            if (user.achievements && Array.isArray(user.achievements) && achievements.length === 0) {
+                setAchievements(user.achievements.map((a: any) => typeof a === 'string' ? a : (a.title || a.name || '')));
             }
-            if (user.metadata?.certifications && Array.isArray(user.metadata.certifications) && certifications.length === 0) {
-                setCertifications(user.metadata.certifications);
+            if (user.certifications && Array.isArray(user.certifications) && certifications.length === 0) {
+                setCertifications(user.certifications.map((c: any) => typeof c === 'string' ? c : (c.name || c.title || '')));
             }
             if (user.portfolioUrl && !portfolioUrl) {
                 setPortfolioUrl(user.portfolioUrl);
@@ -539,12 +539,6 @@ export default function OnboardingPage() {
             const finalAchievements = achievements.filter(Boolean);
             const finalCertifications = certifications.filter(Boolean);
 
-            const finalMetadata = {
-                ...(user.metadata || {}),
-                achievements: finalAchievements,
-                certifications: finalCertifications,
-            };
-
             const profileRes = await fetch(`/api/users/${user.uuid}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
@@ -565,7 +559,9 @@ export default function OnboardingPage() {
                     education: finalEducation,
                     experience: finalExperience,
                     projects: finalProjects,
-                    metadata: finalMetadata,
+                    achievements: finalAchievements,
+                    certifications: finalCertifications,
+                    metadata: user.metadata,
                     role: user.role,
                     referredBy: referrerId || undefined
                 }),
@@ -747,8 +743,17 @@ export default function OnboardingPage() {
 
     const needsPhone = !user.phone || user.phone.length < 10;
     const needsResume = !user.resumeUrl;
-    const needsSkills = !user.profileStats?.hasSkills;
-    const needsCountry = !user.country;
+    const needsSkills = !(
+        user.profileStats?.hasSkills ||
+        (Array.isArray(user.skills) && user.skills.length > 0) ||
+        (Array.isArray((user as any).skill_ids) && (user as any).skill_ids.length > 0) ||
+        (Array.isArray((user as any).skillIds) && (user as any).skillIds.length > 0)
+    );
+    const needsLocation = !(
+        (user?.country || user?.countryId) &&
+        (user?.state || user?.stateId) &&
+        (user?.currentCity || user?.cityId)
+    );
 
     const needsLinkedin = !user.linkedinUrl;
     const needsGithub = !user.githubUrl;
@@ -757,8 +762,16 @@ export default function OnboardingPage() {
     const needsEducation = !user.education || user.education.length === 0;
     const needsExperience = !user.experience || user.experience.length === 0;
     const needsProjects = !user.projects || user.projects.length === 0;
-    const needsAchievements = !user.metadata?.achievements || user.metadata.achievements.length === 0;
-    const needsCertifications = !user.metadata?.certifications || user.metadata.certifications.length === 0;
+    const needsAchievements = !(
+        (Array.isArray((user as any).jobseekerAchievements) && (user as any).jobseekerAchievements.length > 0) ||
+        (Array.isArray(user.metadata?.achievements) && user.metadata.achievements.length > 0) ||
+        (Array.isArray(user.achievements) && user.achievements.length > 0)
+    );
+    const needsCertifications = !(
+        (Array.isArray((user as any).jobseekerCertifications) && (user as any).jobseekerCertifications.length > 0) ||
+        (Array.isArray(user.metadata?.certifications) && user.metadata.certifications.length > 0) ||
+        (Array.isArray(user.certifications) && user.certifications.length > 0)
+    );
 
     // Accurate weighted profile completion score (0-100%)
     const calculateProgressPct = () => {
@@ -940,7 +953,7 @@ export default function OnboardingPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-hidden">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-12 relative overflow-hidden">
             {/* Background Aesthetics */}
             <div className="absolute top-0 -left-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 -right-20 w-[500px] h-[500px] bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -949,7 +962,7 @@ export default function OnboardingPage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="w-full max-w-xl bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 lg:p-12 relative z-10"
+                className="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl shadow-slate-200/60 dark:shadow-none border border-slate-100 dark:border-slate-800 p-6 sm:p-10 lg:p-12 relative z-10"
             >
                 <Button
                     type="button"
@@ -958,144 +971,156 @@ export default function OnboardingPage() {
                         setBuildMethod(null);
                         setResumeFile(null);
                     }}
-                    className="absolute top-6 left-6 text-slate-500 hover:text-slate-800 flex items-center gap-1.5 text-xs font-black uppercase tracking-wider rounded-xl py-2 px-3 hover:bg-slate-50 transition-colors"
+                    className="absolute top-6 left-6 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 flex items-center gap-1.5 text-xs font-black uppercase tracking-wider rounded-xl py-2 px-3 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" /> Back
                 </Button>
 
                 <div className="text-center mb-8 mt-6">
-                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-200">
+                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-indigo-200 dark:shadow-none">
                         <CheckCircle2 className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-2">Almost there!</h1>
-                    <p className="text-slate-500 text-lg">Just a few more quick details to complete your profile.</p>
+                    <h1 className="text-3xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight mb-2">Almost there!</h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base font-medium">Just a few more details to complete your professional profile.</p>
                 </div>
 
                 {/* Live progress bar */}
-                <div className="mb-8">
-                    <div className="flex justify-between text-xs text-slate-500 mb-2">
-                        <span>Profile completion</span>
-                        <span className="font-semibold text-indigo-600">{progressPct}%</span>
+                <div className="mb-8 p-4 bg-slate-50/80 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <div className="flex justify-between items-center text-xs text-slate-600 dark:text-slate-400 mb-2 font-bold">
+                        <span>Profile Completion Rate</span>
+                        <span className="font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900">{progressPct}%</span>
                     </div>
-                    <Progress value={progressPct} className="h-2 bg-slate-100" />
+                    <Progress value={progressPct} className="h-2.5 bg-slate-200/60 dark:bg-slate-700" />
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-8">
 
                     {/* Location Hierarchy Selector */}
-                    <div className="space-y-3 bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800">
-                        <label className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-1">
-                            <Globe className="w-4 h-4 text-indigo-500" />
-                            Select your Primary Location
-                        </label>
-                        <LocationCascadeSelector
-                            initialCountry={selectedCountry || user?.country || ""}
-                            initialState={selectedState || user?.state || ""}
-                            initialCity={selectedCity || user?.currentCity || ""}
-                            onChange={(val) => {
-                                setSelectedCountry(val.countryName || "");
-                                setSelectedState(val.stateName || "");
-                                setSelectedCity(val.cityName || "");
-                                setSelectedCountryId(val.countryId || undefined);
-                                setSelectedStateId(val.stateId || undefined);
-                                setSelectedCityId(val.cityId || undefined);
-                            }}
-                        />
-                    </div>
+                    {needsLocation && (
+                        <div className="space-y-3 bg-gradient-to-b from-indigo-50/40 via-slate-50/40 to-slate-50/40 dark:from-slate-900/60 dark:to-slate-900/30 p-6 rounded-2xl border border-indigo-100/80 dark:border-slate-800">
+                            <label className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-1">
+                                <Globe className="w-4 h-4 text-indigo-500" />
+                                Select your Primary Location
+                            </label>
+                            <LocationCascadeSelector
+                                initialCountry={selectedCountry || user?.country || ""}
+                                initialState={selectedState || user?.state || ""}
+                                initialCity={selectedCity || user?.currentCity || ""}
+                                onChange={(val) => {
+                                    setSelectedCountry(val.countryName || "");
+                                    setSelectedState(val.stateName || "");
+                                    setSelectedCity(val.cityName || "");
+                                    setSelectedCountryId(val.countryId || undefined);
+                                    setSelectedStateId(val.stateId || undefined);
+                                    setSelectedCityId(val.cityId || undefined);
+                                }}
+                            />
+                        </div>
+                    )}
 
-                    {/* Phone */}
+                    {/* Phone & Contact Details */}
                     {needsPhone && (
-                        <div className="space-y-3">
-                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <div className="space-y-3 p-6 bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                            <label className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                                 <Phone className="w-4 h-4 text-emerald-500" />
                                 Your Phone Number
                             </label>
-                            <div className="flex gap-2 items-center">
-                                <CountryCodeSelect
-                                    value={countryCode}
-                                    onChange={setCountryCode}
-                                    className="h-14 min-w-[125px] rounded-2xl border border-slate-200 bg-slate-100 text-slate-700 font-bold text-base"
-                                />
-                                <Input
-                                    type="tel"
-                                    maxLength={15}
-                                    placeholder="9876543210"
-                                    className="h-14 rounded-2xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors text-base flex-1"
-                                    value={phone}
-                                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                                />
+                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-center">
+                                <div className="sm:col-span-1">
+                                    <CountryCodeSelect
+                                        value={countryCode}
+                                        onChange={setCountryCode}
+                                        className="h-11 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-bold text-sm"
+                                    />
+                                </div>
+                                <div className="sm:col-span-3">
+                                    <Input
+                                        type="tel"
+                                        maxLength={15}
+                                        placeholder="9876543210"
+                                        className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm font-medium transition-all"
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                                    />
+                                </div>
                             </div>
                         </div>
                     )}
 
                     {/* Social & Portfolio Links */}
                     {(needsLinkedin || needsGithub || needsPortfolio) && (
-                        <div className={cn(
-                            "grid grid-cols-1 gap-4",
-                            [needsLinkedin, needsGithub, needsPortfolio].filter(Boolean).length === 3 ? "md:grid-cols-3" :
-                            [needsLinkedin, needsGithub, needsPortfolio].filter(Boolean).length === 2 ? "md:grid-cols-2" : "md:grid-cols-1"
-                        )}>
-                            {needsLinkedin && (
-                                <div className="space-y-3">
-                                    <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                        <Building2 className="w-4 h-4 text-blue-500" />
-                                        LinkedIn URL (Optional)
-                                    </label>
-                                    <Input
-                                        placeholder="https://linkedin.com/in/yourprofile"
-                                        className="h-14 rounded-2xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors text-base"
-                                        value={linkedinUrl}
-                                        onChange={(e) => setLinkedinUrl(e.target.value)}
-                                    />
-                                </div>
-                            )}
-                            {needsGithub && (
-                                <div className="space-y-3">
-                                    <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                        <Building2 className="w-4 h-4 text-slate-800" />
-                                        GitHub URL (Optional)
-                                    </label>
-                                    <Input
-                                        placeholder="https://github.com/yourprofile"
-                                        className="h-14 rounded-2xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors text-base"
-                                        value={githubUrl}
-                                        onChange={(e) => setGithubUrl(e.target.value)}
-                                    />
-                                </div>
-                            )}
-                            {needsPortfolio && (
-                                <div className="space-y-3">
-                                    <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                        <Globe className="w-4 h-4 text-sky-500" />
-                                        Portfolio URL (Optional)
-                                    </label>
-                                    <Input
-                                        placeholder="https://yourportfolio.com"
-                                        className="h-14 rounded-2xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors text-base"
-                                        value={portfolioUrl}
-                                        onChange={(e) => setPortfolioUrl(e.target.value)}
-                                    />
-                                </div>
-                            )}
+                        <div className="space-y-4 p-6 bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                            <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                <Globe className="w-4 h-4 text-indigo-500" />
+                                Social & Portfolio Profiles
+                            </h3>
+                            <div className={cn(
+                                "grid grid-cols-1 gap-4",
+                                [needsLinkedin, needsGithub, needsPortfolio].filter(Boolean).length === 3 ? "sm:grid-cols-3" :
+                                [needsLinkedin, needsGithub, needsPortfolio].filter(Boolean).length === 2 ? "sm:grid-cols-2" : "sm:grid-cols-1"
+                            )}>
+                                {needsLinkedin && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                                            <Building2 className="w-3.5 h-3.5 text-blue-500" />
+                                            LinkedIn URL
+                                        </label>
+                                        <Input
+                                            placeholder="https://linkedin.com/in/..."
+                                            className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
+                                            value={linkedinUrl}
+                                            onChange={(e) => setLinkedinUrl(e.target.value)}
+                                        />
+                                    </div>
+                                )}
+                                {needsGithub && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                                            <Building2 className="w-3.5 h-3.5 text-slate-800 dark:text-slate-200" />
+                                            GitHub URL
+                                        </label>
+                                        <Input
+                                            placeholder="https://github.com/..."
+                                            className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
+                                            value={githubUrl}
+                                            onChange={(e) => setGithubUrl(e.target.value)}
+                                        />
+                                    </div>
+                                )}
+                                {needsPortfolio && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                                            <Globe className="w-3.5 h-3.5 text-sky-500" />
+                                            Portfolio Website
+                                        </label>
+                                        <Input
+                                            placeholder="https://yourportfolio.com"
+                                            className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
+                                            value={portfolioUrl}
+                                            onChange={(e) => setPortfolioUrl(e.target.value)}
+                                        />
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 
                     {/* Resume Upload */}
                     {needsResume && (
-                        <div className="space-y-3">
-                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <div className="space-y-3 p-6 bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                            <label className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                                 <FileText className="w-4 h-4 text-violet-500" />
                                 Upload your Resume
                             </label>
                             <div className="relative group">
-                                <div className={`absolute inset-0 bg-gradient-to-r from-indigo-50 to-violet-50 rounded-2xl border-2 border-dashed transition-colors ${resumeFile ? 'border-indigo-400' : 'border-slate-300 group-hover:border-indigo-300'}`} />
+                                <div className={`absolute inset-0 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 dark:from-slate-800 dark:to-slate-800 rounded-2xl border-2 border-dashed transition-colors ${resumeFile ? 'border-indigo-500' : 'border-slate-300 dark:border-slate-700 group-hover:border-indigo-400'}`} />
                                 <div className="relative px-6 py-8 flex flex-col items-center justify-center text-center cursor-pointer">
-                                    <UploadCloud className={`w-10 h-10 mb-4 transition-colors ${resumeFile ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500'}`} />
-                                    <h3 className="text-sm font-semibold text-slate-700 mb-1">
-                                        {resumeFile ? 'Resume Selected' : 'Click to upload or drag and drop'}
+                                    <UploadCloud className={`w-10 h-10 mb-3 transition-colors ${resumeFile ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 group-hover:text-indigo-500'}`} />
+                                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">
+                                        {resumeFile ? 'Resume File Attached' : 'Click to upload or drag & drop resume'}
                                     </h3>
-                                    <p className="text-xs text-slate-500 max-w-[200px]">
-                                        {resumeFile ? resumeFile.name : 'PDF, DOC, or DOCX (max. 5MB)'}
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                        {resumeFile ? resumeFile.name : 'Supported formats: PDF, DOC, DOCX (max. 5MB)'}
                                     </p>
                                     <Input
                                         type="file"
@@ -1114,7 +1139,7 @@ export default function OnboardingPage() {
                                     variant="outline"
                                     onClick={handleParseResume}
                                     disabled={isParsing}
-                                    className="w-full flex items-center justify-center gap-2 border-indigo-200 text-indigo-700 bg-indigo-50/30 hover:bg-indigo-50 hover:text-indigo-800 rounded-2xl py-3 font-semibold text-sm transition-colors mt-2"
+                                    className="w-full flex items-center justify-center gap-2 border-indigo-200 dark:border-indigo-900 text-indigo-700 dark:text-indigo-300 bg-indigo-50/50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded-xl py-3 font-bold text-sm transition-colors"
                                 >
                                     <Sparkles className="w-4 h-4 text-indigo-500" />
                                     Auto-fill Form with AI
@@ -1122,9 +1147,9 @@ export default function OnboardingPage() {
                             )}
                             {uploadProgress !== null && (
                                 <div className="space-y-2 mt-4">
-                                    <Progress value={uploadProgress} className="h-2.5 rounded-full bg-slate-100" />
-                                    <p className="text-xs font-medium text-slate-500 text-center animate-pulse">
-                                        Uploading securely... {Math.round(uploadProgress)}%
+                                    <Progress value={uploadProgress} className="h-2 rounded-full bg-slate-200 dark:bg-slate-700" />
+                                    <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 text-center animate-pulse">
+                                        Uploading resume... {Math.round(uploadProgress)}%
                                     </p>
                                 </div>
                             )}
@@ -1133,22 +1158,24 @@ export default function OnboardingPage() {
 
                     {/* Skills */}
                     {needsSkills && (
-                        <div className="space-y-3">
-                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                <Sparkles className="w-4 h-4 text-amber-500" />
-                                Your Key Skills
-                                <span className="ml-auto text-xs font-normal text-slate-400">Select all that apply</span>
-                            </label>
+                        <div className="space-y-4 p-6 bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-amber-500" />
+                                    Your Core Skills
+                                </label>
+                                <span className="text-xs font-semibold text-slate-400">Select all that apply</span>
+                            </div>
 
                             {/* Selected badges */}
                             {selectedSkillIds.length > 0 && (
-                                <div className="flex flex-wrap gap-2 p-3 bg-indigo-50 rounded-2xl border border-indigo-100">
+                                <div className="flex flex-wrap gap-2 p-3 bg-indigo-50/80 dark:bg-indigo-950/40 rounded-xl border border-indigo-100 dark:border-indigo-900">
                                     {selectedSkillIds.map(id => {
                                         const skill = masterSkills.find(s => s.uuid === id);
                                         return skill ? (
-                                            <Badge key={id} className="bg-indigo-600 text-white hover:bg-indigo-700 gap-1 pr-1.5">
+                                            <Badge key={id} className="bg-indigo-600 text-white hover:bg-indigo-700 gap-1.5 pr-2 py-1 text-xs font-semibold rounded-lg">
                                                 {skill.name}
-                                                <button type="button" onClick={() => toggleSkill(id)}>
+                                                <button type="button" onClick={() => toggleSkill(id)} className="hover:text-indigo-200 transition-colors">
                                                     <X className="w-3 h-3" />
                                                 </button>
                                             </Badge>
@@ -1159,14 +1186,14 @@ export default function OnboardingPage() {
 
                             {/* Search filter */}
                             <Input
-                                placeholder="Search skills..."
+                                placeholder="Search skills (e.g. React, Node.js, Python)..."
                                 value={skillSearch}
                                 onChange={e => setSkillSearch(e.target.value)}
-                                className="h-10 rounded-xl border-slate-200 bg-slate-50"
+                                className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                             />
 
                             {/* Skill chips */}
-                            <div className="flex flex-wrap gap-2 max-h-44 overflow-y-auto py-1 pr-1">
+                            <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1">
                                 {filteredSkills.map(skill => {
                                     const selected = selectedSkillIds.includes(skill.uuid);
                                     return (
@@ -1174,10 +1201,10 @@ export default function OnboardingPage() {
                                             key={skill.uuid}
                                             type="button"
                                             onClick={() => toggleSkill(skill.uuid)}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                                                 selected
                                                     ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                                                    : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-400 hover:text-indigo-600'
+                                                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400 hover:text-indigo-600'
                                             }`}
                                         >
                                             {skill.name}
@@ -1185,7 +1212,7 @@ export default function OnboardingPage() {
                                     );
                                 })}
                                 {filteredSkills.length === 0 && (
-                                    <p className="text-xs text-slate-400 py-2">No skills match your search.</p>
+                                    <p className="text-xs text-slate-400 py-2 font-medium">No matching skills found.</p>
                                 )}
                             </div>
                         </div>
@@ -1193,86 +1220,102 @@ export default function OnboardingPage() {
 
                     {/* Education Details */}
                     {needsEducation && (
-                        <div className="space-y-4 pt-6 border-t border-slate-100">
-                            <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                                <GraduationCap className="w-5 h-5 text-indigo-600 animate-pulse" />
-                                Education Details
-                            </h3>
+                        <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                    <GraduationCap className="w-5 h-5 text-indigo-600" />
+                                    Education Details
+                                </h3>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addEducation}
+                                    className="rounded-xl border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-bold text-xs gap-1.5"
+                                >
+                                    <Plus className="w-3.5 h-3.5" /> Add Education
+                                </Button>
+                            </div>
                             {education.map((edu, idx) => (
                                 <motion.div 
                                     key={idx} 
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 space-y-4 relative group"
+                                    className="p-6 bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-4"
                                 >
-                                    <button
-                                        type="button"
-                                        onClick={() => removeEducation(idx)}
-                                        className="absolute top-4 right-4 p-2 text-slate-400 hover:text-red-500 rounded-xl hover:bg-red-50 transition-colors"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-3">
+                                        <span className="text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                                            Education #{idx + 1}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeEducation(idx)}
+                                            className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-600">School / Institution</label>
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">School / Institution</label>
                                             <Input
                                                 placeholder="e.g. Stanford University"
                                                 value={edu.institution || ""}
                                                 onChange={(e) => updateEducation(idx, { institution: e.target.value })}
-                                                className="h-11 rounded-xl border-slate-200 bg-white"
+                                                className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-600">Degree</label>
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Degree</label>
                                             <Input
                                                 placeholder="e.g. Bachelor of Science"
                                                 value={edu.degree || ""}
                                                 onChange={(e) => updateEducation(idx, { degree: e.target.value })}
-                                                className="h-11 rounded-xl border-slate-200 bg-white"
+                                                className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-600">Field of Study</label>
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Field of Study</label>
                                             <Input
                                                 placeholder="e.g. Computer Science"
                                                 value={edu.fieldOfStudy || ""}
                                                 onChange={(e) => updateEducation(idx, { fieldOfStudy: e.target.value })}
-                                                className="h-11 rounded-xl border-slate-200 bg-white"
+                                                className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-600">Grade / CGPA</label>
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Grade / CGPA</label>
                                             <Input
                                                 placeholder="e.g. 3.8/4.0 or 85%"
                                                 value={edu.grade || ""}
                                                 onChange={(e) => updateEducation(idx, { grade: e.target.value })}
-                                                className="h-11 rounded-xl border-slate-200 bg-white"
+                                                className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-600">Start Date (YYYY-MM)</label>
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Start Date (YYYY-MM)</label>
                                             <Input
                                                 placeholder="YYYY-MM (e.g. 2020-09)"
                                                 value={edu.startDate || ""}
                                                 onChange={(e) => updateEducation(idx, { startDate: e.target.value })}
-                                                className="h-11 rounded-xl border-slate-200 bg-white"
+                                                className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                                             />
                                         </div>
                                         {!edu.isCurrent && (
                                             <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-slate-600">End Date (YYYY-MM)</label>
+                                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">End Date (YYYY-MM)</label>
                                                 <Input
                                                     placeholder="YYYY-MM (e.g. 2024-06)"
                                                     value={edu.endDate || ""}
                                                     onChange={(e) => updateEducation(idx, { endDate: e.target.value })}
-                                                    className="h-11 rounded-xl border-slate-200 bg-white"
+                                                    className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                                                 />
                                             </div>
                                         )}
@@ -1284,99 +1327,107 @@ export default function OnboardingPage() {
                                             id={`edu-current-${idx}`}
                                             checked={!!edu.isCurrent}
                                             onChange={(e) => updateEducation(idx, { isCurrent: e.target.checked, endDate: e.target.checked ? "" : edu.endDate })}
-                                            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                                         />
-                                        <label htmlFor={`edu-current-${idx}`} className="text-xs font-semibold text-slate-600 cursor-pointer">
+                                        <label htmlFor={`edu-current-${idx}`} className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
                                             I am currently studying here
                                         </label>
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-slate-600">Description</label>
+                                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Description</label>
                                         <textarea
                                             placeholder="Achievements, coursework, or extra-curricular activities..."
                                             value={edu.description || ""}
                                             onChange={(e) => updateEducation(idx, { description: e.target.value })}
                                             rows={2}
-                                            className="w-full p-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-indigo-400 transition-colors"
+                                            className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                                         />
                                     </div>
                                 </motion.div>
                             ))}
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={addEducation}
-                                className="w-full py-5 rounded-2xl border-dashed border-2 hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2 font-bold text-xs"
-                            >
-                                <Plus className="w-4 h-4" /> Add Education
-                            </Button>
                         </div>
                     )}
 
                     {/* Work Experience */}
                     {needsExperience && (
-                        <div className="space-y-4 pt-6 border-t border-slate-100">
-                            <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                                <Briefcase className="w-5 h-5 text-emerald-600 animate-pulse" />
-                                Work Experience
-                            </h3>
+                        <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                    <Briefcase className="w-5 h-5 text-emerald-600" />
+                                    Work Experience
+                                </h3>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addExperience}
+                                    className="rounded-xl border-emerald-200 text-emerald-600 hover:bg-emerald-50 font-bold text-xs gap-1.5"
+                                >
+                                    <Plus className="w-3.5 h-3.5" /> Add Experience
+                                </Button>
+                            </div>
                             {experience.map((exp, idx) => (
                                 <motion.div 
                                     key={idx} 
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 space-y-4 relative group"
+                                    className="p-6 bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-4"
                                 >
-                                    <button
-                                        type="button"
-                                        onClick={() => removeExperience(idx)}
-                                        className="absolute top-4 right-4 p-2 text-slate-400 hover:text-red-500 rounded-xl hover:bg-red-50 transition-colors"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-3">
+                                        <span className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                                            Experience #{idx + 1}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeExperience(idx)}
+                                            className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-600">Company Name</label>
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Company Name</label>
                                             <Input
                                                 placeholder="e.g. Acme Corp"
                                                 value={exp.company || ""}
                                                 onChange={(e) => updateExperience(idx, { company: e.target.value })}
-                                                className="h-11 rounded-xl border-slate-200 bg-white"
+                                                className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-600">Job Title</label>
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Job Title</label>
                                             <Input
                                                 placeholder="e.g. Software Engineer"
                                                 value={exp.title || ""}
                                                 onChange={(e) => updateExperience(idx, { title: e.target.value })}
-                                                className="h-11 rounded-xl border-slate-200 bg-white"
+                                                className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-600">Location</label>
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Location</label>
                                             <Input
                                                 placeholder="e.g. Bengaluru, India or Remote"
                                                 value={exp.location || ""}
                                                 onChange={(e) => updateExperience(idx, { location: e.target.value })}
-                                                className="h-11 rounded-xl border-slate-200 bg-white"
+                                                className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-600">Employment Type</label>
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Employment Type</label>
                                             <Select
                                                 onValueChange={(val) => updateExperience(idx, { employmentType: val })}
                                                 value={exp.employmentType || "Full-time"}
                                             >
-                                                <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white">
+                                                <SelectTrigger className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium">
                                                     <SelectValue />
                                                 </SelectTrigger>
-                                                <SelectContent className="rounded-lg border-slate-100 shadow-xl">
+                                                <SelectContent className="rounded-xl border-slate-200 shadow-xl">
                                                     <SelectItem value="Full-time">Full-time</SelectItem>
                                                     <SelectItem value="Part-time">Part-time</SelectItem>
                                                     <SelectItem value="Contract">Contract</SelectItem>
@@ -1388,22 +1439,22 @@ export default function OnboardingPage() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-600">Start Date (YYYY-MM)</label>
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Start Date (YYYY-MM)</label>
                                             <Input
                                                 placeholder="YYYY-MM (e.g. 2021-06)"
                                                 value={exp.startDate || ""}
                                                 onChange={(e) => updateExperience(idx, { startDate: e.target.value })}
-                                                className="h-11 rounded-xl border-slate-200 bg-white"
+                                                className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                                             />
                                         </div>
                                         {!exp.isCurrent && (
                                             <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-slate-600">End Date (YYYY-MM)</label>
+                                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">End Date (YYYY-MM)</label>
                                                 <Input
                                                     placeholder="YYYY-MM (e.g. 2023-12)"
                                                     value={exp.endDate || ""}
                                                     onChange={(e) => updateExperience(idx, { endDate: e.target.value })}
-                                                    className="h-11 rounded-xl border-slate-200 bg-white"
+                                                    className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                                                 />
                                             </div>
                                         )}
@@ -1415,216 +1466,224 @@ export default function OnboardingPage() {
                                             id={`exp-current-${idx}`}
                                             checked={!!exp.isCurrent}
                                             onChange={(e) => updateExperience(idx, { isCurrent: e.target.checked, endDate: e.target.checked ? "" : exp.endDate })}
-                                            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                                         />
-                                        <label htmlFor={`exp-current-${idx}`} className="text-xs font-semibold text-slate-600 cursor-pointer">
+                                        <label htmlFor={`exp-current-${idx}`} className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
                                             I currently work here
                                         </label>
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-slate-600">Description</label>
+                                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Description</label>
                                         <textarea
                                             placeholder="Describe your achievements, roles, and tech stack used..."
                                             value={exp.description || ""}
                                             onChange={(e) => updateExperience(idx, { description: e.target.value })}
                                             rows={3}
-                                            className="w-full p-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-indigo-400 transition-colors"
+                                            className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                                         />
                                     </div>
                                 </motion.div>
                             ))}
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={addExperience}
-                                className="w-full py-5 rounded-2xl border-dashed border-2 hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2 font-bold text-xs"
-                            >
-                                <Plus className="w-4 h-4" /> Add Work Experience
-                            </Button>
                         </div>
                     )}
 
                     {/* Projects */}
                     {needsProjects && (
-                        <div className="space-y-4 pt-6 border-t border-slate-100">
-                            <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                                <Layers className="w-5 h-5 text-indigo-600 animate-pulse" />
-                                Projects
-                            </h3>
+                        <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                    <Layers className="w-5 h-5 text-indigo-600" />
+                                    Projects
+                                </h3>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addProject}
+                                    className="rounded-xl border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-bold text-xs gap-1.5"
+                                >
+                                    <Plus className="w-3.5 h-3.5" /> Add Project
+                                </Button>
+                            </div>
                             {projects.map((proj, idx) => (
                                 <motion.div 
                                     key={idx} 
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 space-y-4 relative group"
+                                    className="p-6 bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-4"
                                 >
-                                    <button
-                                        type="button"
-                                        onClick={() => removeProject(idx)}
-                                        className="absolute top-4 right-4 p-2 text-slate-400 hover:text-red-500 rounded-xl hover:bg-red-50 transition-colors"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-3">
+                                        <span className="text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                                            Project #{idx + 1}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeProject(idx)}
+                                            className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-600">Project Name</label>
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Project Name</label>
                                             <Input
                                                 placeholder="e.g. Portfolio Website"
                                                 value={proj.name || ""}
                                                 onChange={(e) => updateProject(idx, { name: e.target.value })}
-                                                className="h-11 rounded-xl border-slate-200 bg-white"
+                                                className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-600">Project Link / URL</label>
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Project Link / URL</label>
                                             <Input
                                                 placeholder="e.g. https://github.com/..."
                                                 value={proj.url || ""}
                                                 onChange={(e) => updateProject(idx, { url: e.target.value })}
-                                                className="h-11 rounded-xl border-slate-200 bg-white"
+                                                className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-600">Start Date (YYYY-MM)</label>
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Start Date (YYYY-MM)</label>
                                             <Input
                                                 placeholder="YYYY-MM (e.g. 2023-01)"
                                                 value={proj.startDate || ""}
                                                 onChange={(e) => updateProject(idx, { startDate: e.target.value })}
-                                                className="h-11 rounded-xl border-slate-200 bg-white"
+                                                className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-600">End Date (YYYY-MM)</label>
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">End Date (YYYY-MM)</label>
                                             <Input
                                                 placeholder="YYYY-MM (e.g. 2023-03)"
                                                 value={proj.endDate || ""}
                                                 onChange={(e) => updateProject(idx, { endDate: e.target.value })}
-                                                className="h-11 rounded-xl border-slate-200 bg-white"
+                                                className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-slate-600">Description</label>
+                                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Description</label>
                                         <textarea
                                             placeholder="Describe the project objective, your role, and the tech stack used..."
                                             value={proj.description || ""}
                                             onChange={(e) => updateProject(idx, { description: e.target.value })}
                                             rows={2}
-                                            className="w-full p-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-indigo-400 transition-colors"
+                                            className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                                         />
                                     </div>
                                 </motion.div>
                             ))}
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={addProject}
-                                className="w-full py-5 rounded-2xl border-dashed border-2 hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2 font-bold text-xs"
-                            >
-                                <Plus className="w-4 h-4" /> Add Project
-                            </Button>
                         </div>
                     )}
 
                     {/* Achievements & Certifications */}
                     {(needsAchievements || needsCertifications) && (
                         <div className={cn(
-                            "grid grid-cols-1 gap-6 pt-6 border-t border-slate-100",
+                            "grid grid-cols-1 gap-6 pt-6 border-t border-slate-100 dark:border-slate-800",
                             needsAchievements && needsCertifications ? "md:grid-cols-2" : "md:grid-cols-1"
                         )}>
                             {/* Achievements */}
                             {needsAchievements && (
-                                <div className="space-y-4">
-                                    <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                                        <Award className="w-5 h-5 text-amber-500 animate-pulse" />
-                                        Achievements
-                                    </h3>
-                                    <div className="space-y-2">
+                                <div className="space-y-4 p-6 bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                            <Award className="w-4 h-4 text-amber-500" />
+                                            Achievements
+                                        </h3>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={addAchievement}
+                                            className="rounded-xl border-amber-200 text-amber-700 hover:bg-amber-50 font-bold text-xs gap-1"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" /> Add
+                                        </Button>
+                                    </div>
+                                    <div className="space-y-2.5">
                                         {achievements.map((ach, idx) => (
                                             <div key={idx} className="flex items-center gap-2">
                                                 <Input
                                                     placeholder="e.g. Won Hackathon 2025"
                                                     value={ach || ""}
                                                     onChange={(e) => updateAchievement(idx, e.target.value)}
-                                                    className="h-11 rounded-xl border-slate-200 bg-white"
+                                                    className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium flex-1"
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => removeAchievement(idx)}
-                                                    className="p-2.5 text-slate-400 hover:text-red-500 rounded-xl hover:bg-red-50 transition-colors shrink-0"
+                                                    className="p-2.5 text-slate-400 hover:text-red-500 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors shrink-0"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         ))}
                                     </div>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={addAchievement}
-                                        className="w-full py-4 rounded-xl border-dashed hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-1.5 font-bold text-xs"
-                                    >
-                                        <Plus className="w-3.5 h-3.5" /> Add Achievement
-                                    </Button>
                                 </div>
                             )}
 
                             {/* Certifications */}
                             {needsCertifications && (
-                                <div className="space-y-4">
-                                    <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                                        <Award className="w-5 h-5 text-indigo-500 animate-pulse" />
-                                        Certifications
-                                    </h3>
-                                    <div className="space-y-2">
+                                <div className="space-y-4 p-6 bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                            <Award className="w-4 h-4 text-indigo-500" />
+                                            Certifications
+                                        </h3>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={addCertification}
+                                            className="rounded-xl border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-bold text-xs gap-1"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" /> Add
+                                        </Button>
+                                    </div>
+                                    <div className="space-y-2.5">
                                         {certifications.map((cert, idx) => (
                                             <div key={idx} className="flex items-center gap-2">
                                                 <Input
-                                                    placeholder="e.g. AWS Certified Solutions Architect"
+                                                    placeholder="e.g. AWS Certified Architect"
                                                     value={cert || ""}
                                                     onChange={(e) => updateCertification(idx, e.target.value)}
-                                                    className="h-11 rounded-xl border-slate-200 bg-white"
+                                                    className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium flex-1"
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => removeCertification(idx)}
-                                                    className="p-2.5 text-slate-400 hover:text-red-500 rounded-xl hover:bg-red-50 transition-colors shrink-0"
+                                                    className="p-2.5 text-slate-400 hover:text-red-500 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors shrink-0"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         ))}
                                     </div>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={addCertification}
-                                        className="w-full py-4 rounded-xl border-dashed hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-1.5 font-bold text-xs"
-                                    >
-                                        <Plus className="w-3.5 h-3.5" /> Add Certification
-                                    </Button>
                                 </div>
                             )}
                         </div>
                     )}
 
                     {/* Communities Network Setup */}
-                    <div className="space-y-6 pt-6 border-t border-slate-100">
-                        <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-indigo-600 animate-pulse" />
-                            Communities Network Setup
-                        </h3>
-                        <p className="text-xs text-slate-400 font-medium">Select your target countries, interests, and career goals to automatically join professional discussion hubs.</p>
+                    <div className="space-y-5 p-6 bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                        <div className="space-y-1">
+                            <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-indigo-600 animate-pulse" />
+                                Communities Network Setup
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Select your target locations, interests, and career goals to automatically connect with relevant hubs.</p>
+                        </div>
 
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-600">Target Countries</label>
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Target Countries</label>
                             <div className="flex flex-wrap gap-2">
                               {["India", "USA", "Canada", "Germany", "United Kingdom", "Australia", "Singapore", "UAE"].map(c => {
                                 const active = selectedCountries.includes(c);
@@ -1634,8 +1693,8 @@ export default function OnboardingPage() {
                                     type="button"
                                     onClick={() => setSelectedCountries(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])}
                                     className={cn(
-                                      "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all",
-                                      active ? "bg-indigo-600 text-white border-indigo-600" : "bg-slate-50 text-slate-600 border-slate-200 hover:border-indigo-400"
+                                      "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all",
+                                      active ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400"
                                     )}
                                   >
                                     {c}
@@ -1646,7 +1705,7 @@ export default function OnboardingPage() {
                           </div>
 
                           <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-600">Professional Interests</label>
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Professional Interests</label>
                             <div className="flex flex-wrap gap-2">
                               {["React", "Next.js", "Node.js", "Python", "Java", "AI & Machine Learning", "Data Science", "DevOps", "UI/UX Design"].map(i => {
                                 const active = selectedInterests.includes(i);
@@ -1656,8 +1715,8 @@ export default function OnboardingPage() {
                                     type="button"
                                     onClick={() => setSelectedInterests(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
                                     className={cn(
-                                      "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all",
-                                      active ? "bg-indigo-600 text-white border-indigo-600" : "bg-slate-50 text-slate-600 border-slate-200 hover:border-indigo-400"
+                                      "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all",
+                                      active ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400"
                                     )}
                                   >
                                     {i}
@@ -1668,7 +1727,7 @@ export default function OnboardingPage() {
                           </div>
 
                           <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-600">Career Goals</label>
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Career Goals</label>
                             <div className="flex flex-wrap gap-2">
                               {["Resume Reviews", "Mock Interviews", "Career Guidance", "Remote Jobs", "Freelancing"].map(g => {
                                 const active = selectedGoals.includes(g);
@@ -1678,8 +1737,8 @@ export default function OnboardingPage() {
                                     type="button"
                                     onClick={() => setSelectedGoals(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
                                     className={cn(
-                                      "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all",
-                                      active ? "bg-indigo-600 text-white border-indigo-600" : "bg-slate-50 text-slate-600 border-slate-200 hover:border-indigo-400"
+                                      "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all",
+                                      active ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400"
                                     )}
                                   >
                                     {g}
@@ -1692,11 +1751,11 @@ export default function OnboardingPage() {
                     </div>
 
                     {/* Submit */}
-                    <div className="pt-6 border-t border-slate-100">
+                    <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
                         <Button
                             type="submit"
                             disabled={isSubmitting || uploadProgress !== null}
-                            className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-lg shadow-xl shadow-slate-900/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100"
+                            className="w-full h-14 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-extrabold text-base shadow-xl shadow-indigo-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 disabled:hover:scale-100"
                         >
                             {isSubmitting ? (
                                 <>
@@ -1719,16 +1778,16 @@ export default function OnboardingPage() {
                     <motion.div 
                         initial={{ scale: 0.95, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl border border-slate-100 flex flex-col items-center"
+                        className="bg-white dark:bg-slate-900 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-center"
                     >
-                        <div className="p-4 bg-indigo-50 rounded-2xl text-indigo-600 mb-4 animate-bounce">
+                        <div className="p-4 bg-indigo-50 dark:bg-indigo-950/60 rounded-2xl text-indigo-600 dark:text-indigo-400 mb-4 animate-bounce">
                             <Sparkles className="w-8 h-8" />
                         </div>
-                        <h3 className="text-xl font-bold text-slate-800 mb-2">Analyzing Resume...</h3>
-                        <p className="text-sm text-slate-500 mb-6">
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Analyzing Resume...</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
                             Our AI is extracting skills, contact info, and matching your professional domain. This will take a moment.
                         </p>
-                        <div className="flex items-center gap-2 text-indigo-600 font-semibold text-sm">
+                        <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-semibold text-sm">
                             <LoaderCircle className="w-5 h-5 animate-spin" />
                             <span>Processing...</span>
                         </div>

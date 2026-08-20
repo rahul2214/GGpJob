@@ -14,6 +14,31 @@ function normalizeDate(dateStr: string | null | undefined): string | null | unde
     return dateStr;
 }
 
+// Helper to ensure jobseekers metadata ONLY stores UI state flags (hasSeenReferralPrompt, referralStepDismissed, etc.)
+function cleanJobseekerMetadata(rawMetadata: any): Record<string, any> {
+    if (!rawMetadata || typeof rawMetadata !== 'object') return {};
+    const clean = { ...rawMetadata };
+    
+    const keysToRemove = [
+        'country', 'state', 'currentCity', 'current_city', 'countryId', 'stateId', 'cityId',
+        'achievements', 'certifications', 'openToRelocate', 'openToRelocation', 'openWorldwide',
+        'visaRequirement', 'visaRequirementId', 'preferredJobTitles', 'preferred_job_titles',
+        'preferredSalaryMin', 'preferred_salary_min', 'preferredSalaryMax', 'preferred_salary_max',
+        'preferredCurrency', 'preferred_currency', 'remotePreference', 'remote_preference',
+        'employmentTypes', 'employment_types', 'preferredIndustries', 'preferred_industries',
+        'workAuthorization', 'work_authorization', 'preferredLanguages', 'preferred_languages',
+        'preferredLocations', 'preferred_locations', 'gender', 'maritalStatus', 'dateOfBirth',
+        'category', 'disabilityStatus', 'militaryExperience', 'careerBreak', 'headline', 'summary',
+        'name', 'email', 'phone', 'skills', 'experience', 'education', 'projects', 'languages'
+    ];
+
+    for (const key of keysToRemove) {
+        delete clean[key];
+    }
+
+    return clean;
+}
+
 // Helper to map Supabase snake_case profile to camelCase User type
 function calculateProfileStats(profile: any, resolvedSkills?: any[]) {
     return {
@@ -515,30 +540,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 }
             }
 
-            const mergedMetadata = {
-                ...(rest.metadata || {}),
-                preferredJobTitles: rest.preferredJobTitles ?? rest.metadata?.preferredJobTitles ?? [],
-                preferredSalaryMin: rest.preferredSalaryMin ?? rest.metadata?.preferredSalaryMin,
-                preferredSalaryMax: rest.preferredSalaryMax ?? rest.metadata?.preferredSalaryMax,
-                preferredCurrency: rest.preferredCurrency ?? rest.metadata?.preferredCurrency ?? 'INR',
-                remotePreference: rest.remotePreference ?? rest.metadata?.remotePreference ?? 'any',
-                employmentTypes: rest.employmentTypes ?? rest.metadata?.employmentTypes ?? [],
-                preferredIndustries: rest.preferredIndustries ?? rest.metadata?.preferredIndustries ?? [],
-                workAuthorization: rest.workAuthorization ?? rest.metadata?.workAuthorization ?? [],
-                preferredLanguages: rest.preferredLanguages ?? rest.metadata?.preferredLanguages ?? [],
-            };
-
-            // Ensure location, achievements, certifications, openToRelocate, openWorldwide, and visaRequirement are NOT stored in metadata
-            delete mergedMetadata.country;
-            delete mergedMetadata.state;
-            delete mergedMetadata.currentCity;
-            delete mergedMetadata.achievements;
-            delete mergedMetadata.certifications;
-            delete mergedMetadata.openToRelocate;
-            delete mergedMetadata.openToRelocation;
-            delete mergedMetadata.openWorldwide;
-            delete mergedMetadata.visaRequirement;
-            delete mergedMetadata.visaRequirementId;
+            // Ensure metadata ONLY contains UI state flags (hasSeenReferralPrompt, referralStepDismissed, etc.)
+            const mergedMetadata = cleanJobseekerMetadata(rest.metadata || {});
 
             Object.assign(updateData, {
                 headline: rest.headline,
@@ -989,7 +992,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         if (body.name) updateData.name = body.name;
         if (body.email) updateData.email = body.email;
         if (body.phone) updateData.phone = body.phone;
-        if (body.metadata && table === 'jobseekers') updateData.metadata = body.metadata;
+        if (body.metadata && table === 'jobseekers') updateData.metadata = cleanJobseekerMetadata(body.metadata);
         if (body.referralCode && table === 'jobseekers') updateData.referral_code = body.referralCode;
         if (body.referredBy && table === 'jobseekers') updateData.referred_by = Number(body.referredBy);
         if (body.referralCount !== undefined && table === 'jobseekers') updateData.referral_count = body.referralCount;
@@ -1006,7 +1009,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
                 projects(*),
                 languages(*),
                 jobseeker_personal_details(*),
-                jobseeker_skills(skills(id, uuid, name))
+                jobseeker_skills(skills(id, uuid, name)),
+                jobseeker_achievements:jobseeker_achievements!jobseeker_id(*),
+                jobseeker_certifications:jobseeker_certifications!jobseeker_id(*)
             `;
         } else if (table === 'recruiters') {
             patchSelect = '*, roles(name), company_sizes(uuid, name)';
@@ -1023,6 +1028,81 @@ export async function PATCH(request: Request, { params }: { params: { id: string
             .single();
 
         if (error) throw error;
+
+        if (table === 'jobseekers' && profile) {
+            const userPk = profile.id;
+            if (Array.isArray(body.achievements)) {
+                try {
+                    await supabaseAdmin.from('jobseeker_achievements').delete().or(`jobseeker_id.eq.${userPk},jobseeker_uuid.eq.${profile.uuid}`);
+                    if (body.achievements.length > 0) {
+                        const achievementRows = body.achievements.map((a: any) => {
+                            if (typeof a === 'string') {
+                                return {
+                                    jobseeker_id: userPk,
+                                    jobseeker_uuid: profile.uuid,
+                                    title: a.trim(),
+                                    description: null,
+                                    issuer: null,
+                                    date_achieved: null
+                                };
+                            }
+                            return {
+                                jobseeker_id: userPk,
+                                jobseeker_uuid: profile.uuid,
+                                title: (a.title || a.name || '').trim(),
+                                description: a.description || null,
+                                issuer: a.issuer || a.issuingOrganization || null,
+                                date_achieved: normalizeDate(a.dateAchieved || a.issueDate)
+                            };
+                        }).filter((row: any) => row.title);
+
+                        if (achievementRows.length > 0) {
+                            await supabaseAdmin.from('jobseeker_achievements').insert(achievementRows);
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Could not sync jobseeker_achievements table in PATCH:", err);
+                }
+            }
+
+            if (Array.isArray(body.certifications)) {
+                try {
+                    await supabaseAdmin.from('jobseeker_certifications').delete().or(`jobseeker_id.eq.${userPk},jobseeker_uuid.eq.${profile.uuid}`);
+                    if (body.certifications.length > 0) {
+                        const certificationRows = body.certifications.map((c: any) => {
+                            if (typeof c === 'string') {
+                                return {
+                                    jobseeker_id: userPk,
+                                    jobseeker_uuid: profile.uuid,
+                                    name: c.trim(),
+                                    issuing_organization: null,
+                                    issue_date: null,
+                                    expiration_date: null,
+                                    credential_id: null,
+                                    credential_url: null
+                                };
+                            }
+                            return {
+                                jobseeker_id: userPk,
+                                jobseeker_uuid: profile.uuid,
+                                name: (c.name || c.title || '').trim(),
+                                issuing_organization: c.issuingOrganization || c.issuer || null,
+                                issue_date: normalizeDate(c.issueDate || c.dateAchieved),
+                                expiration_date: normalizeDate(c.expirationDate),
+                                credential_id: c.credentialId || null,
+                                credential_url: c.credentialUrl || null
+                            };
+                        }).filter((row: any) => row.name);
+
+                        if (certificationRows.length > 0) {
+                            await supabaseAdmin.from('jobseeker_certifications').insert(certificationRows);
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Could not sync jobseeker_certifications table in PATCH:", err);
+                }
+            }
+        }
 
         return NextResponse.json(await mapProfileToUser(profile), { status: 200 });
 

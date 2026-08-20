@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     const apiUrl = isGroq
       ? "https://api.groq.com/openai/v1/chat/completions"
       : "https://api.x.ai/v1/chat/completions";
-    const apiModel: string = isGroq ? "llama-3.3-70b-versatile" : "grok-2-latest";
+    const apiModel: string = isGroq ? "openai/gpt-oss-120b" : "grok-2-latest";
 
     // Resolve activeJobId from body or history context
     let activeJobId = jobId;
@@ -410,9 +410,9 @@ Do NOT wrap the response in markdown blocks (e.g., do NOT include \`\`\`json). J
       const errorText = await response.text();
       console.warn("AI Assistant API Error on primary model:", errorText);
 
-      // Fallback: If primary model fails (e.g. 429 rate limit or 500 error), try llama-3.1-8b-instant
-      if (isGroq && apiModel !== "llama-3.1-8b-instant") {
-        console.log("Attempting fallback to llama-3.1-8b-instant...");
+      // Fallback: If primary model fails (e.g. 429 rate limit or 500 error), try openai/gpt-oss-20b
+      if (isGroq && apiModel !== "openai/gpt-oss-20b") {
+        console.log("Attempting fallback to openai/gpt-oss-20b...");
         response = await fetch(apiUrl, {
           method: "POST",
           headers: {
@@ -420,7 +420,7 @@ Do NOT wrap the response in markdown blocks (e.g., do NOT include \`\`\`json). J
             Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
-            model: "llama-3.1-8b-instant",
+            model: "openai/gpt-oss-20b",
             messages: chatMessages,
             temperature: 0.2,
             response_format: { type: "json_object" },

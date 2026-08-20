@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     }
     const isGroq = apiKey.startsWith("gsk_");
     const apiUrl = isGroq ? "https://api.groq.com/openai/v1/chat/completions" : "https://api.x.ai/v1/chat/completions";
-    const apiModel = isGroq ? "llama-3.3-70b-versatile" : "grok-2-latest";
+    const apiModel = isGroq ? "openai/gpt-oss-120b" : "grok-2-latest";
 
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
@@ -108,7 +108,7 @@ ${truncatedResume}
 
 IMPORTANT: Return ONLY the JSON object, no markdown code blocks, no explanations. Ensure it is perfectly valid JSON.`;
 
-    const response = await fetch(apiUrl, {
+    let response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -129,7 +129,33 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks, no explanations
         temperature: 0.1,
         ...(isGroq ? { response_format: { type: "json_object" } } : { max_tokens: 1500 })
       })
-    })
+    });
+
+    if (!response.ok && isGroq) {
+      console.warn(`Primary model ${apiModel} failed (${response.status}). Trying fallback openai/gpt-oss-20b...`);
+      response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-oss-20b",
+          messages: [
+            {
+              role: "system",
+              content: "You are a precise API that returns only valid JSON objects."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.1,
+          response_format: { type: "json_object" }
+        })
+      });
+    }
 
     if (!response.ok) {
       const errorText = await response.text()

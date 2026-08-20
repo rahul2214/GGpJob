@@ -14,10 +14,8 @@ import { SummaryForm } from "@/components/summary-form";
 import { PersonalInfoFormCombined } from "@/components/personal-info-form-combined";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserCog, ShieldCheck, FileText, Briefcase, Link2, Users, HeartHandshake, Mail, Phone, LayoutDashboard, Trash2, Wallet, Award, Sparkles, Zap, ShieldCheck as TrustIcon, Camera, Loader2, ChevronRight, User, Globe } from "lucide-react";
+import { UserCog, ShieldCheck, FileText, Briefcase, Link2, Users, HeartHandshake, Mail, Phone, LayoutDashboard, Trash2, Wallet, Award, Sparkles, Zap, Camera, Loader2, ChevronRight, User, Globe } from "lucide-react";
 import { DeleteAccountButton } from "@/components/delete-account-button";
-import { TrustScoreBadge } from "@/components/trust-score-badge";
-import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { CurrencySelector } from "@/components/currency-selector";
@@ -282,27 +280,7 @@ export default function ProfilePage() {
                                     )}
                                 </div>
 
-                                {/* Reputation Card */}
-                                <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.015)] p-5 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                            <TrustIcon className="w-3.5 h-3.5 text-amber-500" />
-                                            Reputation
-                                        </h3>
-                                        <TrustScoreBadge score={user.trustScore || 100} />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <div className="flex justify-between text-[10px] font-bold text-slate-400">
-                                            <span>Trust Score Level</span>
-                                            <span className={(user.trustScore || 100) >= 90 ? "text-emerald-600" : "text-amber-600"}>
-                                                {(user.trustScore || 100) >= 90 ? "Excellent" : "Trusted"}
-                                            </span>
-                                        </div>
-                                        <Progress value={user.trustScore || 0} className="h-1.5 bg-slate-100" />
-                                    </div>
 
-                                    
-                                </div>
                             </motion.div>
                         )}
 

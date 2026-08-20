@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
     const isGroq = apiKey.startsWith("gsk_");
     const apiUrl = isGroq ? "https://api.groq.com/openai/v1/chat/completions" : "https://api.x.ai/v1/chat/completions";
-    const apiModel = isGroq ? "llama-3.3-70b-versatile" : "grok-2-latest";
+    const apiModel = isGroq ? "openai/gpt-oss-120b" : "grok-2-latest";
 
     const prompt = `You are an expert ATS (Applicant Tracking System) algorithm simulator and technical recruiter.
 Analyze the candidate's resume and compare it against the target Job Description to identify keyword gaps, formatting alignment, and section completeness.
