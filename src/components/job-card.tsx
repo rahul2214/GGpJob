@@ -172,13 +172,13 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
                   <div className="w-5 h-5 rounded-lg bg-slate-50 dark:bg-slate-950/30 flex items-center justify-center border border-slate-100/50 dark:border-slate-800/30 shrink-0">
                     <MapPin className="h-3 w-3 text-indigo-500" />
                   </div>
-                  <span className="truncate font-medium">{job.location}</span>
+                  <span className="truncate font-medium">{job.location || 'Not Disclosed'}</span>
                 </div>
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="w-5 h-5 rounded-lg bg-slate-50 dark:bg-slate-950/30 flex items-center justify-center border border-slate-100/50 dark:border-slate-800/30 shrink-0">
                     <Briefcase className="h-3 w-3 text-indigo-500" />
                   </div>
-                  <span className="truncate font-medium">{job.type}</span>
+                  <span className="truncate font-medium">{job.type || 'Not Disclosed'}</span>
                 </div>
               </div>
 
@@ -190,7 +190,7 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
                   <span className="font-bold text-slate-800 dark:text-slate-200">
                     {job.salaryMin || job.salaryMax
                       ? `${job.salaryCurrency || job.currency || '₹'} ${job.salaryMin ? job.salaryMin.toLocaleString() : '0'} - ${job.salaryMax ? job.salaryMax.toLocaleString() : 'Negotiable'}`
-                      : 'Not Disclosed'}
+                      : ((job as any).salary || 'Not Disclosed')}
                   </span>
                 </div>
                 {(job.visaSponsorship || (job as any).visa_sponsorship) && (

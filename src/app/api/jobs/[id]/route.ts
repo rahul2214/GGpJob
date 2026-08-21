@@ -7,14 +7,28 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
     // Resolve location data (names and UUIDs)
     let locNames: string[] = [];
     let locUuids: string[] = [];
-    if (job.location_pks && job.location_pks.length > 0) {
-        const { data: locations } = await supabaseAdmin
-            .from('locations')
-            .select('uuid, name')
+
+    const { data: jobLocs } = await supabaseAdmin
+        .from('job_locations')
+        .select('countries:country_id(name), states_provinces:state_province_id(name), cities:city_id(id, name)')
+        .eq('job_id', job.id);
+
+    if (jobLocs && jobLocs.length > 0) {
+        jobLocs.forEach((jl: any) => {
+            const parts = [jl.cities?.name, jl.states_provinces?.name, jl.countries?.name].filter(Boolean);
+            if (parts.length > 0) {
+                locNames.push(parts.join(', '));
+                if (jl.cities?.id) locUuids.push(String(jl.cities.id));
+            }
+        });
+    } else if (job.location_pks && job.location_pks.length > 0) {
+        const { data: cities } = await supabaseAdmin
+            .from('cities')
+            .select('id, name')
             .in('id', job.location_pks);
-        if (locations) {
-            locNames = locations.map((l: any) => l.name);
-            locUuids = locations.map((l: any) => l.uuid);
+        if (cities) {
+            locNames = cities.map((c: any) => c.name);
+            locUuids = cities.map((c: any) => String(c.id));
         }
     }
 
@@ -76,7 +90,6 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
         companyOverview: job.company_overview,
         companyWebsite: job.company_website,
         address: job.address,
-        isConsultancy: !!job.is_consultancy,
         vacancies: job.vacancies,
         sections: job.sections || [],
         benefitIds: benefitUuids,
@@ -278,16 +291,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         const skillPks = await safeResolveMetadata('skills', body.skillIds);
         const benefitPks = await safeResolveMetadata('benefits', body.benefitIds);
 
-        const isConsultancy = !!body.isConsultancy;
-        
-
         const dataToUpdate: any = {
             title: body.title,
             job_id: body.jobId || null,
             description: body.description,
-            // Priority: form data (if consultancy/referral), then profile
-            company_name: (isConsultancy ) ? body.companyName : (user?.company_name || body.companyName),
-            company_logo: (isConsultancy ) ? body.companyLogo : (user?.company_logo || body.companyLogo),
+            company_name: body.companyName || user?.company_name || null,
+            company_logo: body.companyLogo || user?.company_logo || null,
             job_type_pk: jobTypePk,
             workplace_type_pk: workplaceTypePk,
             location_pks: locationPks,
@@ -303,11 +312,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             benefit_ids: benefitPks,
             status: body.status || 'active',
             company_size_id: companySizePk,
-            company_linkedin_url: (isConsultancy) ? body.companyLinkedinUrl : user?.company_linkedin_url,
-            company_overview: (isConsultancy) ? body.companyOverview : user?.company_overview,
-            company_website: (isConsultancy) ? body.companyWebsite : user?.company_website,
-            address: (isConsultancy) ? body.address : user?.company_address,
-            is_consultancy: isConsultancy,
+            company_linkedin_url: body.companyLinkedinUrl || user?.company_linkedin_url || null,
+            company_overview: body.companyOverview || user?.company_overview || null,
+            company_website: body.companyWebsite || user?.company_website || null,
+            address: body.address || user?.company_address || null,
             updated_at: new Date().toISOString()
         };
 

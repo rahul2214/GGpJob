@@ -331,7 +331,7 @@ function JobDetailsContent() {
                                         <div className="flex items-center gap-4 text-gray-500">
                                             <div className="flex items-center gap-1.5">
                                                 <Briefcase className="h-4 w-4" />
-                                                <span className="text-sm">{job.experienceLevel}</span>
+                                                <span className="text-sm">{job.experienceLevel || 'Not Disclosed'}</span>
                                             </div>
                                             <div className="w-px h-4 bg-gray-200" />
                                             <div className="flex items-center gap-1.5 flex-wrap">
@@ -342,7 +342,7 @@ function JobDetailsContent() {
                                                             ? `From ₹ ${job.salaryMin.toLocaleString()}`
                                                             : job.salaryMax
                                                                 ? `Up to ₹ ${job.salaryMax.toLocaleString()}`
-                                                                : 'Not Disclosed'}
+                                                                : ((job as any).salary || 'Not Disclosed')}
                                                 </span>
                                                 {job.salaryMin && currency && currency.toUpperCase() !== 'INR' && (
                                                   <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100/40">
@@ -367,7 +367,7 @@ function JobDetailsContent() {
                                         </div>
                                         <div className="flex items-center gap-1.5 text-gray-500">
                                             <MapPin className="h-4 w-4" />
-                                            <span className="text-sm">{job.location}</span>
+                                            <span className="text-sm">{job.location || 'Not Disclosed'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -467,11 +467,11 @@ function JobDetailsContent() {
                                 <div className="bg-white rounded-xl border p-6 space-y-8">
                                     {/* Primary Info: Location, Vacancies, Salary, Experience */}
                                     <div className="space-y-4">
-                                      
+                                       
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
                                             <div>
                                                 <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Location</div>
-                                                <div className="font-bold text-slate-900">{job.location}</div>
+                                                <div className="font-bold text-slate-900">{job.location || 'Not Disclosed'}</div>
                                             </div>
                                         </div>
 
@@ -492,7 +492,7 @@ function JobDetailsContent() {
                                                                 ? `From ₹ ${job.salaryMin.toLocaleString()}`
                                                                 : job.salaryMax
                                                                     ? `Up to ₹ ${job.salaryMax.toLocaleString()}`
-                                                                    : 'Not Disclosed'}
+                                                                    : ((job as any).salary || 'Not Disclosed')}
                                                     </div>
                                                     {job.salaryMin && currency && currency.toUpperCase() !== 'INR' && (
                                                       <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100/40 w-fit">
@@ -519,7 +519,7 @@ function JobDetailsContent() {
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
                                             <div>
                                                 <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Experience</div>
-                                                <div className="font-bold text-slate-900">{job.experienceLevel}</div>
+                                                <div className="font-bold text-slate-900">{job.experienceLevel || 'Not Disclosed'}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -624,15 +624,15 @@ function JobDetailsContent() {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 mt-8 border-t pt-8">
                                         <div className="text-sm">
                                             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Job Type</div>
-                                            <div className="font-bold text-slate-800">{job.type}</div>
+                                            <div className="font-bold text-slate-800">{job.type || 'Not Disclosed'}</div>
                                         </div>
                                         <div className="text-sm">
                                             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Role</div>
-                                            <div className="font-bold text-slate-800">{job.job_role}</div>
+                                            <div className="font-bold text-slate-800">{job.job_role || 'Not Disclosed'}</div>
                                         </div>
                                         <div className="text-sm">
                                             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Workplace</div>
-                                            <div className="font-bold text-slate-800">{job.workplaceType}</div>
+                                            <div className="font-bold text-slate-800">{job.workplaceType || 'Not Disclosed'}</div>
                                         </div>
                                     </div>
 

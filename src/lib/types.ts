@@ -295,7 +295,6 @@ export interface Job {
   address?: string;
   contactEmail?: string;
   contactPhone?: string;
-  isConsultancy?: boolean;
   requirements?: string[];
   responsibilities?: string[];
   qualifications?: string[];

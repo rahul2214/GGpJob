@@ -289,7 +289,7 @@ function formatSalary(job: any): string {
       if (max) return `Up to ${max}`;
     }
   }
-  return job.salary || "$120k – $160k";
+  return job.salary || "Not Disclosed";
 }
 
 export function JobsGrid() {
@@ -433,8 +433,8 @@ export function JobsGrid() {
               const jobId = job.uuid || job.id;
               const roleTitle = job.title || job.role || "Software Engineer";
               const company = job.companyName || job.company || "Top Tech Company";
-              const location = job.location || "Remote / Global";
-              const typeName = job.type || job.workplaceType || "Full-time";
+              const location = job.location || "Not Disclosed";
+              const typeName = job.type || job.workplaceType || "Not Disclosed";
               const isRef = Boolean(job.isReferral || job.referral);
               const salaryStr = formatSalary(job);
               const tagsList = Array.isArray(job.benefits) && job.benefits.length > 0

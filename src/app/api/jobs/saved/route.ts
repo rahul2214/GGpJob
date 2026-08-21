@@ -52,7 +52,6 @@ function mapJobToFrontend(job: any): any {
         companyOverview: job.company_overview,
         companyWebsite: job.company_website,
         address: job.address,
-        isConsultancy: job.is_consultancy,
         // Support for labels
         location: job.location_names ? job.location_names.join(', ') : 'N/A',
         locations: job.location_names || [],

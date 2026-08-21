@@ -22,6 +22,7 @@ ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS admin_pk BIGINT REFERENCES publ
 ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS job_link TEXT;
 ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS job_id TEXT;
 ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS vacancies INTEGER DEFAULT 1;
+ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS is_referral BOOLEAN DEFAULT false;
 
 -- 4. Ensure array PK columns exist (From Phase 2 fallback)
 ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS location_pks BIGINT[] DEFAULT '{}';

@@ -65,7 +65,6 @@ function mapJobToFrontend(job: any): any {
         companyOverview: job.company_overview,
         companyWebsite: job.company_website,
         address: job.address,
-        isConsultancy: job.is_consultancy,
         // Support for labels
         location: job.location_names ? job.location_names.join(', ') : 'N/A',
         locations: job.location_names || [],
@@ -89,32 +88,49 @@ function mapJobToFrontend(job: any): any {
 async function resolveJobNames(jobs: any[]): Promise<any[]> {
     if (!jobs || jobs.length === 0) return [];
 
+    const jobPks = jobs.map(j => j.id).filter(Boolean);
     const allLocationPks = Array.from(new Set(jobs.flatMap(j => j.location_pks || [])));
     const allBenefitPks = Array.from(new Set(jobs.flatMap(j => j.benefit_ids || [])));
     const allSkillPks = Array.from(new Set(jobs.flatMap(j => j.skill_pks || [])));
 
     const [
-        { data: locations },
+        { data: cities },
         { data: benefits },
-        { data: skills }
+        { data: skills },
+        { data: jobLocs }
     ] = await Promise.all([
-        allLocationPks.length > 0 ? supabaseAdmin.from('locations').select('id, uuid, name').in('id', allLocationPks) : { data: [] },
+        allLocationPks.length > 0 ? supabaseAdmin.from('cities').select('id, name').in('id', allLocationPks) : { data: [] },
         allBenefitPks.length > 0 ? supabaseAdmin.from('benefits').select('id, uuid, name').in('id', allBenefitPks) : { data: [] },
-        allSkillPks.length > 0 ? supabaseAdmin.from('skills').select('id, uuid, name').in('id', allSkillPks) : { data: [] }
+        allSkillPks.length > 0 ? supabaseAdmin.from('skills').select('id, uuid, name').in('id', allSkillPks) : { data: [] },
+        jobPks.length > 0 ? supabaseAdmin.from('job_locations').select('job_id, countries:country_id(name), states_provinces:state_province_id(name), cities:city_id(name)').in('job_id', jobPks) : { data: [] }
     ]);
 
-    const locationMap = new Map<string, any>(locations?.map((l: any) => [String(l.id), { name: l.name, uuid: l.uuid }]) || []);
+    const cityMap = new Map<string, any>(cities?.map((c: any) => [String(c.id), { name: c.name, uuid: String(c.id) }]) || []);
     const benefitMap = new Map<string, any>(benefits?.map((b: any) => [String(b.id), { name: b.name, uuid: b.uuid }]) || []);
     const skillMap = new Map<string, any>(skills?.map((s: any) => [String(s.id), { name: s.name, uuid: s.uuid }]) || []);
 
+    const jobLocMap = new Map<number, string[]>();
+    (jobLocs || []).forEach((jl: any) => {
+        const parts = [jl.cities?.name, jl.states_provinces?.name, jl.countries?.name].filter(Boolean);
+        if (parts.length > 0) {
+            const locName = parts.join(', ');
+            const existing = jobLocMap.get(jl.job_id) || [];
+            existing.push(locName);
+            jobLocMap.set(jl.job_id, existing);
+        }
+    });
+
     const resolved = jobs.map(job => {
-        const mappedLocations = (job.location_pks || []).map((id: number) => locationMap.get(String(id))).filter(Boolean);
+        const jlNames = jobLocMap.get(job.id);
+        const mappedLocations = (job.location_pks || []).map((id: number) => cityMap.get(String(id))).filter(Boolean);
+        const locationNames = (jlNames && jlNames.length > 0) ? jlNames : mappedLocations.map((l: any) => l.name);
+
         const mappedBenefits = (job.benefit_ids || []).map((id: number) => benefitMap.get(String(id))).filter(Boolean);
         const mappedSkills = (job.skill_pks || []).map((id: number) => skillMap.get(String(id))).filter(Boolean);
         
         return mapJobToFrontend({ 
             ...job, 
-            location_names: mappedLocations.map((l: any) => l.name),
+            location_names: locationNames,
             location_uuids: mappedLocations.map((l: any) => l.uuid),
             benefit_names: mappedBenefits.map((b: any) => b.name),
             benefit_uuids: mappedBenefits.map((b: any) => b.uuid),
@@ -210,8 +226,31 @@ export async function GET(request: NextRequest) {
             refQuery = refQuery.gte('posted_at', cutoff.toISOString());
         }
 
-        const [recSnap, refSnap] = await Promise.all([recQuery, refQuery]);
+        let [recSnap, refSnap] = await Promise.all([recQuery, refQuery]);
         
+        if (recSnap.error && recSnap.error.code === '42703') {
+            console.warn('[API_JOBS_GET] Dashboard query column missing (42703). Retrying fallback query...');
+            let fallbackQuery = supabaseAdmin
+                .from('jobs')
+                .select('*, job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name)')
+                .eq('status', 'active')
+                .gt('expires_at', nowIso)
+                .limit(10)
+                .order('posted_at', { ascending: false });
+
+            if (appliedJobPks.length > 0) {
+                fallbackQuery = fallbackQuery.not('id', 'in', `(${appliedJobPks.join(',')})`);
+            }
+            if (postedDays && postedDays !== 'all') {
+                const cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - parseInt(postedDays));
+                fallbackQuery = fallbackQuery.gte('posted_at', cutoff.toISOString());
+            }
+
+            recSnap = await fallbackQuery;
+            refSnap = { data: [], error: null } as any;
+        }
+
         const [recommended, referral] = await Promise.all([
             resolveJobNames(recSnap.data || []),
             resolveJobNames(refSnap.data || [])
@@ -316,7 +355,73 @@ export async function GET(request: NextRequest) {
         if (jtpks.length > 0) query = query.in('job_type_pk', jtpks);
     }
 
-    const { data: jobs, error } = await query;
+    let { data: jobs, error } = await query;
+
+    if (error && error.code === '42703') {
+        console.warn('[API_JOBS_GET] Database column missing (42703). Retrying query without optional column filters...', error.message);
+        let fallbackQuery = supabaseAdmin
+            .from('jobs')
+            .select(`
+                *,
+                job_types!job_type_pk(uuid, name),
+                workplace_types!workplace_type_pk(uuid, name),
+                company_sizes!company_size_id(uuid, name),
+                applications_count:applications(count)
+            `);
+
+        if (statusFilter) {
+            fallbackQuery = fallbackQuery.eq('status', statusFilter);
+        } else if (!isRecruiterDashboard) {
+            fallbackQuery = fallbackQuery.eq('status', 'active').gt('expires_at', new Date().toISOString());
+        }
+
+        if (appliedJobPks.length > 0) {
+            fallbackQuery = fallbackQuery.not('id', 'in', `(${appliedJobPks.join(',')})`);
+        }
+
+        if (currentJobId) {
+            if (/^\d+$/.test(currentJobId)) {
+                fallbackQuery = fallbackQuery.neq('id', parseInt(currentJobId));
+            } else {
+                fallbackQuery = fallbackQuery.neq('uuid', currentJobId);
+            }
+        }
+
+        if (isValidRecruiterId && recruiterPk !== null) {
+            fallbackQuery = fallbackQuery.eq('recruiter_pk', recruiterPk);
+        }
+
+        if (locationsParams.length > 0) {
+            const lpks = await resolveToPks('locations', locationsParams);
+            if (lpks.length > 0) fallbackQuery = fallbackQuery.overlaps('location_pks', lpks);
+        }
+
+        if (industryParams.length > 0) {
+            fallbackQuery = fallbackQuery.in('industry', industryParams);
+        }
+
+        if (countryParams.length > 0) {
+            fallbackQuery = fallbackQuery.in('country', countryParams);
+        }
+
+        if (remoteTypeParam && remoteTypeParam !== 'all') {
+            fallbackQuery = fallbackQuery.eq('remote_type', remoteTypeParam);
+        }
+
+        if (visaSponsorshipParam === 'true') {
+            fallbackQuery = fallbackQuery.eq('visa_sponsorship', true);
+        }
+
+        if (jobTypesParams.length > 0) {
+            const jtpks = await resolveToPks('job_types', jobTypesParams);
+            if (jtpks.length > 0) fallbackQuery = fallbackQuery.in('job_type_pk', jtpks);
+        }
+
+        const fallbackRes = await fallbackQuery;
+        jobs = fallbackRes.data;
+        error = fallbackRes.error;
+    }
+
     if (error) throw error;
 
     let finalJobs = await resolveJobNames(jobs || []);
@@ -658,15 +763,27 @@ export async function POST(request: Request) {
       company_overview: user.company_overview || data.companyOverview || null,
       company_website: user.company_website || data.companyWebsite || null,
       address: user.company_address || data.address || null,
-      job_link: data.jobLink || null,
-      is_consultancy: !!data.isConsultancy
+      job_link: data.jobLink || null
     };
     
-    const { data: newJob, error: insertError } = await supabaseAdmin
+    let { data: newJob, error: insertError } = await supabaseAdmin
         .from('jobs')
         .insert([jobToCreate])
         .select()
         .single();
+
+    if (insertError && insertError.code === '42703') {
+        console.warn('[API_JOBS_POST] Column missing on insert (42703). Retrying insert without optional columns...');
+        delete (jobToCreate as any).is_referral;
+        delete (jobToCreate as any).employee_pk;
+        const retryRes = await supabaseAdmin
+            .from('jobs')
+            .insert([jobToCreate])
+            .select()
+            .single();
+        newJob = retryRes.data;
+        insertError = retryRes.error;
+    }
 
     if (insertError) {
         console.error('[API_JOBS_POST] Insert Error:', insertError);
@@ -675,6 +792,31 @@ export async function POST(request: Request) {
             details: insertError.message,
             code: insertError.code 
         }, { status: 500 });
+    }
+
+    // Insert into relational join tables: job_skills, job_benefits, job_locations
+    if (newJob?.id) {
+        const sPks = Array.isArray(skillPks) ? skillPks : (skillPks ? [skillPks] : []);
+        const bPks = Array.isArray(benefitPks) ? benefitPks : (benefitPks ? [benefitPks] : []);
+        const lPks = Array.isArray(locationPks) ? locationPks : (locationPks ? [locationPks] : []);
+
+        if (sPks.length > 0) {
+            const skillInserts = sPks.map((spk: number) => ({ job_pk: newJob.id, skill_pk: spk }));
+            await supabaseAdmin.from('job_skills').insert(skillInserts).catch(() => {});
+        }
+        if (bPks.length > 0) {
+            const benefitInserts = bPks.map((bpk: number) => ({ job_pk: newJob.id, benefit_pk: bpk }));
+            await supabaseAdmin.from('job_benefits').insert(benefitInserts).catch(() => {});
+        }
+        if (lPks.length > 0) {
+            const locInserts = lPks.map((lpk: number, idx: number) => ({
+                job_id: newJob.id,
+                country_id: 1,
+                city_id: lpk,
+                is_primary: idx === 0
+            }));
+            await supabaseAdmin.from('job_locations').insert(locInserts).catch(() => {});
+        }
     }
 
     const createdJob = mapJobToFrontend(newJob);

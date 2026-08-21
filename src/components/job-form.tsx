@@ -24,7 +24,6 @@ import { Switch } from "@/components/ui/switch";
 import type { JobType, WorkplaceType, Job, Location, MasterSkill, CompanySize } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
 import { MultiSelectFilter } from "./multi-select-filter";
-import { LocationCascadeSelector } from "@/components/location/LocationCascadeSelector";
 
 // ─── Schema ────────────────────────────────────────────────────────────────
 
@@ -138,8 +137,6 @@ export function JobForm({ job }: JobFormProps) {
     country: z.string().optional(),
     state: z.string().optional(),
     city: z.string().optional(),
-    latitude: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-    longitude: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
     job_role: z.string().min(2, "Role must be at least 2 characters long."),
     industry: z.string().optional(),
     jobFunction: z.string().optional(),
@@ -168,7 +165,6 @@ export function JobForm({ job }: JobFormProps) {
     companyVerification: z.boolean().default(false),
     companyRating: z.coerce.number().min(0).max(5).default(5.0),
     sections: z.array(sectionSchema).optional(),
-    isConsultancy: z.boolean().default(false),
   }).refine(data => data.maxExperience >= data.minExperience, {
       message: "Max experience cannot be less than min experience",
       path: ["maxExperience"]
@@ -232,8 +228,6 @@ export function JobForm({ job }: JobFormProps) {
       country: job?.country || "",
       state: job?.state || "",
       city: job?.city || "",
-      latitude: job?.latitude ?? undefined,
-      longitude: job?.longitude ?? undefined,
       job_role: job?.job_role || "",
       industry: job?.industry || "",
       jobFunction: job?.jobFunction || "",
@@ -262,7 +256,6 @@ export function JobForm({ job }: JobFormProps) {
       companyVerification: job?.companyVerification ?? (job as any)?.company_verification ?? false,
       companyRating: job?.companyRating ?? (job as any)?.company_rating ?? 5.0,
       sections: job?.sections?.map((s: any) => ({ title: s.title, items: (s.items || []).map((v: any) => ({ value: v })) })) ,
-      isConsultancy: job?.isConsultancy ?? (isAdmin ? true : false),
     },
   });
 
@@ -283,8 +276,6 @@ export function JobForm({ job }: JobFormProps) {
         country: job.country || "",
         state: job.state || "",
         city: job.city || "",
-        latitude: job.latitude ?? undefined,
-        longitude: job.longitude ?? undefined,
         job_role: job.job_role || "",
         industry: job.industry || "",
         jobFunction: job.jobFunction || "",
@@ -313,7 +304,6 @@ export function JobForm({ job }: JobFormProps) {
         companyVerification: job.companyVerification ?? (job as any)?.company_verification ?? false,
         companyRating: job.companyRating ?? (job as any)?.company_rating ?? 5.0,
         sections: builtSections,
-        isConsultancy: job.isConsultancy ?? (isAdmin ? true : false),
       });
     }
   }, [job, form, user]);
@@ -349,8 +339,6 @@ export function JobForm({ job }: JobFormProps) {
         country: data.country,
         state: data.state,
         city: data.city,
-        latitude: data.latitude,
-        longitude: data.longitude,
         remoteType: data.remoteType,
         salaryCurrency: data.salaryCurrency,
         industry: data.industry,
@@ -372,7 +360,6 @@ export function JobForm({ job }: JobFormProps) {
         companySizeId: data.companySizeId === '' ? null : data.companySizeId,
         companyLinkedinUrl: data.companyLinkedinUrl,
         address: data.address,
-        isConsultancy: data.isConsultancy,
       };
 
       const response = await fetch(url, {
@@ -445,34 +432,10 @@ export function JobForm({ job }: JobFormProps) {
           )}
         />
 
-        {!isAdmin && (
-          <FormField
-            control={form.control}
-            name="isConsultancy"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-muted/50">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base">Post as Consultancy Recruiter</FormLabel>
-                  <div className="text-sm text-muted-foreground">
-                    Enable this to provide custom company details for this specific job post.
-                  </div>
-                </div>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        )}
-
-        {form.watch("isConsultancy") && (
           <div className="space-y-4 border rounded-xl p-6 bg-slate-50/30">
             <h3 className="font-semibold text-lg flex items-center gap-2">
               <Briefcase className="h-5 w-5 text-primary" />
-              Custom Company Details
+              Company Details
             </h3>
             
             <FormField
@@ -581,7 +544,6 @@ export function JobForm({ job }: JobFormProps) {
               )}
             />
           </div>
-        )}
          <FormField
             control={form.control}
             name="locationIds"
@@ -600,158 +562,55 @@ export function JobForm({ job }: JobFormProps) {
               </FormItem>
             )}
           />
-        <div className="pt-4 border-t border-slate-200 mt-6 space-y-4">
-          <h3 className="font-semibold text-lg text-slate-800 dark:text-slate-200">International Job Targeting & Visa Settings</h3>
-          
-          <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800">
-            <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-3">Job Location Hierarchy (Country &rarr; State &rarr; City)</h4>
-            <LocationCascadeSelector
-              initialCountry={form.watch("country") || ""}
-              initialState={form.watch("state") || ""}
-              initialCity={form.watch("city") || ""}
-              onChange={(val) => {
-                form.setValue("country", val.countryName || "");
-                form.setValue("state", val.stateName || "");
-                form.setValue("city", val.cityName || "");
-              }}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <FormField
-              control={form.control}
-              name="latitude"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Latitude (Map Coordinate)</FormLabel>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          <FormField
+            control={form.control}
+            name="remoteType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Remote Workplace Type</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value || "onsite"}>
                   <FormControl>
-                    <Input type="number" step="any" placeholder="e.g. 37.7749" {...field} />
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select remote mode" />
+                    </SelectTrigger>
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="longitude"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Longitude (Map Coordinate)</FormLabel>
+                  <SelectContent>
+                    <SelectItem value="onsite">On-site</SelectItem>
+                    <SelectItem value="hybrid">Hybrid</SelectItem>
+                    <SelectItem value="remote">Remote</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="salaryCurrency"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Salary Currency</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value || "INR"}>
                   <FormControl>
-                    <Input type="number" step="any" placeholder="e.g. -122.4194" {...field} />
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="remoteType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Remote Workplace Type</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || "onsite"}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select remote mode" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="onsite">On-site</SelectItem>
-                      <SelectItem value="hybrid">Hybrid</SelectItem>
-                      <SelectItem value="remote">Remote</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="salaryCurrency"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Salary Currency</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || "INR"}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select currency" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="INR">INR (₹)</SelectItem>
-                      <SelectItem value="USD">USD ($)</SelectItem>
-                      <SelectItem value="EUR">EUR (€)</SelectItem>
-                      <SelectItem value="GBP">GBP (£)</SelectItem>
-                      <SelectItem value="CAD">CAD ($)</SelectItem>
-                      <SelectItem value="AUD">AUD ($)</SelectItem>
-                      <SelectItem value="SGD">SGD ($)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="workAuthorizationRequirement"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Work Authorization Requirement (Press Enter or comma)</FormLabel>
-                  <FormControl>
-                    <TagInput
-                      value={field.value || []}
-                      onChange={field.onChange}
-                      placeholder="e.g. United States, India"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="languages"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Required Spoken Languages (Press Enter or comma)</FormLabel>
-                  <FormControl>
-                    <TagInput
-                      value={field.value || []}
-                      onChange={field.onChange}
-                      placeholder="e.g. English, Spanish, German"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200/80 dark:border-slate-800">
-            <FormField
-              control={form.control}
-              name="visaSponsorship"
-              render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg p-2">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-sm font-semibold text-slate-800 dark:text-slate-200">Visa Sponsorship Available</FormLabel>
-                    <p className="text-xs text-slate-500">Provide work visa / permit sponsorship for foreign candidates</p>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            
-          </div>
+                  <SelectContent>
+                    <SelectItem value="INR">INR (₹)</SelectItem>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                    <SelectItem value="GBP">GBP (£)</SelectItem>
+                    <SelectItem value="CAD">CAD ($)</SelectItem>
+                    <SelectItem value="AUD">AUD ($)</SelectItem>
+                    <SelectItem value="SGD">SGD ($)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         <FormField

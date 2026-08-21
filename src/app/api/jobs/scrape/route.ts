@@ -161,7 +161,6 @@ export async function POST(request: NextRequest) {
         status: 'active',
         vacancies: 2,
         job_link: item.jobLink,
-        is_consultancy: false,
       });
 
       existingSet.add(key);
