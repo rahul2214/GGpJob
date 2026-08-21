@@ -301,9 +301,10 @@ export interface Job {
   sections?: { title: string; items?: string[]; content?: string }[];
   benefits?: string[];
   benefitIds?: string[];
+  locations?: string[];
+  skills?: string[];
   skillIds?: string[];
   skillPks?: number[];
-  locations?: string[];
   experienceLevel?: string;
   applicantCount?: number;
   applicationsCount?: number;

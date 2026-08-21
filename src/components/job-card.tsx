@@ -172,7 +172,9 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
                   <div className="w-5 h-5 rounded-lg bg-slate-50 dark:bg-slate-950/30 flex items-center justify-center border border-slate-100/50 dark:border-slate-800/30 shrink-0">
                     <MapPin className="h-3 w-3 text-indigo-500" />
                   </div>
-                  <span className="truncate font-medium">{job.location || 'Not Disclosed'}</span>
+                  <span className="truncate font-medium" title={(job.locations && job.locations.length > 0) ? job.locations.join(', ') : (job.location || 'Not Disclosed')}>
+                    {(job.locations && job.locations.length > 0) ? job.locations.join(', ') : (job.location || 'Not Disclosed')}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="w-5 h-5 rounded-lg bg-slate-50 dark:bg-slate-950/30 flex items-center justify-center border border-slate-100/50 dark:border-slate-800/30 shrink-0">
@@ -193,11 +195,6 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
                       : ((job as any).salary || 'Not Disclosed')}
                   </span>
                 </div>
-                {(job.visaSponsorship || (job as any).visa_sponsorship) && (
-                  <Badge className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-800/60 text-[9px] font-bold">
-                    <ShieldCheck className="w-2.5 h-2.5 mr-1" /> Visa Sponsorship
-                  </Badge>
-                )}
                 {job.companyVerification && (
                   <Badge className="bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200/60 dark:border-blue-800/60 text-[9px] font-bold">
                     <CheckCircle className="w-2.5 h-2.5 mr-1" /> Verified Company
@@ -205,17 +202,33 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
                 )}
               </div>
 
-              {job.requiredSkills && job.requiredSkills.length > 0 && (
-                <div className="flex items-center gap-1.5 pt-1 text-xs text-slate-500 dark:text-slate-400 font-medium truncate w-full">
+              {((job.requiredSkills && job.requiredSkills.length > 0) || (job.skills && job.skills.length > 0) || (job.requirements && job.requirements.length > 0)) && (
+                <div className="flex items-center gap-1.5 pt-1 text-xs text-slate-500 dark:text-slate-400 font-medium truncate w-full flex-wrap">
                   <span className="font-bold text-slate-700 dark:text-slate-350 shrink-0">Skills:</span>
-                  <span className="truncate">{job.requiredSkills.join(", ")}</span>
+                  {(job.requiredSkills || job.skills || job.requirements || []).slice(0, 4).map((skill: string, idx: number) => (
+                    <Badge key={idx} variant="secondary" className="text-[10px] font-semibold py-0 px-2 bg-indigo-50/70 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-100/80 dark:border-indigo-900/40">
+                      {skill}
+                    </Badge>
+                  ))}
                 </div>
               )}
+
+              {job.benefits && job.benefits.length > 0 && (
+                <div className="flex items-center gap-1.5 pt-0.5 text-xs text-slate-500 dark:text-slate-400 font-medium truncate w-full flex-wrap">
+                  <span className="font-bold text-emerald-700 dark:text-emerald-400 shrink-0">Benefits:</span>
+                  {job.benefits.slice(0, 3).map((benefit: string, idx: number) => (
+                    <Badge key={idx} variant="outline" className="text-[10px] font-semibold py-0 px-2 bg-emerald-50/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-800/40">
+                      ✓ {benefit}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
               {/* AI Skill Match Badge for Job Seekers */}
-              {user?.role === 'Job Seeker' && (job.requiredSkills || job.requirements) && (
-                <div className="shrink-0">
+              {user?.role === 'Job Seeker' && (job.requiredSkills || job.requirements || job.skills) && (
+                <div className="shrink-0 pt-0.5">
                   <SkillMatchBadge
-                    jobSkills={job.requiredSkills || job.requirements || []}
+                    jobSkills={job.requiredSkills || job.skills || job.requirements || []}
                     userSkills={user?.skills || []}
                     size="sm"
                   />

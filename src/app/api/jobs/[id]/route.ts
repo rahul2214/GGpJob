@@ -35,7 +35,20 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
     // Resolve skill data (names and UUIDs)
     let skillNames: string[] = [];
     let skillUuids: string[] = [];
-    if (job.skill_pks && job.skill_pks.length > 0) {
+
+    const { data: jobSks } = await supabaseAdmin
+        .from('job_skills')
+        .select('skills:skill_pk(id, uuid, name)')
+        .eq('job_pk', job.id);
+
+    if (jobSks && jobSks.length > 0) {
+        jobSks.forEach((js: any) => {
+            if (js.skills?.name) {
+                skillNames.push(js.skills.name);
+                if (js.skills?.uuid) skillUuids.push(js.skills.uuid);
+            }
+        });
+    } else if (job.skill_pks && job.skill_pks.length > 0) {
         const { data: skills } = await supabaseAdmin
             .from('skills')
             .select('uuid, name')
@@ -49,7 +62,20 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
     // Resolve benefit data (names and UUIDs)
     let benefitNames: string[] = [];
     let benefitUuids: string[] = [];
-    if (job.benefit_ids && job.benefit_ids.length > 0) {
+
+    const { data: jobBens } = await supabaseAdmin
+        .from('job_benefits')
+        .select('benefits:benefit_pk(id, uuid, name)')
+        .eq('job_pk', job.id);
+
+    if (jobBens && jobBens.length > 0) {
+        jobBens.forEach((jb: any) => {
+            if (jb.benefits?.name) {
+                benefitNames.push(jb.benefits.name);
+                if (jb.benefits?.uuid) benefitUuids.push(jb.benefits.uuid);
+            }
+        });
+    } else if (job.benefit_ids && job.benefit_ids.length > 0) {
         const { data: benefits } = await supabaseAdmin
             .from('benefits')
             .select('uuid, name')

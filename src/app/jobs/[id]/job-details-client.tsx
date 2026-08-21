@@ -471,7 +471,7 @@ function JobDetailsContent() {
                                         <div className="flex items-center gap-3 text-sm sm:text-base">
                                             <div>
                                                 <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Location</div>
-                                                <div className="font-bold text-slate-900">{job.location || 'Not Disclosed'}</div>
+                                                <div className="font-bold text-slate-900">{(job.locations && job.locations.length > 0) ? job.locations.join(' • ') : (job.location || 'Not Disclosed')}</div>
                                             </div>
                                         </div>
 
@@ -602,14 +602,36 @@ function JobDetailsContent() {
                                     )}
 
                                     {/* Required Skills Section */}
-                                    {(job.requiredSkills || job.requirements) && ((job.requiredSkills?.length || 0) > 0 || (job.requirements?.length || 0) > 0) && (
-                                        <div>
-                                            <h3 className="text-lg font-bold text-slate-900">
+                                    {((job.requiredSkills && job.requiredSkills.length > 0) || (job.skills && job.skills.length > 0) || (job.requirements && job.requirements.length > 0)) && (
+                                        <div className="mt-6 border-t pt-6">
+                                            <h3 className="text-lg font-bold text-slate-900 mb-3">
                                                 Required Skills
                                             </h3>
-                                            <p className="text-sm text-gray-600 leading-relaxed font-medium">
-                                                {(job.requiredSkills || job.requirements || []).join(', ')}
-                                            </p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {(job.requiredSkills || job.skills || job.requirements || []).map((skill: string, idx: number) => (
+                                                    <Badge key={idx} variant="secondary" className="text-xs font-bold px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200/60 dark:bg-indigo-950/40 dark:text-indigo-300">
+                                                        {skill}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Benefits & Perks Summary */}
+                                    {job.benefits && job.benefits.length > 0 && (
+                                        <div className="mt-6 border-t pt-6">
+                                            <h3 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                                <Award className="h-5 w-5 text-indigo-600" />
+                                                Benefits & Perks
+                                            </h3>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {job.benefits.map((benefit: string, idx: number) => (
+                                                    <div key={idx} className="flex items-center gap-2.5 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200/70 dark:border-slate-800 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                                                        <span>{benefit}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
 
