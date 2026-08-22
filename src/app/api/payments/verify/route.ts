@@ -127,8 +127,7 @@ export async function POST(request: Request) {
       const planExp = new Date();
       planExp.setDate(now.getDate() + validityDays);
       updateData.plan_expires_at = planExp.toISOString();
-      updateData.subscription_status = 'active';
-      updateData.grace_period_end = null;
+      updateData.is_paid = true;
     }
 
     // Server-side Plan Price validation in USD (Base Price)
@@ -175,23 +174,20 @@ export async function POST(request: Request) {
       { data: recruiter },
       { data: employee }
     ] = await Promise.all([
-      supabaseAdmin.from('jobseekers').select('id, country').eq(isUUID ? 'uuid' : 'id', isUUID ? userId : parseInt(userId, 10)).maybeSingle(),
-      supabaseAdmin.from('recruiters').select('id, country').eq(isUUID ? 'uuid' : 'id', isUUID ? userId : parseInt(userId, 10)).maybeSingle(),
-      supabaseAdmin.from('employees').select('id, country').eq(isUUID ? 'uuid' : 'id', isUUID ? userId : parseInt(userId, 10)).maybeSingle()
+      supabaseAdmin.from('jobseekers').select('id, uuid').eq(isUUID ? 'uuid' : 'id', isUUID ? userId : parseInt(userId, 10)).maybeSingle(),
+      supabaseAdmin.from('recruiters').select('id, uuid').eq(isUUID ? 'uuid' : 'id', isUUID ? userId : parseInt(userId, 10)).maybeSingle(),
+      supabaseAdmin.from('employees').select('id, uuid').eq(isUUID ? 'uuid' : 'id', isUUID ? userId : parseInt(userId, 10)).maybeSingle()
     ]);
 
     if (jobseeker) {
       profileId = jobseeker.id;
       targetTable = 'jobseekers';
-      userCountry = jobseeker.country || 'US';
     } else if (recruiter) {
       profileId = recruiter.id;
       targetTable = 'recruiters';
-      userCountry = recruiter.country || 'US';
     } else if (employee) {
       profileId = employee.id;
       targetTable = 'employees';
-      userCountry = employee.country || 'US';
     }
 
     if (!profileId) {
@@ -249,10 +245,32 @@ export async function POST(request: Request) {
         }
       }
     } else {
-      const { error } = await supabaseAdmin
+      let { error } = await supabaseAdmin
         .from(targetTable)
         .update(updateData)
         .eq('id', profileId);
+
+      if (error && (error.code === 'PGRST204' || error.code === '42703')) {
+        console.warn(`[PAYMENT_VERIFY] Column missing on ${targetTable} update (${error.message}). Retrying with core plan fields...`);
+        const coreData: any = {
+          updated_at: now.toISOString(),
+          is_paid: true,
+          plan_type: planId,
+          plan_expires_at: updateData.plan_expires_at,
+          job_post_limit: updateData.job_post_limit,
+          job_post_validity: updateData.job_post_validity,
+          app_access_days: updateData.app_access_days,
+          max_applies_limit: updateData.max_applies_limit,
+          is_verified: updateData.is_verified,
+        };
+        Object.keys(coreData).forEach(k => coreData[k] === undefined && delete coreData[k]);
+        
+        const retryRes = await supabaseAdmin
+          .from(targetTable)
+          .update(coreData)
+          .eq('id', profileId);
+        error = retryRes.error;
+      }
       profileError = error;
     }
 

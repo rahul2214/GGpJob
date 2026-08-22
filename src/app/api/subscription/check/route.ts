@@ -13,9 +13,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'recruiterId is required' }, { status: 400 });
     }
 
-    const { data: recruiter, error } = await supabaseAdmin
+    let { data: recruiter, error } = await supabaseAdmin
       .from('recruiters')
-      .select('plan_type, plan_expires_at, subscription_status, grace_period_end')
+      .select('plan_type, plan_expires_at')
       .eq('uuid', recruiterId)
       .maybeSingle();
 
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       // Fallback: try by id
       const { data: r2 } = await supabaseAdmin
         .from('recruiters')
-        .select('plan_type, plan_expires_at, subscription_status, grace_period_end')
+        .select('plan_type, plan_expires_at')
         .eq('id', recruiterId)
         .maybeSingle();
       

@@ -562,29 +562,7 @@ export function JobForm({ job }: JobFormProps) {
               </FormItem>
             )}
           />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-          <FormField
-            control={form.control}
-            name="remoteType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Remote Workplace Type</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || "onsite"}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select remote mode" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="onsite">On-site</SelectItem>
-                    <SelectItem value="hybrid">Hybrid</SelectItem>
-                    <SelectItem value="remote">Remote</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 items-center">
           <FormField
             control={form.control}
             name="salaryCurrency"
@@ -608,6 +586,25 @@ export function JobForm({ job }: JobFormProps) {
                   </SelectContent>
                 </Select>
                 <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="visaSponsorship"
+            render={({ field }) => (
+              <FormItem className="flex items-center justify-between rounded-xl p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 mt-2">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-sm font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">Visa Sponsorship</FormLabel>
+                  <p className="text-xs text-slate-500">Enable if work visa sponsorship is offered</p>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
               </FormItem>
             )}
           />

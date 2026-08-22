@@ -738,9 +738,6 @@ export async function POST(request: Request) {
       company_logo: data.companyLogo || user.company_logo || null,
       job_type_pk: jobTypePk,
       workplace_type_pk: workplaceTypePk,
-      location_pks: locationPks,
-      salary_min: data.salaryMin ?? null,
-      salary_max: data.salaryMax ?? null,
       job_role: data.job_role || data.role || data.title,
       experience_min: typeof data.minExperience === 'number' ? data.minExperience : 0,
       experience_max: typeof data.maxExperience === 'number' ? data.maxExperience : 0,
@@ -751,12 +748,10 @@ export async function POST(request: Request) {
       posted_at: now.toISOString(),
       expires_at: jobExpiry.toISOString(),
       app_expires_at: appExpiry.toISOString(),
-      max_applies: isEmpOrReferral ? 100 : (user.max_applies_limit ?? -1),
+      max_applies: isEmpOrReferral ? 100 : ((user.max_applies_limit && user.max_applies_limit > 0) ? user.max_applies_limit : 999999),
       plan_type_at_posting: planType,
       vacancies: data.vacancies || 1,
       sections: data.sections || [],
-      skill_pks: skillPks,
-      benefit_ids: benefitPks,
       status: 'active',
       company_size_id: companySizePk,
       company_linkedin_url: user.company_linkedin_url || data.companyLinkedinUrl || null,
@@ -772,10 +767,14 @@ export async function POST(request: Request) {
         .select()
         .single();
 
-    if (insertError && insertError.code === '42703') {
-        console.warn('[API_JOBS_POST] Column missing on insert (42703). Retrying insert without optional columns...');
+    if (insertError && (insertError.code === '42703' || insertError.code === 'PGRST204')) {
+        console.warn('[API_JOBS_POST] Column missing on insert. Retrying insert without optional columns...', insertError.message);
+        delete (jobToCreate as any).location_pks;
+        delete (jobToCreate as any).skill_pks;
+        delete (jobToCreate as any).benefit_ids;
         delete (jobToCreate as any).is_referral;
         delete (jobToCreate as any).employee_pk;
+        delete (jobToCreate as any).admin_pk;
         const retryRes = await supabaseAdmin
             .from('jobs')
             .insert([jobToCreate])
@@ -802,11 +801,11 @@ export async function POST(request: Request) {
 
         if (sPks.length > 0) {
             const skillInserts = sPks.map((spk: number) => ({ job_pk: newJob.id, skill_pk: spk }));
-            await supabaseAdmin.from('job_skills').insert(skillInserts).catch(() => {});
+            try { await supabaseAdmin.from('job_skills').insert(skillInserts); } catch (e) {}
         }
         if (bPks.length > 0) {
             const benefitInserts = bPks.map((bpk: number) => ({ job_pk: newJob.id, benefit_pk: bpk }));
-            await supabaseAdmin.from('job_benefits').insert(benefitInserts).catch(() => {});
+            try { await supabaseAdmin.from('job_benefits').insert(benefitInserts); } catch (e) {}
         }
         if (lPks.length > 0) {
             const locInserts = lPks.map((lpk: number, idx: number) => ({
@@ -815,7 +814,7 @@ export async function POST(request: Request) {
                 city_id: lpk,
                 is_primary: idx === 0
             }));
-            await supabaseAdmin.from('job_locations').insert(locInserts).catch(() => {});
+            try { await supabaseAdmin.from('job_locations').insert(locInserts); } catch (e) {}
         }
     }
 
