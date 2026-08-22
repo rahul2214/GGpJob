@@ -34,7 +34,8 @@ export async function GET(request: Request) {
                     jobseeker_achievements:jobseeker_achievements!jobseeker_id(*),
                     jobseeker_certifications:jobseeker_certifications!jobseeker_id(*),
                     jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name)),
-                    visa_requirements:visa_requirement_id(id, name)
+                    visa_requirements:visa_requirement_id(id, name),
+                    currencies:preferred_currency_id(id, code, symbol, name)
                 `).eq('uuid', uid).maybeSingle();
             })(),
             // Recruiters
@@ -140,7 +141,8 @@ export async function GET(request: Request) {
                 status: jobseeker.status || (jobseeker.is_deleted ? 'deleted' : 'active'),
                 deleteRequestedAt: jobseeker.delete_requested_at,
                 deletedAt: jobseeker.deleted_at,
-                preferredCurrency: jobseeker.preferred_currency || 'INR',
+                preferredCurrency: jobseeker.currencies?.code || jobseeker.preferred_currency || 'INR',
+                preferredCurrencyId: jobseeker.currencies?.id || jobseeker.preferred_currency_id || null,
                 metadata: jobseeker.metadata,
                 achievements: (jobseeker.jobseeker_achievements && jobseeker.jobseeker_achievements.length > 0)
                     ? jobseeker.jobseeker_achievements.map((a: any) => ({

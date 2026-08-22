@@ -17,8 +17,8 @@ function mapJobToFrontend(job: any): any {
         workplaceTypePk: job.workplace_type_pk,
         locationIds: job.location_uuids || [], // Resolved UUIDs
         locationPks: job.location_pks || [],
-        salaryMin: job.salary_min,
-        salaryMax: job.salary_max,
+        salaryMin: job.salary_min ?? job.salary_min_usd_cents ?? null,
+        salaryMax: job.salary_max ?? job.salary_max_usd_cents ?? null,
         job_role: job.job_role,
         minExperience: job.experience_min,
         maxExperience: job.experience_max,
@@ -36,6 +36,7 @@ function mapJobToFrontend(job: any): any {
         jobLink: job.job_link,
         sections: job.sections || [],
         skillIds: job.skill_uuids || [],     // Resolved UUIDs
+        skills: job.skill_names || [],       // Resolved Skill Names
         benefitIds: job.benefit_uuids || [], // Resolved UUIDs
         benefits: job.benefit_names || [],
         country: job.country || null,
@@ -74,33 +75,72 @@ function mapJobToFrontend(job: any): any {
 async function resolveJobNames(jobs: any[]): Promise<any[]> {
     if (!jobs || jobs.length === 0) return [];
 
+    const jobPks = jobs.map(j => j.id).filter(Boolean);
     const allLocationPks = Array.from(new Set(jobs.flatMap(j => j.location_pks || [])));
     const allBenefitPks = Array.from(new Set(jobs.flatMap(j => j.benefit_ids || [])));
     const allSkillPks = Array.from(new Set(jobs.flatMap(j => j.skill_pks || [])));
 
     const [
-        { data: locations },
         { data: benefits },
-        { data: skills }
+        { data: skills },
+        { data: jobLocs },
+        { data: jobSkills },
+        { data: jobBenefits }
     ] = await Promise.all([
-        allLocationPks.length > 0 ? supabaseAdmin.from('locations').select('id, uuid, name').in('id', allLocationPks) : { data: [] },
         allBenefitPks.length > 0 ? supabaseAdmin.from('benefits').select('id, uuid, name').in('id', allBenefitPks) : { data: [] },
-        allSkillPks.length > 0 ? supabaseAdmin.from('skills').select('id, uuid, name').in('id', allSkillPks) : { data: [] }
+        allSkillPks.length > 0 ? supabaseAdmin.from('skills').select('id, uuid, name').in('id', allSkillPks) : { data: [] },
+        jobPks.length > 0 ? supabaseAdmin.from('job_locations').select('job_id, countries:country_id(name), states_provinces:state_province_id(name), cities:city_id(name)').in('job_id', jobPks) : { data: [] },
+        jobPks.length > 0 ? supabaseAdmin.from('job_skills').select('job_pk, skills:skill_pk(id, uuid, name)').in('job_pk', jobPks) : { data: [] },
+        jobPks.length > 0 ? supabaseAdmin.from('job_benefits').select('job_pk, benefits:benefit_pk(id, uuid, name)').in('job_pk', jobPks) : { data: [] }
     ]);
 
-    const locationMap = new Map<string, any>(locations?.map((l: any) => [String(l.id), { name: l.name, uuid: l.uuid }]) || []);
     const benefitMap = new Map<string, any>(benefits?.map((b: any) => [String(b.id), { name: b.name, uuid: b.uuid }]) || []);
     const skillMap = new Map<string, any>(skills?.map((s: any) => [String(s.id), { name: s.name, uuid: s.uuid }]) || []);
 
+    const relSkillMap = new Map<number, any[]>();
+    (jobSkills || []).forEach((js: any) => {
+        if (js.skills) {
+            const existing = relSkillMap.get(js.job_pk) || [];
+            existing.push(js.skills);
+            relSkillMap.set(js.job_pk, existing);
+        }
+    });
+
+    const relBenefitMap = new Map<number, any[]>();
+    (jobBenefits || []).forEach((jb: any) => {
+        if (jb.benefits) {
+            const existing = relBenefitMap.get(jb.job_pk) || [];
+            existing.push(jb.benefits);
+            relBenefitMap.set(jb.job_pk, existing);
+        }
+    });
+
+    const jobLocMap = new Map<number, string[]>();
+    (jobLocs || []).forEach((jl: any) => {
+        const parts = [jl.cities?.name, jl.states_provinces?.name, jl.countries?.name].filter(Boolean);
+        if (parts.length > 0) {
+            const locName = parts.join(', ');
+            const existing = jobLocMap.get(jl.job_id) || [];
+            existing.push(locName);
+            jobLocMap.set(jl.job_id, existing);
+        }
+    });
+
     return jobs.map(job => {
-        const mappedLocations = (job.location_pks || []).map((id: number) => locationMap.get(String(id))).filter(Boolean);
-        const mappedBenefits = (job.benefit_ids || []).map((id: number) => benefitMap.get(String(id))).filter(Boolean);
-        const mappedSkills = (job.skill_pks || []).map((id: number) => skillMap.get(String(id))).filter(Boolean);
+        const jlNames = jobLocMap.get(job.id) || [];
+        const relBens = relBenefitMap.get(job.id) || [];
+        const mappedBenefits = relBens.length > 0 
+            ? relBens 
+            : (job.benefit_ids || []).map((id: number) => benefitMap.get(String(id))).filter(Boolean);
+
+        const relSks = relSkillMap.get(job.id) || [];
+        const mappedSkills = relSks.length > 0 
+            ? relSks 
+            : (job.skill_pks || []).map((id: number) => skillMap.get(String(id))).filter(Boolean);
         
         return mapJobToFrontend({ 
             ...job, 
-            location_uuids: mappedLocations.map((l: any) => l.uuid),
-            location_names: mappedLocations.map((l: any) => l.name),
+            location_names: jlNames,
             benefit_uuids: mappedBenefits.map((b: any) => b.uuid),
             benefit_names: mappedBenefits.map((b: any) => b.name),
             skill_uuids: mappedSkills.map((s: any) => s.uuid),

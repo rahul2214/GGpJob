@@ -24,6 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import type { JobType, WorkplaceType, Job, Location, MasterSkill, CompanySize } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
 import { MultiSelectFilter } from "./multi-select-filter";
+import { SUPPORTED_CURRENCIES } from "@/utils/currency";
 
 // ─── Schema ────────────────────────────────────────────────────────────────
 
@@ -575,14 +576,12 @@ export function JobForm({ job }: JobFormProps) {
                       <SelectValue placeholder="Select currency" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
-                    <SelectItem value="INR">INR (₹)</SelectItem>
-                    <SelectItem value="USD">USD ($)</SelectItem>
-                    <SelectItem value="EUR">EUR (€)</SelectItem>
-                    <SelectItem value="GBP">GBP (£)</SelectItem>
-                    <SelectItem value="CAD">CAD ($)</SelectItem>
-                    <SelectItem value="AUD">AUD ($)</SelectItem>
-                    <SelectItem value="SGD">SGD ($)</SelectItem>
+                  <SelectContent className="max-h-60 overflow-y-auto">
+                    {SUPPORTED_CURRENCIES.map((item) => (
+                      <SelectItem key={item.code} value={item.code}>
+                        {item.flag} {item.code} ({item.symbol})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -630,7 +629,7 @@ export function JobForm({ job }: JobFormProps) {
           name="skillIds"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Required Skills (Optional)</FormLabel>
+              <FormLabel>Skills</FormLabel>
               <FormControl>
                 <MultiSelectFilter
                   title="Skills"

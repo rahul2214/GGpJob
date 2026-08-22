@@ -181,7 +181,8 @@ async function mapProfileToUser(profile: any): Promise<User> {
         preferredJobTitles: profile.preferred_job_titles || profile.metadata?.preferredJobTitles || [],
         preferredSalaryMin: profile.preferred_salary_min ?? profile.metadata?.preferredSalaryMin,
         preferredSalaryMax: profile.preferred_salary_max ?? profile.metadata?.preferredSalaryMax,
-        preferredCurrency: profile.preferred_currency || profile.metadata?.preferredCurrency || 'INR',
+        preferredCurrency: profile.currencies?.code || profile.preferred_currency || profile.metadata?.preferredCurrency || 'INR',
+        preferredCurrencyId: profile.currencies?.id || profile.preferred_currency_id || null,
         remotePreference: profile.remote_preference || profile.metadata?.remotePreference || 'any',
         employmentTypes: profile.employment_types || profile.metadata?.employmentTypes || [],
         preferredIndustries: profile.preferred_industries || profile.metadata?.preferredIndustries || [],
@@ -325,7 +326,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
                 jobseeker_achievements:jobseeker_achievements!jobseeker_id(*),
                 jobseeker_certifications:jobseeker_certifications!jobseeker_id(*),
                 jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name)),
-                visa_requirements:visa_requirement_id(id, name)
+                visa_requirements:visa_requirement_id(id, name),
+                currencies:preferred_currency_id(id, code, symbol, name)
             `)
             .eq(column, idValue)
             .maybeSingle();
@@ -418,8 +420,22 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             updated_at: new Date().toISOString()
         };
 
-        if (rest.preferredCurrency !== undefined) {
-            updateData.preferred_currency = rest.preferredCurrency;
+        if (rest.preferredCurrency !== undefined || rest.preferredCurrencyId !== undefined) {
+            let currId = rest.preferredCurrencyId ? Number(rest.preferredCurrencyId) : null;
+            if (!currId && rest.preferredCurrency) {
+                const codeToFind = String(rest.preferredCurrency).toUpperCase();
+                const { data: currObj } = await supabaseAdmin
+                    .from('currencies')
+                    .select('id')
+                    .eq('code', codeToFind)
+                    .maybeSingle();
+                if (currObj) currId = currObj.id;
+            }
+            if (currId) {
+                updateData.preferred_currency_id = currId;
+            }
+            delete updateData.preferred_currency;
+            delete updateData.preferredCurrency;
         }
 
         if (table === 'recruiters' || table === 'employees') {

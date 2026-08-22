@@ -190,9 +190,21 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
                     <BadgeDollarSign className="h-3 w-3 text-indigo-500" />
                   </div>
                   <span className="font-bold text-slate-800 dark:text-slate-200">
-                    {job.salaryMin || job.salaryMax
-                      ? `${job.salaryCurrency || job.currency || '₹'} ${job.salaryMin ? job.salaryMin.toLocaleString() : '0'} - ${job.salaryMax ? job.salaryMax.toLocaleString() : 'Negotiable'}`
-                      : ((job as any).salary || 'Not Disclosed')}
+                    {(() => {
+                      if (!job.salaryMin && !job.salaryMax) return (job as any).salary || 'Not Disclosed';
+                      const code = (job.salaryCurrency || 'USD').toUpperCase();
+                      const fmt = (val: number) => {
+                        try {
+                          return new Intl.NumberFormat('en-US', { style: 'currency', currency: code, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val);
+                        } catch {
+                          return `${code} ${val.toLocaleString()}`;
+                        }
+                      };
+                      if (job.salaryMin && job.salaryMax) return `${fmt(job.salaryMin)} - ${fmt(job.salaryMax)}`;
+                      if (job.salaryMin) return `From ${fmt(job.salaryMin)}`;
+                      if (job.salaryMax) return `Up to ${fmt(job.salaryMax)}`;
+                      return 'Not Disclosed';
+                    })()}
                   </span>
                 </div>
                 {job.companyVerification && (
@@ -203,24 +215,11 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
               </div>
 
               {((job.requiredSkills && job.requiredSkills.length > 0) || (job.skills && job.skills.length > 0) || (job.requirements && job.requirements.length > 0)) && (
-                <div className="flex items-center gap-1.5 pt-1 text-xs text-slate-500 dark:text-slate-400 font-medium truncate w-full flex-wrap">
-                  <span className="font-bold text-slate-700 dark:text-slate-350 shrink-0">Skills:</span>
-                  {(job.requiredSkills || job.skills || job.requirements || []).slice(0, 4).map((skill: string, idx: number) => (
-                    <Badge key={idx} variant="secondary" className="text-[10px] font-semibold py-0 px-2 bg-indigo-50/70 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-100/80 dark:border-indigo-900/40">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              {job.benefits && job.benefits.length > 0 && (
-                <div className="flex items-center gap-1.5 pt-0.5 text-xs text-slate-500 dark:text-slate-400 font-medium truncate w-full flex-wrap">
-                  <span className="font-bold text-emerald-700 dark:text-emerald-400 shrink-0">Benefits:</span>
-                  {job.benefits.slice(0, 3).map((benefit: string, idx: number) => (
-                    <Badge key={idx} variant="outline" className="text-[10px] font-semibold py-0 px-2 bg-emerald-50/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-800/40">
-                      ✓ {benefit}
-                    </Badge>
-                  ))}
+                <div className="flex items-center gap-1.5 pt-1 text-xs text-slate-500 dark:text-slate-400 font-medium truncate w-full">
+                  <span className="font-bold text-slate-700 dark:text-slate-300 shrink-0">Skills:</span>
+                  <span className="truncate text-slate-600 dark:text-slate-300 font-medium">
+                    {(job.requiredSkills || job.skills || job.requirements || []).join(', ')}
+                  </span>
                 </div>
               )}
 
@@ -245,6 +244,11 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
             </div>
             
             <div className="flex items-center gap-1.5 flex-wrap">
+              {job.visaSponsorship && (
+                <Badge variant="outline" className="bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 border-sky-200/80 dark:border-sky-900/50 font-bold text-[9px] uppercase tracking-wider py-0.5 px-2 rounded-lg">
+                  ✈ Visa Sponsored
+                </Badge>
+              )}
               {job.isBoosted && (
                 <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-none font-black text-[9px] uppercase tracking-wider py-0.5 px-2 rounded-lg shadow-sm shadow-amber-500/20">
                   ⚡ Boosted

@@ -95,6 +95,28 @@ function JobDetailsContent() {
 
     const isAdminView = searchParams.get('view') === 'admin';
 
+    const formatSalaryInJobCurrency = useCallback((min?: number | null, max?: number | null, currencyCode?: string | null) => {
+        if (!min && !max) return 'Not Disclosed';
+        const code = (currencyCode || 'USD').toUpperCase();
+        const formatVal = (val: number) => {
+            try {
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: code,
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(val);
+            } catch {
+                return `${code} ${val.toLocaleString()}`;
+            }
+        };
+
+        if (min && max) return `${formatVal(min)} - ${formatVal(max)}`;
+        if (min) return `From ${formatVal(min)}`;
+        if (max) return `Up to ${formatVal(max)}`;
+        return 'Not Disclosed';
+    }, []);
+
     const appliedJobIds = useMemo(() => new Set((userApplications || []).map(app => app.jobId)), [userApplications]);
 
     const isCorporateEmail = useCallback((email?: string | null) => {
@@ -324,6 +346,14 @@ function JobDetailsContent() {
                                                     <span className="text-gray-500 font-medium text-sm">ID: {job.jobId}</span>
                                                 </>
                                             )}
+                                            {job.visaSponsorship && (
+                                                <>
+                                                    <div className="w-1 h-1 rounded-full bg-gray-300" />
+                                                    <Badge variant="outline" className="bg-sky-50 text-sky-700 border-sky-200 font-bold text-xs py-0.5 px-2.5 rounded-full">
+                                                        ✈ Visa Sponsorship Offered
+                                                    </Badge>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
 
@@ -336,33 +366,8 @@ function JobDetailsContent() {
                                             <div className="w-px h-4 bg-gray-200" />
                                             <div className="flex items-center gap-1.5 flex-wrap">
                                                 <span className="font-bold text-gray-800">
-                                                    {job.salaryMin && job.salaryMax
-                                                        ? `₹ ${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()}`
-                                                        : job.salaryMin
-                                                            ? `From ₹ ${job.salaryMin.toLocaleString()}`
-                                                            : job.salaryMax
-                                                                ? `Up to ₹ ${job.salaryMax.toLocaleString()}`
-                                                                : ((job as any).salary || 'Not Disclosed')}
+                                                    {formatSalaryInJobCurrency(job.salaryMin, job.salaryMax, job.salaryCurrency)}
                                                 </span>
-                                                {job.salaryMin && currency && currency.toUpperCase() !== 'INR' && (
-                                                  <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100/40">
-                                                    ~ {(() => {
-                                                      const inrRate = exchangeRates['INR'] || 86.0;
-                                                      const targetRate = exchangeRates[currency] || 1.0;
-                                                      const minTarget = (job.salaryMin / inrRate) * targetRate;
-                                                      const maxTarget = job.salaryMax ? (job.salaryMax / inrRate) * targetRate : 0;
-                                                      
-                                                      const fmt = (val: number) => new Intl.NumberFormat('en-US', {
-                                                        style: 'currency',
-                                                        currency: currency.toUpperCase(),
-                                                        minimumFractionDigits: 0,
-                                                        maximumFractionDigits: 0
-                                                      }).format(val);
-
-                                                      return job.salaryMax ? `${fmt(minTarget)} - ${fmt(maxTarget)}` : `From ${fmt(minTarget)}`;
-                                                    })()}
-                                                  </span>
-                                                )}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-1.5 text-gray-500">
@@ -486,33 +491,8 @@ function JobDetailsContent() {
                                                 <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Salary</div>
                                                 <div className="flex flex-col gap-0.5">
                                                     <div className="font-bold text-slate-900">
-                                                        {job.salaryMin && job.salaryMax
-                                                            ? `₹ ${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()}`
-                                                            : job.salaryMin
-                                                                ? `From ₹ ${job.salaryMin.toLocaleString()}`
-                                                                : job.salaryMax
-                                                                    ? `Up to ₹ ${job.salaryMax.toLocaleString()}`
-                                                                    : ((job as any).salary || 'Not Disclosed')}
+                                                        {formatSalaryInJobCurrency(job.salaryMin, job.salaryMax, job.salaryCurrency)}
                                                     </div>
-                                                    {job.salaryMin && currency && currency.toUpperCase() !== 'INR' && (
-                                                      <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100/40 w-fit">
-                                                        ~ {(() => {
-                                                          const inrRate = exchangeRates['INR'] || 86.0;
-                                                          const targetRate = exchangeRates[currency] || 1.0;
-                                                          const minTarget = (job.salaryMin / inrRate) * targetRate;
-                                                          const maxTarget = job.salaryMax ? (job.salaryMax / inrRate) * targetRate : 0;
-                                                          
-                                                          const fmt = (val: number) => new Intl.NumberFormat('en-US', {
-                                                            style: 'currency',
-                                                            currency: currency.toUpperCase(),
-                                                            minimumFractionDigits: 0,
-                                                            maximumFractionDigits: 0
-                                                          }).format(val);
-
-                                                          return job.salaryMax ? `${fmt(minTarget)} - ${fmt(maxTarget)}` : `From ${fmt(minTarget)}`;
-                                                        })()}
-                                                      </span>
-                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -520,6 +500,20 @@ function JobDetailsContent() {
                                             <div>
                                                 <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Experience</div>
                                                 <div className="font-bold text-slate-900">{job.experienceLevel || 'Not Disclosed'}</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 text-sm sm:text-base">
+                                            <div>
+                                                <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Visa Sponsorship</div>
+                                                <div className="font-bold text-slate-900 mt-0.5">
+                                                    {job.visaSponsorship ? (
+                                                        <span className="text-sky-700 dark:text-sky-400 font-extrabold flex items-center gap-1">
+                                                            ✈ Available / Offered
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-slate-500 font-medium">Not Offered</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -642,7 +636,7 @@ function JobDetailsContent() {
                                         {renderFormattedDescription(job.description)}
                                     </div>
 
-                                    {/* Secondary Info: Job Type, Role, Workplace */}
+                                    {/* Secondary Info: Job Type, Role, Workplace, Visa Sponsorship */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 mt-8 border-t pt-8">
                                         <div className="text-sm">
                                             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Job Type</div>
@@ -655,6 +649,12 @@ function JobDetailsContent() {
                                         <div className="text-sm">
                                             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Workplace</div>
                                             <div className="font-bold text-slate-800">{job.workplaceType || 'Not Disclosed'}</div>
+                                        </div>
+                                        <div className="text-sm">
+                                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Visa Sponsorship</div>
+                                            <div className="font-bold text-slate-800">
+                                                {job.visaSponsorship ? '✈ Available / Offered' : 'Not Offered'}
+                                            </div>
                                         </div>
                                     </div>
 

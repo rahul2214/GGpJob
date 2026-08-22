@@ -5,10 +5,22 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, preferredCurrency, country } = await request.json();
+    const body = await request.json();
+    const { userId, preferredCurrency, preferredCurrencyId, country } = body;
 
-    if (!userId || !preferredCurrency) {
+    if (!userId || (!preferredCurrency && !preferredCurrencyId)) {
       return NextResponse.json({ error: 'User ID and Preferred Currency are required' }, { status: 400 });
+    }
+
+    let currencyCode = preferredCurrency ? preferredCurrency.toUpperCase() : null;
+    let currencyId = preferredCurrencyId || null;
+
+    if (currencyId && !currencyCode) {
+      const { data: curr } = await supabaseAdmin.from('currencies').select('code').eq('id', currencyId).maybeSingle();
+      if (curr) currencyCode = curr.code;
+    } else if (currencyCode && !currencyId) {
+      const { data: curr } = await supabaseAdmin.from('currencies').select('id').eq('code', currencyCode).maybeSingle();
+      if (curr) currencyId = curr.id;
     }
 
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
@@ -56,9 +68,10 @@ export async function POST(request: NextRequest) {
 
     // Prepare fields to update
     const updatePayload: any = {
-      preferred_currency: preferredCurrency.toUpperCase(),
       updated_at: new Date().toISOString()
     };
+
+    if (currencyId) updatePayload.preferred_currency_id = currencyId;
 
     if (country) {
       updatePayload.country = country.toUpperCase();

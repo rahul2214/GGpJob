@@ -103,8 +103,8 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
         maxApplies: job.max_applies,
        
         jobLink: job.job_link,
-        salaryMin: job.salary_min,
-        salaryMax: job.salary_max,
+        salaryMin: job.salary_min ?? job.salary_min_usd_cents ?? null,
+        salaryMax: job.salary_max ?? job.salary_max_usd_cents ?? null,
         minExperience: job.experience_min,
         maxExperience: job.experience_max,
         planTypeAtPosting: job.plan_type_at_posting,
@@ -128,13 +128,17 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
         locationIds: locUuids,
         locationPks: job.location_pks || [],
         skillIds: skillUuids,
+        skills: skillNames,
+        requiredSkills: skillNames,
+        locations: locNames,
         skillPks: job.skill_pks || [],
         country: job.country || null,
         state: job.state || null,
         city: job.city || null,
         remoteType: job.remote_type || null,
         employmentType: job.employment_type || null,
-        salaryCurrency: job.salary_currency || 'USD',
+        salaryCurrency: job.currencies?.code || job.salary_currency || 'USD',
+        currencyId: job.currencies?.uuid || null,
         industry: job.industry || null,
         jobFunction: job.job_function || null,
         visaSponsorship: job.visa_sponsorship || false,
@@ -145,13 +149,11 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
         type: job.job_types?.name || 'N/A',
         workplaceType: job.workplace_types?.name || 'N/A',
         location: locNames.join(', ') || 'N/A',
-        locations: locNames,
         experienceLevel: `${job.experience_min} - ${job.experience_max} Years`,
         applicantCount: job.applicant_count || 0,
         selectedApplicantCount: job.selected_count || 0,
         referredApplicantCount: job.referred_count || 0,
         hiredApplicantCount: job.hired_count || 0,
-        requiredSkills: skillNames,
         isApplied: isApplied,
        
         isBoosted: job.plan_type_at_posting === 'boosted' || (job.plan_type_at_posting && job.plan_type_at_posting.endsWith('_boosted')) || false,
@@ -172,7 +174,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
             *,
             job_types!job_type_pk(uuid, name),
             workplace_types!workplace_type_pk(uuid, name),
-            company_sizes!company_size_id(uuid, name)
+            company_sizes!company_size_id(uuid, name),
+            currencies!currency_id(id, code, symbol, name)
         `)
         .eq(isNumericId ? 'id' : 'uuid', id)
         .single();
@@ -317,6 +320,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         const skillPks = await safeResolveMetadata('skills', body.skillIds);
         const benefitPks = await safeResolveMetadata('benefits', body.benefitIds);
 
+        let currencyPk = await safeResolveMetadata('currencies', body.currencyId || body.currency_id);
+        if (!currencyPk && (body.salaryCurrency || body.salary_currency)) {
+            const codeToFind = String(body.salaryCurrency || body.salary_currency).toUpperCase();
+            const { data: curr } = await supabaseAdmin.from('currencies').select('id').eq('code', codeToFind).maybeSingle();
+            if (curr) currencyPk = curr.id;
+        }
+
         const dataToUpdate: any = {
             title: body.title,
             job_id: body.jobId || null,
@@ -325,17 +335,15 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             company_logo: body.companyLogo || user?.company_logo || null,
             job_type_pk: jobTypePk,
             workplace_type_pk: workplaceTypePk,
-            location_pks: locationPks,
-            salary_min: body.salaryMin ?? null,
-            salary_max: body.salaryMax ?? null,
+            salary_min_usd_cents: body.salaryMin ?? body.salary_min ?? null,
+            salary_max_usd_cents: body.salaryMax ?? body.salary_max ?? null,
+            currency_id: currencyPk || undefined,
+            visa_sponsorship: body.visaSponsorship !== undefined ? !!body.visaSponsorship : (body.visa_sponsorship !== undefined ? !!body.visa_sponsorship : undefined),
             job_role: body.job_role || body.role || body.title,
             experience_min: typeof body.minExperience === 'number' ? body.minExperience : 0,
             experience_max: typeof body.maxExperience === 'number' ? body.maxExperience : 0,
-            
             vacancies: body.vacancies || 1,
             sections: body.sections || [],
-            skill_pks: skillPks,
-            benefit_ids: benefitPks,
             status: body.status || 'active',
             company_size_id: companySizePk,
             company_linkedin_url: body.companyLinkedinUrl || user?.company_linkedin_url || null,
@@ -348,14 +356,67 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         // Remove undefined fields
         Object.keys(dataToUpdate).forEach(key => dataToUpdate[key] === undefined && delete dataToUpdate[key]);
 
-        const { data: updatedJob, error } = await supabaseAdmin
+        let { data: updatedJob, error } = await supabaseAdmin
             .from('jobs')
             .update(dataToUpdate)
             .eq(isNumericId ? 'id' : 'uuid', id)
             .select()
             .single();
 
+        if (error && (error.code === '42703' || error.code === 'PGRST204')) {
+            console.warn('[API_JOB_ID_PUT] Column missing on update. Retrying update without optional columns...', error.message);
+            delete dataToUpdate.location_pks;
+            delete dataToUpdate.skill_pks;
+            delete dataToUpdate.benefit_ids;
+            delete dataToUpdate.is_referral;
+            delete dataToUpdate.employee_pk;
+            delete dataToUpdate.admin_pk;
+            const retryRes = await supabaseAdmin
+                .from('jobs')
+                .update(dataToUpdate)
+                .eq(isNumericId ? 'id' : 'uuid', id)
+                .select()
+                .single();
+            updatedJob = retryRes.data;
+            error = retryRes.error;
+        }
+
         if (error) throw error;
+
+        // Update relational join tables: job_skills, job_benefits, job_locations
+        if (updatedJob?.id) {
+            const numericJobId = updatedJob.id;
+            const sPks = Array.isArray(skillPks) ? skillPks : (skillPks ? [skillPks] : []);
+            const bPks = Array.isArray(benefitPks) ? benefitPks : (benefitPks ? [benefitPks] : []);
+            const lPks = Array.isArray(locationPks) ? locationPks : (locationPks ? [locationPks] : []);
+
+            if (sPks.length > 0) {
+                try {
+                    await supabaseAdmin.from('job_skills').delete().eq('job_pk', numericJobId);
+                    const skillInserts = sPks.map((spk: number) => ({ job_pk: numericJobId, skill_pk: spk }));
+                    await supabaseAdmin.from('job_skills').insert(skillInserts);
+                } catch (e) {}
+            }
+            if (bPks.length > 0) {
+                try {
+                    await supabaseAdmin.from('job_benefits').delete().eq('job_pk', numericJobId);
+                    const benefitInserts = bPks.map((bpk: number) => ({ job_pk: numericJobId, benefit_pk: bpk }));
+                    await supabaseAdmin.from('job_benefits').insert(benefitInserts);
+                } catch (e) {}
+            }
+            if (lPks.length > 0) {
+                try {
+                    await supabaseAdmin.from('job_locations').delete().eq('job_id', numericJobId);
+                    const locInserts = lPks.map((lpk: number, idx: number) => ({
+                        job_id: numericJobId,
+                        country_id: 1,
+                        city_id: lpk,
+                        is_primary: idx === 0
+                    }));
+                    await supabaseAdmin.from('job_locations').insert(locInserts);
+                } catch (e) {}
+            }
+        }
         
         return NextResponse.json(await mapJobDetailToFrontend(updatedJob), { status: 200 });
 

@@ -26,6 +26,7 @@ import { COUNTRY_CODES, parsePhoneNumber } from "@/utils/country-codes";
 import { CountryCodeSelect } from "./country-code-select";
 import { Switch } from "@/components/ui/switch";
 import { LocationCascadeSelector } from "@/components/location/LocationCascadeSelector";
+import { SUPPORTED_CURRENCIES } from "@/utils/currency";
 
 const PillSelect = ({ value, onChange, options, className = "" }: { value?: string, onChange: (v: string) => void, options: string[], className?: string }) => (
     <div className={`flex flex-wrap gap-2 ${className}`}>
@@ -535,14 +536,12 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                                                     <SelectValue placeholder="Select currency" />
                                                 </SelectTrigger>
                                             </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="INR">INR (₹)</SelectItem>
-                                                <SelectItem value="USD">USD ($)</SelectItem>
-                                                <SelectItem value="EUR">EUR (€)</SelectItem>
-                                                <SelectItem value="GBP">GBP (£)</SelectItem>
-                                                <SelectItem value="CAD">CAD ($)</SelectItem>
-                                                <SelectItem value="AUD">AUD ($)</SelectItem>
-                                                <SelectItem value="SGD">SGD ($)</SelectItem>
+                                            <SelectContent className="max-h-60 overflow-y-auto">
+                                                {SUPPORTED_CURRENCIES.map((item) => (
+                                                    <SelectItem key={item.code} value={item.code}>
+                                                        {item.flag} {item.code} ({item.symbol})
+                                                    </SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />

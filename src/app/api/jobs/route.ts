@@ -21,8 +21,8 @@ function mapJobToFrontend(job: any): any {
         workplaceTypePk: job.workplace_type_pk,
         locationIds: job.location_uuids || [], // Resolved UUIDs
         locationPks: job.location_pks || [],
-        salaryMin: job.salary_min,
-        salaryMax: job.salary_max,
+        salaryMin: job.salary_min ?? job.salary_min_usd_cents ?? null,
+        salaryMax: job.salary_max ?? job.salary_max_usd_cents ?? null,
         job_role: job.job_role,
         minExperience: job.experience_min,
         maxExperience: job.experience_max,
@@ -40,6 +40,7 @@ function mapJobToFrontend(job: any): any {
         jobLink: job.job_link,
         sections: job.sections || [],
         skillIds: job.skill_uuids || [],     // Resolved UUIDs
+        skills: job.skill_names || [],       // Resolved Skill Names
         benefitIds: job.benefit_uuids || [], // Resolved UUIDs
         benefits: job.benefit_names || [],
         country: job.country || null,
@@ -47,7 +48,8 @@ function mapJobToFrontend(job: any): any {
         city: job.city || null,
         remoteType: job.remote_type || null,
         employmentType: job.employment_type || null,
-        salaryCurrency: job.salary_currency || 'USD',
+        salaryCurrency: job.currencies?.code || job.salary_currency || 'USD',
+        currencyId: job.currencies?.uuid || null,
         industry: job.industry || null,
         jobFunction: job.job_function || null,
         visaSponsorship: job.visa_sponsorship || false,
@@ -97,17 +99,39 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
         { data: cities },
         { data: benefits },
         { data: skills },
-        { data: jobLocs }
+        { data: jobLocs },
+        { data: jobSkills },
+        { data: jobBenefits }
     ] = await Promise.all([
         allLocationPks.length > 0 ? supabaseAdmin.from('cities').select('id, name').in('id', allLocationPks) : { data: [] },
         allBenefitPks.length > 0 ? supabaseAdmin.from('benefits').select('id, uuid, name').in('id', allBenefitPks) : { data: [] },
         allSkillPks.length > 0 ? supabaseAdmin.from('skills').select('id, uuid, name').in('id', allSkillPks) : { data: [] },
-        jobPks.length > 0 ? supabaseAdmin.from('job_locations').select('job_id, countries:country_id(name), states_provinces:state_province_id(name), cities:city_id(name)').in('job_id', jobPks) : { data: [] }
+        jobPks.length > 0 ? supabaseAdmin.from('job_locations').select('job_id, countries:country_id(name), states_provinces:state_province_id(name), cities:city_id(name)').in('job_id', jobPks) : { data: [] },
+        jobPks.length > 0 ? supabaseAdmin.from('job_skills').select('job_pk, skills:skill_pk(id, uuid, name)').in('job_pk', jobPks) : { data: [] },
+        jobPks.length > 0 ? supabaseAdmin.from('job_benefits').select('job_pk, benefits:benefit_pk(id, uuid, name)').in('job_pk', jobPks) : { data: [] }
     ]);
 
     const cityMap = new Map<string, any>(cities?.map((c: any) => [String(c.id), { name: c.name, uuid: String(c.id) }]) || []);
     const benefitMap = new Map<string, any>(benefits?.map((b: any) => [String(b.id), { name: b.name, uuid: b.uuid }]) || []);
     const skillMap = new Map<string, any>(skills?.map((s: any) => [String(s.id), { name: s.name, uuid: s.uuid }]) || []);
+
+    const relSkillMap = new Map<number, any[]>();
+    (jobSkills || []).forEach((js: any) => {
+        if (js.skills) {
+            const existing = relSkillMap.get(js.job_pk) || [];
+            existing.push(js.skills);
+            relSkillMap.set(js.job_pk, existing);
+        }
+    });
+
+    const relBenefitMap = new Map<number, any[]>();
+    (jobBenefits || []).forEach((jb: any) => {
+        if (jb.benefits) {
+            const existing = relBenefitMap.get(jb.job_pk) || [];
+            existing.push(jb.benefits);
+            relBenefitMap.set(jb.job_pk, existing);
+        }
+    });
 
     const jobLocMap = new Map<number, string[]>();
     (jobLocs || []).forEach((jl: any) => {
@@ -125,8 +149,15 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
         const mappedLocations = (job.location_pks || []).map((id: number) => cityMap.get(String(id))).filter(Boolean);
         const locationNames = (jlNames && jlNames.length > 0) ? jlNames : mappedLocations.map((l: any) => l.name);
 
-        const mappedBenefits = (job.benefit_ids || []).map((id: number) => benefitMap.get(String(id))).filter(Boolean);
-        const mappedSkills = (job.skill_pks || []).map((id: number) => skillMap.get(String(id))).filter(Boolean);
+        const relBens = relBenefitMap.get(job.id) || [];
+        const mappedBenefits = relBens.length > 0 
+            ? relBens 
+            : (job.benefit_ids || []).map((id: number) => benefitMap.get(String(id))).filter(Boolean);
+
+        const relSks = relSkillMap.get(job.id) || [];
+        const mappedSkills = relSks.length > 0 
+            ? relSks 
+            : (job.skill_pks || []).map((id: number) => skillMap.get(String(id))).filter(Boolean);
         
         return mapJobToFrontend({ 
             ...job, 
@@ -143,7 +174,6 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
         });
     });
 
-    // Sort boosted jobs to the top
     resolved.sort((a: any, b: any) => {
         if (a.isBoosted && !b.isBoosted) return -1;
         if (!a.isBoosted && b.isBoosted) return 1;
@@ -186,6 +216,7 @@ export async function GET(request: NextRequest) {
             job_types!job_type_pk(uuid, name),
             workplace_types!workplace_type_pk(uuid, name),
             company_sizes!company_size_id(uuid, name),
+            currencies!currency_id(id, code, symbol, name),
             applications_count:applications(count)
         `);
 
@@ -726,10 +757,17 @@ export async function POST(request: Request) {
     const skillPks = await safeResolveMetadata('skills', data.skillPks || data.skillIds || data.requiredSkills || data.skills);
     const benefitPks = await safeResolveMetadata('benefits', data.benefitPks || data.benefitIds || data.benefits);
 
+    let currencyPk = await safeResolveMetadata('currencies', data.currencyId || data.currency_id);
+    if (!currencyPk && (data.salaryCurrency || data.preferredCurrency || user?.preferred_currency)) {
+        const codeToFind = String(data.salaryCurrency || data.preferredCurrency || user?.preferred_currency || 'INR').toUpperCase();
+        const { data: curr } = await supabaseAdmin.from('currencies').select('id').eq('code', codeToFind).maybeSingle();
+        if (curr) currencyPk = curr.id;
+    }
+
     // Resolve Authenticated User UUID to BigInt ID (PK) for the Jobs table
     const userNumericPk = user.id;
 
-    const jobToCreate = {
+    const jobToCreate: any = {
       title: data.title,
       job_id: data.jobId || null,
       description: data.description,
@@ -739,6 +777,10 @@ export async function POST(request: Request) {
       job_type_pk: jobTypePk,
       workplace_type_pk: workplaceTypePk,
       job_role: data.job_role || data.role || data.title,
+      salary_min_usd_cents: typeof data.salaryMin === 'number' ? data.salaryMin : (data.salary_min ?? null),
+      salary_max_usd_cents: typeof data.salaryMax === 'number' ? data.salaryMax : (data.salary_max ?? null),
+      currency_id: currencyPk || null,
+      visa_sponsorship: !!(data.visaSponsorship ?? data.visa_sponsorship),
       experience_min: typeof data.minExperience === 'number' ? data.minExperience : 0,
       experience_max: typeof data.maxExperience === 'number' ? data.maxExperience : 0,
       is_referral: !!data.isReferral,
