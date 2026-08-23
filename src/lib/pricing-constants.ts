@@ -61,7 +61,7 @@ export const CREDIT_PACKS = [
     credits: 10,
     price: 3, // USD Base
     perCredit: 0.3,
-    description: "Perfect for a quick referral unlock.",
+    description: "Perfect for a quick application boost.",
     icon: Rocket,
     color: "sky"
   },

@@ -206,7 +206,7 @@ export default function CreditsPage() {
               Top-up Credits
             </h1>
             <p className="text-slate-500 text-lg max-w-xl mx-auto mt-4">
-              Get additional credits to unlock referrals, message employees, and fast-track your applications.
+              Get additional credits to fast-track your job applications and boost your profile visibility.
             </p>
           </motion.div>
         </div>

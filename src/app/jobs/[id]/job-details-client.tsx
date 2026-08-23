@@ -389,7 +389,7 @@ function JobDetailsContent() {
                             <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-4 text-sm text-gray-500">
                                     <div>
-                                        <span className="text-gray-400">Posted:</span> <span className="font-semibold text-gray-700">{formatDistanceToNow(new Date(job.postedAt), { addSuffix: true })}</span>
+                                        <span className="text-gray-400">Posted:</span> <span className="font-semibold text-gray-700">{formatDistanceToNow(new Date(job.postedAt), { addSuffix: true }).replace(/^about\s+/i, '')}</span>
                                     </div>
                                     <div className="w-px h-4 bg-gray-200" />
                                     <div>
@@ -451,7 +451,7 @@ function JobDetailsContent() {
                                         {job.applicantCount || 0}+ applicants
                                     </div>
                                     <div className="flex items-center gap-1.5 ml-auto md:ml-0">
-                                        Posted {formatDistanceToNow(new Date(job.postedAt), { addSuffix: true })}
+                                        Posted {formatDistanceToNow(new Date(job.postedAt), { addSuffix: true }).replace(/^about\s+/i, '')}
                                     </div>
                                 </div>
                             </div>
