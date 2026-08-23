@@ -42,19 +42,6 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
         const candidateProfile = await userRes.json();
 
-        // 4. Check unlock status (Unlocked if status_id >= 4 or is_unlocked true)
-        const isUnlocked = application.is_unlocked || application.status_id >= 4;
-
-        if (!isUnlocked) {
-            // Mask sensitive contact details
-            candidateProfile.email = '[Hidden until unlocked]';
-            candidateProfile.phone = '[Hidden until unlocked]';
-            candidateProfile.resumeUrl = null;
-            candidateProfile.linkedinUrl = null;
-            candidateProfile.githubUrl = null;
-            candidateProfile.portfolioUrl = null;
-        }
-
         return NextResponse.json(candidateProfile);
     } catch (e: any) {
         console.error('[API_CANDIDATE_PROFILE] Error:', e);

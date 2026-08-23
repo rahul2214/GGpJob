@@ -171,13 +171,15 @@ export async function GET(request: Request, { params }: { params: { id: string }
         }
         
         // Fetch all sections
-        const [edu, exp, proj, lang, skills, personal] = await Promise.all([
+        const [edu, exp, proj, lang, skills, personal, achievements, certs] = await Promise.all([
             supabaseAdmin.from('education').select('*').eq('user_pk', userPk),
             supabaseAdmin.from('experience').select('*').eq('user_pk', userPk),
             supabaseAdmin.from('projects').select('*').eq('user_pk', userPk),
             supabaseAdmin.from('languages').select('*').eq('user_pk', userPk),
             supabaseAdmin.from('jobseeker_skills').select('proficiency_level, years_experience, skills(*)').eq('user_pk', userPk),
             supabaseAdmin.from('jobseeker_personal_details').select('*').eq('user_pk', userPk).maybeSingle(),
+            supabaseAdmin.from('jobseeker_achievements').select('*').eq('jobseeker_id', userPk),
+            supabaseAdmin.from('jobseeker_certifications').select('*').eq('jobseeker_id', userPk),
         ]);
 
         return NextResponse.json({
@@ -190,7 +192,23 @@ export async function GET(request: Request, { params }: { params: { id: string }
                 proficiencyLevel: d.proficiency_level,
                 yearsExperience: d.years_experience
             })) || [],
-            personal: personal.data ? mapDbToFrontend('personal', personal.data) : null
+            personal: personal.data ? mapDbToFrontend('personal', personal.data) : null,
+            achievements: (achievements.data || []).map((a: any) => ({
+                id: a.id,
+                title: a.title,
+                description: a.description,
+                issuer: a.issuer,
+                dateAchieved: a.date_achieved
+            })),
+            certifications: (certs.data || []).map((c: any) => ({
+                id: c.id,
+                name: c.name,
+                issuingOrganization: c.issuing_organization,
+                issueDate: c.issue_date,
+                expirationDate: c.expiration_date,
+                credentialId: c.credential_id,
+                credentialUrl: c.credential_url
+            }))
         });
     } catch (e: any) {
         console.error("Profile GET Error:", e);

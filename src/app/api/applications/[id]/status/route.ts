@@ -206,7 +206,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       .from('applications')
       .update(updatePayload)
       .eq('id', targetPk)
-      .select('*, jobs(title, employee_pk), jobseekers(id, name, email)')
+      .select('*, jobs(title, recruiter_pk), jobseekers(id, name, email)')
       .single();
 
     if (updateError) {
@@ -240,13 +240,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     // 3. Create a notification for the OTHER party
-    const employeePk = app.jobs?.employee_pk;
+    const recruiterPk = app.jobs?.recruiter_pk;
     const isJobseekerAction = requesterRole === 'Job Seeker' || requesterRole === 'jobseeker';
 
-    if (isJobseekerAction && employeePk) {
-        // Notify Employee if Jobseeker initiated
+    if (isJobseekerAction && recruiterPk) {
+        // Notify Recruiter if Jobseeker initiated
         await supabaseAdmin.from('notifications').insert({
-          user_pk: employeePk,
+          user_pk: recruiterPk,
           message: `Candidate ${applicant?.name || 'User'} marked the application for ${jobTitle} as ${statusMap[sId] || 'updated'}. Please verify.`,
           type: 'application_status',
           job_pk: app.job_pk,
@@ -327,9 +327,10 @@ async function refundCredits(jobseekerId: string | number, amount: number, jobPk
     });
 }
 
-    // ── Employee Rewards & Penalties ─────────────────────────────────────
-    if (app.jobs?.employee_pk) {
-        const empId = app.jobs.employee_pk;
+    // ── Poster Rewards & Penalties ─────────────────────────────────────
+    const posterId = (app.jobs as any)?.employee_pk || app.jobs?.recruiter_pk;
+    if (posterId) {
+        const empId = posterId;
         const jobPk = app.job_pk;
         
         try {

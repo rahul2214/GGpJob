@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Edit, Trash2, BookOpen, Briefcase, Lightbulb, Languages, LinkIcon, Wrench } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, BookOpen, Briefcase, Lightbulb, Languages, LinkIcon, Wrench, Trophy, Award } from 'lucide-react';
 import { format } from 'date-fns';
 import { ProfileSectionForm } from './profile-section-form';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -24,6 +24,8 @@ type ProfileData = {
     languages: Language[],
     skills: Skill[],
     personal: any | null,
+    achievements: any[],
+    certifications: any[],
 };
 
 interface ProfileSectionsProps {
@@ -32,7 +34,7 @@ interface ProfileSectionsProps {
 }
 
 export function ProfileSections({ userId, isEditable = false }: ProfileSectionsProps) {
-    const [data, setData] = useState<ProfileData>({ education: [], employment: [], projects: [], languages: [], skills: [], personal: null });
+    const [data, setData] = useState<ProfileData>({ education: [], employment: [], projects: [], languages: [], skills: [], personal: null, achievements: [], certifications: [] });
     const [loading, setLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [currentSection, setCurrentSection] = useState<Section | null>(null);
@@ -54,6 +56,8 @@ export function ProfileSections({ userId, isEditable = false }: ProfileSectionsP
                 languages: fetchedData.languages || [],
                 skills: fetchedData.skills || [],
                 personal: fetchedData.personal || null,
+                achievements: fetchedData.achievements || [],
+                certifications: fetchedData.certifications || [],
             });
         } catch (error) {
             console.error("Failed to fetch profile sections", error);
@@ -155,7 +159,7 @@ export function ProfileSections({ userId, isEditable = false }: ProfileSectionsP
 
     return (
        <>
-         <Accordion type="multiple" className="w-full space-y-6" defaultValue={['item-1', 'item-2', 'item-3', 'item-4', 'item-5']}>
+         <Accordion type="multiple" className="w-full space-y-6" defaultValue={['item-1', 'item-2', 'item-3', 'item-4', 'item-5', 'item-6', 'item-7']}>
                 {/* Employment Section */}
                 <AccordionItem value="item-1">
                      <Card>
@@ -327,12 +331,78 @@ export function ProfileSections({ userId, isEditable = false }: ProfileSectionsP
                                         {item.description && <p className="text-sm mt-2 whitespace-pre-wrap">{item.description}</p>}
                                     </div>
                                 ))}
+                                {data.projects.length === 0 && !isEditable && (
+                                    <p className="text-sm text-muted-foreground">No projects listed.</p>
+                                )}
                             </div>
                             {isEditable && (
                                 <Button variant="outline" className="mt-4" onClick={() => handleOpenForm('projects')}>
                                     <PlusCircle className="mr-2" /> Add Project
                                 </Button>
                             )}
+                        </AccordionContent>
+                    </Card>
+                </AccordionItem>
+                {/* Achievements Section */}
+                <AccordionItem value="item-6">
+                     <Card>
+                        <AccordionTrigger className="p-6">
+                            <div className="flex items-center gap-4">
+                                <Trophy className="h-6 w-6 text-amber-500" />
+                                <CardTitle className="text-xl">Achievements & Honors</CardTitle>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="p-6 pt-0">
+                            <div className="space-y-4">
+                                {data.achievements.map((item, idx) => (
+                                    <div key={item.id || idx} className="p-4 border rounded-lg">
+                                        <h3 className="font-semibold text-slate-900">{item.title}</h3>
+                                        {item.issuer && <p className="text-sm text-slate-600">Issuer: {item.issuer}</p>}
+                                        {item.dateAchieved && <p className="text-xs text-muted-foreground mt-0.5">{formatDate(item.dateAchieved)}</p>}
+                                        {item.description && <p className="text-sm mt-2 text-slate-600 whitespace-pre-wrap">{item.description}</p>}
+                                    </div>
+                                ))}
+                                {data.achievements.length === 0 && (
+                                    <p className="text-sm text-muted-foreground">No achievements listed.</p>
+                                )}
+                            </div>
+                        </AccordionContent>
+                    </Card>
+                </AccordionItem>
+                {/* Certifications Section */}
+                <AccordionItem value="item-7">
+                     <Card>
+                        <AccordionTrigger className="p-6">
+                            <div className="flex items-center gap-4">
+                                <Award className="h-6 w-6 text-indigo-600" />
+                                <CardTitle className="text-xl">Certifications</CardTitle>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="p-6 pt-0">
+                            <div className="space-y-4">
+                                {data.certifications.map((item, idx) => (
+                                    <div key={item.id || idx} className="p-4 border rounded-lg">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="font-semibold text-slate-900">{item.name}</h3>
+                                            {item.credentialUrl && (
+                                                <a href={item.credentialUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 font-medium flex items-center gap-1 hover:underline">
+                                                    Credential <LinkIcon className="h-3 w-3" />
+                                                </a>
+                                            )}
+                                        </div>
+                                        {item.issuingOrganization && <p className="text-sm text-slate-600">{item.issuingOrganization}</p>}
+                                        {item.credentialId && <p className="text-xs text-slate-500 font-mono mt-1">Credential ID: {item.credentialId}</p>}
+                                        {(item.issueDate || item.expirationDate) && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                Issued: {formatDate(item.issueDate)} {item.expirationDate ? `· Expires: ${formatDate(item.expirationDate)}` : ''}
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
+                                {data.certifications.length === 0 && (
+                                    <p className="text-sm text-muted-foreground">No certifications listed.</p>
+                                )}
+                            </div>
                         </AccordionContent>
                     </Card>
                 </AccordionItem>

@@ -66,20 +66,19 @@ async function mapApplicationToFrontend(app: any, skillMap?: Map<string, string>
         isUnlocked: !!app.is_unlocked,
         updatedAt: app.updated_at,
         
-        // Applicant details (Conditionally masked for Referrals)
+        // Applicant details
         applicantName: profile.name,
-        applicantEmail: (app.is_unlocked || !job.is_referral) ? profile.email : '••••••••@••••.•••',
-        applicantPhone: (app.is_unlocked || !job.is_referral) ? profile.phone : '••••••••••',
+        applicantEmail: profile.email,
+        applicantPhone: profile.phone,
         applicantHeadline: profile.headline,
         applicantId: profile.uuid,
         applicantSkills: applicantSkills,
-        applicantResumeUrl: (app.is_unlocked || !job.is_referral) ? await resolveResumeUrl(profile.resume_url) : null,
-        applicantLinkedinUrl: (app.is_unlocked || !job.is_referral) ? profile.linkedin_url : null,
+        applicantResumeUrl: await resolveResumeUrl(profile.resume_url),
+        applicantLinkedinUrl: profile.linkedin_url,
         applicantSummary: profile.summary,
         applicantWorkStatus: profile.work_status,
         applicantExperience: `${profile.experience_years || 0}y ${profile.experience_months || 0}m`,
         applicantLocation: profile.current_city,
-        applicantPlanType: profile.plan_type,
         
         // Job details
         jobTitle: job.title,
@@ -88,18 +87,9 @@ async function mapApplicationToFrontend(app: any, skillMap?: Map<string, string>
         jobSalaryMax: job.salary_max,
         jobLocation: job.location,
         jobType: job.type,
-        jobIsReferral: job.is_referral,
         posterName: null,
         posterEmail: null,
-
-        // Verification details
-        proofUrl: await resolveResumeUrl(app.proof_url),
-        internalReferralId: app.internal_referral_id,
-        verificationStatus: app.verification_status,
-        verificationExpiresAt: app.verification_expires_at,
-        disputeReason: app.dispute_reason,
-        jobseekerFeedback: app.jobseeker_feedback,
-        feedbackSubmittedAt: app.feedback_submitted_at,
+        verificationStatus: app.verification_status || 'none',
     };
 }
 
@@ -314,20 +304,18 @@ export async function POST(request: Request) {
 
         // 1. Check job validity and resolve internal job_pk
         const isNumericJob = typeof jobId === 'string' ? /^\d+$/.test(jobId) : typeof jobId === 'number';
-        let jobQuery = supabaseAdmin.from('jobs').select('id, uuid, app_expires_at, max_applies, employee_pk, is_referral');
+        let jobQuery = supabaseAdmin.from('jobs').select('id, uuid, app_expires_at, max_applies');
 
-        
         if (isNumericJob) {
-            jobQuery = jobQuery.eq('id', parseInt(jobId as string));
-        } else if (typeof jobId === 'string' && jobId.includes('-')) {
-            jobQuery = jobQuery.eq('uuid', jobId);
+            jobQuery = jobQuery.or(`id.eq.${jobId},uuid.eq.${jobId},job_id.eq.${jobId}`);
         } else {
-            return NextResponse.json({ error: 'Invalid Job ID format' }, { status: 400 });
+            jobQuery = jobQuery.or(`uuid.eq.${jobId},job_id.eq.${jobId}`);
         }
 
         const { data: job, error: jobError } = await jobQuery.maybeSingle();
 
         if (jobError || !job) {
+            console.error('Job lookup failed in POST application:', { jobId, jobError });
             return NextResponse.json({ error: 'Job not found' }, { status: 404 });
         }
 
@@ -347,52 +335,20 @@ export async function POST(request: Request) {
             }
         }
 
-        if (job.employee_pk) {
-            const { data: emp } = await supabaseAdmin
-                .from('employees')
-                .select('id, max_applies_limit')
-                .eq('id', job.employee_pk)
-                .maybeSingle();
-
-            if (emp && emp.max_applies_limit && emp.max_applies_limit > 0) {
-                const empJobIds = await supabaseAdmin
-                    .from('jobs')
-                    .select('id')
-                    .eq('employee_pk', emp.id);
-
-                const jobPks = (empJobIds.data || []).map((j: any) => j.id);
-
-                if (jobPks.length > 0) {
-                    const { count: totalApps } = await supabaseAdmin
-                        .from('applications')
-                        .select('*', { count: 'exact', head: true })
-                        .in('job_pk', jobPks);
-
-                    if (totalApps !== null && totalApps >= emp.max_applies_limit) {
-                        return NextResponse.json({
-                            error: `This employer has reached their total application limit of ${emp.max_applies_limit}.`,
-                        }, { status: 403 });
-                    }
-                }
-            }
-        }
-
-
         // 2. Resolve user_pk
         const isNumericUser = typeof userId === 'string' ? /^\d+$/.test(userId) : typeof userId === 'number';
-        let userQuery = supabaseAdmin.from('jobseekers').select('id, plan_type');
+        let userQuery = supabaseAdmin.from('jobseekers').select('id, uuid');
         
         if (isNumericUser) {
-            userQuery = userQuery.eq('id', parseInt(userId as string));
-        } else if (typeof userId === 'string' && userId.includes('-')) {
-            userQuery = userQuery.eq('uuid', userId);
+            userQuery = userQuery.or(`id.eq.${userId},uuid.eq.${userId}`);
         } else {
-            return NextResponse.json({ error: 'Invalid User ID format' }, { status: 400 });
+            userQuery = userQuery.eq('uuid', userId);
         }
 
-        const { data: userProfile } = await userQuery.maybeSingle();
+        const { data: userProfile, error: userError } = await userQuery.maybeSingle();
 
-        if (!userProfile) {
+        if (userError || !userProfile) {
+            console.error('User lookup failed in POST application:', { userId, userError });
             return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
         }
 
@@ -407,77 +363,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'You have already applied for this job' }, { status: 409 });
         }
 
-        // 2.1 Max 2 referrals per employee-jobseeker pair in 30 days
-        if (job.is_referral && job.employee_pk && userProfile.id) {
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-            // Fetch other applications for this user that were referred by the same employee in the last 30 days
-            // (We count anyone who reached status 4 - Unlocked or further)
-            const { data: pairApps } = await supabaseAdmin
-                .from('applications')
-                .select('id, jobs!job_pk(employee_pk)')
-                .eq('user_pk', userProfile.id)
-                .gte('updated_at', thirtyDaysAgo.toISOString())
-                .in('status_id', [4, 5, 6, 7, 8, 9, 10]);
-
-            const sameEmployeeCount = pairApps?.filter((a: any) => a.jobs?.employee_pk === job.employee_pk).length || 0;
-
-            if (sameEmployeeCount >= 2) {
-                return NextResponse.json({ 
-                    error: 'You’ve reached the referral limit with this employee. Try other employees or apply to different jobs.' 
-                }, { status: 403 });
-            }
-        }
-
-        // 3. Plan Limits Enforcement for Referral Jobs
-        if (job.is_referral) {
-            const { getPlanLimits } = await import('@/lib/plan-limits');
-            const limits = getPlanLimits(userProfile.plan_type);
-
-            const startOfMonth = new Date();
-            startOfMonth.setDate(1);
-            startOfMonth.setHours(0, 0, 0, 0);
-
-            // Check Monthly Referral Applies
-            const { data: monthApps } = await supabaseAdmin
-                .from('applications')
-                .select('id, jobs!inner(is_referral)')
-                .eq('user_pk', userProfile.id)
-                .gte('applied_at', startOfMonth.toISOString())
-                .eq('jobs.is_referral', true);
-            
-            const monthlyAppliesCount = monthApps ? monthApps.length : 0;
-            if (monthlyAppliesCount >= limits.referralAppliesPerMonth) {
-                return NextResponse.json({ 
-                    error: `You have reached your limit of ${limits.referralAppliesPerMonth} referral applications for this month. Upgrade your plan to apply for more referrals.` 
-                }, { status: 403 });
-            }
-
-            // Check Active Pending Referrals
-            const { data: pendingApps } = await supabaseAdmin
-                .from('applications')
-                .select('id, jobs!inner(is_referral)')
-                .eq('user_pk', userProfile.id)
-                .in('status_id', [1, 2, 3])
-                .eq('jobs.is_referral', true);
-                
-            const activePendingCount = pendingApps ? pendingApps.length : 0;
-            if (activePendingCount >= limits.activePendingReferrals) {
-                return NextResponse.json({ 
-                    error: `You have reached your limit of ${limits.activePendingReferrals} active pending referrals. Wait for some to be processed or upgrade your plan.` 
-                }, { status: 403 });
-            }
-        }
-        
         const newApplication = {
-            job_pk: job.id,         // Internal BIGINT
-            user_pk: userProfile.id, // Internal BIGINT
-            status_id: 1,           // Default to 1 'Applied'
+            job_pk: job.id,
+            user_pk: userProfile.id,
+            status_id: 1,
             applied_at: new Date().toISOString(),
-            is_unlocked: false,
-            proof_url: null,
-            internal_referral_id: null
+            updated_at: new Date().toISOString()
         };
 
         const { data: createdApp, error: insertError } = await supabaseAdmin
