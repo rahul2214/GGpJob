@@ -5,7 +5,7 @@ import { resolveResumeUrl } from '@/lib/resolve-resume';
 const statusMap: { [key: number]: string } = {
     1: 'Applied',
     2: 'Under Review',
-    3: 'Accepted',
+    3: 'Selected',
     4: 'Referral Unlocked',
     5: 'Referred',
     6: 'Interviewing',

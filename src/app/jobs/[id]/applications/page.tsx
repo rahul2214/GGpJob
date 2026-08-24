@@ -122,8 +122,9 @@ export default function JobApplicationsPage() {
         switch (status) {
             case 'Under Review':
                 return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-100">Under Review</Badge>;
+            case 'Selected':
             case 'Accepted':
-                return <Badge className="bg-cyan-50 text-cyan-700 border-cyan-100 uppercase text-[10px] font-bold">Waiting for jobseeker response</Badge>;
+                return <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 uppercase text-[10px] font-bold">Selected</Badge>;
             case 'Referral Unlocked':
                 return <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200">Unlocked</Badge>;
             case 'Referred':
@@ -332,18 +333,6 @@ export default function JobApplicationsPage() {
 
                                              {/* Primary Next Action Buttons */}
 
-                                             {app.statusId === 5 && app.verificationStatus === 'verified' && !job.isReferral && (
-                                                 <Button 
-                                                     size="sm" 
-                                                     variant="outline"
-                                                     className="rounded-xl font-bold h-9 border-amber-200 text-amber-700 hover:bg-amber-50"
-                                                     onClick={() => handleStatusChange(app.id.toString(), 6)}
-                                                 >
-                                                     <Calendar className="w-4 h-4 mr-2" />
-                                                     Interview Scheduled
-                                                 </Button>
-                                             )}
-
                                              {app.statusId === 6 && app.verificationStatus === 'verified' && !job.isReferral && (
                                                  <Button 
                                                      size="sm" 
@@ -403,7 +392,7 @@ export default function JobApplicationsPage() {
                                                                     onClick={() => handleStatusChange(app.id, 3)}
                                                                     className="bg-indigo-50 text-indigo-700 font-bold"
                                                                 >
-                                                                    Select Candidate (Max 5)
+                                                                    Select Candidate
                                                                 </DropdownMenuItem>
                                                             )}
                                                             
@@ -428,20 +417,9 @@ export default function JobApplicationsPage() {
 
                                                              {app.statusId === 6 && !job.isReferral && (
                                                                  <>
-                                                                     {app.verificationStatus !== 'pending' && app.verificationStatus !== 'verified' && (
-                                                                         <DropdownMenuItem 
-                                                                             onClick={() => handleStatusChange(app.id, 6)}
-                                                                             className="bg-amber-600 text-white font-bold focus:bg-amber-700 focus:text-white"
-                                                                         >
-                                                                             <UploadCloud className="mr-2 h-4 w-4" />
-                                                                             Interview Scheduled
-                                                                         </DropdownMenuItem>
-                                                                     )}
-                                                                     {app.verificationStatus === 'verified' && (
-                                                                         <DropdownMenuItem onClick={() => handleStatusChange(app.id, 7)}>
-                                                                             Offer Received
-                                                                         </DropdownMenuItem>
-                                                                     )}
+                                                                     <DropdownMenuItem onClick={() => handleStatusChange(app.id, 7)}>
+                                                                         Offer Received
+                                                                     </DropdownMenuItem>
                                                                  </>
                                                              )}
 

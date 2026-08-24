@@ -30,7 +30,8 @@ import { ChatDrawer } from "@/components/chat/ChatDrawer";
 
 const statusConfig: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
   "Under Review":     { label: "Under Review",    color: "text-blue-700",    bg: "bg-blue-100",    icon: Clock },
-  "Accepted":         { label: "Accepted",        color: "text-cyan-700",    bg: "bg-cyan-100",    icon: CheckCircle2 },
+  "Selected":         { label: "Selected",        color: "text-emerald-700", bg: "bg-emerald-100", icon: CheckCircle2 },
+  "Accepted":         { label: "Selected",        color: "text-emerald-700", bg: "bg-emerald-100", icon: CheckCircle2 },
   "Referral Unlocked":{ label: "Unlocked",        color: "text-indigo-700",  bg: "bg-indigo-100",  icon: CheckCircle2 },
   "Referred":         { label: "Referred",        color: "text-indigo-700",  bg: "bg-indigo-100",  icon: ArrowRight },
   "Verified Referral":{ label: "Verified Referral", color: "text-emerald-700", bg: "bg-emerald-100", icon: ShieldCheck },

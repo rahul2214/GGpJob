@@ -11,7 +11,7 @@ const resend = new Resend(process.env.RESEND_API_KEY || 'missing_key');
 const statusMap: { [key: number]: string } = {
     1: 'Applied',
     2: 'Under Review',
-    3: 'Accepted',
+    3: 'Selected',
     4: 'Referral Unlocked',
     5: 'Referred',
     6: 'Interviewing',
@@ -49,7 +49,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     // 0.1 Fetch application data
     const { data: appData } = await supabaseAdmin
         .from('applications')
-        .select('job_pk, status_id, is_unlocked, user_pk, unlocked_at')
+        .select('id, job_pk, status_id, user_pk')
         .eq('id', targetPk)
         .single();
 
@@ -58,7 +58,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     // 0.15 Disallow rejection if unlocked
-    if (sId === 12 && (appData.is_unlocked || appData.status_id >= 4)) {
+    if (sId === 12 && appData.status_id >= 4) {
         const isEmployee = requesterRole === 'Employee' || requesterRole === 'employee' || !requesterRole;
         if (isEmployee) {
             return NextResponse.json({ error: 'You cannot reject a candidate after they have unlocked the job referral.' }, { status: 403 });
@@ -67,20 +67,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     // 0.2 Enforce Selection/Referral Limits
     let needsCreditDeduction = false;
-    if (sId === 3 || sId === 4 || sId === 5) {
+    if (sId === 4 || sId === 5) {
         if (appData) {
-            if (sId === 3) {
-                // Limit for selection interest: 5
-                const { count: selectedCount } = await supabaseAdmin
-                  .from('applications')
-                  .select('id', { count: 'exact', head: true })
-                  .eq('job_pk', appData.job_pk)
-                  .in('status_id', [3, 4, 5, 6, 7, 8, 9, 10]);
-
-                if ((selectedCount || 0) >= 5) {
-                  return NextResponse.json({ error: 'Selection Capacity Reached! You can only select up to 5 candidates for this role.' }, { status: 403 });
-                }
-            } else if (sId === 4) {
+            if (sId === 4) {
                 // Limit for candidate acceptance: FIRST 3 (First come first served)
                 // We count those who have already unlocked or are referred/joined
                 const { count: acceptedCount } = await supabaseAdmin
@@ -202,12 +191,27 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     // 1. Update the application status
-    const { data: app, error: updateError } = await supabaseAdmin
+    let { data: app, error: updateError } = await supabaseAdmin
       .from('applications')
       .update(updatePayload)
       .eq('id', targetPk)
       .select('*, jobs(title, recruiter_pk), jobseekers(id, name, email)')
       .single();
+
+    if (updateError && updateError.code === '42703') {
+        const corePayload = {
+            status_id: sId,
+            updated_at: new Date().toISOString()
+        };
+        const fallbackRes = await supabaseAdmin
+          .from('applications')
+          .update(corePayload)
+          .eq('id', targetPk)
+          .select('*, jobs(title, recruiter_pk), jobseekers(id, name, email)')
+          .single();
+        app = fallbackRes.data;
+        updateError = fallbackRes.error;
+    }
 
     if (updateError) {
         console.error('[API_APP_STATUS] Update Error:', updateError);
@@ -226,7 +230,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     let message = '';
     switch (sId) {
       case 2: message = `Your profile is now under review for ${jobTitle}.`; break;
-      case 3: message = `Great news! An employee from the company is interested in referring you for ${jobTitle}. Check your dashboard to unlock this referral.`; break;
+      case 3: message = `Great news! You have been selected by the recruiter for ${jobTitle}.`; break;
       case 4: message = `Referral unlocked! Your contact details are now visible to the referring employee.`; break;
       case 5: message = `Your referral for ${jobTitle} has been submitted internally!`; break;
       case 6: message = `You've been invited for an interview for ${jobTitle}. Good luck!`; break;
