@@ -20,6 +20,7 @@ import { User } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
 import Link from "next/link";
 import { Progress } from "./ui/progress";
+import { onFormInvalid } from "@/lib/form-toast-utils";
 
 const formSchema = z.object({
   resumeFile: z.instanceof(File).optional(),
@@ -124,7 +125,7 @@ export function ResumeForm({ user: initialUser }: ResumeFormProps) {
             </div>
         )}
         <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-4">
             <FormField
             control={form.control}
             name="resumeFile"

@@ -18,6 +18,7 @@ import { LoaderCircle } from "lucide-react";
 import { User } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { onFormInvalid } from "@/lib/form-toast-utils";
 import { useEffect } from "react";
 
 const formSchema = z.object({
@@ -89,7 +90,7 @@ export function DiversityInclusionForm({ user }: DiversityInclusionFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-4">
         <FormField
             control={form.control}
             name="disabilityStatus"

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { onFormInvalid } from "@/lib/form-toast-utils";
 import { LoaderCircle, Eye, EyeOff, Briefcase, Building2, Users, TrendingUp, ArrowRight, Zap, Database, Star, BarChart2, Mail, Phone, ShieldCheck, Sparkles, CheckCircle2, ShieldAlert, Award, UserCheck, AlertTriangle, Coins } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -261,7 +262,7 @@ export default function CompanyLoginPage() {
             </div>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-5">
                 <FormField
                   control={form.control}
                   name="email"

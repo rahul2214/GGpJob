@@ -611,23 +611,7 @@ function JobDetailsContent() {
                                         </div>
                                     )}
 
-                                    {/* Benefits & Perks Summary */}
-                                    {job.benefits && job.benefits.length > 0 && (
-                                        <div className="mt-6 border-t pt-6">
-                                            <h3 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
-                                                <Award className="h-5 w-5 text-indigo-600" />
-                                                Benefits & Perks
-                                            </h3>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                {job.benefits.map((benefit: string, idx: number) => (
-                                                    <div key={idx} className="flex items-center gap-2.5 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200/70 dark:border-slate-800 text-sm font-semibold text-slate-800 dark:text-slate-200">
-                                                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                                                        <span>{benefit}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+
 
                                     <div className="mt-8 border-t pt-8">
                                         <h3 className="text-lg font-bold mb-4 text-slate-900">

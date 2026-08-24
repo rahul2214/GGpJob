@@ -22,6 +22,7 @@ import { useUser } from "@/contexts/user-context";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from "framer-motion";
+import { onFormInvalid } from "@/lib/form-toast-utils";
 
 import { COUNTRY_CODES } from "@/utils/country-codes";
 import { CountryCodeSelect } from "@/components/country-code-select";
@@ -225,7 +226,7 @@ export default function CompanySignupPage() {
           )}
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-4">
               <FormField control={form.control} name="name" render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-slate-700 font-semibold text-sm">Full Name</FormLabel>

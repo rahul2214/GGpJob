@@ -27,6 +27,7 @@ import { CountryCodeSelect } from "./country-code-select";
 import { Switch } from "@/components/ui/switch";
 import { LocationCascadeSelector } from "@/components/location/LocationCascadeSelector";
 import { SUPPORTED_CURRENCIES } from "@/utils/currency";
+import { onFormInvalid } from "@/lib/form-toast-utils";
 
 const PillSelect = ({ value, onChange, options, className = "" }: { value?: string, onChange: (v: string) => void, options: string[], className?: string }) => (
     <div className={`flex flex-wrap gap-2 ${className}`}>
@@ -431,7 +432,7 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-4">
                 <FormField
                     control={form.control}
                     name="name"

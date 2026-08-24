@@ -464,7 +464,12 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         if (jobPk) {
             console.log(`[API_JOB_ID_DELETE] Cleaning dependencies for Job PK: ${jobPk}`);
             
-            // 2. Manually delete notifications linked to this job
+            // 2. Manually delete relational junction table rows
+            await supabaseAdmin.from('job_skills').delete().eq('job_pk', jobPk);
+            await supabaseAdmin.from('job_benefits').delete().eq('job_pk', jobPk);
+            await supabaseAdmin.from('job_locations').delete().or(`job_id.eq.${jobPk}`);
+
+            // 3. Manually delete notifications linked to this job
             // This prevents: "violates foreign key constraint notifications_job_pk_fkey"
             const { error: notifError } = await supabaseAdmin
                 .from('notifications')
@@ -473,8 +478,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
             
             if (notifError) console.warn('[API_JOB_ID_DELETE] Non-fatal notification cleanup error:', notifError);
 
-            // 3. Manually delete applications (Safety step)
-            // Even if CASCADE is enabled, explicit deletion ensures no constraints are missed.
+            // 4. Manually delete applications (Safety step)
             const { error: appError } = await supabaseAdmin
                 .from('applications')
                 .delete()

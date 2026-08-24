@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle, Star } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { onFormInvalid } from "@/lib/form-toast-utils";
 import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
@@ -77,7 +78,7 @@ export function PortalFeedbackForm({ userId }: PortalFeedbackFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-6">
         <FormField
           control={form.control}
           name="rating"

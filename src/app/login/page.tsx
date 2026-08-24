@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { onFormInvalid } from "@/lib/form-toast-utils";
 import { LoaderCircle, Eye, EyeOff, Search, Star, ArrowRight, Users, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -280,7 +281,7 @@ export default function LoginPage() {
           </div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onEmailSubmit)} className="space-y-5">
+            <form onSubmit={form.handleSubmit(onEmailSubmit, (err) => onFormInvalid(err, toast))} className="space-y-5">
               <FormField
                 control={form.control}
                 name="email"

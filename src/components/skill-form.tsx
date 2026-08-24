@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle } from "lucide-react";
 import type { MasterSkill } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
+import { onFormInvalid } from "@/lib/form-toast-utils";
 
 const formSchema = z.object({
   name: z.string().min(2, "Skill name must be at least 2 characters long."),
@@ -75,7 +76,7 @@ export function SkillForm({ skill, onSuccess }: SkillFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-8">
         <FormField
           control={form.control}
           name="name"

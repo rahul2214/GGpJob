@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { onFormInvalid } from "@/lib/form-toast-utils";
 
 const formSchema = z.object({
   gender: z.string().min(1, "Please select gender."),
@@ -101,7 +102,7 @@ export function PersonalDetailsForm({ user }: PersonalDetailsFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
                 control={form.control}

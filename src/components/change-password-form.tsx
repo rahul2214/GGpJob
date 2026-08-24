@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase-client";
+import { onFormInvalid } from "@/lib/form-toast-utils";
 
 
 const formSchema = z
@@ -69,7 +70,7 @@ export function ChangePasswordForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-4">
         <FormField
           control={form.control}
           name="oldPassword"

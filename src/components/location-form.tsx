@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle } from "lucide-react";
 import type { Location } from "@/lib/types";
+import { onFormInvalid } from "@/lib/form-toast-utils";
 
 const formSchema = z.object({
   name: z.string().min(2, "Location name must be at least 2 characters long."),
@@ -75,7 +76,7 @@ export function LocationForm({ location, onSuccess }: LocationFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-4">
         <FormField
           control={form.control}
           name="name"

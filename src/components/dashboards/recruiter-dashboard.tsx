@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, MoreHorizontal, Edit, Trash2, Users, Share2, Calendar, LayoutDashboard, Crown, Star, Search, TrendingUp, Briefcase } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Users, Share2, Calendar, LayoutDashboard, Crown, Star, Search, TrendingUp, Briefcase, Power, PowerOff } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import {
   DropdownMenu,
@@ -48,11 +48,13 @@ export default function RecruiterDashboard({ onlyPostings = false }: RecruiterDa
   const [postedJobs, setPostedJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
-  const [activeTab, setActiveTab] = useState<JobTab>("active");
+
+  // Modal control
   const [showExpiredModal, setShowExpiredModal] = useState(false);
   const [modalVariant, setModalVariant] = useState<"expired" | "required">("expired");
-  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<JobTab>("active");
 
+  const { toast } = useToast();
   const isExpired = subInfo?.isExpired ?? false;
   const graceDays = subInfo?.isInGracePeriod ? subInfo.graceDaysRemaining : undefined;
 
@@ -90,19 +92,52 @@ export default function RecruiterDashboard({ onlyPostings = false }: RecruiterDa
     }
   }, [user]);
 
+  const handleToggleStatus = async (job: Job) => {
+    const currentStatus = (job.status || "active").toLowerCase();
+    const newStatus = currentStatus === "active" ? "closed" : "active";
+    try {
+      const response = await fetch(`/api/jobs/${job.uuid}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to update job status");
+      }
+      toast({
+        title: "Success",
+        description: `Job posting marked as ${newStatus === "active" ? "active" : "inactive"}.`,
+      });
+      await fetchJobs();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update job status.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDeleteJob = async () => {
     if (!jobToDelete) return;
 
     const uuidToDelete = jobToDelete.uuid;
-    setPostedJobs((prev) => prev.filter((job) => job.uuid !== uuidToDelete));
 
     try {
       const response = await fetch(`/api/jobs/${uuidToDelete}`, { method: "DELETE" });
-      if (!response.ok) throw new Error("Failed to delete job");
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to delete job");
+      }
       toast({ title: "Success", description: "Job deleted successfully." });
       await fetchJobs();
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to delete job. Reverting list.", variant: "destructive" });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete job.",
+        variant: "destructive",
+      });
       await fetchJobs();
       console.error(error);
     } finally {
@@ -257,6 +292,23 @@ export default function RecruiterDashboard({ onlyPostings = false }: RecruiterDa
                       >
                         <Edit className="mr-2 h-4 w-4 text-slate-400" />
                         Edit Job
+                      </DropdownMenuItem>
+                      {/* Mark as Inactive / Active option */}
+                      <DropdownMenuItem
+                        className="rounded-lg font-bold text-xs focus:bg-slate-50 cursor-pointer"
+                        onClick={() => handleToggleStatus(job)}
+                      >
+                        {(job.status || "active").toLowerCase() === "active" ? (
+                          <>
+                            <PowerOff className="mr-2 h-4 w-4 text-amber-500" />
+                            <span className="text-amber-700 font-bold">Mark as Inactive</span>
+                          </>
+                        ) : (
+                          <>
+                            <Power className="mr-2 h-4 w-4 text-emerald-500" />
+                            <span className="text-emerald-700 font-bold">Mark as Active</span>
+                          </>
+                        )}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => setJobToDelete(job)}
@@ -467,15 +519,33 @@ export default function RecruiterDashboard({ onlyPostings = false }: RecruiterDa
       <AlertDialog open={!!jobToDelete} onOpenChange={(open) => !open && setJobToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the job posting for
-              &quot;{jobToDelete?.title}&quot;.
+            <AlertDialogTitle>Delete Job Posting?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-slate-600">
+              <span>This will attempt to delete the job posting &quot;{jobToDelete?.title}&quot;.</span>
+              <span className="block text-xs font-semibold text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200 mt-2">
+                Note: Jobs with active candidate applications cannot be deleted to preserve applicant history. You can mark the job as inactive instead.
+              </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex flex-wrap gap-2 sm:justify-end">
             <AlertDialogCancel onClick={() => setJobToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteJob}>Continue</AlertDialogAction>
+            <Button
+              variant="outline"
+              className="border-amber-200 text-amber-700 hover:bg-amber-50 font-bold text-xs h-10 px-4 rounded-md"
+              onClick={() => {
+                if (jobToDelete) {
+                  const targetJob = jobToDelete;
+                  setJobToDelete(null);
+                  handleToggleStatus(targetJob);
+                }
+              }}
+            >
+              <PowerOff className="w-4 h-4 mr-1.5 text-amber-500" />
+              Mark as Inactive
+            </Button>
+            <AlertDialogAction onClick={handleDeleteJob} className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs h-10 px-4 rounded-md">
+              Delete Job
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

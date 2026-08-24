@@ -17,6 +17,8 @@ import type { MasterSkill } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { onFormInvalid } from "@/lib/form-toast-utils";
 
 const educationSchema = z.object({
     institution: z.string().min(1, "Institution is required"),
@@ -159,6 +161,7 @@ export const ProfileSectionForm = ({
     });
 
     const { watch, setValue, formState: { isSubmitting } } = form;
+    const { toast } = useToast();
 
     const isCurrent = watch('isCurrent');
     const [masterSkills, setMasterSkills] = useState<MasterSkill[]>([]);
@@ -187,7 +190,7 @@ export const ProfileSectionForm = ({
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onFormSubmit, (err) => onFormInvalid(err, toast))} className="space-y-4">
                 {currentSection === 'education' && (
                     <>
                         <FormField control={form.control} name="institution" render={({ field }) => (<FormItem> <FormLabel>Institution</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem>)} />

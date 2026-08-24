@@ -25,6 +25,7 @@ import type { JobType, WorkplaceType, Job, Location, MasterSkill, CompanySize } 
 import { useUser } from "@/contexts/user-context";
 import { MultiSelectFilter } from "./multi-select-filter";
 import { SUPPORTED_CURRENCIES } from "@/utils/currency";
+import { onFormInvalid } from "@/lib/form-toast-utils";
 
 // ─── Schema ────────────────────────────────────────────────────────────────
 
@@ -392,7 +393,7 @@ export function JobForm({ job }: JobFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-4">
         <FormField
           control={form.control}
           name="jobTitle"

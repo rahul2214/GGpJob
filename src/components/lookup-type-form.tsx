@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle } from "lucide-react";
 import type { JobType, WorkplaceType, ExperienceLevel } from "@/lib/types";
+import { onFormInvalid } from "@/lib/form-toast-utils";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters long."),
@@ -75,7 +76,7 @@ export function LookupTypeForm({ item, typeName, apiPath, onSuccess }: LookupTyp
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-8">
         <FormField
           control={form.control}
           name="name"

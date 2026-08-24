@@ -20,6 +20,7 @@ import { User } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { onFormInvalid } from "@/lib/form-toast-utils";
 
 const countWords = (str: string) => {
   return str.trim().split(/\s+/).filter(Boolean).length;
@@ -98,7 +99,7 @@ export function SummaryForm({ user }: SummaryFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-4">
         <FormField
           control={form.control}
           name="summary"
