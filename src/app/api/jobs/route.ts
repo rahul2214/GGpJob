@@ -386,6 +386,15 @@ export async function GET(request: NextRequest) {
         if (jtpks.length > 0) query = query.in('job_type_pk', jtpks);
     }
 
+    const limitParam = searchParams.get('limit');
+    const limitNum = limitParam ? parseInt(limitParam, 10) : null;
+    const isValidLimit = limitNum !== null && !isNaN(limitNum) && limitNum > 0;
+
+    query = query.order('posted_at', { ascending: false });
+    if (isValidLimit) {
+        query = query.limit(limitNum);
+    }
+
     let { data: jobs, error } = await query;
 
     if (error && error.code === '42703') {
@@ -448,6 +457,11 @@ export async function GET(request: NextRequest) {
             if (jtpks.length > 0) fallbackQuery = fallbackQuery.in('job_type_pk', jtpks);
         }
 
+        fallbackQuery = fallbackQuery.order('posted_at', { ascending: false });
+        if (isValidLimit) {
+            fallbackQuery = fallbackQuery.limit(limitNum);
+        }
+
         const fallbackRes = await fallbackQuery;
         jobs = fallbackRes.data;
         error = fallbackRes.error;
@@ -460,6 +474,10 @@ export async function GET(request: NextRequest) {
     const searchTerm = searchParams.get('search');
     if (searchTerm && searchTerm.trim() !== '') {
       finalJobs = intelligentSearchJobs(finalJobs, searchTerm);
+    }
+
+    if (isValidLimit) {
+      finalJobs = finalJobs.slice(0, limitNum);
     }
 
     const response = NextResponse.json(finalJobs);

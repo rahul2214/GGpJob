@@ -273,22 +273,38 @@ const cardVariants = {
 };
 
 function formatSalary(job: any): string {
-  if (job.salaryMin || job.salaryMax) {
-    const isINR = job.salaryCurrency === 'INR';
-    if (isINR) {
-      const minL = job.salaryMin ? `₹${(job.salaryMin / 100000).toFixed(1)} Lakhs` : '';
-      const maxL = job.salaryMax ? `₹${(job.salaryMax / 100000).toFixed(1)} Lakhs` : '';
-      if (minL && maxL) return `${minL} – ${maxL}`;
-      if (minL) return `${minL}+`;
-      if (maxL) return `Up to ${maxL}`;
-    } else {
-      const min = job.salaryMin ? `$${Math.round(job.salaryMin / 1000)}k` : '';
-      const max = job.salaryMax ? `$${Math.round(job.salaryMax / 1000)}k` : '';
-      if (min && max) return `${min} – ${max}`;
-      if (min) return `${min}+`;
-      if (max) return `Up to ${max}`;
-    }
+  if (!job) return "Not Disclosed";
+  const min = job.salaryMin;
+  const max = job.salaryMax;
+  
+  if (min || max) {
+    const code = (job.salaryCurrency || job.currency || 'USD').toUpperCase();
+    
+    const formatValue = (val: number) => {
+      if (code === 'INR') {
+        if (val >= 100000) {
+          const lakhs = val / 100000;
+          return `₹${lakhs % 1 === 0 ? lakhs : lakhs.toFixed(1)}L`;
+        }
+        return `₹${val.toLocaleString('en-IN')}`;
+      }
+      
+      try {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: code,
+          maximumFractionDigits: 0,
+        }).format(val);
+      } catch {
+        return `${code} ${val.toLocaleString()}`;
+      }
+    };
+
+    if (min && max) return `${formatValue(min)} – ${formatValue(max)}`;
+    if (min) return `${formatValue(min)}+`;
+    if (max) return `Up to ${formatValue(max)}`;
   }
+
   return job.salary || "Not Disclosed";
 }
 
@@ -303,32 +319,32 @@ export function JobsGrid() {
     async function fetchRecentJobs() {
       try {
         setLoading(true);
-        const res = await fetch('/api/jobs?limit=10');
+        const res = await fetch('/api/jobs?limit=6');
         if (res.ok) {
           const data = await res.json();
           const jobsList = Array.isArray(data) ? data : (data.recommended || []);
           if (jobsList && jobsList.length > 0) {
-            setDbJobs(jobsList.slice(0, 10));
+            setDbJobs(jobsList.slice(0, 6));
           } else {
             // Fetch live active MNC job openings directly from live API feed
             const liveRes = await fetch('/api/jobs/seed-mnc');
             if (liveRes.ok) {
               const liveData = await liveRes.json();
               if (liveData?.jobs && liveData.jobs.length > 0) {
-                setDbJobs(liveData.jobs);
+                setDbJobs(liveData.jobs.slice(0, 6));
               } else {
-                setDbJobs(FALLBACK_JOBS);
+                setDbJobs(FALLBACK_JOBS.slice(0, 6));
               }
             } else {
-              setDbJobs(FALLBACK_JOBS);
+              setDbJobs(FALLBACK_JOBS.slice(0, 6));
             }
           }
         } else {
-          setDbJobs(FALLBACK_JOBS);
+          setDbJobs(FALLBACK_JOBS.slice(0, 6));
         }
       } catch (err) {
         console.error("Failed to fetch recent jobs from DB:", err);
-        setDbJobs(FALLBACK_JOBS);
+        setDbJobs(FALLBACK_JOBS.slice(0, 6));
       } finally {
         setLoading(false);
       }
@@ -435,11 +451,13 @@ export function JobsGrid() {
               const company = job.companyName || job.company || "Top Tech Company";
               const location = job.location || "Not Disclosed";
               const typeName = job.type || job.workplaceType || "Not Disclosed";
-              const isRef = Boolean(job.isReferral || job.referral);
               const salaryStr = formatSalary(job);
-              const tagsList = Array.isArray(job.benefits) && job.benefits.length > 0
-                ? job.benefits.slice(0, 3)
-                : (job.tags || ["Full Stack", "High Growth"]);
+              const skillsRaw = (Array.isArray(job.skills) && job.skills.length > 0)
+                ? job.skills
+                : ((Array.isArray(job.requiredSkills) && job.requiredSkills.length > 0)
+                    ? job.requiredSkills
+                    : (Array.isArray(job.benefits) && job.benefits.length > 0 ? job.benefits : ["Full Stack", "Cloud"]));
+              const skillsStr = skillsRaw.join(', ');
 
               return (
                 <motion.div
@@ -451,7 +469,7 @@ export function JobsGrid() {
                 >
                   {/* Top row */}
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 flex items-center justify-center text-xl shrink-0 overflow-hidden p-1.5">
                         {job.companyLogo ? (
                           typeof job.companyLogo === 'string' && job.companyLogo.startsWith('http') ? (
@@ -468,46 +486,35 @@ export function JobsGrid() {
                           <Building2 className="w-5 h-5 text-violet-500" />
                         )}
                       </div>
-                      <div>
-                        <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors truncate" title={roleTitle}>
                           {roleTitle}
                         </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{company}</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed line-clamp-2">
-                          {job.description && typeof job.description === 'string' && job.description.length > 20 
-                            ? job.description.replace(/<[^>]*>/g, '').substring(0, 110) + '...' 
-                            : `Direct hiring opening at ${company}. Apply with ATS resume optimization and connect with verified employee insiders.`}
-                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium truncate" title={company}>{company}</p>
+                        
                       </div>
                     </div>
-                    {isRef && (
-                      <span className="badge-violet shrink-0 flex items-center gap-1 text-[10px]">
-                        <ShieldCheck className="w-3 h-3" /> Referral
-                      </span>
-                    )}
+                   
                   </div>
 
                   {/* Meta */}
                   <div className="flex flex-wrap gap-3 text-xs text-slate-600 dark:text-slate-400">
-                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-violet-500 dark:text-violet-400" />{location}</span>
-                    <span className="flex items-center gap-1"><Briefcase className="w-3 h-3 text-blue-500 dark:text-blue-400" />{typeName}</span>
-                    <span className="flex items-center gap-1"><DollarSign className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />{salaryStr}</span>
+                    <span className="flex items-center gap-1 truncate max-w-[140px]" title={location}><MapPin className="w-3 h-3 text-violet-500 dark:text-violet-400 shrink-0" /><span className="truncate">{location}</span></span>
+                    <span className="flex items-center gap-1 truncate max-w-[120px]" title={typeName}><Briefcase className="w-3 h-3 text-blue-500 dark:text-blue-400 shrink-0" /><span className="truncate">{typeName}</span></span>
+                    <span className="flex items-center gap-1 truncate max-w-[140px]" title={salaryStr}><DollarSign className="w-3 h-3 text-emerald-500 dark:text-emerald-400 shrink-0" /><span className="truncate">{salaryStr}</span></span>
                   </div>
 
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-1.5">
-                    {tagsList.map((tag: string, idx: number) => (
-                      <span key={idx} className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300">
-                        {tag}
-                      </span>
-                    ))}
+                  {/* Skills (comma separated with truncation ...) */}
+                  <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 min-w-0">
+                    <span className="font-bold text-slate-700 dark:text-slate-300 shrink-0">Skills:</span>
+                    <span className="truncate font-medium text-slate-600 dark:text-slate-300" title={skillsStr}>
+                      {skillsStr}
+                    </span>
                   </div>
 
                   {/* CTA */}
                   <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-white/5 mt-auto">
-                    <span className="text-xs text-slate-500">
-                      {isRef ? "2 credits to apply" : "Free to apply"}
-                    </span>
+                    
                     <span className="text-xs font-bold text-violet-600 dark:text-violet-400 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       View Role <ArrowRight className="w-3 h-3" />
                     </span>

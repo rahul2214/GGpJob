@@ -143,15 +143,15 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
                 </div>
                 
                 <div className="min-w-0 flex-1">
-                  <CardTitle className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-snug truncate">
+                  <CardTitle className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-snug truncate" title={job.title}>
                     {job.title}
                   </CardTitle>
                   <div className="flex items-center gap-1.5 mt-0.5 text-xs text-indigo-600 dark:text-indigo-400 font-semibold truncate">
-                    <span>{job.companyName}</span>
+                    <span className="truncate" title={job.companyName}>{job.companyName}</span>
                     {job.job_role && (
                       <>
-                        <span className="text-slate-300 dark:text-slate-700">•</span>
-                        <span className="text-slate-500 dark:text-slate-400 truncate">{job.job_role}</span>
+                        <span className="text-slate-300 dark:text-slate-700 shrink-0">•</span>
+                        <span className="text-slate-500 dark:text-slate-400 truncate" title={job.job_role}>{job.job_role}</span>
                       </>
                     )}
                   </div>
