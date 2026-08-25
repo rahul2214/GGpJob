@@ -8,13 +8,13 @@ import { AnimatedCounter } from '@/components/animated-counter';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as any } }
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as any } }
 };
 
 const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.12 } }
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.12 } }
 };
 
 export function HeroSection() {
@@ -32,7 +32,7 @@ export function HeroSection() {
         const roles = ["Software Engineer", "Frontend Dev", "DevOps Engineer", "UI/UX Designer", "Product Manager", "Data Scientist"];
         const locations = ["Tokyo, JP", "London, UK", "Berlin, DE", "Toronto, CA", "Sydney, AU", "Singapore, SG", "New York, US"];
         const names = ["Akira M.", "Elena K.", "James R.", "Sophie P.", "Chen G.", "Nina T.", "Omar C."];
-        
+
         const tickerInterval = setInterval(() => {
             const randomName = names[Math.floor(Math.random() * names.length)];
             const randomCompany = companies[Math.floor(Math.random() * companies.length)];
@@ -67,13 +67,15 @@ export function HeroSection() {
 
                         <motion.div variants={fadeInUp}>
                             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-6 leading-[1.08]">
-                                Bypass the ATS Black Hole — <br />
-                                Get Referred by <span className="text-gradient-hero">Top MNC Insiders.</span>
+                                Find Jobs Worldwide — <br />
+                                <span className="text-gradient-hero">Grow Your Career with AI.</span>
                             </h1>
                         </motion.div>
-                        
+
                         <motion.p variants={fadeInUp} className="text-slate-600 dark:text-slate-300 mb-6 text-base md:text-lg leading-relaxed">
-                        JobsDart connects job seekers with verified employees, senior professionals, and recruiters at top companies worldwide. Discover jobs, build ATS-friendly resumes, and accelerate your career.
+                            Discover global, remote, and international jobs, build an ATS-friendly
+                            resume, check your ATS score, and get personalized AI-powered career
+                            recommendations.
                         </motion.p>
 
                         <motion.form variants={fadeInUp} onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 bg-white dark:bg-white/5 backdrop-blur-md p-2 rounded-2xl border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-2xl max-w-xl">
@@ -92,7 +94,7 @@ export function HeroSection() {
                                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                             </span>
                             <AnimatePresence mode="wait">
-                                <motion.p 
+                                <motion.p
                                     key={recentHire.name}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -109,11 +111,11 @@ export function HeroSection() {
                     <div className="relative h-[450px] lg:h-[550px] hidden lg:block lg:col-span-5">
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-white/5 rounded-full animate-spin-slow pointer-events-none"></div>
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] border border-white/10 rounded-full animate-spin-slow pointer-events-none" style={{ animationDirection: 'reverse', animationDuration: '30s' }}></div>
-                        
+
                         {/* Interactive Global Card */}
-                        <motion.div 
-                            animate={{ y: [-8, 8, -8] }} 
-                            transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }} 
+                        <motion.div
+                            animate={{ y: [-8, 8, -8] }}
+                            transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
                             className="absolute top-8 right-0 z-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-xl p-5 rounded-2xl w-[280px]"
                         >
                             <div className="flex items-center gap-4 mb-4">
@@ -140,9 +142,9 @@ export function HeroSection() {
                         </motion.div>
 
                         {/* Company Card */}
-                        <motion.div 
-                            animate={{ y: [8, -8, 8] }} 
-                            transition={{ repeat: Infinity, duration: 7, ease: "easeInOut" }} 
+                        <motion.div
+                            animate={{ y: [8, -8, 8] }}
+                            transition={{ repeat: Infinity, duration: 7, ease: "easeInOut" }}
                             className="absolute bottom-16 left-4 z-30 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 shadow-xl p-6 rounded-2xl w-[260px] border-gradient-violet"
                         >
                             <div className="flex items-start justify-between mb-4">
@@ -151,7 +153,7 @@ export function HeroSection() {
                                     <h4 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2"><Building2 className="w-4 h-4" /> Amazon UK</h4>
                                 </div>
                             </div>
-                            
+
                             <div className="space-y-4">
                                 <div className="flex items-center gap-3">
                                     <div className="w-6 h-6 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/20 dark:border-emerald-500/30 flex items-center justify-center text-emerald-650 dark:text-emerald-400 text-xs font-bold">✓</div>
