@@ -367,14 +367,14 @@ async function refundCredits(jobseekerId: string | number, amount: number, jobPk
         await refundCredits(applicantPk, 2, app.job_pk);
     }
 
-    // 4. Send Resend Email (only for meaningful status changes: Selected or Not Suitable)
-    if (applicant?.email && process.env.RESEND_API_KEY && (sId === 3 || sId === 4)) {
+    // 4. Send Resend Email (only for meaningful status changes: Selected or Rejected)
+    if (applicant?.email && process.env.RESEND_API_KEY && (sId === 3 || sId === 4 || sId === 12)) {
         try {
             console.log(`[API_APP_STATUS] Sending status email via Resend to ${applicant.email} (status: ${sId})`);
             const fromEmail = process.env.RESEND_FROM_EMAIL || 'info@jobsdart.in';
             const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.jobsdart.in';
             
-            const isSelected = sId === 4;
+            const isSelected = sId === 3 || sId === 4;
             const statusColor = isSelected ? '#10b981' : '#ef4444';
             const statusBg = isSelected ? '#ecfdf5' : '#fef2f2';
             const statusBorder = isSelected ? '#6ee7b7' : '#fca5a5';
@@ -413,7 +413,7 @@ async function refundCredits(jobseekerId: string | number, amount: number, jobPk
                             <td style="padding:32px 40px 0;">
                               <div style="background:${statusBg};border:1px solid ${statusBorder};border-radius:12px;padding:16px 20px;display:inline-block;width:100%;box-sizing:border-box;">
                                 <p style="margin:0;font-size:16px;font-weight:700;color:${statusColor};">
-                                  ${statusIcon} ${isSelected ? 'Application Accepted — Selected!' : 'Application Status Update'}
+                                  ${statusIcon} ${isSelected ? 'Application Selected!' : 'Application Status Update'}
                                 </p>
                               </div>
                             </td>
