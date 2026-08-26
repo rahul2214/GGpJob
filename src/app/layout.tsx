@@ -3,8 +3,7 @@ import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import { Suspense } from 'react';
 
-// The stylesheet is handled by Next.js; suppress TypeScript's missing CSS module declaration.
-// @ts-expect-error -- CSS side-effect imports are resolved by the Next.js bundler.
+// The stylesheet is handled by Next.js
 import './globals.css';
 
 import { cn } from '@/lib/utils';

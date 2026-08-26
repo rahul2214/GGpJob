@@ -56,15 +56,14 @@ export async function POST(req: NextRequest) {
       const isUuid = resolvedJobId.includes("-");
       const { data: dbJob } = await supabaseAdmin
         .from("jobs")
-        .select("title, company_name, description, is_referral")
+        .select("title, company_name, description")
         .eq(isUuid ? "uuid" : "id", resolvedJobId)
         .maybeSingle();
       if (dbJob) {
         activeJobContext = {
           title: dbJob.title,
           company: dbJob.company_name,
-          description: dbJob.description,
-          isReferral: dbJob.is_referral
+          description: dbJob.description
         };
       }
     }
@@ -75,21 +74,14 @@ export async function POST(req: NextRequest) {
     let userApplications: any[] = [];
     let appliedJobPks: number[] = [];
     let recentJobs: any[] = [];
-    let referralJobs: any[] = [];
     let candidatePool: any[] = [];
-    let activeReferrers: any[] = [];
 
     if (userId) {
-      // Query jobseekers, employees, recruiters, and admins in parallel
-      const [seekerRes, employeeRes, recruiterRes, adminRes] = await Promise.all([
+      // Query jobseekers, recruiters, and admins in parallel
+      const [seekerRes, recruiterRes, adminRes] = await Promise.all([
         supabaseAdmin
           .from("jobseekers")
           .select("*, domain:domains!domain_id(uuid, name), jobseeker_skills(skills(id, name))")
-          .eq("uuid", userId)
-          .maybeSingle(),
-        supabaseAdmin
-          .from("employees")
-          .select("*")
           .eq("uuid", userId)
           .maybeSingle(),
         supabaseAdmin
@@ -116,9 +108,6 @@ export async function POST(req: NextRequest) {
         if (appliedApps) {
           appliedJobPks = appliedApps.map((a: any) => a.job_pk).filter(Boolean);
         }
-      } else if (employeeRes.data) {
-        userProfile = employeeRes.data;
-        userRole = "Employee";
       } else if (recruiterRes.data) {
         userProfile = recruiterRes.data;
         userRole = "Recruiter";
@@ -161,7 +150,7 @@ export async function POST(req: NextRequest) {
       if (jobToCheck?.job_link) {
         return NextResponse.json({
           message: `🔗 **External Application Required**:\n\nThe job **${jobToCheck.title}** at **${jobToCheck.company_name}** requires applying directly on the company's website.\n\nPlease click here to apply: [Apply on Company Website](${jobToCheck.job_link})`,
-          suggestions: ["Recommend Jobs", "Get a Referral", "Improve Resume"]
+          suggestions: ["Recommend Jobs", "Direct Apply", "Improve Resume"]
         });
       }
 
@@ -182,7 +171,7 @@ export async function POST(req: NextRequest) {
         if (appRes.ok) {
           return NextResponse.json({
             message: `🎉 **Success!** Your application for **${activeJobContext?.title || "the job"}** at **${activeJobContext?.company || "the company"}** has been successfully submitted to the database!\n\nYou can track the status in your applications dashboard. Would you like to:`,
-            suggestions: ["View Application Status", "Get a Referral", "Recommend Jobs"]
+            suggestions: ["View Application Status", "Direct Apply", "Recommend Jobs"]
           });
         } else {
           return NextResponse.json({
@@ -453,7 +442,7 @@ Do NOT wrap the response in markdown blocks (e.g., do NOT include \`\`\`json). J
     return NextResponse.json(
       {
         message: "I apologize, but I encountered an error connecting to my core services. Please try again in a few moments.",
-        suggestions: ["Find Jobs", "Improve Resume", "Get Referral"],
+        suggestions: ["Find Jobs", "Improve Resume", "Direct Apply"],
       },
       { status: 200 }
     );

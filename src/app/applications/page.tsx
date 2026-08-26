@@ -32,61 +32,23 @@ const statusConfig: Record<string, { label: string; color: string; bg: string; i
   "Under Review":     { label: "Under Review",    color: "text-blue-700",    bg: "bg-blue-100",    icon: Clock },
   "Selected":         { label: "Selected",        color: "text-emerald-700", bg: "bg-emerald-100", icon: CheckCircle2 },
   "Accepted":         { label: "Selected",        color: "text-emerald-700", bg: "bg-emerald-100", icon: CheckCircle2 },
-  "Referral Unlocked":{ label: "Unlocked",        color: "text-indigo-700",  bg: "bg-indigo-100",  icon: CheckCircle2 },
-  "Referred":         { label: "Referred",        color: "text-indigo-700",  bg: "bg-indigo-100",  icon: ArrowRight },
-  "Verified Referral":{ label: "Verified Referral", color: "text-emerald-700", bg: "bg-emerald-100", icon: ShieldCheck },
-  "Interviewing":     { label: "Interview Needs to be Scheduled", color: "text-amber-700", bg: "bg-amber-100", icon: Clock },
+  "Interviewing":     { label: "Interview Scheduled", color: "text-amber-700", bg: "bg-amber-100", icon: Clock },
   "Offer Received":   { label: "Offer Received",  color: "text-purple-700",  bg: "bg-purple-100",  icon: CheckCircle2 },
   "Pending Confirmation": { label: "Joined?",     color: "text-orange-700",  bg: "bg-orange-100",  icon: Clock },
   "Joined Company":   { label: "Joined",          color: "text-emerald-700", bg: "bg-emerald-100", icon: CheckCircle2 },
   "Completed":        { label: "Completed",       color: "text-emerald-700", bg: "bg-emerald-100", icon: CheckCircle2 },
-  "Disputed":         { label: "Disputed",        color: "text-red-700",     bg: "bg-red-100",     icon: XCircle },
   "Rejected":         { label: "Rejected",        color: "text-rose-700",    bg: "bg-rose-100",    icon: XCircle },
   default:            { label: "Applied",         color: "text-slate-600",   bg: "bg-slate-100",   icon: Clock },
 };
 
 function StatusBadge({ app }: { app: Application }) {
-  const status = app.statusName;
-  let label = statusConfig[status ?? ""]?.label ?? statusConfig.default.label;
-  
-  if (status === "Interviewing") {
-    if (app.verificationStatus === "pending" || app.verificationStatus === "pending_jobseeker") {
-      label = "Waiting for Interview Confirmation";
-    } else if (app.verificationStatus === "pending_employee") {
-      label = "Awaiting Employee Verification";
-    } else if (app.verificationStatus === "verified") {
-      label = "Waiting for Offer Letter";
-    } else {
-      label = "Waiting for Interview";
-    }
-  } else if (status === "Offer Received") {
-    if (app.verificationStatus === "pending" || app.verificationStatus === "pending_jobseeker") {
-      label = "Waiting for Offer Confirmation";
-    } else if (app.verificationStatus === "pending_employee") {
-      label = "Awaiting Employee Verification";
-    }
-  } else if (status === "Referred") {
-    if (app.verificationStatus === "pending" || app.verificationStatus === "pending_jobseeker") {
-      label = "Waiting for Referral Confirmation";
-    } else if (app.verificationStatus === "pending_employee") {
-      label = "Awaiting Employee Verification";
-    }
-  } else if (status === "Joined Company") {
-    if (app.verificationStatus === "pending" || app.verificationStatus === "pending_jobseeker") {
-      label = "Waiting for Hire Confirmation";
-    } else if (app.verificationStatus === "pending_employee") {
-      label = "Awaiting Employee Verification";
-    }
-  } else if (status === "Pending Confirmation") {
-    label = "Offer Verified! Time to Join";
-  }
-  
-  const cfg = statusConfig[status ?? ""] ?? statusConfig.default;
+  const status = app.statusName || "Applied";
+  const cfg = statusConfig[status] ?? statusConfig.default;
   const Icon = cfg.icon;
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full ${cfg.bg} ${cfg.color}`}>
       <Icon className="w-4 h-4" />
-      {label}
+      {cfg.label}
     </span>
   );
 }
