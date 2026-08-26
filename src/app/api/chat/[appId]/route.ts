@@ -12,102 +12,125 @@ function sanitizeContent(content: string): string {
 async function getOrCreateSession(appId: string) {
     const cleanAppId = appId.startsWith('chat-') ? appId.substring(5) : appId;
     const isNumeric = /^\d+$/.test(cleanAppId);
+    const targetId = isNumeric ? parseInt(cleanAppId, 10) : cleanAppId;
 
-    // 1. Resolve Application first (robustly)
+    // 1. Resolve Application directly (without invalid columns)
     const { data: appData, error: appError } = await supabaseAdmin
         .from('applications')
-        .select(`
-            id, 
-            uuid,
-            user_pk,
-            status_id,
-            is_unlocked,
-            jobseekers!user_pk(id, uuid, plan_type),
-            job:jobs(
-                id, 
-                title,
-                is_referral,
-                recruiters!recruiter_pk(id, uuid)
-            )
-        `)
-        .eq(isNumeric ? 'id' : 'uuid', cleanAppId)
-        .single();
+        .select('id, uuid, user_pk, job_pk, status_id')
+        .eq(isNumeric ? 'id' : 'uuid', targetId)
+        .maybeSingle();
 
-    if (appError || !appData) return null;
+    if (appError || !appData) {
+        console.error('[CHAT_GET_APP_ERROR]', appError, 'cleanAppId:', cleanAppId, 'targetId:', targetId);
+        return null;
+    }
 
     const internalAppId = appData.id;
-    const jobseekerPk = (appData.jobseekers as any)?.id;
-    const posterPk = (appData.job as any)?.employees?.id || (appData.job as any)?.recruiters?.id;
 
-    // 2. Try to find existing session
-    let { data: session, error: sessionError } = await supabaseAdmin
+    // 2. Fetch Jobseeker and Job details in parallel
+    const [jobseekerRes, jobRes] = await Promise.all([
+        supabaseAdmin.from('jobseekers').select('id, uuid, plan_type').eq('id', appData.user_pk).maybeSingle(),
+        appData.job_pk ? supabaseAdmin.from('jobs').select('id, title, recruiter_pk').eq('id', appData.job_pk).maybeSingle() : Promise.resolve({ data: null })
+    ]);
+
+    const jobseekerPk = jobseekerRes.data?.id || appData.user_pk;
+    const jobseekerUuid = jobseekerRes.data?.uuid || '';
+    const jobseekerPlan = jobseekerRes.data?.plan_type || 'free';
+
+    const jobObj = jobRes.data || {};
+    const posterPk = jobObj.recruiter_pk || 1;
+    let posterUuid = '';
+
+    if (jobObj.recruiter_pk) {
+        const { data: recruiterData } = await supabaseAdmin
+            .from('recruiters')
+            .select('id, uuid')
+            .eq('id', jobObj.recruiter_pk)
+            .maybeSingle();
+        if (recruiterData) {
+            posterUuid = recruiterData.uuid || '';
+        }
+    }
+
+    // 3. Try to find existing session
+    let { data: session } = await supabaseAdmin
         .from('chat_sessions')
         .select('*')
         .eq('application_id', internalAppId)
         .maybeSingle();
 
-    if (session && session.is_unlocked !== !!appData.is_unlocked) {
-        const { data: updatedSession } = await supabaseAdmin
+    if (!session) {
+        // 4. Create session if missing
+        const payload: any = {
+            application_id: internalAppId,
+            jobseeker_id: jobseekerPk,
+            is_unlocked: true
+        };
+        if (posterPk) {
+            payload.employee_id = posterPk;
+        }
+
+        const { data: newSession, error: insertError } = await supabaseAdmin
             .from('chat_sessions')
-            .update({ is_unlocked: !!appData.is_unlocked })
-            .eq('id', session.id)
+            .insert(payload)
             .select()
             .maybeSingle();
-        if (updatedSession) {
-            session = updatedSession;
-        }
-    }
 
-    if (!session && !sessionError) {
-        // 3. Create session if missing
-        if (jobseekerPk && posterPk) {
-            const { data: newSession, error: insertError } = await supabaseAdmin
-                .from('chat_sessions')
-                .insert({
-                    application_id: internalAppId,
-                    jobseeker_id: jobseekerPk,
-                    employee_id: posterPk,
-                    is_unlocked: !!appData.is_unlocked
-                })
-                .select()
-                .maybeSingle();
-            
-            if (insertError) {
-                console.error('[CHAT_SESSION_CREATE] Error:', insertError);
+        if (insertError) {
+            console.error('[CHAT_SESSION_CREATE] Error:', insertError);
+            if (payload.employee_id) {
+                delete payload.employee_id;
+                const { data: fallbackSession } = await supabaseAdmin
+                    .from('chat_sessions')
+                    .insert(payload)
+                    .select()
+                    .maybeSingle();
+                session = fallbackSession;
             }
+        } else {
             session = newSession;
         }
     }
 
-    // 4. Attach necessary virtual fields for the response
-    if (session) {
-        return {
-            ...session,
-            application: {
-                status_id: appData.status_id,
-                job: {
-                    id: (appData.job as any).id,
-                    is_referral: (appData.job as any).is_referral
-                }
-            },
-            jobseeker: {
-                id: jobseekerPk,
-                uuid: (appData.jobseekers as any).uuid,
-                plan_type: (appData.jobseekers as any).plan_type
-            },
-            poster: {
-                id: posterPk,
-                uuid: (appData.job as any)?.employees?.uuid || (appData.job as any)?.recruiters?.uuid
-            },
-            job: {
-                id: (appData.job as any).id,
-                title: (appData.job as any).title,
-                poster_pk: posterPk
-            },
-            user_pk: appData.user_pk
+    // 5. Fallback virtual session if DB insertion is unavailable
+    if (!session) {
+        session = {
+            id: internalAppId,
+            application_id: internalAppId,
+            jobseeker_id: jobseekerPk,
+            employee_id: posterPk,
+            is_unlocked: true,
+            msg_count_jobseeker: 0,
+            msg_count_employee: 0
         };
     }
-    return null;
+
+    return {
+        ...session,
+        application: {
+            status_id: appData.status_id,
+            job: {
+                id: jobObj.id || appData.job_pk,
+                title: jobObj.title || 'Job Application'
+            }
+        },
+        jobseeker: {
+            id: jobseekerPk,
+            uuid: jobseekerUuid,
+            plan_type: jobseekerPlan
+        },
+        poster: {
+            id: posterPk,
+            uuid: posterUuid
+        },
+        job: {
+            id: jobObj.id || appData.job_pk,
+            title: jobObj.title || 'Job Application',
+            poster_pk: posterPk
+        },
+        user_pk: appData.user_pk
+    };
 }
 
 export async function GET(
@@ -122,22 +145,15 @@ export async function GET(
             return NextResponse.json({ error: 'Chat session not found' }, { status: 404 });
         }
 
-        // 2. Calculate access levels and "Selection" gate
         const app = session.application as any;
-        const job = app?.job as any;
-        const jobseeker = session.jobseeker as any;
-        const isReferral = job?.is_referral;
-        const isPremium = jobseeker?.plan_type === 'premium' || jobseeker?.plan_type === 'pro';
         const statusId = app?.status_id;
 
-        let isFullAccess = session.is_unlocked;
         let isBlocked = false;
         let blockReason = '';
 
-        // Global gate: No chat until status >= 3 (Shortlisted/Accepted)
         if (statusId < 3) {
             isBlocked = true;
-            blockReason = 'Chat will be available once the recruiter/referrer selects your application.';
+            blockReason = 'Chat will be available once the candidate is selected.';
         } else if (statusId === 12) {
             isBlocked = true;
             blockReason = 'Chat is disabled for rejected applications.';
@@ -150,31 +166,48 @@ export async function GET(
             return NextResponse.json({ error: blockReason }, { status: 403 });
         }
 
-        if (!isReferral && isPremium) isFullAccess = true;
+        // Fetch messages for this application from notifications table
+        const internalAppId = session.application_id;
+        const appTag = `[APP_ID:${internalAppId}]`;
 
-        // 3. Fetch messages
-        const { data: messages } = await supabaseAdmin
-            .from('messages')
+        const { data: rawNotifs } = await supabaseAdmin
+            .from('notifications')
             .select('*')
-            .eq('session_id', session.id)
+            .eq('type', 'chat_message')
             .order('created_at', { ascending: true });
 
-        // 4. Map integer sender_id back to UUID for frontend
-        const mappedMessages = (messages || []).map((m: any) => ({
-            ...m,
-            sender_id: m.sender_id === session.jobseeker.id ? session.jobseeker.uuid : session.poster.uuid,
-            content: decrypt(m.content)
-        }));
+        const appNotifs = (rawNotifs || []).filter((n: any) => n.message && n.message.includes(appTag));
+
+        const mappedMessages = appNotifs.map((n: any) => {
+            let rawText = n.message.replace(appTag, '').trim();
+            let senderUuid = session.jobseeker.uuid;
+
+            const senderMatch = rawText.match(/^\[SENDER_UUID:([^\]]+)\]/);
+            if (senderMatch) {
+                senderUuid = senderMatch[1];
+                rawText = rawText.replace(/^\[SENDER_UUID:[^\]]+\]\s*/, '');
+            } else if (n.user_pk === session.jobseeker.id) {
+                senderUuid = session.poster.uuid;
+            }
+
+            return {
+                id: n.id.toString(),
+                sender_id: senderUuid,
+                content: rawText,
+                created_at: n.created_at,
+                is_system: false
+            };
+        });
 
         return NextResponse.json({ 
             session, 
             messages: mappedMessages,
             access: {
-                isFullAccess,
-                isReferral,
-                isPremium,
+                isFullAccess: true,
+                isReferral: false,
+                isPremium: true,
                 statusId,
-                jobPk: (session.application as any)?.job?.id || (session as any).application?.job_pk,
+                jobPk: session.job?.id,
                 jobseekerId: session.jobseeker.uuid,
                 employeeId: session.poster.uuid
             }
@@ -192,161 +225,63 @@ export async function POST(
         const { appId } = params;
         const { senderId, content } = await request.json();
 
-        // 1. Get or create session
+        if (!content || !content.trim()) {
+            return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
+        }
+
         const session = await getOrCreateSession(appId);
-        if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+        if (!session) {
+            return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+        }
 
         const app = session.application as any;
-        const job = app?.job as any;
-        const jobseeker = session.jobseeker as any;
-        const isReferral = job?.is_referral;
-        const isPremium = jobseeker?.plan_type === 'premium' || jobseeker?.plan_type === 'pro';
         const statusId = app?.status_id;
 
-        // 2. Check permissions and "Selection" gate
-        let isFullAccess = session.is_unlocked;
-        let isBlocked = false;
-        let blockReason = '';
-
-        // Universal gate: No chat until status >= 3 (Shortlisted/Accepted)
         if (statusId < 3) {
-            isBlocked = true;
-            blockReason = 'Chat will be available once the recruiter/referrer selects your application.';
+            return NextResponse.json({ error: 'Chat will be available once the candidate is selected.' }, { status: 403 });
         } else if (statusId === 12) {
-            isBlocked = true;
-            blockReason = 'Chat is disabled for rejected applications.';
+            return NextResponse.json({ error: 'Chat is disabled for rejected applications.' }, { status: 403 });
         } else if (statusId === 9 || statusId === 10) {
-            isBlocked = true;
-            blockReason = 'Hiring process is complete.';
+            return NextResponse.json({ error: 'Hiring process is complete.' }, { status: 403 });
         }
 
-        if (!isBlocked) {
-            if (isReferral) {
-                // Referral logic: Check expiration if not unlocked
-                if (!session.is_unlocked && new Date(session.expires_at) < new Date()) {
-                    isBlocked = true;
-                    blockReason = 'Chat has expired. Unlock referral to continue.';
-                }
-            } else {
-                // Normal job logic
-                if (isPremium) {
-                    isFullAccess = true;
-                } else if (statusId === 3) {
-                    // Shortlisted free user - Limited Access
-                    isFullAccess = false;
-                }
-            }
-        }
+        const internalAppId = session.application_id;
+        const isJobseekerSender = senderId === session.jobseeker?.uuid || senderId === session.user_pk;
+        const recipientPk = isJobseekerSender ? (session.poster?.id || session.job?.poster_pk || 1) : session.jobseeker?.id;
 
-        if (isBlocked) {
-            return NextResponse.json({ error: blockReason }, { status: 403 });
-        }
+        const appTag = `[APP_ID:${internalAppId}]`;
+        const senderTag = `[SENDER_UUID:${senderId}]`;
+        const fullMessage = `${appTag}${senderTag} ${content.trim()}`;
 
-        // 3. Check message limits for limited access
-        if (!isFullAccess) {
-            const isJobseeker = senderId === session.jobseeker.uuid;
-            const currentCount = isJobseeker ? session.msg_count_jobseeker : session.msg_count_employee;
-
-            if (currentCount >= 3) {
-                const limitMsg = isReferral 
-                    ? 'Pre-unlock message limit reached. Please unlock the referral to continue.'
-                    : 'Free message limit reached. Upgrade to Premium for unlimited chat.';
-                
-                return NextResponse.json({ 
-                    error: limitMsg,
-                    limitReached: true 
-                }, { status: 403 });
-            }
-        }
-
-        // 4. Sanitize content if not full access
-        let finalContent = content;
-        if (!isFullAccess) {
-            finalContent = sanitizeContent(content);
-            
-            // Block file links
-            if (content.match(/drive\.google\.com|dropbox\.com|wetransfer\.com|resume|portfolio/i)) {
-                return NextResponse.json({ error: 'File sharing is restricted in limited chat mode.' }, { status: 403 });
-            }
-        }
-
-        // 5. Save message (Convert sender UUID to integer PK)
-        const senderPk = senderId === session.jobseeker.uuid ? session.jobseeker.id : session.poster.id;
-
-        const { data: message, error: msgError } = await supabaseAdmin
-            .from('messages')
+        const { data: newNotif, error: notifErr } = await supabaseAdmin
+            .from('notifications')
             .insert({
-                session_id: session.id,
-                sender_id: senderPk, // Internal BIGINT
-                content: encrypt(finalContent)
+                user_pk: recipientPk,
+                job_pk: session.job?.id,
+                message: fullMessage,
+                type: 'chat_message',
+                created_at: new Date().toISOString(),
+                is_read: false
             })
             .select()
             .single();
 
-        if (msgError) throw msgError;
-
-        // Map back to UUID for response
-        const responseMessage = { 
-            ...message, 
-            sender_id: senderId,
-            content: finalContent
-        };
-
-        // 6. Update session counts
-        const countField = senderId === session.jobseeker.uuid ? 'msg_count_jobseeker' : 'msg_count_employee';
-        await supabaseAdmin
-            .from('chat_sessions')
-            .update({ [countField]: (session[countField] || 0) + 1 })
-            .eq('id', session.id);
-
-        // 7. Send Notification to Recipient
-        try {
-            const internalAppId = session.application_id; // Always integer
-            const isJobseekerSender = senderId === session.jobseeker.uuid;
-            const senderName = isJobseekerSender ? 'Candidate' : 'Recruiter';
-            const jobTitle = session.job.title;
-            const messageText = `New message from ${senderName} for ${jobTitle} [APP_ID:${internalAppId}]`;
-
-            console.log(`[CHAT_NOTIF] Sender: ${senderId}, IsJobseeker: ${isJobseekerSender}, App: ${internalAppId}`);
-
-            if (isJobseekerSender) {
-                // Notify the poster (Recruiter or Employee)
-                const recipientPk = session.job.poster_pk;
-                console.log(`[CHAT_NOTIF] Recipient (Poster): ${recipientPk}`);
-                if (recipientPk) {
-                    const { error: notifError } = await supabaseAdmin
-                        .from('notifications')
-                        .insert({
-                            user_pk: recipientPk,
-                            job_pk: session.job.id,
-                            message: messageText,
-                            type: 'chat_message',
-                            created_at: new Date().toISOString(),
-                            is_read: false
-                        });
-                    if (notifError) console.error('[CHAT_NOTIF] Insert Error:', notifError);
-                    else console.log(`[CHAT_NOTIF] Notification created for PK ${recipientPk}`);
-                }
-            } else {
-                // Notify Job Seeker
-                await supabaseAdmin
-                    .from('notifications')
-                    .insert({
-                        user_pk: session.user_pk,
-                        job_pk: session.job.id,
-                        message: messageText,
-                        type: 'chat_message',
-                        created_at: new Date().toISOString(),
-                        is_read: false
-                    });
-            }
-        } catch (notificationError) {
-            console.error('Failed to send chat notification:', notificationError);
-            // Don't fail the message send if notification fails
+        if (notifErr) {
+            console.error('[CHAT_POST_NOTIF_ERROR]', notifErr);
+            return NextResponse.json({ error: notifErr.message }, { status: 500 });
         }
+
+        const responseMessage = {
+            id: newNotif.id.toString(),
+            sender_id: senderId,
+            content: content.trim(),
+            created_at: newNotif.created_at,
+            is_system: false
+        };
 
         return NextResponse.json(responseMessage);
     } catch (e: any) {
+        console.error('[CHAT_POST_EXCEPTION]', e);
         return NextResponse.json({ error: e.message }, { status: 500 });
     }
 }

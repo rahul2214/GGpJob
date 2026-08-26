@@ -849,15 +849,6 @@ function JobDetailsContent() {
                 applicationId={currentAppId || ""} 
                 isOpen={isChatOpen} 
                 onClose={() => setIsChatOpen(false)}
-                onUnlockRequest={() => {
-                    setIsChatOpen(false);
-                    // The unlock UI is already part of the status flow in applications page,
-                    // but we can add a toast or redirect if needed.
-                    toast({
-                        title: "Unlock Required",
-                        description: "Please visit your 'My Applications' page to unlock this referral and continue chatting.",
-                    });
-                }}
             />
         </div>
     );

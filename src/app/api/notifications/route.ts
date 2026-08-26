@@ -49,19 +49,34 @@ export async function GET(request: Request) {
     if (error) throw error;
     
     // Map to frontend structure
-    const formattedNotifications = (notifications || []).map((n: any) => ({
-        id: n.id,
-        userId: n.user_id || n.user_pk, // Return UUID if available, fallback to PK
-        userPk: n.user_pk,
-        message: n.message,
-        type: n.type,
-        jobId: n.jobs?.uuid,
-        jobPk: n.job_pk,
-        jobTitle: n.jobs?.title,
-        statusName: n.type === 'application_status' ? 'Updated' : undefined,
-        timestamp: n.created_at,
-        isRead: n.is_read
-    }));
+    const formattedNotifications = (notifications || []).map((n: any) => {
+        let msg = n.message || '';
+        msg = msg.replace(
+            /Great news! An employee from the company is interested in referring you for (.*?)\. Check your dashboard to unlock this referral\./gi,
+            'Great news! The recruiter has selected your application for $1.'
+        );
+        msg = msg.replace(
+            /An employee from the company is interested in referring you for (.*?)\. Check your dashboard to unlock this referral\./gi,
+            'The recruiter has selected your application for $1.'
+        );
+        msg = msg.replace(/Check your dashboard to unlock this referral\./gi, '');
+        msg = msg.replace(/An employee from the company is interested in referring you/gi, 'The recruiter has selected your application');
+        msg = msg.replace(/interested in referring you for/gi, 'selected your application for');
+
+        return {
+            id: n.id,
+            userId: n.user_id || n.user_pk, // Return UUID if available, fallback to PK
+            userPk: n.user_pk,
+            message: msg.trim(),
+            type: n.type,
+            jobId: n.jobs?.uuid,
+            jobPk: n.job_pk,
+            jobTitle: n.jobs?.title,
+            statusName: n.type === 'application_status' ? 'Updated' : undefined,
+            timestamp: n.created_at,
+            isRead: n.is_read
+        };
+    });
 
     return NextResponse.json(formattedNotifications);
 

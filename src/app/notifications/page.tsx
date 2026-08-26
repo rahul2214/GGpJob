@@ -107,7 +107,19 @@ export default function NotificationsPage() {
     }
 
     const cleanMessage = (msg: string) => {
-        return msg.replace(/\[APP_ID:[^\]]+\]\s*/, '');
+        let text = msg.replace(/\[APP_ID:[^\]]+\]\s*/, '');
+        text = text.replace(
+            /Great news! An employee from the company is interested in referring you for (.*?)\. Check your dashboard to unlock this referral\./gi,
+            'Great news! The recruiter has selected your application for $1.'
+        );
+        text = text.replace(
+            /An employee from the company is interested in referring you for (.*?)\. Check your dashboard to unlock this referral\./gi,
+            'The recruiter has selected your application for $1.'
+        );
+        text = text.replace(/Check your dashboard to unlock this referral\./gi, '');
+        text = text.replace(/An employee from the company is interested in referring you/gi, 'The recruiter has selected your application');
+        text = text.replace(/interested in referring you for/gi, 'selected your application for');
+        return text.trim();
     };
 
     return (
