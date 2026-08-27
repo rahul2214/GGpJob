@@ -18,10 +18,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, Briefcase, Save, PlusCircle, Trash2, Link as LinkIcon, GripVertical, X } from "lucide-react";
+import { LoaderCircle, Briefcase, MapPin, Save, PlusCircle, Trash2, Link as LinkIcon, GripVertical, X, Check, ChevronsUpDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
-import type { JobType, WorkplaceType, Job, Location, MasterSkill, CompanySize } from "@/lib/types";
+import type { JobType, WorkplaceType, Job, MasterSkill, CompanySize } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
 import { MultiSelectFilter } from "./multi-select-filter";
 import { SUPPORTED_CURRENCIES } from "@/utils/currency";
@@ -123,6 +126,72 @@ const TagInput = ({ value = [], onChange, placeholder }: { value?: string[], onC
   );
 };
 
+function SearchableCombobox({
+  options,
+  value,
+  onSelect,
+  placeholder,
+  disabled = false,
+  emptyText = "No results found."
+}: {
+  options: { id: number; name: string }[];
+  value?: number | null;
+  onSelect: (option: { id: number; name: string }) => void;
+  placeholder: string;
+  disabled?: boolean;
+  emptyText?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedOption = options.find((o) => o.id === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={disabled}
+          className="w-full justify-between font-normal text-left h-10 px-3 bg-background"
+        >
+          <span className="truncate">
+            {selectedOption ? selectedOption.name : placeholder}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[260px] p-0" align="start">
+        <Command>
+          <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
+          <CommandList className="max-h-60 overflow-y-auto">
+            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.id}
+                  value={option.name}
+                  onSelect={() => {
+                    onSelect(option);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === option.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {option.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 interface JobFormProps {
   job?: Job | null;
 }
@@ -135,7 +204,17 @@ export function JobForm({ job }: JobFormProps) {
     jobTitle: z.string().min(5, "Job title must be at least 5 characters long."),
     jobId: z.string().optional(),
     companyName: z.string().min(2, "Company name must be at least 2 characters long."),
-    locationIds: z.array(z.string()).min(1, "At least one location is required."),
+    locations: z.array(z.object({
+      countryId: z.coerce.number().optional().nullable(),
+      stateId: z.coerce.number().optional().nullable(),
+      cityId: z.coerce.number().optional().nullable(),
+      country: z.string().optional(),
+      state: z.string().optional(),
+      city: z.string().optional(),
+    })).min(1, "At least one location is required."),
+    countryId: z.coerce.number().optional().nullable(),
+    stateId: z.coerce.number().optional().nullable(),
+    cityId: z.coerce.number().optional().nullable(),
     country: z.string().optional(),
     state: z.string().optional(),
     city: z.string().optional(),
@@ -179,23 +258,50 @@ export function JobForm({ job }: JobFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [jobTypes, setJobTypes] = useState<JobType[]>([]);
   const [workplaceTypes, setWorkplaceTypes] = useState<WorkplaceType[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
   const [companySizes, setCompanySizes] = useState<CompanySize[]>([]);
   const [masterSkills, setMasterSkills] = useState<MasterSkill[]>([]);
   const [masterBenefits, setMasterBenefits] = useState<{ id: string; name: string }[]>([]);
 
+  const [dbCountries, setDbCountries] = useState<{ id: number; name: string }[]>([]);
+  const [statesByCountry, setStatesByCountry] = useState<Record<number, { id: number; name: string }[]>>({});
+  const [citiesByState, setCitiesByState] = useState<Record<number, { id: number; name: string }[]>>({});
+
+  const fetchStatesForCountry = async (countryId: number) => {
+    if (!countryId || statesByCountry[countryId]) return;
+    try {
+      const res = await fetch(`/api/geo?type=states&countryId=${countryId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setStatesByCountry(prev => ({ ...prev, [countryId]: data }));
+        }
+      }
+    } catch (e) {}
+  };
+
+  const fetchCitiesForState = async (stateId: number) => {
+    if (!stateId || citiesByState[stateId]) return;
+    try {
+      const res = await fetch(`/api/geo?type=cities&stateId=${stateId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setCitiesByState(prev => ({ ...prev, [stateId]: data }));
+        }
+      }
+    } catch (e) {}
+  };
+
   useEffect(() => {
     const fetchSelectData = async () => {
         try {
-            const [jobTypesRes, workplaceTypesRes, locationsRes, companySizesRes] = await Promise.all([
+            const [jobTypesRes, workplaceTypesRes, companySizesRes] = await Promise.all([
                 fetch('/api/job-types'),
                 fetch('/api/workplace-types'),
-                fetch('/api/locations'),
                 fetch('/api/company-sizes')
             ]);
             
             setWorkplaceTypes(await workplaceTypesRes.json());
-            setLocations(await locationsRes.json());
             setCompanySizes(await companySizesRes.json());
             
             const fetchedJobTypes = await jobTypesRes.json();
@@ -206,6 +312,9 @@ export function JobForm({ job }: JobFormProps) {
 
             const benefitsRes = await fetch('/api/benefits');
             if (benefitsRes.ok) setMasterBenefits(await benefitsRes.json());
+
+            const countriesRes = await fetch('/api/geo?type=countries');
+            if (countriesRes.ok) setDbCountries(await countriesRes.json());
         } catch (error) {
             console.error("Failed to fetch form select data", error);
             toast({
@@ -220,13 +329,27 @@ export function JobForm({ job }: JobFormProps) {
 
 
 
+  const initialLocations = (job as any)?.jobLocations?.length
+    ? (job as any).jobLocations
+    : [{
+        countryId: (job as any)?.countryId || null,
+        stateId: (job as any)?.stateId || null,
+        cityId: (job as any)?.cityId || null,
+        country: job?.country || "",
+        state: job?.state || "",
+        city: job?.city || "",
+      }];
+
   const form = useForm<JobFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       jobTitle: job?.jobId ? job.title : "",
       jobId: job?.jobId || "",
       companyName: job?.companyName || (user?.role === 'Recruiter' ? user.companyName : "") || "",
-      locationIds: job?.locationIds || (job?.locationId ? [job.locationId] : []),
+      locations: initialLocations,
+      countryId: (job as any)?.countryId || null,
+      stateId: (job as any)?.stateId || null,
+      cityId: (job as any)?.cityId || null,
       country: job?.country || "",
       state: job?.state || "",
       city: job?.city || "",
@@ -249,7 +372,6 @@ export function JobForm({ job }: JobFormProps) {
       maxExperience: job?.maxExperience ?? 0,
       jobTypeId: job?.jobTypeId || "",
       workplaceTypeId: job?.workplaceTypeId || "",
-      domainId: job?.domainId || "",
       skillIds: job?.skillIds || [],
       benefitIds: job?.benefitIds || [],
       visaSponsorship: job?.visaSponsorship ?? (job as any)?.visa_sponsorship ?? false,
@@ -261,6 +383,11 @@ export function JobForm({ job }: JobFormProps) {
     },
   });
 
+  const { fields: locationFields, append: appendLocation, remove: removeLocation } = useFieldArray({
+    control: form.control,
+    name: "locations",
+  });
+
   // Sections field array
   const { fields: sectionFields, append: appendSection, remove: removeSection } = useFieldArray({
     control: form.control,
@@ -270,11 +397,22 @@ export function JobForm({ job }: JobFormProps) {
    useEffect(() => {
     if (job) {
       const builtSections = job?.sections?.map((s: any) => ({ title: s.title, items: (s.items || []).map((v: any) => ({ value: v })) }));
+      const resetLocations = (job as any)?.jobLocations?.length
+        ? (job as any).jobLocations
+        : [{
+            countryId: (job as any)?.countryId || null,
+            stateId: (job as any)?.stateId || null,
+            cityId: (job as any)?.cityId || null,
+            country: job.country || "",
+            state: job.state || "",
+            city: job.city || "",
+          }];
+
       form.reset({
         jobTitle: job.title || "",
         jobId: job.jobId || "",
         companyName: job.companyName || "",
-        locationIds: job.locationIds || (job.locationId ? [job.locationId] : []),
+        locations: resetLocations,
         country: job.country || "",
         state: job.state || "",
         city: job.city || "",
@@ -297,7 +435,6 @@ export function JobForm({ job }: JobFormProps) {
         maxExperience: job.maxExperience ?? 0,
         jobTypeId: job.jobTypeId || "",
         workplaceTypeId: job.workplaceTypeId || "",
-        domainId: job.domainId || "",
         skillIds: job.skillIds || [],
         benefitIds: job.benefitIds || [],
         visaSponsorship: job.visaSponsorship ?? (job as any)?.visa_sponsorship ?? false,
@@ -310,9 +447,7 @@ export function JobForm({ job }: JobFormProps) {
     }
   }, [job, form, user]);
 
-  const locationOptions = useMemo(() => 
-    locations.map(loc => ({ value: loc.uuid || String(loc.id), label: `${loc.name}, ${loc.country}` })), 
-  [locations]);
+
 
   const skillOptions = useMemo(() =>
     masterSkills.map(s => ({ value: s.uuid || String(s.id), label: s.name })),
@@ -332,15 +467,20 @@ export function JobForm({ job }: JobFormProps) {
       const url = job ? `/api/jobs/${job.id}` : '/api/jobs';
       const method = job ? 'PUT' : 'POST';
       
+      const primaryLoc = data.locations?.[0] || {};
       const payload = {
         ...data,
         jobId: data.jobId,
         title: data.jobTitle,
         description: data.jobDescription,
         job_role: data.job_role,
-        country: data.country,
-        state: data.state,
-        city: data.city,
+        locations: data.locations || [],
+        countryId: primaryLoc.countryId || data.countryId || null,
+        stateId: primaryLoc.stateId || data.stateId || null,
+        cityId: primaryLoc.cityId || data.cityId || null,
+        country: primaryLoc.country || data.country || "",
+        state: primaryLoc.state || data.state || "",
+        city: primaryLoc.city || data.city || "",
         remoteType: data.remoteType,
         salaryCurrency: data.salaryCurrency,
         industry: data.industry,
@@ -546,24 +686,138 @@ export function JobForm({ job }: JobFormProps) {
               )}
             />
           </div>
-         <FormField
-            control={form.control}
-            name="locationIds"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Job Locations (Multiple Selection Allowed)</FormLabel>
-                <FormControl>
-                    <MultiSelectFilter
-                        title="Locations"
-                        options={locationOptions}
-                        selectedValues={field.value}
-                        onChange={field.onChange}
-                    />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+
+          {/* Job Location Details */}
+          <div className="space-y-4 border rounded-xl p-6 bg-slate-50/30">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-primary" />
+                Locations
+              </h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => appendLocation({ countryId: null, stateId: null, cityId: null, country: "", state: "", city: "" })}
+                className="flex items-center gap-1.5 text-xs font-semibold"
+              >
+                <PlusCircle className="w-4 h-4" /> Add Location
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              {locationFields.map((item, idx) => {
+                const currentCountryId = form.watch(`locations.${idx}.countryId`);
+                const currentStateId = form.watch(`locations.${idx}.stateId`);
+                const countryStates = currentCountryId ? (statesByCountry[currentCountryId] || []) : [];
+                const stateCities = currentStateId ? (citiesByState[currentStateId] || []) : [];
+
+                return (
+                  <div key={item.id} className="p-4 border rounded-xl bg-white dark:bg-slate-900 space-y-3 relative">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Location #{idx + 1}
+                      </span>
+                      {locationFields.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeLocation(idx)}
+                          className="text-red-500 hover:text-red-700 h-7 w-7 p-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Country Select */}
+                      <FormField
+                        control={form.control}
+                        name={`locations.${idx}.countryId`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-medium">Country</FormLabel>
+                            <FormControl>
+                              <SearchableCombobox
+                                options={dbCountries}
+                                value={field.value}
+                                placeholder="Select Country"
+                                onSelect={(cObj) => {
+                                  field.onChange(cObj.id);
+                                  form.setValue(`locations.${idx}.country`, cObj.name);
+                                  form.setValue(`locations.${idx}.stateId`, null);
+                                  form.setValue(`locations.${idx}.state`, "");
+                                  form.setValue(`locations.${idx}.cityId`, null);
+                                  form.setValue(`locations.${idx}.city`, "");
+                                  fetchStatesForCountry(cObj.id);
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* State Select */}
+                      <FormField
+                        control={form.control}
+                        name={`locations.${idx}.stateId`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-medium">State / Province</FormLabel>
+                            <FormControl>
+                              <SearchableCombobox
+                                options={countryStates}
+                                value={field.value}
+                                placeholder="Select State"
+                                disabled={!currentCountryId || countryStates.length === 0}
+                                emptyText={!currentCountryId ? "Select a country first" : "No states found."}
+                                onSelect={(sObj) => {
+                                  field.onChange(sObj.id);
+                                  form.setValue(`locations.${idx}.state`, sObj.name);
+                                  form.setValue(`locations.${idx}.cityId`, null);
+                                  form.setValue(`locations.${idx}.city`, "");
+                                  fetchCitiesForState(sObj.id);
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* City Select */}
+                      <FormField
+                        control={form.control}
+                        name={`locations.${idx}.cityId`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-medium">City</FormLabel>
+                            <FormControl>
+                              <SearchableCombobox
+                                options={stateCities}
+                                value={field.value}
+                                placeholder="Select City"
+                                disabled={!currentStateId || stateCities.length === 0}
+                                emptyText={!currentStateId ? "Select a state first" : "No cities found."}
+                                onSelect={(ctObj) => {
+                                  field.onChange(ctObj.id);
+                                  form.setValue(`locations.${idx}.city`, ctObj.name);
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 items-center">
           <FormField
             control={form.control}

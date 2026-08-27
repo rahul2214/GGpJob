@@ -44,6 +44,7 @@ export async function GET(request: Request) {
             jobs (uuid, title)
         `)
         .in('user_pk', allPks) 
+        .neq('type', 'chat_message')
         .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -51,6 +52,8 @@ export async function GET(request: Request) {
     // Map to frontend structure
     const formattedNotifications = (notifications || []).map((n: any) => {
         let msg = n.message || '';
+        msg = msg.replace(/\[APP_ID:[^\]]+\]\s*/gi, '');
+        msg = msg.replace(/\[SENDER_UUID:[^\]]+\]\s*/gi, '');
         msg = msg.replace(
             /Great news! An employee from the company is interested in referring you for (.*?)\. Check your dashboard to unlock this referral\./gi,
             'Great news! The recruiter has selected your application for $1.'

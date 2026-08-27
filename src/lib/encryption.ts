@@ -1,8 +1,12 @@
 import crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-cbc';
-// Ensure the encryption key is exactly 32 bytes (256 bits)
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6'; 
+const rawKey = process.env.ENCRYPTION_KEY || process.env.NEXTAUTH_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!rawKey && process.env.NODE_ENV === 'production') {
+    throw new Error('FATAL: ENCRYPTION_KEY environment variable is required in production.');
+}
+// Derive a deterministic 32-byte buffer key
+const ENCRYPTION_KEY_BUFFER = crypto.createHash('sha256').update(rawKey || 'jobsdart-dev-fallback-key-32bytes!').digest();
 const IV_LENGTH = 16; // AES IV block size
 
 /**
@@ -12,7 +16,7 @@ const IV_LENGTH = 16; // AES IV block size
 export function encrypt(text: string): string {
     if (!text) return '';
     const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY), iv);
+    const cipher = crypto.createCipheriv(ALGORITHM, ENCRYPTION_KEY_BUFFER, iv);
     let encrypted = cipher.update(text, 'utf8');
     encrypted = Buffer.concat([encrypted, cipher.final()]);
     return iv.toString('hex') + ':' + encrypted.toString('hex');
@@ -32,7 +36,7 @@ export function decrypt(text: string): string {
         }
         const iv = Buffer.from(textParts.shift() || '', 'hex');
         const encryptedText = Buffer.from(textParts.join(':'), 'hex');
-        const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY), iv);
+        const decipher = crypto.createDecipheriv(ALGORITHM, ENCRYPTION_KEY_BUFFER, iv);
         let decrypted = decipher.update(encryptedText);
         decrypted = Buffer.concat([decrypted, decipher.final()]);
         return decrypted.toString('utf8');

@@ -48,6 +48,28 @@ export async function sendFirebaseVerificationEmail(
 
   const { idToken } = await signInRes.json();
 
+  // Validate redirectUrl to prevent open redirects
+  let safeContinueUrl: string | undefined = undefined;
+  if (redirectUrl && typeof redirectUrl === 'string') {
+    try {
+      const allowedHosts = ['localhost', 'jobsdart.in', 'www.jobsdart.in', 'veltriajobportal.vercel.app'];
+      if (process.env.NEXT_PUBLIC_APP_URL) {
+        try { allowedHosts.push(new URL(process.env.NEXT_PUBLIC_APP_URL).hostname); } catch {}
+      }
+      if (redirectUrl.startsWith('/')) {
+        const base = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        safeContinueUrl = new URL(redirectUrl, base).toString();
+      } else {
+        const parsed = new URL(redirectUrl);
+        if (allowedHosts.includes(parsed.hostname) || parsed.hostname.endsWith('.jobsdart.in')) {
+          safeContinueUrl = parsed.toString();
+        }
+      }
+    } catch {
+      safeContinueUrl = undefined;
+    }
+  }
+
   // 3. Ask Firebase to send the verification email natively via REST API
   const sendRes = await fetch(
     `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_API_KEY}`,
@@ -57,8 +79,7 @@ export async function sendFirebaseVerificationEmail(
       body: JSON.stringify({
         requestType: 'VERIFY_EMAIL',
         idToken,
-        // continueUrl is where the user goes AFTER the Firebase verification page finishes
-        continueUrl: redirectUrl || undefined 
+        continueUrl: safeContinueUrl
       }),
     }
   );

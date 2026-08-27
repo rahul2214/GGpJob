@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 export async function POST(request: Request) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { userId } = await request.json();
 
     if (!userId) {
         return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
+    if (!isOwnerOrAdmin(authUser!, userId)) {
+        return NextResponse.json({ error: 'Forbidden: Cannot activate plan for another user account.' }, { status: 403 });
     }
 
     let profile: { id: string | number, role: string, uuid?: string } | null = null;

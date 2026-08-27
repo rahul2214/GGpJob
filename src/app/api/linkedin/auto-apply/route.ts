@@ -1,16 +1,30 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { resolveResumeUrl } from '@/lib/resolve-resume';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 
 export async function POST(request: Request) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { userId } = await request.json();
 
         if (!userId) {
             return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+        }
+
+        // Strict UUID validation to prevent path traversal
+        const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+        if (!isValidUuid) {
+            return NextResponse.json({ error: 'Invalid User ID format' }, { status: 400 });
+        }
+
+        if (!isOwnerOrAdmin(authUser!, userId)) {
+            return NextResponse.json({ error: 'Forbidden: Cannot trigger automation for another user.' }, { status: 403 });
         }
 
         // 1. Fetch User Profile

@@ -108,7 +108,6 @@ const NAV_CONFIG: Record<string, NavSection[]> = {
       label: "System Settings",
       items: [
         { icon: Coins, label: "Pricing Plans", href: "/admin/plans" },
-        { icon: UserCog, label: "Locations Registry", href: "/admin/locations" },
         { icon: Database, label: "Skills Catalog", href: "/admin/skills" },
         { icon: PlusCircle, label: "Coupon Codes", href: "/admin/coupons" },
         { icon: LayoutGrid, label: "Employment Types", href: "/admin/employment-types" },

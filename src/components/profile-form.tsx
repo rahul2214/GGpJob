@@ -25,7 +25,6 @@ import { MultiSelectFilter } from "./multi-select-filter";
 import { COUNTRY_CODES, parsePhoneNumber } from "@/utils/country-codes";
 import { CountryCodeSelect } from "./country-code-select";
 import { Switch } from "@/components/ui/switch";
-import { LocationCascadeSelector } from "@/components/location/LocationCascadeSelector";
 import { SUPPORTED_CURRENCIES } from "@/utils/currency";
 import { onFormInvalid } from "@/lib/form-toast-utils";
 
@@ -136,7 +135,6 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
     const { toast } = useToast();
     const { setUser } = useUser();
     const [companySizes, setCompanySizes] = useState<CompanySize[]>([]);
-    const [locations, setLocations] = useState<any[]>([]);
     const [visaRequirements, setVisaRequirements] = useState<VisaRequirement[]>([]);
     const isMobile = useIsMobile();
     const router = useRouter();
@@ -147,13 +145,11 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [sizesRes, locationsRes, visaRes] = await Promise.all([
+                const [sizesRes, visaRes] = await Promise.all([
                     fetch('/api/company-sizes'),
-                    fetch('/api/locations'),
                     fetch('/api/visa-requirements')
                 ]);
                 setCompanySizes(await sizesRes.json());
-                setLocations(await locationsRes.json());
                 setVisaRequirements(await visaRes.json());
             } catch (error) {
                 console.error("Failed to fetch form data", error);
@@ -161,11 +157,6 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
         }
         fetchData();
     }, []);
-
-    const locationOptions = (locations || []).map(loc => ({
-        value: loc.name,
-        label: loc.name
-    }));
 
     const form = useForm<ProfileFormValues>({
         resolver: zodResolver(formSchema),
@@ -481,21 +472,25 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                 />
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-2 my-2">
                     <h4 className="text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 mb-2">
-                        <MapPin className="w-4 h-4" /> Location Hierarchy (Country &rarr; State &rarr; City)
+                        <MapPin className="w-4 h-4" /> Location (Country, State & City)
                     </h4>
-                    <LocationCascadeSelector
-                        initialCountry={form.watch("country") || user.country || ""}
-                        initialState={form.watch("state") || user.state || ""}
-                        initialCity={form.watch("currentCity") || user.currentCity || ""}
-                        onChange={(val) => {
-                            form.setValue("country", val.countryName || "");
-                            form.setValue("state", val.stateName || "");
-                            form.setValue("currentCity", val.cityName || "");
-                            form.setValue("countryId" as any, val.countryId ? Number(val.countryId) : null);
-                            form.setValue("stateId" as any, val.stateId ? Number(val.stateId) : null);
-                            form.setValue("cityId" as any, val.cityId ? Number(val.cityId) : null);
-                        }}
-                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <Input 
+                            placeholder="Country"
+                            value={form.watch("country") || ""} 
+                            onChange={(e) => form.setValue("country", e.target.value)} 
+                        />
+                        <Input 
+                            placeholder="State / Province" 
+                            value={form.watch("state") || ""} 
+                            onChange={(e) => form.setValue("state", e.target.value)} 
+                        />
+                        <Input 
+                            placeholder="City" 
+                            value={form.watch("currentCity") || ""} 
+                            onChange={(e) => form.setValue("currentCity", e.target.value)} 
+                        />
+                    </div>
                 </div>
                 {user.role === 'Job Seeker' && (
                     <FormField

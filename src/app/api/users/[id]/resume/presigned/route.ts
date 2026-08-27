@@ -1,17 +1,39 @@
 import { NextResponse } from 'next/server';
 import { getPresignedUploadUrl } from '@/lib/r2';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { id: userId } = params;
+
+    if (!isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json({ error: 'Forbidden: Access denied to generate upload URL for this user.' }, { status: 403 });
+    }
+
     const { fileName, contentType } = await request.json();
 
     if (!fileName || !contentType) {
       return NextResponse.json(
         { error: 'fileName and contentType are required' },
+        { status: 400 }
+      );
+    }
+
+    const allowedMimeTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+
+    if (!allowedMimeTypes.includes(contentType.toLowerCase())) {
+      return NextResponse.json(
+        { error: 'Invalid file type. Only PDF and Word documents are permitted for resumes.' },
         { status: 400 }
       );
     }

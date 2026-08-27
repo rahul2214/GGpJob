@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAdmin } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { user: adminUser, errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
     const [
       { data: seekers, error: seekerErr },
       { data: recruiters, error: recruiterErr },

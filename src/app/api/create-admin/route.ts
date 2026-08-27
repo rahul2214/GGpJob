@@ -1,19 +1,17 @@
 
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { checkSuperAdmin } from '@/lib/check-admin';
+import { requireSuperAdmin } from '@/lib/auth-server';
 
 export async function POST(request: Request) {
     try {
-        const { name, email, phone, password, requestedBy } = await request.json();
+        const { user: superAdmin, errorResponse } = await requireSuperAdmin(request);
+        if (errorResponse) return errorResponse;
+
+        const { name, email, phone, password } = await request.json();
 
         if (!name || !email || !phone || !password) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-        }
-
-        // Only super admins can create new admins
-        if (requestedBy && !(await checkSuperAdmin(requestedBy))) {
-            return NextResponse.json({ error: 'Only Super Admins can create admin accounts.' }, { status: 403 });
         }
 
         // 1. Create user in Supabase Auth

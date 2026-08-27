@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { sendPushNotification } from '@/lib/push-notifications';
+import { requireAdmin } from '@/lib/auth-server';
 
 export async function POST(request: Request) {
   try {
+    const { user: adminUser, errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
     const { userId, title, body } = await request.json();
 
     if (!userId || !title || !body) {

@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { checkAdmin } from '@/lib/check-admin';
+import { requireAdmin } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -24,17 +24,12 @@ async function getCount(table: string, from?: string | null, to?: string | null,
 
 export async function GET(request: NextRequest) {
     try {
+        const { user: adminUser, errorResponse } = await requireAdmin(request);
+        if (errorResponse) return errorResponse;
+
         const { searchParams } = new URL(request.url);
         const from = searchParams.get('from');
         const to = searchParams.get('to');
-        const userId = searchParams.get('userId');
-
-        if (userId) {
-            const isAdmin = await checkAdmin(userId);
-            if (!isAdmin) {
-                return NextResponse.json({ error: 'Unauthorized access' }, { status: 403 });
-            }
-        }
 
         // 1. Fetch Summary Counts
         const [

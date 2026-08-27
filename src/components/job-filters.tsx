@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
-import type { Location, JobType } from "@/lib/types";
+import type { JobType } from "@/lib/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,14 +27,11 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     
-    const [locations, setLocations] = useState<Location[]>([]);
-  
     const [jobTypes, setJobTypes] = useState<JobType[]>([]);
     const [activeCategory, setActiveCategory] = useState<FilterCategory>('posted');
     
     const isRecommended = searchParams.get('view') === 'recommended';
     const isReferral = searchParams.get('isReferral') === 'true';
-    const hideDomain = isRecommended;
 
     const [filters, setFilters] = useState({
         posted: searchParams.get('posted') || 'all',
@@ -51,12 +48,7 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
 
      useEffect(() => {
         const fetchFilterData = async () => {
-            const [locationsRes, jobTypesRes] = await Promise.all([
-                fetch('/api/locations'),
-              
-                fetch('/api/job-types'),
-            ]);
-            setLocations(await locationsRes.json());
+            const jobTypesRes = await fetch('/api/job-types');
             setJobTypes(await jobTypesRes.json());
         }
         fetchFilterData();
@@ -137,12 +129,6 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
         router.push(`/jobs?${newParams.toString()}`);
     }
 
-    const locationOptions = useMemo(() => 
-        locations.map(loc => ({ value: String(loc.id), label: loc.country ? `${loc.name}, ${loc.country}` : loc.name })), 
-    [locations]);
-
-    
-
     const jobTypeOptions = useMemo(() => 
         jobTypes.map(jt => ({ value: String(jt.id), label: jt.name })), 
     [jobTypes]);
@@ -157,7 +143,6 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
 
     const filterCategories: { id: FilterCategory; label: string; icon: React.ElementType }[] = [
         { id: 'posted' as const, label: 'Date Posted', icon: Calendar },
-        { id: 'location' as const, label: 'Locations', icon: MapPin },
         { id: 'experience' as const, label: 'Experience', icon: Award },
         { id: 'jobType' as const, label: 'Employment', icon: Briefcase },
     ];
@@ -196,25 +181,7 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
                                 </RadioGroup>
                             )}
                             
-                            {activeCategory === 'location' && (
-                                <div className="space-y-4">
-                                    {locations.map(option => (
-                                        <div key={option.id} className="flex items-center space-x-3">
-                                            <Checkbox
-                                                id={`location-${option.id}`}
-                                                checked={filters.location.includes(String(option.id))}
-                                                onCheckedChange={(checked) => {
-                                                    const newSelection = checked
-                                                        ? [...filters.location, String(option.id)]
-                                                        : filters.location.filter(v => v !== String(option.id));
-                                                    handleFilterChange('location', newSelection);
-                                                }}
-                                            />
-                                            <Label htmlFor={`location-${option.id}`} className="text-base font-normal">{option.name}</Label>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+
                             {activeCategory === 'experience' && (
                                 <div className="space-y-6 pt-2">
                                     <Label className="text-base">Experience: {filters.expRange[0]} - {filters.expRange[1]} Yrs</Label>
@@ -290,20 +257,7 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
                 
                 
 
-                {/* Locations */}
-                {locationOptions.length > 0 && (
-                    <div className="space-y-3">
-                        <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                            Locations
-                        </Label>
-                        <MultiSelectFilter
-                            title="Locations"
-                            options={locationOptions}
-                            selectedValues={filters.location}
-                            onChange={(values) => handleFilterChange('location', values)}
-                        />
-                    </div>
-                )}
+
 
                 {/* Experience Level */}
                 <div className="space-y-4">

@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { Resend } from 'resend';
-import { awardXP } from '@/lib/gamification-logic';
-import { checkForFraud } from '@/lib/fraud-detection';
-import { updateTrustScore } from '@/lib/trust-logic';
+import { requireAuth } from '@/lib/auth-server';
 
 // Initialize but handle missing keys gracefully later
 const resend = new Resend(process.env.RESEND_API_KEY || 'missing_key');
@@ -22,6 +20,9 @@ const statusMap: { [key: number]: string } = {
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const body = await request.json();
     const { statusId, requesterRole } = body;
 

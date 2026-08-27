@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { BrevoContactAttributes } from './types';
 
 const BREVO_API_BASE = 'https://api.brevo.com/v3';
@@ -39,11 +40,17 @@ export function isBrevoConfigured(): boolean {
  */
 export function verifyBrevoWebhookSignature(signatureHeader?: string, secretToken?: string): boolean {
   const secret = secretToken || process.env.BREVO_WEBHOOK_SECRET || '';
-  if (!secret) {
-    return true; // Unset secret permits requests securely while in standard mode
+  if (!secret || !signatureHeader) {
+    return false;
   }
-  if (!signatureHeader) return false;
-  return signatureHeader === secret || signatureHeader.includes(secret);
+  try {
+    const a = Buffer.from(signatureHeader);
+    const b = Buffer.from(secret);
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }
 
 export async function validateBrevoApiKey(testKey?: string): Promise<{

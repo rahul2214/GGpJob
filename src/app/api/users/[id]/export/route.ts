@@ -1,20 +1,26 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { resolveResumeUrl } from '@/lib/resolve-resume';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id } = params;
         
         // 1. Fetch User Data with joined metadata names
-        const { data: profile, error } = await supabaseAdmin
-            .from('jobseekers')
-            .select('*')
-            .eq('id', id)
-            .single();
+        const isNumeric = /^\d+$/.test(id);
+        const query = supabaseAdmin.from('jobseekers').select('*');
+        const { data: profile, error } = await (isNumeric ? query.eq('id', id) : query.eq('uuid', id)).single();
 
         if (error || !profile) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
+        if (!isOwnerOrAdmin(authUser!, profile.id) && !isOwnerOrAdmin(authUser!, profile.uuid)) {
+            return NextResponse.json({ error: 'Forbidden: Access denied to this profile.' }, { status: 403 });
         }
         
         const locationName = profile.current_city || profile.location_id || "Remote";

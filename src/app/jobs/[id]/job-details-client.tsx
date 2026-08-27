@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import DOMPurify from 'isomorphic-dompurify';
 import { Separator } from '@/components/ui/separator';
 import SkillMatchBadge from '@/components/skill-match-badge';
 import { calculateSkillMatch } from '@/lib/skill-match';
@@ -55,10 +56,11 @@ function renderFormattedDescription(desc?: string) {
     const hasHtmlTags = /<[a-z][\s\S]*>/i.test(decoded);
 
     if (hasHtmlTags) {
+        const sanitized = DOMPurify.sanitize(decoded);
         return (
             <div 
                 className="prose prose-slate max-w-none text-slate-700 leading-relaxed space-y-3 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-slate-900 [&_h1]:mt-6 [&_h1]:mb-3 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-slate-900 [&_h2]:mt-5 [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-slate-900 [&_h3]:mt-4 [&_h3]:mb-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-1.5 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:space-y-1.5 [&_li]:my-1 [&_p]:my-2.5 [&_strong]:font-semibold [&_strong]:text-slate-900 [&_a]:text-indigo-600 [&_a]:underline font-normal"
-                dangerouslySetInnerHTML={{ __html: decoded }}
+                dangerouslySetInnerHTML={{ __html: sanitized }}
             />
         );
     }

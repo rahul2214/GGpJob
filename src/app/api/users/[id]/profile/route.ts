@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 type Section = 'education' | 'projects' | 'employment' | 'languages' | 'skills' | 'personal';
 const sectionList: Section[] = ['education', 'projects', 'employment', 'languages', 'skills', 'personal'];
@@ -109,6 +110,9 @@ const mapFrontendToDb = (data: any) => {
 // GET handler
 export async function GET(request: Request, { params }: { params: { id: string } }) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id: userId } = params;
         const { searchParams } = new URL(request.url);
         const section = searchParams.get('section');
@@ -124,6 +128,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
         if (userError || !user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
+
+        if (!isOwnerOrAdmin(authUser!, user.id) && !isOwnerOrAdmin(authUser!, user.uuid)) {
+            return NextResponse.json({ error: 'Forbidden: Access denied to this profile.' }, { status: 403 });
+        }
+
         const userPk = user.id;
         
         if (section) {
@@ -221,6 +230,9 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const { searchParams } = new URL(request.url);
     const section = searchParams.get('section');
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id: userId } = params;
         const body = await request.json();
 
@@ -239,6 +251,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
         if (userError || !user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
+
+        if (!isOwnerOrAdmin(authUser!, user.id) && !isOwnerOrAdmin(authUser!, user.uuid)) {
+            return NextResponse.json({ error: 'Forbidden: Access denied to this profile.' }, { status: 403 });
+        }
+
         const userPk = user.id;
 
         if (section === 'skills') {
@@ -297,6 +314,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const { searchParams } = new URL(request.url);
     const section = searchParams.get('section');
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id: userId } = params;
         const body = await request.json();
         const { id, ...dataToUpdate } = body;
@@ -320,6 +340,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         if (userError || !user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
+
+        if (!isOwnerOrAdmin(authUser!, user.id) && !isOwnerOrAdmin(authUser!, user.uuid)) {
+            return NextResponse.json({ error: 'Forbidden: Access denied to this profile.' }, { status: 403 });
+        }
+
         const userPk = user.id;
 
         if (section === 'skills') {
@@ -376,6 +401,9 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     const { searchParams } = new URL(request.url);
     const section = searchParams.get('section');
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id: userId } = params;
         const { id } = await request.json();
 
@@ -398,6 +426,11 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         if (userError || !user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
+
+        if (!isOwnerOrAdmin(authUser!, user.id) && !isOwnerOrAdmin(authUser!, user.uuid)) {
+            return NextResponse.json({ error: 'Forbidden: Access denied to this profile.' }, { status: 403 });
+        }
+
         const userPk = user.id;
 
         if (section === 'skills') {

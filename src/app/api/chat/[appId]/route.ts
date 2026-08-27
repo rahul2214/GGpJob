@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { encrypt, decrypt } from '@/lib/encryption';
+import { requireAuth } from '@/lib/auth-server';
 
 // Contact sanitization regex
 const CONTACT_REGEX = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)|(\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9})|(t\.me\/[a-zA-Z0-9_]+)|(wa\.me\/\d+)|(linkedin\.com\/in\/[a-zA-Z0-9_-]+)/gi;
@@ -138,11 +139,23 @@ export async function GET(
     { params }: { params: { appId: string } }
 ) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { appId } = params;
         const session = await getOrCreateSession(appId);
 
         if (!session) {
             return NextResponse.json({ error: 'Chat session not found' }, { status: 404 });
+        }
+
+        // Verify caller is a participant or admin
+        const isAdmin = authUser?.role === 'Admin' || authUser?.role === 'Super Admin';
+        const isJobseeker = authUser?.uuid === session.jobseeker?.uuid || String(authUser?.id) === String(session.jobseeker?.id);
+        const isPoster = authUser?.uuid === session.poster?.uuid || String(authUser?.id) === String(session.poster?.id);
+
+        if (!isAdmin && !isJobseeker && !isPoster) {
+            return NextResponse.json({ error: 'Forbidden: You are not a participant in this conversation.' }, { status: 403 });
         }
 
         const app = session.application as any;
@@ -222,8 +235,11 @@ export async function POST(
     { params }: { params: { appId: string } }
 ) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { appId } = params;
-        const { senderId, content } = await request.json();
+        const { content } = await request.json();
 
         if (!content || !content.trim()) {
             return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
@@ -233,6 +249,17 @@ export async function POST(
         if (!session) {
             return NextResponse.json({ error: 'Session not found' }, { status: 404 });
         }
+
+        // Verify caller is a participant or admin
+        const isAdmin = authUser?.role === 'Admin' || authUser?.role === 'Super Admin';
+        const isJobseeker = authUser?.uuid === session.jobseeker?.uuid || String(authUser?.id) === String(session.jobseeker?.id);
+        const isPoster = authUser?.uuid === session.poster?.uuid || String(authUser?.id) === String(session.poster?.id);
+
+        if (!isAdmin && !isJobseeker && !isPoster) {
+            return NextResponse.json({ error: 'Forbidden: You cannot post messages in this conversation.' }, { status: 403 });
+        }
+
+        const senderId = authUser?.uuid;
 
         const app = session.application as any;
         const statusId = app?.status_id;
@@ -246,7 +273,7 @@ export async function POST(
         }
 
         const internalAppId = session.application_id;
-        const isJobseekerSender = senderId === session.jobseeker?.uuid || senderId === session.user_pk;
+        const isJobseekerSender = isJobseeker;
         const recipientPk = isJobseekerSender ? (session.poster?.id || session.job?.poster_pk || 1) : session.jobseeker?.id;
 
         const appTag = `[APP_ID:${internalAppId}]`;

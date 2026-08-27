@@ -45,14 +45,29 @@ export async function POST(request: Request) {
     }
 
     // 2. Also update the Supabase password so the user can log in normally
-    const { data: supaUser, error: lookupErr } = await supabaseAdmin.auth.admin.listUsers();
-    const targetUser = supaUser?.users?.find((u: any) => u.email === email);
+    let targetUid: string | null = null;
+    const tables = ['jobseekers', 'recruiters', 'employees', 'admins'];
+    for (const tbl of tables) {
+      const { data } = await supabaseAdmin.from(tbl).select('uuid').eq('email', email).maybeSingle();
+      if (data?.uuid) {
+        targetUid = data.uuid;
+        break;
+      }
+    }
 
-    if (targetUser) {
-      await supabaseAdmin.auth.admin.updateUserById(targetUser.id, { password: newPassword });
+    if (targetUid) {
+      await supabaseAdmin.auth.admin.updateUserById(targetUid, { password: newPassword });
       console.log(`[confirm-reset] Supabase password updated for ${email}`);
     } else {
-      console.warn(`[confirm-reset] No Supabase user found for ${email} — only Firebase was updated.`);
+      // Fallback to searching user by list
+      const { data: supaUser } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 100 });
+      const targetUser = supaUser?.users?.find((u: any) => u.email === email);
+      if (targetUser) {
+        await supabaseAdmin.auth.admin.updateUserById(targetUser.id, { password: newPassword });
+        console.log(`[confirm-reset] Supabase password updated via listUsers for ${email}`);
+      } else {
+        console.warn(`[confirm-reset] No Supabase user found for ${email} — only Firebase was updated.`);
+      }
     }
 
     return NextResponse.json({ success: true, email });

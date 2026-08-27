@@ -8,13 +8,22 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
     let locNames: string[] = [];
     let locUuids: string[] = [];
 
+    let rawJobLocations: any[] = [];
     const { data: jobLocs } = await supabaseAdmin
         .from('job_locations')
-        .select('countries:country_id(name), states_provinces:state_province_id(name), cities:city_id(id, name)')
+        .select('country_id, state_province_id, city_id, countries:country_id(name), states_provinces:state_province_id(name), cities:city_id(id, name)')
         .eq('job_id', job.id);
 
     if (jobLocs && jobLocs.length > 0) {
         jobLocs.forEach((jl: any) => {
+            rawJobLocations.push({
+                countryId: jl.country_id,
+                stateId: jl.state_province_id,
+                cityId: jl.city_id,
+                country: jl.countries?.name || '',
+                state: jl.states_provinces?.name || '',
+                city: jl.cities?.name || ''
+            });
             const parts = [jl.cities?.name, jl.states_provinces?.name, jl.countries?.name].filter(Boolean);
             if (parts.length > 0) {
                 locNames.push(parts.join(', '));
@@ -131,6 +140,7 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
         skills: skillNames,
         requiredSkills: skillNames,
         locations: locNames,
+        jobLocations: rawJobLocations,
         skillPks: job.skill_pks || [],
         country: job.country || null,
         state: job.state || null,
@@ -404,15 +414,21 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                     await supabaseAdmin.from('job_benefits').insert(benefitInserts);
                 } catch (e) {}
             }
-            if (lPks.length > 0) {
+            const locList = Array.isArray(body.locations) && body.locations.length > 0
+                ? body.locations
+                : [{ countryId: body.countryId, stateId: body.stateId, cityId: body.cityId }];
+
+            const locInserts = locList.map((loc: any, idx: number) => ({
+                job_id: numericJobId,
+                country_id: loc.countryId ? Number(loc.countryId) : (body.countryId ? Number(body.countryId) : 1),
+                state_province_id: loc.stateId ? Number(loc.stateId) : null,
+                city_id: loc.cityId ? Number(loc.cityId) : null,
+                is_primary: idx === 0
+            })).filter((loc: any) => loc.country_id || loc.city_id || loc.state_province_id);
+
+            if (locInserts.length > 0) {
                 try {
                     await supabaseAdmin.from('job_locations').delete().eq('job_id', numericJobId);
-                    const locInserts = lPks.map((lpk: number, idx: number) => ({
-                        job_id: numericJobId,
-                        country_id: 1,
-                        city_id: lpk,
-                        is_primary: idx === 0
-                    }));
                     await supabaseAdmin.from('job_locations').insert(locInserts);
                 } catch (e) {}
             }

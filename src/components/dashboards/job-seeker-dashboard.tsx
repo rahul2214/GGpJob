@@ -85,7 +85,7 @@ export default function JobSeekerDashboard() {
   );
 
   const { data: jobData, isLoading, isError } = useDashboardJobs(
-    user ? { domain: user.domainId, dashboard: "true", userId: user.uuid } : undefined
+    user ? { dashboard: "true", userId: user.uuid } : undefined
   );
 
   const handleVerifyAction = async (appId: string, action: 'confirm' | 'dispute') => {

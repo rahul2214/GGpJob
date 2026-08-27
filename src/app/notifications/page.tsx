@@ -107,7 +107,8 @@ export default function NotificationsPage() {
     }
 
     const cleanMessage = (msg: string) => {
-        let text = msg.replace(/\[APP_ID:[^\]]+\]\s*/, '');
+        let text = (msg || '').replace(/\[APP_ID:[^\]]+\]\s*/gi, '');
+        text = text.replace(/\[SENDER_UUID:[^\]]+\]\s*/gi, '');
         text = text.replace(
             /Great news! An employee from the company is interested in referring you for (.*?)\. Check your dashboard to unlock this referral\./gi,
             'Great news! The recruiter has selected your application for $1.'

@@ -3,11 +3,54 @@ import crypto from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getExchangeRates, convertUSD } from '@/lib/exchange-rate-service';
 import { getPlanPrices } from '@/lib/plan-prices-service';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 
+async function verifyPayPalOrder(orderId: string): Promise<boolean> {
+  const clientId = process.env.PAYPAL_CLIENT_ID || process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    // If PayPal server secrets are not provided in environment, allow verified client receipt only in development
+    return process.env.NODE_ENV !== 'production';
+  }
+
+  try {
+    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+    const tokenRes = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: 'grant_type=client_credentials'
+    });
+
+    if (!tokenRes.ok) return false;
+    const { access_token } = await tokenRes.json();
+
+    const orderRes = await fetch(`https://api-m.paypal.com/v2/checkout/orders/${orderId}`, {
+      headers: {
+        'Authorization': `Bearer ${access_token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!orderRes.ok) return false;
+    const orderData = await orderRes.json();
+    return orderData.status === 'COMPLETED' || orderData.status === 'APPROVED';
+  } catch (err) {
+    console.error('[PAYPAL_VERIFY_ERROR]', err);
+    return false;
+  }
+}
+
 export async function POST(request: Request) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const body = await request.json();
     const { 
       razorpay_order_id, 
@@ -25,6 +68,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required validation fields' }, { status: 400 });
     }
 
+    if (!isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json({ error: 'Forbidden: Cannot activate plan for another user account.' }, { status: 403 });
+    }
+
     const gateway = razorpay_payment_id ? 'razorpay' : 'paypal';
     let verified = false;
     let paymentId = '';
@@ -36,14 +83,20 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Missing required Razorpay verification fields' }, { status: 400 });
       }
 
-      const isFreeOrder = razorpay_order_id.startsWith('free_order_');
+      const secret = process.env.RAZORPAY_KEY_SECRET;
+      if (!secret) {
+        return NextResponse.json({ error: 'Payment gateway configuration error on server.' }, { status: 500 });
+      }
+
       const sign = razorpay_order_id + "|" + razorpay_payment_id;
-      const expectedSign = isFreeOrder ? razorpay_signature : crypto
-        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || 'secret_placeholder')
+      const expectedSign = crypto
+        .createHmac("sha256", secret)
         .update(sign.toString())
         .digest("hex");
 
-      if (razorpay_signature === expectedSign) {
+      const a = Buffer.from(razorpay_signature);
+      const b = Buffer.from(expectedSign);
+      if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
         verified = true;
         paymentId = razorpay_payment_id;
         orderId = razorpay_order_id;
@@ -54,15 +107,13 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Missing required PayPal verification fields' }, { status: 400 });
       }
       
-      // In production, you would fetch and verify/capture the PayPal payment via PayPal API.
-      // Since it is fully verified and completed on the client-side via Paypal SDK, we check the details.
-      verified = true;
+      verified = await verifyPayPalOrder(paypal_order_id);
       paymentId = paypal_payment_id;
       orderId = paypal_order_id;
     }
 
     if (!verified) {
-      return NextResponse.json({ success: false, message: "Invalid payment verification signature." }, { status: 400 });
+      return NextResponse.json({ success: false, message: "Invalid payment verification signature or unverified order." }, { status: 400 });
     }
 
     const now = new Date();

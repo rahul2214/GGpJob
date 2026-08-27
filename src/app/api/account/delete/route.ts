@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 
 export async function DELETE(request: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     let userId: string | null = null;
 
     // Check request body or query parameter
@@ -18,6 +22,10 @@ export async function DELETE(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json({ error: 'Missing required userId parameter' }, { status: 400 });
+    }
+
+    if (!isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json({ error: 'Forbidden: You cannot delete another user account.' }, { status: 403 });
     }
 
     const now = new Date();

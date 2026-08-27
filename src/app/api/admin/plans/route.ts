@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAdmin } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    const { user: adminUser, errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
     const { planId, price, name } = await request.json();
 
     if (!planId || price === undefined || price < 0) {

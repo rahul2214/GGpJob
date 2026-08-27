@@ -1,28 +1,26 @@
 import { NextResponse } from 'next/server';
 import { getSignedResumeUrl } from '@/lib/r2';
+import { requireSuperAdmin } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+    const { user, errorResponse } = await requireSuperAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const { searchParams } = new URL(request.url);
     const uri = searchParams.get('uri');
 
     if (!uri) return NextResponse.json({ error: 'Missing uri param' }, { status: 400 });
 
     try {
-        console.log(`[DIAGNOSTIC] Signing URI: ${uri}`);
         const signedUrl = await getSignedResumeUrl(uri);
         return NextResponse.json({ 
             original: uri,
             signed: signedUrl,
-            success: signedUrl.startsWith('https://'),
-            details: {
-                endpoint: process.env.R2_ENDPOINT,
-                bucket: process.env.R2_BUCKET_NAME,
-                accountId: process.env.R2_ACCOUNT_ID
-            }
+            success: signedUrl.startsWith('https://')
         });
     } catch (e: any) {
-        return NextResponse.json({ error: e.message, stack: e.stack }, { status: 500 });
+        return NextResponse.json({ error: e.message || 'Diagnostic signing failed' }, { status: 500 });
     }
 }

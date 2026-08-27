@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAdmin } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -7,6 +8,8 @@ export const fetchCache = 'force-no-store';
 
 export async function GET(request: Request) {
   try {
+    const { user: adminUser, errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
     // Fetch all records from 'payments' table
     const { data: paymentsRaw, error: pErr } = await supabaseAdmin
       .from('payments')

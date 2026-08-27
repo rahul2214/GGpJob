@@ -84,8 +84,6 @@ export interface User {
   visaRequirement?: string;
   visaRequirementId?: number;
   preferredLanguages?: string[];
-  domainId?: string;
-  domainPk?: number;
   workStatus?: 'Fresher' | 'Experienced';
   experienceYears?: number;
   experienceMonths?: number;
@@ -182,22 +180,6 @@ export interface WorkplaceType {
   name: "On-site" | "Hybrid" | "Remote";
 }
 
-export interface Location {
-  id: number;
-  uuid: string;
-  name: string;
-  country?: string;
-  state?: string;
-  city?: string;
-}
-
-export interface Domain {
-  id: number;
-  uuid: string;
-  name: string;
-  icon?: string;
-}
-
 export interface Job {
   id: number;
   uuid: string;
@@ -269,16 +251,10 @@ export interface Job {
 
   // Additional metadata & relations
   description: string;
-  locationId?: string;
-  locationIds: string[];
-  locationPks?: number[];
   jobTypeId: string;
   jobTypePk?: number;
   workplaceTypeId?: string;
   workplaceTypePk?: number;
-  domainId?: string;
-  domainPk?: number;
-  domain?: Domain | string;
   isReferral?: boolean;
   recruiterId?: string;
   recruiterPk?: number;

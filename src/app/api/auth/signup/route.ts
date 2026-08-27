@@ -96,17 +96,20 @@ export async function POST(request: Request) {
       throw createError;
     }
 
-    // ✅ AUTOMATED PROFILE CREATION
-    // Determine the correct table and role_id
+    // ✅ AUTOMATED PROFILE CREATION - Admin roles cannot self-register
     let table = 'jobseekers';
     let roleId = 1; 
     
     if (role === 'Recruiter') {
         table = 'recruiters';
         roleId = 2;
-    } else if (role === 'Admin') {
-        table = 'admins';
-        roleId = 4;
+    } else if (role === 'Employee') {
+        table = 'employees';
+        roleId = 3;
+    } else {
+        // Default strictly to Job Seeker for any unauthorized/tampered role strings
+        table = 'jobseekers';
+        roleId = 1;
     }
 
     let formattedWebsite = companyWebsite ? companyWebsite.trim() : null;

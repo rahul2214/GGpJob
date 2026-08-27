@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth } from '@/lib/auth-server';
+import { resolveResumeUrl } from '@/lib/resolve-resume';
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id } = params;
 
         // 1. Validate application ID
@@ -25,24 +30,26 @@ export async function GET(request: Request, { params }: { params: { id: string }
             return NextResponse.json({ error: 'Application not found' }, { status: 404 });
         }
 
-        // 3. Fetch candidate profile from existing API
-        const protocol = request.headers.get('x-forwarded-proto') || 'http';
-        const host = request.headers.get('host') || 'localhost:3000';
-        const baseUrl = `${protocol}://${host}`;
-        
-        const userRes = await fetch(`${baseUrl}/api/users/${application.user_pk}`, {
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
+        // 3. Fetch candidate profile directly from DB without loopback HTTP request
+        const { data: jobseeker, error: jsError } = await supabaseAdmin
+            .from('jobseekers')
+            .select('*')
+            .eq('id', application.user_pk)
+            .single();
 
-        if (!userRes.ok) {
-            return NextResponse.json({ error: 'Failed to fetch candidate profile' }, { status: userRes.status });
+        if (jsError || !jobseeker) {
+            return NextResponse.json({ error: 'Candidate profile not found' }, { status: 404 });
         }
 
-        const candidateProfile = await userRes.json();
+        let resumeUrl = jobseeker.resume_url;
+        if (resumeUrl) {
+            resumeUrl = await resolveResumeUrl(resumeUrl);
+        }
 
-        return NextResponse.json(candidateProfile);
+        return NextResponse.json({
+            ...jobseeker,
+            resume_url: resumeUrl
+        });
     } catch (e: any) {
         console.error('[API_CANDIDATE_PROFILE] Error:', e);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

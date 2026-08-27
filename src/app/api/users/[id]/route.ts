@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { User } from '@/lib/types';
 import { resolveResumeUrl } from '@/lib/resolve-resume';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 // Helper to normalize YYYY-MM to YYYY-MM-DD for PostgreSQL DATE type
 function normalizeDate(dateStr: string | null | undefined): string | null | undefined {
@@ -385,7 +386,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id } = params;
+        if (!isOwnerOrAdmin(authUser!, id)) {
+            return NextResponse.json({ error: 'Forbidden: Access denied to update this user.' }, { status: 403 });
+        }
+
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
         const column = isUuid ? 'uuid' : 'id';
         const idValue = isUuid ? id : parseInt(id);
@@ -1025,7 +1033,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id } = params;
+        if (!isOwnerOrAdmin(authUser!, id)) {
+            return NextResponse.json({ error: 'Forbidden: Access denied to modify this user.' }, { status: 403 });
+        }
+
         const body = await request.json();
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
         const column = isUuid ? 'uuid' : 'id';
@@ -1181,10 +1196,17 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id } = params;
         
         if (!id) {
             return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+        }
+
+        if (!isOwnerOrAdmin(authUser!, id)) {
+            return NextResponse.json({ error: 'Forbidden: Access denied to delete this user account.' }, { status: 403 });
         }
 
         // We use the admin API to delete the user from auth.users.

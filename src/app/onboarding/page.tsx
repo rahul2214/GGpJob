@@ -17,8 +17,6 @@ import { isOnboardingComplete } from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
 import { COUNTRY_CODES } from "@/utils/country-codes";
 import { CountryCodeSelect } from "@/components/country-code-select";
-import { LocationCascadeSelector } from "@/components/location/LocationCascadeSelector";
-
 
 export default function OnboardingPage() {
     const { user, loading, setUser } = useUser();
@@ -1002,19 +1000,23 @@ export default function OnboardingPage() {
                                 <Globe className="w-4 h-4 text-indigo-500" />
                                 Select your Primary Location
                             </label>
-                            <LocationCascadeSelector
-                                initialCountry={selectedCountry || user?.country || ""}
-                                initialState={selectedState || user?.state || ""}
-                                initialCity={selectedCity || user?.currentCity || ""}
-                                onChange={(val) => {
-                                    setSelectedCountry(val.countryName || "");
-                                    setSelectedState(val.stateName || "");
-                                    setSelectedCity(val.cityName || "");
-                                    setSelectedCountryId(val.countryId || undefined);
-                                    setSelectedStateId(val.stateId || undefined);
-                                    setSelectedCityId(val.cityId || undefined);
-                                }}
-                            />
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <Input 
+                                    placeholder="Country" 
+                                    value={selectedCountry || user?.country || ""} 
+                                    onChange={(e) => setSelectedCountry(e.target.value)} 
+                                />
+                                <Input 
+                                    placeholder="State / Province" 
+                                    value={selectedState || user?.state || ""} 
+                                    onChange={(e) => setSelectedState(e.target.value)} 
+                                />
+                                <Input 
+                                    placeholder="City" 
+                                    value={selectedCity || user?.currentCity || ""} 
+                                    onChange={(e) => setSelectedCity(e.target.value)} 
+                                />
+                            </div>
                         </div>
                     )}
 

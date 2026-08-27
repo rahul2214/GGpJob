@@ -506,7 +506,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Job Title and Description are required' }, { status: 400 });
     }
 
-    const hasLocations = !!(data.locationIds?.length || data.locationId || data.locations?.length || data.location || data.locationPks?.length);
+    const hasLocations = !!(data.countryId || data.cityId || data.country || data.city || data.locationIds?.length || data.locationId || data.locations?.length || data.location || data.locationPks?.length);
     const hasSkills = !!(data.skillIds?.length || data.requiredSkills?.length || data.skills?.length || data.skillPks?.length);
 
     if (!hasLocations) {
@@ -785,9 +785,25 @@ export async function POST(request: Request) {
     // Resolve Authenticated User UUID to BigInt ID (PK) for the Jobs table
     const userNumericPk = user.id;
 
+    // Ensure job_id is clean and unique to prevent 23505 constraint violation
+    let finalJobId: string | null = data.jobId ? String(data.jobId).trim() : null;
+    if (!finalJobId || finalJobId.length === 0) {
+        finalJobId = null;
+    } else {
+        const { data: existingJob } = await supabaseAdmin
+            .from('jobs')
+            .select('id')
+            .eq('job_id', finalJobId)
+            .maybeSingle();
+
+        if (existingJob) {
+            finalJobId = `${finalJobId}-${Math.floor(1000 + Math.random() * 9000)}`;
+        }
+    }
+
     const jobToCreate: any = {
       title: data.title,
-      job_id: data.jobId || null,
+      job_id: finalJobId,
       description: data.description,
       // Primary fallback logic: favor form data (especially for referrals), then user profile.
       company_name: data.companyName || user.company_name || null,
@@ -826,6 +842,18 @@ export async function POST(request: Request) {
         .insert([jobToCreate])
         .select()
         .single();
+
+    if (insertError && insertError.code === '23505' && insertError.details?.includes('job_id')) {
+        console.warn('[API_JOBS_POST] Duplicate job_id encountered. Retrying insert with unique generated job_id...');
+        jobToCreate.job_id = `JOB-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+        const retryIdRes = await supabaseAdmin
+            .from('jobs')
+            .insert([jobToCreate])
+            .select()
+            .single();
+        newJob = retryIdRes.data;
+        insertError = retryIdRes.error;
+    }
 
     if (insertError && (insertError.code === '42703' || insertError.code === 'PGRST204')) {
         console.warn('[API_JOBS_POST] Column missing on insert. Retrying insert without optional columns...', insertError.message);
@@ -867,13 +895,19 @@ export async function POST(request: Request) {
             const benefitInserts = bPks.map((bpk: number) => ({ job_pk: newJob.id, benefit_pk: bpk }));
             try { await supabaseAdmin.from('job_benefits').insert(benefitInserts); } catch (e) {}
         }
-        if (lPks.length > 0) {
-            const locInserts = lPks.map((lpk: number, idx: number) => ({
-                job_id: newJob.id,
-                country_id: 1,
-                city_id: lpk,
-                is_primary: idx === 0
-            }));
+        const locList = Array.isArray(data.locations) && data.locations.length > 0
+            ? data.locations
+            : [{ countryId: data.countryId, stateId: data.stateId, cityId: data.cityId }];
+
+        const locInserts = locList.map((loc: any, idx: number) => ({
+            job_id: newJob.id,
+            country_id: loc.countryId ? Number(loc.countryId) : (data.countryId ? Number(data.countryId) : 1),
+            state_province_id: loc.stateId ? Number(loc.stateId) : null,
+            city_id: loc.cityId ? Number(loc.cityId) : null,
+            is_primary: idx === 0
+        })).filter((loc: any) => loc.country_id || loc.city_id || loc.state_province_id);
+
+        if (locInserts.length > 0) {
             try { await supabaseAdmin.from('job_locations').insert(locInserts); } catch (e) {}
         }
     }
