@@ -189,18 +189,30 @@ export async function GET(request: NextRequest) {
     
     const userId = searchParams.get('userId');
     let appliedJobPks: number[] = [];
+    let user: any = null;
 
     if (userId) {
         const isUuid = userId.includes('-');
-        
         const { data: jobseeker } = await supabaseAdmin.from('jobseekers').select('id').eq(isUuid ? 'uuid' : 'id', userId).maybeSingle();
-        const user = jobseeker as any;
+        user = jobseeker as any;
 
         if (user) {
             const { data: apps } = await supabaseAdmin.from('applications').select('job_pk').eq('user_pk', user.id);
             if (apps && apps.length > 0) {
                 appliedJobPks = apps.map((ap: any) => ap.job_pk).filter(Boolean);
             }
+        }
+    }
+
+    // Fetch Jobseeker skills for recommendation matching
+    let userSkillPks: number[] = [];
+    if (user && user.id) {
+        const { data: jsSkills } = await supabaseAdmin
+            .from('jobseeker_skills')
+            .select('skill_pk')
+            .eq('user_pk', user.id);
+        if (jsSkills && jsSkills.length > 0) {
+            userSkillPks = jsSkills.map((s: any) => s.skill_pk).filter(Boolean);
         }
     }
 
@@ -215,7 +227,7 @@ export async function GET(request: NextRequest) {
             *,
             job_types!job_type_pk(uuid, name),
             workplace_types!workplace_type_pk(uuid, name),
-            company_sizes!company_size_id(uuid, name),
+            company_sizes!company_size_id(name),
             currencies!currency_id(id, code, symbol, name),
             applications_count:applications(count)
         `);
@@ -238,11 +250,10 @@ export async function GET(request: NextRequest) {
 
     // Dashboard View Logic
     if (searchParams.get('dashboard') === 'true') {
-        
         const postedDays = searchParams.get('posted');
-
         const nowIso = new Date().toISOString();
-        let recQuery = supabaseAdmin.from('jobs').select('*, job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name)').eq('status', 'active').gt('expires_at', nowIso).eq('is_referral', false).limit(10).order('posted_at', { ascending: false });
+
+        let recQuery = supabaseAdmin.from('jobs').select('*, job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name)').eq('status', 'active').gt('expires_at', nowIso).eq('is_referral', false).order('posted_at', { ascending: false });
         let refQuery = supabaseAdmin.from('jobs').select('*, job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name)').eq('status', 'active').gt('expires_at', nowIso).eq('is_referral', true).limit(10).order('posted_at', { ascending: false });
 
         if (appliedJobPks.length > 0) {
@@ -257,9 +268,70 @@ export async function GET(request: NextRequest) {
             refQuery = refQuery.gte('posted_at', cutoff.toISOString());
         }
 
-        let [recSnap, refSnap] = await Promise.all([recQuery, refQuery]);
+        // Skill-based job recommendation matching
+        let recommendedJobsRaw: any[] = [];
+        let jobSkillMatchCounts: Record<number, number> = {};
+
+        if (userSkillPks.length > 0) {
+            const { data: matchingJobSkills } = await supabaseAdmin
+                .from('job_skills')
+                .select('job_pk, skill_pk')
+                .in('skill_pk', userSkillPks);
+
+            if (matchingJobSkills && matchingJobSkills.length > 0) {
+                matchingJobSkills.forEach((ms: any) => {
+                    if (ms.job_pk) {
+                        jobSkillMatchCounts[ms.job_pk] = (jobSkillMatchCounts[ms.job_pk] || 0) + 1;
+                    }
+                });
+                const matchedJobPks = Object.keys(jobSkillMatchCounts)
+                    .map(Number)
+                    .sort((a, b) => jobSkillMatchCounts[b] - jobSkillMatchCounts[a]);
+
+                let recSkillQuery = supabaseAdmin
+                    .from('jobs')
+                    .select('*, job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name)')
+                    .eq('status', 'active')
+                    .gt('expires_at', nowIso)
+                    .eq('is_referral', false)
+                    .in('id', matchedJobPks);
+
+                if (appliedJobPks.length > 0) {
+                    recSkillQuery = recSkillQuery.not('id', 'in', `(${appliedJobPks.join(',')})`);
+                }
+                if (postedDays && postedDays !== 'all') {
+                    const cutoff = new Date();
+                    cutoff.setDate(cutoff.getDate() - parseInt(postedDays));
+                    recSkillQuery = recSkillQuery.gte('posted_at', cutoff.toISOString());
+                }
+
+                const recSkillSnap = await recSkillQuery;
+                if (recSkillSnap.data && recSkillSnap.data.length > 0) {
+                    recommendedJobsRaw = recSkillSnap.data;
+                    recommendedJobsRaw.sort((a: any, b: any) => (jobSkillMatchCounts[b.id] || 0) - (jobSkillMatchCounts[a.id] || 0));
+                }
+            }
+        }
+
+        // Fill remaining slots up to 10 with recent active jobs if needed
+        if (recommendedJobsRaw.length < 10) {
+            const existingIds = recommendedJobsRaw.map((j: any) => j.id);
+            let fillQuery = recQuery;
+            if (existingIds.length > 0) {
+                fillQuery = fillQuery.not('id', 'in', `(${existingIds.join(',')})`);
+            }
+            const fillSnap = await fillQuery.limit(10 - recommendedJobsRaw.length);
+            if (fillSnap.data && fillSnap.data.length > 0) {
+                recommendedJobsRaw = [...recommendedJobsRaw, ...fillSnap.data];
+            }
+        }
+
+        let [recSnap, refSnap] = await Promise.all([
+            Promise.resolve({ data: recommendedJobsRaw, error: null }),
+            refQuery
+        ]);
         
-        if (recSnap.error && recSnap.error.code === '42703') {
+        if ((recSnap as any).error && (recSnap as any).error.code === '42703') {
             console.warn('[API_JOBS_GET] Dashboard query column missing (42703). Retrying fallback query...');
             let fallbackQuery = supabaseAdmin
                 .from('jobs')
@@ -312,8 +384,19 @@ export async function GET(request: NextRequest) {
         }
     }
 
-    // Recommendation/similar filtering now uses skills/location instead of domain
-    // (handled client-side via recommendation-engine.ts)
+    if (isRecommended && userSkillPks.length > 0) {
+        const { data: matchingJobSkills } = await supabaseAdmin
+            .from('job_skills')
+            .select('job_pk')
+            .in('skill_pk', userSkillPks);
+
+        if (matchingJobSkills && matchingJobSkills.length > 0) {
+            const mPks = Array.from(new Set(matchingJobSkills.map((m: any) => m.job_pk).filter(Boolean)));
+            if (mPks.length > 0) {
+                query = query.in('id', mPks);
+            }
+        }
+    }
 
     
     const recruiterId = searchParams.get('recruiterId');

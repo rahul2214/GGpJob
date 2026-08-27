@@ -566,16 +566,21 @@ export default function OnboardingPage() {
             });
             if (!profileRes.ok) throw new Error("Failed to save profile info.");
 
-            // 3. Save Skills subcollection if needed
-            if (!user.profileStats?.hasSkills && selectedSkillIds.length > 0) {
+            // 3. Save Skills subcollection if selected
+            if (selectedSkillIds.length > 0) {
                 setUploadProgress(85);
                 const skillsToSave = selectedSkillIds.map(uuid => {
                     const skill = masterSkills.find(s => s.uuid === uuid);
                     return { id: uuid, name: skill?.name || "" };
                 });
+                const { data: sessionData } = await supabase.auth.getSession();
+                const token = sessionData?.session?.access_token;
+                const headers: Record<string, string> = { "Content-Type": "application/json" };
+                if (token) headers["Authorization"] = `Bearer ${token}`;
+
                 const skillsRes = await fetch(`/api/users/${user.uuid}/skills`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers,
                     body: JSON.stringify({ skills: skillsToSave }),
                 });
                 if (!skillsRes.ok) throw new Error("Failed to save skills.");

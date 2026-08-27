@@ -41,24 +41,78 @@ export async function POST(
     // 3. Resolve skill_pks
     let skillInserts: any[] = [];
     if (skills.length > 0) {
-      const skillUuids = skills.map(s => s.id || (s as any).uuid).filter(Boolean);
-      const { data: dbSkills } = await supabaseAdmin
-        .from('skills')
-        .select('id, uuid, name')
-        .in('uuid', skillUuids);
+      const uuids: string[] = [];
+      const names: string[] = [];
+      const integerIds: number[] = [];
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-      if (dbSkills && dbSkills.length > 0) {
-         skillInserts = dbSkills.map((dbSkill: any) => ({
+      for (const s of skills) {
+        const idVal = String(s.id || (s as any).uuid || '').trim();
+        const nameVal = String(s.name || '').trim();
 
-            user_pk: userPk,
-            skill_pk: dbSkill.id
-         }));
+        if (idVal) {
+          if (uuidRegex.test(idVal)) {
+            uuids.push(idVal);
+          } else if (/^\d+$/.test(idVal)) {
+            integerIds.push(parseInt(idVal, 10));
+          }
+        }
+        if (nameVal) {
+          names.push(nameVal);
+        }
+      }
 
-         const { error: insertError } = await supabaseAdmin
-           .from('jobseeker_skills')
-           .insert(skillInserts);
-         
-         if (insertError) throw insertError;
+      const resolvedSkillPks = new Set<number>();
+
+      if (uuids.length > 0) {
+        const { data: byUuid } = await supabaseAdmin
+          .from('skills')
+          .select('id')
+          .in('uuid', uuids);
+        if (byUuid) byUuid.forEach((s: any) => resolvedSkillPks.add(s.id));
+      }
+
+      if (integerIds.length > 0) {
+        const { data: byId } = await supabaseAdmin
+          .from('skills')
+          .select('id')
+          .in('id', integerIds);
+        if (byId) byId.forEach((s: any) => resolvedSkillPks.add(s.id));
+      }
+
+      if (names.length > 0) {
+        const { data: byName } = await supabaseAdmin
+          .from('skills')
+          .select('id, name')
+          .in('name', names);
+        
+        const foundNames = new Set((byName || []).map((s: any) => s.name.toLowerCase()));
+        if (byName) byName.forEach((s: any) => resolvedSkillPks.add(s.id));
+
+        const missingNames = Array.from(new Set(names.filter(n => !foundNames.has(n.toLowerCase()))));
+        if (missingNames.length > 0) {
+          const inserts = missingNames.map(name => ({ name }));
+          const { data: insertedSkills } = await supabaseAdmin
+            .from('skills')
+            .insert(inserts)
+            .select('id');
+          if (insertedSkills) insertedSkills.forEach((s: any) => resolvedSkillPks.add(s.id));
+        }
+      }
+
+      if (resolvedSkillPks.size > 0) {
+        skillInserts = Array.from(resolvedSkillPks).map((skillId: number) => ({
+          user_pk: userPk,
+          skill_pk: skillId,
+          proficiency_level: 'beginner',
+          years_experience: 0
+        }));
+
+        const { error: insertError } = await supabaseAdmin
+          .from('jobseeker_skills')
+          .upsert(skillInserts, { onConflict: 'user_pk,skill_pk' });
+        
+        if (insertError) throw insertError;
       }
     }
 

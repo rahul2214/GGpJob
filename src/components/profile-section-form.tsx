@@ -141,8 +141,9 @@ export const ProfileSectionForm = ({
                         };
                     }
 
-                    const isDuplicate = existingData?.skills?.some(
-                        (s: any) => s.name.toLowerCase() === typedName.toLowerCase() && s.uuid !== editingItem?.uuid
+                    const existingSkillsList = Array.isArray(existingData?.skills) ? existingData.skills : [];
+                    const isDuplicate = existingSkillsList.some(
+                        (s: any) => s.name?.toLowerCase() === typedName?.toLowerCase() && s.uuid !== editingItem?.uuid
                     );
                     if (isDuplicate) {
                         return {
@@ -304,38 +305,45 @@ export const ProfileSectionForm = ({
                 {currentSection === 'skills' && (
                     <>
                         <FormField control={form.control} name="name" render={({ field }) => (
-                            <FormItem className="flex flex-col relative">
+                            <FormItem className="flex flex-col">
                                 <FormLabel>Skill Name</FormLabel>
-                                <Command className="overflow-visible bg-transparent">
-                                    <div className="border border-input rounded-md flex items-center bg-transparent">
-                                        <CommandInput
-                                            placeholder="e.g. Python"
-                                            value={field.value}
-                                            onValueChange={field.onChange}
-                                            onFocus={() => setSkillDropdownOpen(true)}
-                                            onBlur={() => setTimeout(() => setSkillDropdownOpen(false), 200)}
-                                            className="border-none focus:ring-0 w-full"
-                                        />
-                                    </div>
-                                    {skillDropdownOpen && (
-                                        <div className="relative">
-                                            <CommandList className="absolute top-2 z-50 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
+                                <Popover open={skillDropdownOpen} onOpenChange={setSkillDropdownOpen}>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                aria-expanded={skillDropdownOpen}
+                                                className="w-full justify-between font-normal text-left h-10 px-3 bg-background"
+                                            >
+                                                <span className="truncate">
+                                                    {field.value || "Select a skill..."}
+                                                </span>
+                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[340px] p-0" align="start">
+                                        <Command>
+                                            <CommandInput placeholder="Search skill (e.g. Python, React)..." />
+                                            <CommandList className="max-h-60 overflow-y-auto">
                                                 <CommandEmpty>No matching skills found.</CommandEmpty>
-                                                <CommandGroup className="max-h-60 overflow-y-auto">
+                                                <CommandGroup>
                                                     {masterSkills.map((skill) => (
                                                         <CommandItem
                                                             key={skill.id}
-                                                            value={skill.name.toLowerCase()}
+                                                            value={skill.name}
                                                             onSelect={() => {
-                                                                const isDuplicate = existingData?.skills?.some(
-                                                                    (s: any) => s.name.toLowerCase() === skill.name.toLowerCase() && s.id !== editingItem?.id
-                                                                );
+                                                                 const existingSkillsList = Array.isArray(existingData?.skills) ? existingData.skills : [];
+                                                                 const isDuplicate = existingSkillsList.some(
+                                                                     (s: any) => s.name?.toLowerCase() === skill.name?.toLowerCase() && s.id !== editingItem?.id
+                                                                 );
                                                                 if (isDuplicate) {
                                                                     form.setError("name", { type: "manual", message: "This skill is already in your profile." });
                                                                 } else {
                                                                     form.clearErrors("name");
-                                                                    form.setValue("name", skill.name);
-                                                                    form.setValue("uuid", skill.uuid);
+                                                                    form.setValue("name", skill.name, { shouldValidate: true });
+                                                                    form.setValue("uuid", skill.uuid, { shouldValidate: true });
                                                                     setSkillDropdownOpen(false);
                                                                 }
                                                             }}
@@ -352,9 +360,9 @@ export const ProfileSectionForm = ({
                                                     ))}
                                                 </CommandGroup>
                                             </CommandList>
-                                        </div>
-                                    )}
-                                </Command>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
                                 <FormMessage />
                             </FormItem>
                         )} />

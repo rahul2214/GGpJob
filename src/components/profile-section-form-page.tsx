@@ -8,6 +8,7 @@ import { useUser } from '@/contexts/user-context';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ProfileSectionForm } from './profile-section-form';
+import { supabase } from '@/lib/supabase-client';
 
 type Section = 'education' | 'employment' | 'projects' | 'languages' | 'skills';
 
@@ -78,9 +79,16 @@ export function ProfileSectionFormPage({ section, itemId }: ProfileSectionFormPa
         const body = JSON.stringify(isEditing ? { ...bodyData, id: editingItem.id } : bodyData);
 
         try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             const response = await fetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body,
             });
 

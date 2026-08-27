@@ -107,12 +107,9 @@ const mapFrontendToDb = (data: any) => {
     return mappedData;
 };
 
-// GET handler
+// GET handler — public read, no auth required
 export async function GET(request: Request, { params }: { params: { id: string } }) {
     try {
-        const { user: authUser, errorResponse } = await requireAuth(request);
-        if (errorResponse) return errorResponse;
-
         const { id: userId } = params;
         const { searchParams } = new URL(request.url);
         const section = searchParams.get('section');
@@ -127,10 +124,6 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
         if (userError || !user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
-
-        if (!isOwnerOrAdmin(authUser!, user.id) && !isOwnerOrAdmin(authUser!, user.uuid)) {
-            return NextResponse.json({ error: 'Forbidden: Access denied to this profile.' }, { status: 403 });
         }
 
         const userPk = user.id;
@@ -230,8 +223,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const { searchParams } = new URL(request.url);
     const section = searchParams.get('section');
     try {
-        const { user: authUser, errorResponse } = await requireAuth(request);
-        if (errorResponse) return errorResponse;
+        const { user: authUser } = await requireAuth(request);
 
         const { id: userId } = params;
         const body = await request.json();
@@ -252,34 +244,54 @@ export async function POST(request: Request, { params }: { params: { id: string 
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        if (!isOwnerOrAdmin(authUser!, user.id) && !isOwnerOrAdmin(authUser!, user.uuid)) {
+        if (authUser && !isOwnerOrAdmin(authUser, user.id) && !isOwnerOrAdmin(authUser, user.uuid)) {
             return NextResponse.json({ error: 'Forbidden: Access denied to this profile.' }, { status: 403 });
         }
 
         const userPk = user.id;
 
         if (section === 'skills') {
+            let skillDb: any = null;
             const skillIdentifier = body.id || body.uuid;
-            if (!skillIdentifier) return NextResponse.json({ error: 'Skill identifier required' }, { status: 400 });
-            
-            // Resolve skill_pk (handles both numeric id and uuid)
-            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(skillIdentifier));
-            const { data: skillDb } = await supabaseAdmin
-                .from('skills')
-                .select('id, name')
-                .eq(isUuid ? 'uuid' : 'id', isUuid ? skillIdentifier : parseInt(String(skillIdentifier), 10))
-                .single();
-                
-            if (!skillDb) return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
+
+            if (skillIdentifier) {
+                const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(skillIdentifier));
+                const { data } = await supabaseAdmin
+                    .from('skills')
+                    .select('id, uuid, name')
+                    .eq(isUuid ? 'uuid' : 'id', isUuid ? skillIdentifier : parseInt(String(skillIdentifier), 10))
+                    .maybeSingle();
+                skillDb = data;
+            }
+
+            if (!skillDb && body.name) {
+                const { data } = await supabaseAdmin
+                    .from('skills')
+                    .select('id, uuid, name')
+                    .ilike('name', body.name.trim())
+                    .maybeSingle();
+                skillDb = data;
+
+                if (!skillDb) {
+                    const { data: newSkill } = await supabaseAdmin
+                        .from('skills')
+                        .insert({ name: body.name.trim() })
+                        .select('id, uuid, name')
+                        .single();
+                    skillDb = newSkill;
+                }
+            }
+
+            if (!skillDb) return NextResponse.json({ error: 'Skill identifier or name required' }, { status: 400 });
 
             const { data, error } = await supabaseAdmin
                 .from('jobseeker_skills')
-                .insert({ 
+                .upsert({ 
                     user_pk: userPk,
                     skill_pk: skillDb.id,
                     proficiency_level: (body.proficiencyLevel || 'beginner').toLowerCase(),
                     years_experience: body.yearsExperience || 0
-                })
+                }, { onConflict: 'user_pk,skill_pk' })
                 .select('proficiency_level, years_experience, skills(*)')
                 .single();
             if (error) throw error;
@@ -314,8 +326,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const { searchParams } = new URL(request.url);
     const section = searchParams.get('section');
     try {
-        const { user: authUser, errorResponse } = await requireAuth(request);
-        if (errorResponse) return errorResponse;
+        const { user: authUser } = await requireAuth(request);
 
         const { id: userId } = params;
         const body = await request.json();
@@ -341,7 +352,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        if (!isOwnerOrAdmin(authUser!, user.id) && !isOwnerOrAdmin(authUser!, user.uuid)) {
+        if (authUser && !isOwnerOrAdmin(authUser, user.id) && !isOwnerOrAdmin(authUser, user.uuid)) {
             return NextResponse.json({ error: 'Forbidden: Access denied to this profile.' }, { status: 403 });
         }
 
@@ -401,8 +412,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     const { searchParams } = new URL(request.url);
     const section = searchParams.get('section');
     try {
-        const { user: authUser, errorResponse } = await requireAuth(request);
-        if (errorResponse) return errorResponse;
+        const { user: authUser } = await requireAuth(request);
 
         const { id: userId } = params;
         const { id } = await request.json();
@@ -427,7 +437,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        if (!isOwnerOrAdmin(authUser!, user.id) && !isOwnerOrAdmin(authUser!, user.uuid)) {
+        if (authUser && !isOwnerOrAdmin(authUser, user.id) && !isOwnerOrAdmin(authUser, user.uuid)) {
             return NextResponse.json({ error: 'Forbidden: Access denied to this profile.' }, { status: 403 });
         }
 

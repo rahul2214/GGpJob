@@ -44,16 +44,30 @@ BEGIN
 END $$;
 
 -- 3. Public Read-Only Lookup Tables Policies
-CREATE POLICY "Public can read domains" ON public.domains FOR SELECT USING (true);
-CREATE POLICY "Public can read locations" ON public.locations FOR SELECT USING (true);
-CREATE POLICY "Public can read skills" ON public.skills FOR SELECT USING (true);
-CREATE POLICY "Public can read job_types" ON public.job_types FOR SELECT USING (true);
-CREATE POLICY "Public can read workplace_types" ON public.workplace_types FOR SELECT USING (true);
-CREATE POLICY "Public can read plan_prices" ON public.plan_prices FOR SELECT USING (true);
+DO $$ BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'domains') THEN
+        CREATE POLICY "Public can read domains" ON public.domains FOR SELECT USING (true);
+    END IF;
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'locations') THEN
+        CREATE POLICY "Public can read locations" ON public.locations FOR SELECT USING (true);
+    END IF;
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'skills') THEN
+        CREATE POLICY "Public can read skills" ON public.skills FOR SELECT USING (true);
+    END IF;
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'job_types') THEN
+        CREATE POLICY "Public can read job_types" ON public.job_types FOR SELECT USING (true);
+    END IF;
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'workplace_types') THEN
+        CREATE POLICY "Public can read workplace_types" ON public.workplace_types FOR SELECT USING (true);
+    END IF;
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'plan_prices') THEN
+        CREATE POLICY "Public can read plan_prices" ON public.plan_prices FOR SELECT USING (true);
+    END IF;
+END $$;
 
 -- 4. Jobs Policies: Public can read active jobs; Recruiters/Employees can manage their own
 CREATE POLICY "Public can view active jobs" ON public.jobs 
-    FOR SELECT USING (status = 'active' OR is_deleted = false);
+    FOR SELECT USING (status = 'active');
 
 CREATE POLICY "Recruiters and Employees can insert jobs" ON public.jobs 
     FOR INSERT TO authenticated 
@@ -62,8 +76,8 @@ CREATE POLICY "Recruiters and Employees can insert jobs" ON public.jobs
 CREATE POLICY "Job owners can update their jobs" ON public.jobs 
     FOR UPDATE TO authenticated 
     USING (
-        auth.uid()::text = (SELECT uuid FROM public.recruiters WHERE id = recruiter_pk)::text OR
-        auth.uid()::text = (SELECT uuid FROM public.employees WHERE id = employee_pk)::text
+        auth.uid()::text = (SELECT uuid::text FROM public.recruiters WHERE id = recruiter_pk) OR
+        auth.uid()::text = (SELECT uuid::text FROM public.employees WHERE id = employee_pk)
     );
 
 -- 5. Jobseekers Profile Policies
@@ -93,7 +107,7 @@ CREATE POLICY "Employees can update own profile" ON public.employees
     FOR UPDATE TO authenticated 
     USING (auth.uid() = uuid);
 
--- 8. Admins Table: No public or standard user access. Service role only.
+-- 8. Admins Table: No public or standard user access. Service role / admin access only.
 CREATE POLICY "Admins viewable by admins" ON public.admins 
     FOR SELECT TO authenticated 
     USING (auth.uid() = uuid);
@@ -102,7 +116,7 @@ CREATE POLICY "Admins viewable by admins" ON public.admins
 CREATE POLICY "Jobseekers can view own applications" ON public.applications 
     FOR SELECT TO authenticated 
     USING (
-        auth.uid()::text = (SELECT uuid FROM public.jobseekers WHERE id = user_pk)::text
+        auth.uid()::text = (SELECT uuid::text FROM public.jobseekers WHERE id = user_pk)
     );
 
 CREATE POLICY "Job posters can view applications for their jobs" ON public.applications 
@@ -111,8 +125,8 @@ CREATE POLICY "Job posters can view applications for their jobs" ON public.appli
         EXISTS (
             SELECT 1 FROM public.jobs j
             WHERE j.id = job_pk AND (
-                auth.uid()::text = (SELECT uuid FROM public.recruiters WHERE id = j.recruiter_pk)::text OR
-                auth.uid()::text = (SELECT uuid FROM public.employees WHERE id = j.employee_pk)::text
+                auth.uid()::text = (SELECT uuid::text FROM public.recruiters WHERE id = j.recruiter_pk) OR
+                auth.uid()::text = (SELECT uuid::text FROM public.employees WHERE id = j.employee_pk)
             )
         )
     );
@@ -120,7 +134,7 @@ CREATE POLICY "Job posters can view applications for their jobs" ON public.appli
 CREATE POLICY "Jobseekers can submit applications" ON public.applications 
     FOR INSERT TO authenticated 
     WITH CHECK (
-        auth.uid()::text = (SELECT uuid FROM public.jobseekers WHERE id = user_pk)::text
+        auth.uid()::text = (SELECT uuid::text FROM public.jobseekers WHERE id = user_pk)
     );
 
 -- 10. Payments Policies: Users can view their own payment transactions
@@ -128,44 +142,44 @@ CREATE POLICY "Users can view own payments" ON public.payments
     FOR SELECT TO authenticated 
     USING (auth.uid()::text = user_id::text);
 
--- 11. Notifications Policies: Users can view their own notifications
+-- 11. Notifications Policies: Users can view and update their own notifications
 CREATE POLICY "Users can view own notifications" ON public.notifications 
     FOR SELECT TO authenticated 
     USING (
-        auth.uid()::text = (SELECT uuid FROM public.jobseekers WHERE id = user_pk)::text OR
-        auth.uid()::text = (SELECT uuid FROM public.recruiters WHERE id = user_pk)::text OR
-        auth.uid()::text = (SELECT uuid FROM public.employees WHERE id = user_pk)::text
+        auth.uid()::text = (SELECT uuid::text FROM public.jobseekers WHERE id = user_pk) OR
+        auth.uid()::text = (SELECT uuid::text FROM public.recruiters WHERE id = user_pk) OR
+        auth.uid()::text = (SELECT uuid::text FROM public.employees WHERE id = user_pk)
     );
 
 CREATE POLICY "Users can update own notifications" ON public.notifications 
     FOR UPDATE TO authenticated 
     USING (
-        auth.uid()::text = (SELECT uuid FROM public.jobseekers WHERE id = user_pk)::text OR
-        auth.uid()::text = (SELECT uuid FROM public.recruiters WHERE id = user_pk)::text OR
-        auth.uid()::text = (SELECT uuid FROM public.employees WHERE id = user_pk)::text
+        auth.uid()::text = (SELECT uuid::text FROM public.jobseekers WHERE id = user_pk) OR
+        auth.uid()::text = (SELECT uuid::text FROM public.recruiters WHERE id = user_pk) OR
+        auth.uid()::text = (SELECT uuid::text FROM public.employees WHERE id = user_pk)
     );
 
--- 12. Profile Sub-tables Policies (Education, Experience, Projects, Skills, etc.)
+-- 12. Profile Sub-tables Policies (Education, Experience, Projects, Skills, Personal Details)
 CREATE POLICY "Jobseekers can manage own education" ON public.education 
     FOR ALL TO authenticated 
-    USING (auth.uid()::text = (SELECT uuid FROM public.jobseekers WHERE id = user_pk)::text);
+    USING (auth.uid()::text = (SELECT uuid::text FROM public.jobseekers WHERE id = user_pk));
 
 CREATE POLICY "Jobseekers can manage own experience" ON public.experience 
     FOR ALL TO authenticated 
-    USING (auth.uid()::text = (SELECT uuid FROM public.jobseekers WHERE id = user_pk)::text);
+    USING (auth.uid()::text = (SELECT uuid::text FROM public.jobseekers WHERE id = user_pk));
 
 CREATE POLICY "Jobseekers can manage own projects" ON public.projects 
     FOR ALL TO authenticated 
-    USING (auth.uid()::text = (SELECT uuid FROM public.jobseekers WHERE id = user_pk)::text);
+    USING (auth.uid()::text = (SELECT uuid::text FROM public.jobseekers WHERE id = user_pk));
 
 CREATE POLICY "Jobseekers can manage own languages" ON public.languages 
     FOR ALL TO authenticated 
-    USING (auth.uid()::text = (SELECT uuid FROM public.jobseekers WHERE id = user_pk)::text);
+    USING (auth.uid()::text = (SELECT uuid::text FROM public.jobseekers WHERE id = user_pk));
 
 CREATE POLICY "Jobseekers can manage own skills" ON public.jobseeker_skills 
     FOR ALL TO authenticated 
-    USING (auth.uid()::text = (SELECT uuid FROM public.jobseekers WHERE id = user_pk)::text);
+    USING (auth.uid()::text = (SELECT uuid::text FROM public.jobseekers WHERE id = user_pk));
 
 CREATE POLICY "Jobseekers can manage own personal details" ON public.jobseeker_personal_details 
     FOR ALL TO authenticated 
-    USING (auth.uid()::text = (SELECT uuid FROM public.jobseekers WHERE id = user_pk)::text);
+    USING (auth.uid()::text = (SELECT uuid::text FROM public.jobseekers WHERE id = user_pk));
