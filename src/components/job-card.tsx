@@ -109,7 +109,7 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
     >
       <Link href={`/jobs/${job.uuid || job.id}`} className="block h-full">
         <Card className={cn(
-          "h-full flex flex-col relative overflow-hidden transition-all duration-300",
+          "h-full flex flex-col relative overflow-hidden transition-all duration-300 px-1 sm:px-2.5",
           "bg-white/80 dark:bg-slate-900/60 backdrop-blur-md",
           "border border-slate-200/50 dark:border-slate-800/50",
           "shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(99,102,241,0.06)]",

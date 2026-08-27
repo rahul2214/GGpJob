@@ -357,7 +357,7 @@ function JobSearchContent() {
       <div className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full blur-[140px] pointer-events-none -translate-x-1/2 -translate-y-1/2 opacity-20 dark:opacity-10 bg-indigo-500" />
       <div className="absolute top-20 right-0 w-[500px] h-[500px] rounded-full blur-[120px] pointer-events-none translate-x-1/3 opacity-20 dark:opacity-10 bg-violet-400" />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="container max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
         {/* Tab Bar */}
         <div className="max-w-5xl mb-6 pt-2">
@@ -406,7 +406,7 @@ function JobSearchContent() {
         </div>
 
         {/* Layout Grid */}
-        <div className="grid lg:grid-cols-[280px_1fr] gap-8 items-start">
+        <div className="grid lg:grid-cols-[270px_1fr] gap-6 items-start">
 
           {/* Sidebar Filters */}
           <motion.div

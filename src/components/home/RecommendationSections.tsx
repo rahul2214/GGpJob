@@ -211,6 +211,16 @@ export default function RecommendationSections() {
         />
       )}
 
+{/* 6. Based on Skills — logged-in only */}
+      {user && (
+        <JobSectionCarousel
+          title="Based on Skills"
+          subtitle="Roles requesting skills listed in your profile"
+          icon={<Award className="w-5 h-5 text-indigo-500" />}
+          jobs={matchingSkills}
+        />
+      )}
+
       {/* 2. Jobs Near You — logged-in only */}
       {user && jobsNearYou.length > 0 && (
         <JobSectionCarousel
@@ -239,55 +249,9 @@ export default function RecommendationSections() {
         />
       )}
 
-      {/* 5. Top Companies Hiring — visible to all */}
-      {topCompanies.length > 0 && (
-        <div className="rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm mb-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2.5 rounded-xl bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/50">
-              <Building2 className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg sm:text-xl tracking-tight">Top Companies Hiring</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Explore actively recruiting employers</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {topCompanies.map((comp, idx) => (
-              <div
-                key={idx}
-                onClick={() => router.push(`/jobs?search=${encodeURIComponent(comp.companyName)}`)}
-                className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/60 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-400 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:scale-105"
-              >
-                <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-2xl font-bold mb-2 shadow-xs">
-                  {comp.companyLogo ? (
-                    typeof comp.companyLogo === 'string' && comp.companyLogo.startsWith('http') ? (
-                      <img src={comp.companyLogo} alt={comp.companyName} className="w-8 h-8 object-contain" />
-                    ) : (
-                      <span>{comp.companyLogo}</span>
-                    )
-                  ) : (
-                    <span>🏢</span>
-                  )}
-                </div>
-                <h4 className="font-bold text-xs text-slate-800 dark:text-slate-200 line-clamp-1">{comp.companyName}</h4>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
-                  {comp.count} active roles
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* 6. Based on Skills — logged-in only */}
-      {user && (
-        <JobSectionCarousel
-          title="Based on Skills"
-          subtitle="Roles requesting skills listed in your profile"
-          icon={<Award className="w-5 h-5 text-indigo-500" />}
-          jobs={matchingSkills}
-        />
-      )}
+
+      
 
       {/* 8. Internship Opportunities — visible to all */}
       <JobSectionCarousel
