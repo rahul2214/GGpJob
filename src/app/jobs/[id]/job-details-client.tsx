@@ -7,9 +7,8 @@ import {
     BadgeDollarSign, Clock, UserCheck,
     ChevronRight, Info, Award, LayoutList, CheckCircle2,
     Layers, User as UserIcon, ArrowLeft, Bookmark,
-    ChevronDown, Linkedin, Star, ShieldCheck, MessageCircle
+    ChevronDown, Linkedin, Star, ShieldCheck
 } from 'lucide-react';
-import { ChatDrawer } from '@/components/chat/ChatDrawer';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { ApplyButton } from './apply-button';
@@ -91,10 +90,6 @@ function JobDetailsContent() {
     const [isSimilarJobsVisible, setIsSimilarJobsVisible] = useState(false);
     const footerSentinelRef = useRef<HTMLDivElement>(null);
     const similarJobsSectionRef = useRef<HTMLDivElement>(null);
-    const [isChatOpen, setIsChatOpen] = useState(false);
-    const [currentAppId, setCurrentAppId] = useState<string | null>(null);
-    const [currentAppStatus, setCurrentAppStatus] = useState<number | null>(null);
-
     const isAdminView = searchParams.get('view') === 'admin';
 
     const formatSalaryInJobCurrency = useCallback((min?: number | null, max?: number | null, currencyCode?: string | null) => {
@@ -155,15 +150,6 @@ function JobDetailsContent() {
             // If the API says we've applied, add it to our local state
             if (data?.isApplied) {
                 setUserApplications([{ jobId: id } as any]);
-                // Fetch the application ID for chat
-                const appRes = await fetch(`/api/applications?userId=${user?.uuid}&jobId=${id}`);
-                if (appRes.ok) {
-                    const apps = await appRes.json();
-                    if (Array.isArray(apps) && apps.length > 0) {
-                        setCurrentAppId(apps[0].id.toString());
-                        setCurrentAppStatus(apps[0].statusId);
-                    }
-                }
             }
         } catch (error) {
             console.error(error);
@@ -290,16 +276,6 @@ function JobDetailsContent() {
                 isApplied: true
             } : null);
             setUserApplications(prev => [...prev, { jobId: id } as any]);
-            
-            // Fetch application ID after successful apply to enable chat
-            fetch(`/api/applications?userId=${user?.uuid}&jobId=${id}`)
-                .then(res => res.json())
-                .then(apps => {
-                    if (apps.length > 0) {
-                        setCurrentAppId(apps[0].id.toString());
-                        setCurrentAppStatus(apps[0].statusId);
-                    }
-                });
         }
     }, [job, id]);
 
@@ -402,16 +378,6 @@ function JobDetailsContent() {
                                 <div className="flex items-center gap-3">
 
                                     <div className="flex items-center gap-3">
-                                        {appliedJobIds.has(id) && currentAppStatus && currentAppStatus >= 3 && currentAppStatus <= 8 && (
-                                            <Button 
-                                                variant="outline" 
-                                                className="rounded-full font-bold h-11 border-blue-200 text-blue-600 hover:bg-blue-50"
-                                                onClick={() => setIsChatOpen(true)}
-                                            >
-                                                <MessageCircle className="w-4 h-4 mr-2" />
-                                                Chat with Recruiter
-                                            </Button>
-                                        )}
                                         <div className="min-w-[120px]">
                                             {job.jobLink ? (
                                                 <Button
@@ -820,16 +786,6 @@ function JobDetailsContent() {
                     </Button>
                 )}
                 <div className={cn("w-full flex flex-col gap-2", showSimilarJobs ? "flex-[2.5]" : "flex-1")}>
-                    {appliedJobIds.has(id) && currentAppStatus && currentAppStatus >= 3 && currentAppStatus <= 8 && (
-                        <Button 
-                            variant="outline" 
-                            className="w-full rounded-full font-bold h-11 border-blue-200 text-blue-600 hover:bg-blue-50"
-                            onClick={() => setIsChatOpen(true)}
-                        >
-                            <MessageCircle className="w-4 h-4 mr-2" />
-                            Chat with Recruiter
-                        </Button>
-                    )}
                     {job.jobLink ? (
                         <Button
                             size="lg"
@@ -847,11 +803,6 @@ function JobDetailsContent() {
                     )}
                 </div>
             </div>
-            <ChatDrawer 
-                applicationId={currentAppId || ""} 
-                isOpen={isChatOpen} 
-                onClose={() => setIsChatOpen(false)}
-            />
         </div>
     );
 }

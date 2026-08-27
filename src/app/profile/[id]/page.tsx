@@ -102,7 +102,7 @@ export default function PublicProfilePage() {
       <div className="min-h-screen bg-slate-50">
         {/* Hero skeleton */}
         <div className="bg-slate-900 h-56" />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-20 pb-12 space-y-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-20 space-y-6">
           <div className="bg-white rounded-2xl shadow-lg p-6 flex gap-6 items-end">
             <Skeleton className="w-28 h-28 rounded-2xl shrink-0" />
             <div className="flex-1 space-y-3 pb-2">
@@ -149,7 +149,7 @@ export default function PublicProfilePage() {
       </div>
 
       {/* ── Main content ─────────────────────────────────────────── */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-20 pb-16 space-y-5 relative z-10">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-20 space-y-5 relative z-10">
 
         {/* ── Profile Card ─────────────────────────────────────── */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">

@@ -109,9 +109,9 @@ export default function Header() {
   const isJobSearchPage = pathname === '/jobs';
   const isNotificationsPage = pathname === '/notifications';
   const isJobDetailsPage = /^\/jobs\/[^/]+$/.test(pathname) && !pathname.includes('/applications');
-  const isProfileSectionEditPage = /^\/profile\/(education|employment|projects|languages|skills)\/(add|edit\/[^/]+)$/.test(pathname);
+  const isProfileSectionEditPage = /^\/profile\/(basic-info|personal-details|summary|resume|security|professional|education|employment|projects|languages|skills|achievements|certifications)($|\/)/.test(pathname) && pathname !== '/profile';
   const isJobApplicationsPage = /^\/jobs\/[^/]+\/applications$/.test(pathname);
-  const isPublicProfilePage = /^\/profile\/[^/]+$/.test(pathname);
+  const isPublicProfilePage = /^\/profile\/[^/]+$/.test(pathname) && !isProfileSectionEditPage;
   const isAdminAddPage = /^\/admin\/(users|domains|locations)\/add$/.test(pathname);
   const isAdminEditPage = /^\/admin\/(domains|locations)\/edit\/[^/]+$/.test(pathname);
   const isPlanSelectionPage = pathname === '/company/payment';
@@ -128,9 +128,17 @@ export default function Header() {
 
   const getProfileSectionTitle = () => {
     if (!isProfileSectionEditPage) return '';
+    if (pathname.includes('/basic-info/edit')) return 'Edit Basic Info';
+    if (pathname.includes('/personal-details/edit')) return 'Edit Personal Details';
+    if (pathname.includes('/summary/edit')) return 'Edit Summary';
+    if (pathname.includes('/resume/edit')) return 'Edit Resume';
+    if (pathname.includes('/security/edit')) return 'Security & Password';
+    if (pathname === '/profile/professional') return 'Professional Profile';
+
     const parts = pathname.split('/');
     const action = parts.includes('edit') ? 'Edit' : 'Add';
-    const section = parts[2].charAt(0).toUpperCase() + parts[2].slice(1);
+    const sectionRaw = parts[2] || '';
+    const section = sectionRaw ? sectionRaw.charAt(0).toUpperCase() + sectionRaw.slice(1) : '';
     const sectionName = section.endsWith('s') ? section.slice(0,-1) : section;
 
     return `${action} ${sectionName}`;

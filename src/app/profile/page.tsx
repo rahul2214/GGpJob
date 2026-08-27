@@ -22,10 +22,13 @@ import { CurrencySelector } from "@/components/currency-selector";
 import { AchievementsForm } from "@/components/achievements-form";
 import { CertificationsForm } from "@/components/certifications-form";
 
+import { useIsMobile } from "@/hooks/use-mobile";
+
 export default function ProfilePage() {
     const { user, loading, refreshUser } = useUser();
     const router = useRouter();
     const { toast } = useToast();
+    const isMobile = useIsMobile();
     const [activeTab, setActiveTab] = useState<'overview' | 'professional' | 'details' | 'security' | 'edit-details'>('overview');
     const [isUploading, setIsUploading] = useState(false);
 
@@ -129,7 +132,7 @@ export default function ProfilePage() {
     const availableTabs = user.role === 'Job Seeker' ? tabs : tabs.filter(t => t.id === 'overview' || t.id === 'security');
 
     return (
-        <div className="min-h-screen bg-slate-50/60 relative overflow-hidden py-8 lg:py-12">
+        <div className="min-h-screen bg-slate-50/60 relative overflow-hidden pt-8 lg:pt-12 pb-0">
             {/* Ambient Animated Glows */}
             <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none -translate-y-1/2" />
             <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none translate-y-1/3" />
@@ -295,10 +298,32 @@ export default function ProfilePage() {
                         >
                             {availableTabs.map((tab) => {
                                 const isActive = activeTab === tab.id || (activeTab === 'edit-details' && tab.id === 'details');
+                                const handleTabClick = () => {
+                                    if (isMobile) {
+                                        if (tab.id === 'overview') {
+                                            router.push('/profile/basic-info/edit');
+                                            return;
+                                        }
+                                        if (tab.id === 'professional') {
+                                            router.push('/profile/professional');
+                                            return;
+                                        }
+                                        if (tab.id === 'details') {
+                                            router.push('/profile/personal-details/edit');
+                                            return;
+                                        }
+                                        if (tab.id === 'security') {
+                                            router.push('/profile/security/edit');
+                                            return;
+                                        }
+                                    }
+                                    setActiveTab(tab.id as any);
+                                };
+
                                 return (
                                     <button
                                         key={tab.id}
-                                        onClick={() => setActiveTab(tab.id as any)}
+                                        onClick={handleTabClick}
                                         className={cn(
                                             "w-full flex items-center justify-between p-3.5 rounded-2xl text-left transition-all duration-200 group relative",
                                             isActive
@@ -329,8 +354,8 @@ export default function ProfilePage() {
                         </motion.div>
                     </div>
 
-                    {/* RIGHT COLUMN (Data Panels & Active Tab Content) */}
-                    <div className="lg:col-span-8 w-full">
+                    {/* RIGHT COLUMN (Data Panels & Active Tab Content - Desktop Only) */}
+                    <div className="hidden lg:block lg:col-span-8 w-full">
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={activeTab}
@@ -356,12 +381,6 @@ export default function ProfilePage() {
                                         <ConfigCard index={2} title="My Resume" subtitle="Upload or link your resume for recruiters." icon={Link2} color="sky">
                                             <ResumeForm user={user} />
                                         </ConfigCard>
-                                        <ConfigCard index={3} title="Achievements & Honors" subtitle="Manage your awards, recognitions, and key accomplishments." icon={Award} color="emerald">
-                                             <AchievementsForm user={user} />
-                                         </ConfigCard>
-                                         <ConfigCard index={4} title="Certifications & Licenses" subtitle="Manage your verified licenses, courses, and professional credentials." icon={Award} color="indigo">
-                                             <CertificationsForm user={user} />
-                                         </ConfigCard>
                                         <motion.div custom={5} initial="hidden" animate="visible" variants={fadeUp}>
                                             <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.015)] p-6 lg:p-8">
                                                 <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
@@ -417,7 +436,13 @@ export default function ProfilePage() {
                                             </div>
                                             
                                             <Button 
-                                                onClick={() => setActiveTab('edit-details')}
+                                                onClick={() => {
+                                                    if (isMobile) {
+                                                        router.push('/profile/personal-details/edit');
+                                                    } else {
+                                                        setActiveTab('edit-details');
+                                                    }
+                                                }}
                                                 className="w-full py-6 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-100 font-bold transition-all active:scale-95"
                                             >
                                                 Edit Profile Details

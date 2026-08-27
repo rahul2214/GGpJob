@@ -14,8 +14,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, Edit2, Briefcase, Link2, Users, FileText, UserCog, X, Globe, MapPin, DollarSign, Award, ShieldCheck } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { ChevronsUpDown, Check, LoaderCircle, Edit2, Briefcase, Link2, Users, FileText, UserCog, X, Globe, MapPin, DollarSign, Award, ShieldCheck } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useUser } from "@/contexts/user-context";
+import { supabase } from "@/lib/supabase-client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useEffect, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -27,6 +31,106 @@ import { CountryCodeSelect } from "./country-code-select";
 import { Switch } from "@/components/ui/switch";
 import { SUPPORTED_CURRENCIES } from "@/utils/currency";
 import { onFormInvalid } from "@/lib/form-toast-utils";
+
+function SearchableCombobox({
+  options,
+  value,
+  onSelect,
+  placeholder,
+  disabled = false,
+  emptyText = "No results found.",
+  className = ""
+}: {
+  options: { id: number; name: string }[];
+  value?: string | number | null;
+  onSelect: (option: { id: number; name: string }) => void;
+  placeholder: string;
+  disabled?: boolean;
+  emptyText?: string;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+
+  const selectedOption = options.find(
+    (o) => o.id === Number(value) || o.name.toLowerCase() === String(value || '').toLowerCase()
+  );
+
+  const displayValue = selectedOption ? selectedOption.name : (value ? String(value) : "");
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          type="button"
+          aria-expanded={open}
+          disabled={disabled}
+          className={cn("w-full justify-between font-normal text-left h-10 px-3 bg-background border-slate-200 shadow-none", className)}
+        >
+          <span className={cn("truncate", !displayValue && "text-muted-foreground")}>
+            {displayValue || placeholder}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[280px] p-0" align="start">
+        <Command>
+          <CommandInput 
+            placeholder={`Search ${placeholder.toLowerCase()}...`} 
+            value={searchValue}
+            onValueChange={setSearchValue}
+          />
+          <CommandList className="max-h-60 overflow-y-auto">
+            <CommandEmpty className="p-2 text-center text-xs text-slate-500">
+              <p>{emptyText}</p>
+              {searchValue.trim() && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 text-indigo-600 hover:text-indigo-700 text-xs w-full"
+                  onClick={() => {
+                    onSelect({ id: 0, name: searchValue.trim() });
+                    setOpen(false);
+                    setSearchValue("");
+                  }}
+                >
+                  Use "{searchValue.trim()}"
+                </Button>
+              )}
+            </CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => {
+                const isSelected = selectedOption?.id === option.id || selectedOption?.name.toLowerCase() === option.name.toLowerCase();
+                return (
+                  <CommandItem
+                    key={option.id}
+                    value={option.name}
+                    onSelect={() => {
+                      onSelect(option);
+                      setOpen(false);
+                      setSearchValue("");
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4 text-indigo-600",
+                        isSelected ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {option.name}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 const PillSelect = ({ value, onChange, options, className = "" }: { value?: string, onChange: (v: string) => void, options: string[], className?: string }) => (
     <div className={`flex flex-wrap gap-2 ${className}`}>
@@ -88,7 +192,9 @@ const formSchema = z.object({
     email: z.string().email("Please enter a valid email address."),
     phone: z.string().min(7, "Phone number must be at least 7 digits.").max(15, "Phone number cannot exceed 15 digits.").regex(/^\d+$/, "Phone number must contain digits only.").optional().or(z.literal('')),
     country: z.string().optional().or(z.literal('')),
+    countryId: z.coerce.number().optional().nullable(),
     state: z.string().optional().or(z.literal('')),
+    stateId: z.coerce.number().optional().nullable(),
     headline: z.string().optional(),
     linkedinUrl: z.string().optional().or(z.literal('')),
     githubUrl: z.string().optional().or(z.literal('')),
@@ -97,6 +203,7 @@ const formSchema = z.object({
     experienceYears: z.coerce.number().optional().or(z.literal('')),
     experienceMonths: z.coerce.number().optional().or(z.literal('')),
     currentCity: z.string().optional(),
+    cityId: z.coerce.number().optional().nullable(),
     currentArea: z.string().optional(),
     annualSalary: z.coerce.number().optional().or(z.literal('')),
     expectedSalary: z.coerce.number().optional().or(z.literal('')),
@@ -142,6 +249,19 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
     const initialPhone = parsePhoneNumber(user.phone);
     const [countryCode, setCountryCode] = useState(initialPhone.countryCode);
 
+    const [dbCountries, setDbCountries] = useState<{ id: number; name: string }[]>([]);
+    const [dbStates, setDbStates] = useState<{ id: number; name: string }[]>([]);
+    const [dbCities, setDbCities] = useState<{ id: number; name: string }[]>([]);
+
+    useEffect(() => {
+        fetch('/api/geo?type=countries')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setDbCountries(data);
+            })
+            .catch(err => console.error("Failed to load countries", err));
+    }, []);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -165,7 +285,9 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
             email: user.email,
             phone: initialPhone.phoneDigits,
             country: user.country || "",
+            countryId: (user as any).countryId || null,
             state: user.state || "",
+            stateId: (user as any).stateId || null,
             headline: user.headline || "",
             linkedinUrl: user.linkedinUrl || "",
             githubUrl: user.githubUrl || "",
@@ -174,6 +296,7 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
             experienceYears: user.experienceYears || "" as any,
             experienceMonths: user.experienceMonths || "" as any,
             currentCity: user.currentCity || "",
+            cityId: (user as any).cityId || null,
             currentArea: user.currentArea || "",
             annualSalary: user.annualSalary || "" as any,
             expectedSalary: user.expectedSalary || "" as any,
@@ -204,6 +327,56 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
     const { reset, watch, formState: { errors, isSubmitting } } = form;
     const workStatus = watch('workStatus');
 
+    // Fetch states whenever selected country changes
+    const selectedCountryName = watch("country");
+    const selectedCountryId = watch("countryId");
+
+    useEffect(() => {
+        let activeCountryId = selectedCountryId;
+        if (!activeCountryId && selectedCountryName && dbCountries.length > 0) {
+            const found = dbCountries.find(c => c.name.toLowerCase() === selectedCountryName.toLowerCase());
+            if (found) {
+                activeCountryId = found.id;
+                form.setValue("countryId", found.id);
+            }
+        }
+        if (activeCountryId) {
+            fetch(`/api/geo?type=states&countryId=${activeCountryId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) setDbStates(data);
+                })
+                .catch(err => console.error("Failed to load states", err));
+        } else {
+            setDbStates([]);
+        }
+    }, [selectedCountryId, selectedCountryName, dbCountries, form]);
+
+    // Fetch cities whenever selected state changes
+    const selectedStateName = watch("state");
+    const selectedStateId = watch("stateId");
+
+    useEffect(() => {
+        let activeStateId = selectedStateId;
+        if (!activeStateId && selectedStateName && dbStates.length > 0) {
+            const found = dbStates.find(s => s.name.toLowerCase() === selectedStateName.toLowerCase());
+            if (found) {
+                activeStateId = found.id;
+                form.setValue("stateId", found.id);
+            }
+        }
+        if (activeStateId) {
+            fetch(`/api/geo?type=cities&stateId=${activeStateId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) setDbCities(data);
+                })
+                .catch(err => console.error("Failed to load cities", err));
+        } else {
+            setDbCities([]);
+        }
+    }, [selectedStateId, selectedStateName, dbStates, form]);
+
     // Debug: Log form errors to console if validation fails
     useEffect(() => {
         if (Object.keys(errors).length > 0) {
@@ -219,7 +392,9 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
             email: user.email,
             phone: phoneDigits,
             country: user.country || "",
+            countryId: (user as any).countryId || null,
             state: user.state || "",
+            stateId: (user as any).stateId || null,
             headline: user.headline || "",
             linkedinUrl: user.linkedinUrl || "",
             githubUrl: user.githubUrl || "",
@@ -228,6 +403,7 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
             experienceYears: user.experienceYears || "" as any,
             experienceMonths: user.experienceMonths || "" as any,
             currentCity: user.currentCity || "",
+            cityId: (user as any).cityId || null,
             currentArea: user.currentArea || "",
             annualSalary: user.annualSalary || "" as any,
             expectedSalary: user.expectedSalary || "" as any,
@@ -285,10 +461,17 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                 companyOverview: data.companyOverview === '' ? null : data.companyOverview,
             };
 
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+            const headers: Record<string, string> = { "Content-Type": "application/json" };
+            if (token) {
+                headers["Authorization"] = `Bearer ${token}`;
+            }
+
             const { countryId, stateId, cityId, visaRequirementId, ...userClean } = user as any;
             const response = await fetch(`/api/users/${user.uuid}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
+                headers,
                 body: JSON.stringify({ ...userClean, ...cleanedData }),
             });
 
@@ -470,26 +653,62 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                         </FormItem>
                     )}
                 />
-                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-2 my-2">
-                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 mb-2">
+                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3 my-2">
+                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 mb-1">
                         <MapPin className="w-4 h-4" /> Location (Country, State & City)
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <Input 
-                            placeholder="Country"
-                            value={form.watch("country") || ""} 
-                            onChange={(e) => form.setValue("country", e.target.value)} 
-                        />
-                        <Input 
-                            placeholder="State / Province" 
-                            value={form.watch("state") || ""} 
-                            onChange={(e) => form.setValue("state", e.target.value)} 
-                        />
-                        <Input 
-                            placeholder="City" 
-                            value={form.watch("currentCity") || ""} 
-                            onChange={(e) => form.setValue("currentCity", e.target.value)} 
-                        />
+                        {/* Country Select */}
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Country</label>
+                            <SearchableCombobox
+                                options={dbCountries}
+                                value={form.watch("countryId") || form.watch("country")}
+                                placeholder="Select Country"
+                                onSelect={(c) => {
+                                    form.setValue("country", c.name);
+                                    form.setValue("countryId", c.id || null);
+                                    form.setValue("state", "");
+                                    form.setValue("stateId", null);
+                                    form.setValue("currentCity", "");
+                                    form.setValue("cityId", null);
+                                }}
+                            />
+                        </div>
+
+                        {/* State Select */}
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">State / Province</label>
+                            <SearchableCombobox
+                                options={dbStates}
+                                value={form.watch("stateId") || form.watch("state")}
+                                placeholder="Select State"
+                                disabled={!form.watch("country") && !form.watch("countryId")}
+                                emptyText={(!form.watch("country") && !form.watch("countryId")) ? "Select a country first" : "No states found."}
+                                onSelect={(s) => {
+                                    form.setValue("state", s.name);
+                                    form.setValue("stateId", s.id || null);
+                                    form.setValue("currentCity", "");
+                                    form.setValue("cityId", null);
+                                }}
+                            />
+                        </div>
+
+                        {/* City Select */}
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">City / Metro</label>
+                            <SearchableCombobox
+                                options={dbCities}
+                                value={form.watch("cityId") || form.watch("currentCity")}
+                                placeholder="Select City"
+                                disabled={!form.watch("state") && !form.watch("stateId")}
+                                emptyText={(!form.watch("state") && !form.watch("stateId")) ? "Select a state first" : "No cities found."}
+                                onSelect={(ci) => {
+                                    form.setValue("currentCity", ci.name);
+                                    form.setValue("cityId", ci.id || null);
+                                }}
+                            />
+                        </div>
                     </div>
                 </div>
                 {user.role === 'Job Seeker' && (

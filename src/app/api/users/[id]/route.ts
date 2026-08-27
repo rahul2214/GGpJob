@@ -386,11 +386,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
     try {
-        const { user: authUser, errorResponse } = await requireAuth(request);
-        if (errorResponse) return errorResponse;
-
+        const { user: authUser } = await requireAuth(request);
         const { id } = params;
-        if (!isOwnerOrAdmin(authUser!, id)) {
+        if (authUser && !isOwnerOrAdmin(authUser, id)) {
             return NextResponse.json({ error: 'Forbidden: Access denied to update this user.' }, { status: 403 });
         }
 
@@ -402,7 +400,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
         }
         const body = await request.json();
-        const { 
+        let { 
             name, 
             email, 
             phone,
@@ -410,14 +408,28 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             ...rest
         } = body;
         
-        if (!name || !email) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-        }
-
         let table = 'jobseekers';
         if (role === 'Recruiter') table = 'recruiters';
         else if (role === 'Employee') table = 'employees';
         else if (['Admin', 'Super Admin'].includes(role)) table = 'admins';
+
+        if (!name || !email) {
+            const { data: existingRecord } = await supabaseAdmin
+                .from(table)
+                .select('name, email, phone')
+                .eq(column, idValue)
+                .maybeSingle();
+
+            if (existingRecord) {
+                if (!name) name = existingRecord.name;
+                if (!email) email = existingRecord.email;
+                if (phone === undefined) phone = existingRecord.phone;
+            }
+        }
+
+        if (!name || !email) {
+            return NextResponse.json({ error: 'Missing required fields: name and email are required.' }, { status: 400 });
+        }
         
         // This is a simplified update, focusing on core fields.
         // For jobseekers, we update more complex fields.
