@@ -10,20 +10,17 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Skeleton } from '../ui/skeleton';
 import { Badge } from '../ui/badge';
 import {
-  Sparkles, MapPin, Laptop, Clock, Building2,
-  Award, DollarSign, GraduationCap, FileCheck,
-  Timer, ShieldCheck, Flame, ChevronRight
+ ChevronRight
 } from 'lucide-react';
 
 interface RecommendationSectionProps {
   title: string;
   subtitle?: string;
-  icon: React.ReactNode;
   jobs: any[];
   viewAllHref?: string;
 }
 
-const JobSectionCarousel = ({ title, subtitle, icon, jobs, viewAllHref = "/jobs" }: RecommendationSectionProps) => {
+const JobSectionCarousel = ({ title, subtitle, jobs, viewAllHref = "/jobs" }: RecommendationSectionProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const containerRef = useState<HTMLDivElement | null>(null)[0];
 
@@ -51,9 +48,7 @@ const JobSectionCarousel = ({ title, subtitle, icon, jobs, viewAllHref = "/jobs"
     <div id={`section-${title.replace(/\s+/g, '-').toLowerCase()}`} className="rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm mb-8 transition-all min-h-[220px]">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50">
-            {icon}
-          </div>
+         
           <div>
             <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg sm:text-xl tracking-tight">{title}</h3>
             {subtitle && <p className="text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>}
@@ -206,7 +201,6 @@ export default function RecommendationSections() {
         <JobSectionCarousel
           title="Recommended For You"
           subtitle="AI-matched roles customized for your profile"
-          icon={<Sparkles className="w-5 h-5" />}
           jobs={recommendedForYou}
         />
       )}
@@ -216,7 +210,6 @@ export default function RecommendationSections() {
         <JobSectionCarousel
           title="Based on Skills"
           subtitle="Roles requesting skills listed in your profile"
-          icon={<Award className="w-5 h-5 text-indigo-500" />}
           jobs={matchingSkills}
         />
       )}
@@ -226,7 +219,7 @@ export default function RecommendationSections() {
         <JobSectionCarousel
           title="Recently Posted"
           subtitle="Fresh job openings published in the last few days"
-          icon={<Clock className="w-5 h-5 text-amber-500" />}
+         
           jobs={recentlyPosted}
         />
       )}
@@ -236,7 +229,7 @@ export default function RecommendationSections() {
         <JobSectionCarousel
           title="Jobs Near You"
           subtitle="Opportunities in your preferred country, state, and city"
-          icon={<MapPin className="w-5 h-5 text-emerald-500" />}
+          
           jobs={jobsNearYou}
         />
       )}
@@ -245,7 +238,7 @@ export default function RecommendationSections() {
       <JobSectionCarousel
         title="Remote Jobs"
         subtitle="Work from anywhere worldwide"
-        icon={<Laptop className="w-5 h-5 text-sky-500" />}
+       
         jobs={remoteJobs}
       />
 
@@ -253,7 +246,7 @@ export default function RecommendationSections() {
       <JobSectionCarousel
         title="Internship Opportunities"
         subtitle="Early career & entry-level internship roles"
-        icon={<GraduationCap className="w-5 h-5 text-purple-500" />}
+       
         jobs={internshipJobs.length > 0 ? internshipJobs : recentlyPosted.slice(0, 5)}
       />
 
@@ -262,7 +255,7 @@ export default function RecommendationSections() {
         <JobSectionCarousel
           title="Visa Sponsorship Jobs"
           subtitle="International roles offering work visa sponsorship"
-          icon={<ShieldCheck className="w-5 h-5 text-rose-500" />}
+        
           jobs={visaJobs}
         />
       )}

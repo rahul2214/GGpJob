@@ -447,7 +447,7 @@ export default function Header() {
        <div className="flex items-center gap-2">
         {renderMobileLeftButton()}
         <Link href="/" className="hidden md:flex items-center gap-2.5 font-bold whitespace-nowrap py-1 group">
-            <img src="/logo.png" alt="JobsDart Logo" className="h-9 w-auto object-contain transition-transform group-hover:scale-105" />
+            <img src="/logo.png" alt="JobsDart Logo" className="h-7 w-auto object-contain transition-transform group-hover:scale-105" />
             <span className="text-2xl font-black tracking-tight text-slate-900 flex items-center">
                 Jobs<span className="text-blue-600">Dart</span>
             </span>

@@ -204,6 +204,83 @@ function isRecent(job: Job): boolean {
   return diff < 7 * 24 * 60 * 60 * 1000; // 7 days
 }
 
+// ─── Filter criteria helper ────────────────────────────────────────────────
+function applyFilterCriteria(jobs: Job[], searchParams: any): Job[] {
+  let list = jobs;
+
+  // 1. Date posted
+  const posted = searchParams.get('posted');
+  if (posted && posted !== 'all') {
+    const days = parseInt(posted, 10);
+    if (!isNaN(days) && days > 0) {
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+      list = list.filter(j => {
+        const p = j.postedAt || (j as any).posted_at || j.postedDate;
+        return p ? new Date(p).getTime() >= cutoff : true;
+      });
+    }
+  }
+
+  // 2. Experience range
+  const minExpParam = searchParams.get('minExp');
+  const maxExpParam = searchParams.get('maxExp');
+  const minExp = minExpParam ? parseInt(minExpParam, 10) : 0;
+  const maxExp = maxExpParam ? parseInt(maxExpParam, 10) : 30;
+  if (minExp > 0 || maxExp < 30) {
+    list = list.filter(j => {
+      const jMin = j.minExperience ?? (j as any).experience_min ?? 0;
+      const jMax = j.maxExperience ?? (j as any).experience_max ?? 99;
+      return jMin <= maxExp && jMax >= minExp;
+    });
+  }
+
+  // 3. Job Type / Employment
+  const jobTypes = searchParams.getAll('jobType').flatMap((jt: string) => jt.split(',')).filter((jt: string) => jt && jt !== 'all');
+  if (jobTypes.length > 0) {
+    list = list.filter(j => {
+      const jPk = String(j.jobTypePk || (j as any).job_type_pk || "");
+      const jType = normalize(j.type || j.employmentType || "");
+      return jobTypes.some((jt: string) => {
+        const jtStr = normalize(jt);
+        return jtStr === jPk || jType.includes(jtStr);
+      });
+    });
+  }
+
+  // 4. Workplace / Remote Type
+  const wpTypes = (searchParams.getAll('workplaceType') || []).concat(searchParams.getAll('remoteType') || []).flatMap((wt: string) => wt.split(',')).filter((wt: string) => wt && wt !== 'all');
+  if (wpTypes.length > 0) {
+    list = list.filter(j => {
+      const jWpPk = String((j as any).workplaceTypePk || (j as any).workplace_type_pk || "");
+      const jRemote = normalize(j.remoteType || j.workplaceType || "");
+      return wpTypes.some((wt: string) => {
+        const wtStr = normalize(wt);
+        if (wtStr === '1' || wtStr === 'remote') return jWpPk === '1' || jRemote.includes('remote');
+        if (wtStr === '2' || wtStr === 'on-site' || wtStr === 'onsite') return jWpPk === '2' || jRemote.includes('onsite') || jRemote.includes('on-site');
+        if (wtStr === '3' || wtStr === 'hybrid') return jWpPk === '3' || jRemote.includes('hybrid');
+        return wtStr === jWpPk || jRemote.includes(wtStr);
+      });
+    });
+  }
+
+  // 5. Location / Country
+  const locs = searchParams.getAll('location').concat(searchParams.getAll('country')).flatMap((l: string) => l.split(',')).filter((l: string) => l && l !== 'all');
+  if (locs.length > 0) {
+    list = list.filter(j => {
+      const jLoc = normalize((j.locations && j.locations.length > 0) ? j.locations.join(' ') : (j.location || ''));
+      const jCountry = normalize(j.country || '');
+      const jState = normalize(j.state || '');
+      const jCity = normalize(j.city || '');
+      return locs.some((l: string) => {
+        const lNorm = normalize(l);
+        return jLoc.includes(lNorm) || jCountry.includes(lNorm) || jState.includes(lNorm) || jCity.includes(lNorm);
+      });
+    });
+  }
+
+  return list;
+}
+
 // ─── Main component ─────────────────────────────────────────────────────────
 
 function JobSearchContent() {
@@ -281,10 +358,12 @@ function JobSearchContent() {
 
     // Apply text search if present (all tabs)
     const searched = searchQ ? intelligentSearchJobs(all, searchQ) : all;
+    // Apply filters (posted, experience, jobType, workplaceType, location)
+    const filtered = applyFilterCriteria(searched, searchParams);
 
     switch (activeTab) {
       case "all":
-        return searched; // pagination already handled server-side
+        return filtered;
 
       case "recommended": {
         if (!user) return searched;
@@ -421,17 +500,7 @@ function JobSearchContent() {
           {/* Results column */}
           <div className="space-y-5">
 
-            {/* Count row */}
-            <div className="flex items-center justify-between px-2">
-              <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">
-                {isLoading
-                  ? "Fetching Opportunities..."
-                  : needsLogin
-                  ? "Sign in to see personalised results"
-                  : `Showing ${paginatedJobs.length}${activeTab !== "all" ? ` of ${jobsToDisplay.length}` : ""} openings`}
-              </span>
-            </div>
-
+           
             {/* Login nudge for personalised tabs */}
             {needsLogin && (
               <motion.div

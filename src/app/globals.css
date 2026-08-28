@@ -519,4 +519,13 @@
   background: rgba(100, 116, 139, 0.7);
 }
 
+/* ── Hide scrollbar but keep scroll functional ─────────────────────── */
+.scrollbar-none {
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE / Edge */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;                /* Chrome / Safari / Opera */
+}
+
 

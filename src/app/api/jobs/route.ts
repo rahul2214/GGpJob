@@ -433,6 +433,33 @@ export async function GET(request: NextRequest) {
         return Array.from(new Set(finalPks));
     };
 
+    // Date Posted filter
+    const postedParam = searchParams.get('posted');
+    if (postedParam && postedParam !== 'all') {
+        const days = parseInt(postedParam, 10);
+        if (!isNaN(days) && days > 0) {
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - days);
+            query = query.gte('posted_at', cutoff.toISOString());
+        }
+    }
+
+    // Experience filter
+    const minExpParam = searchParams.get('minExp');
+    const maxExpParam = searchParams.get('maxExp');
+    if (minExpParam) {
+        const minE = parseInt(minExpParam, 10);
+        if (!isNaN(minE) && minE > 0) {
+            query = query.gte('experience_max', minE);
+        }
+    }
+    if (maxExpParam) {
+        const maxE = parseInt(maxExpParam, 10);
+        if (!isNaN(maxE) && maxE < 30) {
+            query = query.lte('experience_min', maxE);
+        }
+    }
+
     const locationsParams = searchParams.getAll('location').flatMap(l => l.split(',')).filter(l => l && l !== 'all');
     if (locationsParams.length > 0) {
         const lpks = await resolveToPks('locations', locationsParams);
@@ -451,10 +478,23 @@ export async function GET(request: NextRequest) {
         query = query.in('country', countryParams);
     }
 
-    // Remote type filter
-    const remoteTypeParam = searchParams.get('remoteType');
-    if (remoteTypeParam && remoteTypeParam !== 'all') {
-        query = query.eq('remote_type', remoteTypeParam);
+    // Workplace / Remote type filter
+    const workplaceTypeParams = (searchParams.getAll('workplaceType') || []).concat(searchParams.getAll('remoteType') || []).flatMap(wt => wt.split(',')).filter(wt => wt && wt !== 'all');
+    if (workplaceTypeParams.length > 0) {
+        const wtpks = await resolveToPks('workplace_types', workplaceTypeParams);
+        const remoteAliases = workplaceTypeParams.flatMap((n: string) => {
+            const low = n.toLowerCase();
+            if (low.includes('on-site') || low.includes('onsite')) return ['onsite', 'On-site', 'on-site', 'Onsite'];
+            if (low.includes('remote')) return ['remote', 'Remote'];
+            if (low.includes('hybrid')) return ['hybrid', 'Hybrid'];
+            return [n];
+        });
+
+        if (wtpks.length > 0) {
+            query = query.or(`workplace_type_pk.in.(${wtpks.join(',')}),remote_type.in.(${remoteAliases.map((n: string) => `"${n}"`).join(',')})`);
+        } else if (remoteAliases.length > 0) {
+            query = query.in('remote_type', remoteAliases);
+        }
     }
 
     // Visa sponsorship filter (supports both ?visaSponsorship=true and ?visa=true)
@@ -466,7 +506,14 @@ export async function GET(request: NextRequest) {
     const jobTypesParams = searchParams.getAll('jobType').flatMap(jt => jt.split(',')).filter(jt => jt && jt !== 'all');
     if (jobTypesParams.length > 0) {
         const jtpks = await resolveToPks('job_types', jobTypesParams);
-        if (jtpks.length > 0) query = query.in('job_type_pk', jtpks);
+        const { data: jtNamesData } = await supabaseAdmin.from('job_types').select('id, name').in('id', jtpks);
+        const names = (jtNamesData || []).map((jt: any) => jt.name);
+        
+        if (jtpks.length > 0 && names.length > 0) {
+            query = query.or(`job_type_pk.in.(${jtpks.join(',')}),employment_type.in.(${names.map((n: string) => `"${n}"`).join(',')})`);
+        } else if (jtpks.length > 0) {
+            query = query.in('job_type_pk', jtpks);
+        }
     }
 
     const limitParam = searchParams.get('limit');
@@ -514,6 +561,28 @@ export async function GET(request: NextRequest) {
             fallbackQuery = fallbackQuery.eq('recruiter_pk', recruiterPk);
         }
 
+        if (postedParam && postedParam !== 'all') {
+            const days = parseInt(postedParam, 10);
+            if (!isNaN(days) && days > 0) {
+                const cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - days);
+                fallbackQuery = fallbackQuery.gte('posted_at', cutoff.toISOString());
+            }
+        }
+
+        if (minExpParam) {
+            const minE = parseInt(minExpParam, 10);
+            if (!isNaN(minE) && minE > 0) {
+                fallbackQuery = fallbackQuery.gte('experience_max', minE);
+            }
+        }
+        if (maxExpParam) {
+            const maxE = parseInt(maxExpParam, 10);
+            if (!isNaN(maxE) && maxE < 30) {
+                fallbackQuery = fallbackQuery.lte('experience_min', maxE);
+            }
+        }
+
         if (locationsParams.length > 0) {
             const lpks = await resolveToPks('locations', locationsParams);
             if (lpks.length > 0) fallbackQuery = fallbackQuery.overlaps('location_pks', lpks);
@@ -527,8 +596,9 @@ export async function GET(request: NextRequest) {
             fallbackQuery = fallbackQuery.in('country', countryParams);
         }
 
-        if (remoteTypeParam && remoteTypeParam !== 'all') {
-            fallbackQuery = fallbackQuery.eq('remote_type', remoteTypeParam);
+        if (workplaceTypeParams.length > 0) {
+            const wtpks = await resolveToPks('workplace_types', workplaceTypeParams);
+            if (wtpks.length > 0) fallbackQuery = fallbackQuery.in('workplace_type_pk', wtpks);
         }
 
         if (visaSponsorshipParam === 'true') {

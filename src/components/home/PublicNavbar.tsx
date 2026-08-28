@@ -57,8 +57,8 @@ export function PublicNavbar() {
                 <ArrowLeft className="w-5 h-5" />
               </button>
             )}
-            <Link href="/" className={`items-center gap-2.5 group ${isJobDetailsPage ? 'hidden md:flex' : 'flex'}`}>
-              <img src="/logo.png" alt="JobsDart Logo" className="h-9 w-auto object-contain transition-transform group-hover:scale-105" />
+            <Link href="/" className={`items-center gap-2.5 group ${(isJobDetailsPage || isJobsPage) ? 'hidden md:flex' : 'flex'}`}>
+              <img src="/logo.png" alt="JobsDart Logo" className="h-7 w-auto object-contain transition-transform group-hover:scale-105" />
               <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center">
                 Jobs<span className="text-gradient-primary">Dart</span>
               </span>
@@ -138,13 +138,15 @@ export function PublicNavbar() {
                 <ShareButton jobId={currentJobId || ""} />
               </>
             )}
-            <button
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className="p-2 rounded-lg text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
-              aria-label="Toggle Menu"
-            >
-              {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            {!isJobsPage && (
+              <button
+                onClick={() => setMobileOpen(!mobileOpen)}
+                className="p-2 rounded-lg text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                aria-label="Toggle Menu"
+              >
+                {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            )}
           </div>
         </div>
       </div>
