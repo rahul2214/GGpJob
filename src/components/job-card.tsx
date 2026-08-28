@@ -232,7 +232,7 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
           </CardContent>
 
           {/* Card Footer badges row */}
-          <CardFooter className="flex justify-between items-center border-t border-slate-200/30 dark:border-slate-800/30 pt-4 pb-5" style={{ paddingLeft: 12, paddingRight: 12 }}>
+          <CardFooter className="flex justify-between items-center pb-4" style={{ paddingLeft: 12, paddingRight: 12 }}>
             <div className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-600 flex items-center gap-1.5 tracking-wider">
               <Clock className="h-3.5 w-3.5 text-slate-400/80" />
               {formatDistanceToNow(new Date(job.postedAt), { addSuffix: true }).replace(/^about\s+/i, '')}

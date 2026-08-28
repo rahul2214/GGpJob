@@ -247,17 +247,6 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
                     </div>
                 </div>
 
-                {/* Progress Status Bar Info */}
-                <div className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3">
-                    <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse" />
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Status</span>
-                    </div>
-                    <Badge variant="outline" className={cn("font-bold text-xs px-2.5 py-1 rounded-full shadow-sm", info.color)}>
-                        {info.text}
-                    </Badge>
-                </div>
-
                 {/* Checklist Action Items */}
                 {completion < 100 ? (
                     <div className="space-y-3.5">

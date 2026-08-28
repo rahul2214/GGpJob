@@ -137,15 +137,7 @@ export default function JobSeekerDashboard() {
       });
     });
 
-    // Status Updates
-    userApplications.forEach(app => {
-      if (app.statusId === 7) {
-        items.push({ id: `offer-${app.id}`, priority: 1, title: "Offer Received!", description: `Offer from ${app.companyName}`, actionLabel: "View Details", href: "/applications", icon: Trophy, color: "amber", appId: app.id });
-      }
-      else if (app.statusId === 6) {
-        items.push({ id: `interview-${app.id}`, priority: 3, title: "Interview Stage", description: `Interviewing with ${app.companyName}`, actionLabel: "View Status", href: "/applications", icon: Clock, color: "blue", appId: app.id });
-      }
-    });
+ 
 
     // Credits
     const totalCredits = ((user as any).subscriptionCredits || 0) + ((user as any).purchasedCredits || 0);
@@ -176,22 +168,39 @@ export default function JobSeekerDashboard() {
 
   return (
     <div className="space-y-8 py-4 pb-12 px-4 md:px-6 lg:px-8">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 px-6 py-8 md:py-10 md:px-10 shadow-lg">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
-          <div className="flex-1">
-            <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-2">Welcome back, {firstName}!</h1>
-            <p className="text-indigo-200 text-sm md:text-base">New jobs are waiting.</p>
+      {/* Welcome Banner - Hidden on mobile, clean solid styling */}
+      <div className="hidden md:block rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 md:p-8 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Welcome back, {firstName}!
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              New jobs are waiting. Explore fresh opportunities and optimize your profile.
+            </p>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/jobs" prefetch={false} className="bg-white text-indigo-700 font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-transform hover:scale-105 active:scale-95">Browse Jobs</Link>
-            <Link href="/ats-score" prefetch={false} className="bg-indigo-500/50 hover:bg-indigo-500/70 border border-white/20 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-transform hover:scale-105 active:scale-95 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-indigo-200 fill-indigo-200" />
+          <div className="flex items-center gap-3">
+            <Link 
+              href="/jobs" 
+              prefetch={false} 
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors shadow-sm inline-flex items-center gap-1.5"
+            >
+              Browse Jobs
+            </Link>
+            <Link 
+              href="/ats-score" 
+              prefetch={false} 
+              className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors inline-flex items-center gap-1.5"
+            >
+              <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               ATS Checker
             </Link>
-            <Link href="/resume-builder" prefetch={false} className="bg-purple-500/50 hover:bg-purple-500/70 border border-white/20 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-transform hover:scale-105 active:scale-95 flex items-center gap-1.5">
-              <Zap className="w-4 h-4 text-purple-200 fill-purple-200" />
+            <Link 
+              href="/resume-builder" 
+              prefetch={false} 
+              className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors inline-flex items-center gap-1.5"
+            >
+              <Zap className="w-4 h-4 text-amber-500" />
               Resume Builder
             </Link>
           </div>
@@ -206,11 +215,7 @@ export default function JobSeekerDashboard() {
 
         {/* Refer & Earn Widget */}
         <div className="lg:col-span-4 h-full">
-          <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/20 p-6 shadow-md relative overflow-hidden flex flex-col h-full min-h-[340px]">
-            {/* Background design accents */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-500/5 rounded-full blur-xl translate-y-1/2 -translate-x-1/2" />
-
+          <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm relative overflow-hidden flex flex-col h-full min-h-[340px]">
             <div className="relative z-10 flex-grow flex flex-col justify-between space-y-4">
               <div className="flex items-center gap-2 text-indigo-700 font-bold">
                 <Gift className="w-5 h-5 text-indigo-600 animate-bounce" />

@@ -73,6 +73,35 @@ function renderFormattedDescription(desc?: string) {
     );
 }
 
+function renderCompanyLogo(job: Job, sizeClass: string = "w-20 h-20 text-3xl") {
+    const logoUrl = job.companyLogo || (job as any).company_logo || (job as any).logo;
+    const initial = job.companyName?.charAt(0)?.toUpperCase() || '?';
+
+    return (
+        <div className={cn(sizeClass, "rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center shadow-sm overflow-hidden p-2 shrink-0")}>
+            {logoUrl && typeof logoUrl === 'string' && (logoUrl.startsWith('http') || logoUrl.startsWith('/') || logoUrl.startsWith('data:')) ? (
+                <img 
+                    src={logoUrl} 
+                    alt={job.companyName} 
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                            parent.innerText = initial;
+                            parent.className = cn(sizeClass, "rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold");
+                        }
+                    }}
+                />
+            ) : (
+                <div className="w-full h-full rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">
+                    {initial}
+                </div>
+            )}
+        </div>
+    );
+}
+
 function JobDetailsContent() {
     const { user, currency, exchangeRates } = useUser();
     const { toast } = useToast();
@@ -312,12 +341,7 @@ function JobDetailsContent() {
                                         <h1 className="text-2xl font-bold text-gray-900">{job.title}</h1>
                                         <div className="flex flex-wrap items-center gap-2 mt-1">
                                             <span className="text-gray-600 font-medium">{job.companyName}</span>
-                                            {job.job_role && (
-                                                <>
-                                                    <div className="w-1 h-1 rounded-full bg-gray-300" />
-                                                    <span className="text-blue-600 font-medium text-sm">{job.job_role}</span>
-                                                </>
-                                            )}
+                                          
                                             {job.jobId && (
                                                 <>
                                                     <div className="w-1 h-1 rounded-full bg-gray-300" />
@@ -355,10 +379,8 @@ function JobDetailsContent() {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col items-end gap-4">
-                                    <div className="w-20 h-20 bg-black rounded-xl flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
-                                        {job.companyName.charAt(0).toUpperCase()}
-                                    </div>
+                                <div className="flex flex-col items-end gap-4 shrink-0">
+                                    {renderCompanyLogo(job, "w-20 h-20 text-3xl")}
                                 </div>
                             </div>
 
@@ -403,9 +425,7 @@ function JobDetailsContent() {
                         {/* Mobile Info Summary */}
                         <div className="md:hidden bg-white rounded-xl shadow-sm border p-6 mb-6">
                             <div className="flex flex-col gap-4">
-                                <div className="bg-black text-white w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold">
-                                    {job.companyName.charAt(0).toUpperCase()}
-                                </div>
+                                {renderCompanyLogo(job, "w-16 h-16 text-2xl")}
                                 <div className="space-y-1">
                                     <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{job.title}</h1>
                                     <div className="flex items-center gap-1 text-primary font-medium">
@@ -685,15 +705,7 @@ function JobDetailsContent() {
                                 <TabsContent value="company">
                                     <div className="bg-white rounded-xl border p-6 space-y-6">
                                         <div className="flex items-center gap-4 mb-2">
-                                            {job.companyLogo ? (
-                                                <div className="w-16 h-16 bg-white border rounded-xl overflow-hidden flex items-center justify-center p-1">
-                                                    <img src={job.companyLogo} alt={job.companyName} className="max-w-full max-h-full object-contain" />
-                                                </div>
-                                            ) : (
-                                                <div className="w-16 h-16 bg-black rounded-xl flex items-center justify-center text-white text-2xl font-bold">
-                                                    {job.companyName.charAt(0).toUpperCase()}
-                                                </div>
-                                            )}
+                                            {renderCompanyLogo(job, "w-16 h-16 text-2xl")}
                                             <div>
                                                 <h3 className="text-xl font-bold text-gray-900">{job.companyName}</h3>
                                                 {job.companyWebsite && (
