@@ -118,7 +118,7 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
           {/* Subtle light reflex layer for glassmorphic cards */}
           <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 pointer-events-none" />
           
-          <CardHeader className="relative pb-4">
+          <CardHeader className="relative pb-2">
             <div className="flex justify-between items-start gap-3">
               <div className="flex items-start gap-3.5 min-w-0 flex-1">
                 {/* Custom Brand Logo Tonal Box */}
@@ -143,17 +143,12 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
                 </div>
                 
                 <div className="min-w-0 flex-1">
-                  <CardTitle className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-snug truncate" title={job.title}>
+                  <CardTitle className="text-base sm:text-md font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-snug truncate" title={job.title}>
                     {job.title}
                   </CardTitle>
                   <div className="flex items-center gap-1.5 mt-0.5 text-xs text-indigo-600 dark:text-indigo-400 font-semibold truncate">
                     <span className="truncate" title={job.companyName}>{job.companyName}</span>
-                    {job.job_role && (
-                      <>
-                        <span className="text-slate-300 dark:text-slate-700 shrink-0">•</span>
-                        <span className="text-slate-500 dark:text-slate-400 truncate" title={job.job_role}>{job.job_role}</span>
-                      </>
-                    )}
+                    
                   </div>
                 </div>
               </div>

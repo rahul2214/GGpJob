@@ -8,10 +8,6 @@ import { calculateInternationalJobMatch } from '@/lib/recommendation-engine';
 import JobCard from '../job-card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Skeleton } from '../ui/skeleton';
-import { Badge } from '../ui/badge';
-import {
- ChevronRight
-} from 'lucide-react';
 
 interface RecommendationSectionProps {
   title: string;
@@ -45,17 +41,17 @@ const JobSectionCarousel = ({ title, subtitle, jobs, viewAllHref = "/jobs" }: Re
   if (!jobs || jobs.length === 0) return null;
 
   return (
-    <div id={`section-${title.replace(/\s+/g, '-').toLowerCase()}`} className="rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm mb-8 transition-all min-h-[220px]">
+    <div id={`section-${title.replace(/\s+/g, '-').toLowerCase()}`} className="bg-white dark:bg-slate-900/60 transition-all min-h-[220px]">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
          
           <div>
             <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg sm:text-xl tracking-tight">{title}</h3>
-            {subtitle && <p className="text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>}
+           
           </div>
         </div>
         <Link href={viewAllHref} prefetch={false} className="text-xs sm:text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1">
-          View All <ChevronRight className="w-4 h-4" />
+          View All 
         </Link>
       </div>
 
