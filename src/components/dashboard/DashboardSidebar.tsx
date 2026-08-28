@@ -170,9 +170,9 @@ function SidebarContent({
       {/* Logo */}
       <div className={cn("flex items-center px-4 h-[65px] border-b border-slate-800/70 shrink-0", collapsed ? "justify-center" : "gap-3")}>
         <Link href="/" className="flex items-center gap-2.5 group" onClick={onClose}>
-          
+          <img src="/logo.png" alt="JobsDart" className="h-8 w-auto object-contain transition-transform group-hover:scale-105" />
           {!collapsed && (
-            <span className="text-lg font-extrabold text-white tracking-tight">
+            <span className="text-lg font-extrabold text-white tracking-tight flex items-center">
               Jobs<span className="text-indigo-400">Dart</span>
             </span>
           )}

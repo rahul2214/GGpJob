@@ -9,10 +9,10 @@ import JobCard from '../job-card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Skeleton } from '../ui/skeleton';
 import { Badge } from '../ui/badge';
-import { 
-  Sparkles, MapPin, Laptop, Clock, Building2, 
-  Award, DollarSign, GraduationCap, FileCheck, 
-  Timer, ShieldCheck, Flame, ChevronRight 
+import {
+  Sparkles, MapPin, Laptop, Clock, Building2,
+  Award, DollarSign, GraduationCap, FileCheck,
+  Timer, ShieldCheck, Flame, ChevronRight
 } from 'lucide-react';
 
 interface RecommendationSectionProps {
@@ -211,13 +211,23 @@ export default function RecommendationSections() {
         />
       )}
 
-{/* 6. Based on Skills — logged-in only */}
+      {/* 6. Based on Skills — logged-in only */}
       {user && (
         <JobSectionCarousel
           title="Based on Skills"
           subtitle="Roles requesting skills listed in your profile"
           icon={<Award className="w-5 h-5 text-indigo-500" />}
           jobs={matchingSkills}
+        />
+      )}
+
+      {/* 4. Recently Posted — logged-in only */}
+      {user && (
+        <JobSectionCarousel
+          title="Recently Posted"
+          subtitle="Fresh job openings published in the last few days"
+          icon={<Clock className="w-5 h-5 text-amber-500" />}
+          jobs={recentlyPosted}
         />
       )}
 
@@ -238,20 +248,6 @@ export default function RecommendationSections() {
         icon={<Laptop className="w-5 h-5 text-sky-500" />}
         jobs={remoteJobs}
       />
-
-      {/* 4. Recently Posted — logged-in only */}
-      {user && (
-        <JobSectionCarousel
-          title="Recently Posted"
-          subtitle="Fresh job openings published in the last few days"
-          icon={<Clock className="w-5 h-5 text-amber-500" />}
-          jobs={recentlyPosted}
-        />
-      )}
-
-
-
-      
 
       {/* 8. Internship Opportunities — visible to all */}
       <JobSectionCarousel

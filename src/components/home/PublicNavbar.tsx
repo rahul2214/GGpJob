@@ -57,8 +57,9 @@ export function PublicNavbar() {
                 <ArrowLeft className="w-5 h-5" />
               </button>
             )}
-            <Link href="/" className={`items-center gap-2 group ${isJobDetailsPage ? 'hidden md:flex' : 'flex'}`}>
-              <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            <Link href="/" className={`items-center gap-2.5 group ${isJobDetailsPage ? 'hidden md:flex' : 'flex'}`}>
+              <img src="/logo.png" alt="JobsDart Logo" className="h-9 w-auto object-contain transition-transform group-hover:scale-105" />
+              <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center">
                 Jobs<span className="text-gradient-primary">Dart</span>
               </span>
             </Link>
