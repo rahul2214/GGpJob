@@ -118,7 +118,7 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
           {/* Subtle light reflex layer for glassmorphic cards */}
           <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 pointer-events-none" />
           
-          <CardHeader className="relative pb-2">
+          <CardHeader className="relative pb-2" style={{ paddingLeft : 12, paddingRight : 12 }}>
             <div className="flex justify-between items-start gap-3">
               <div className="flex items-start gap-3.5 min-w-0 flex-1">
                 {/* Custom Brand Logo Tonal Box */}
@@ -157,14 +157,14 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
             </div>
             
             {/* Horizontal Tonal Dividers */}
-            <div className="h-[1px] bg-slate-200/40 dark:bg-slate-800/40 w-full mt-4" />
+            <div className="mt-4" />
           </CardHeader>
 
-          <CardContent className="flex-grow pb-4">
+          <CardContent className="flex-grow pb-4" style={{ paddingLeft : 12, paddingRight : 12 }}>
             <div className="flex flex-col space-y-3.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
               <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-5 h-5 rounded-lg bg-slate-50 dark:bg-slate-950/30 flex items-center justify-center border border-slate-100/50 dark:border-slate-800/30 shrink-0">
+                  <div className="w-5 h-5 dark:bg-slate-950/30 flex items-center justify-center shrink-0">
                     <MapPin className="h-3 w-3 text-indigo-500" />
                   </div>
                   <span className="truncate font-medium" title={(job.locations && job.locations.length > 0) ? job.locations.join(', ') : (job.location || 'Not Disclosed')}>
@@ -172,7 +172,7 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
                   </span>
                 </div>
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-5 h-5 rounded-lg bg-slate-50 dark:bg-slate-950/30 flex items-center justify-center border border-slate-100/50 dark:border-slate-800/30 shrink-0">
+                  <div className="w-5 h-5 flex items-center justify-center shrink-0">
                     <Briefcase className="h-3 w-3 text-indigo-500" />
                   </div>
                   <span className="truncate font-medium">{job.type || 'Not Disclosed'}</span>
@@ -181,7 +181,7 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
 
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-lg bg-slate-50 dark:bg-slate-950/30 flex items-center justify-center border border-slate-100/50 dark:border-slate-800/30 shrink-0">
+                  <div className="w-5 h-5 flex items-center justify-center shrink-0">
                     <BadgeDollarSign className="h-3 w-3 text-indigo-500" />
                   </div>
                   <span className="font-bold text-slate-800 dark:text-slate-200">
@@ -232,7 +232,7 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
           </CardContent>
 
           {/* Card Footer badges row */}
-          <CardFooter className="flex justify-between items-center border-t border-slate-200/30 dark:border-slate-800/30 pt-4 pb-5">
+          <CardFooter className="flex justify-between items-center border-t border-slate-200/30 dark:border-slate-800/30 pt-4 pb-5" style={{ paddingLeft: 12, paddingRight: 12 }}>
             <div className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-600 flex items-center gap-1.5 tracking-wider">
               <Clock className="h-3.5 w-3.5 text-slate-400/80" />
               {formatDistanceToNow(new Date(job.postedAt), { addSuffix: true }).replace(/^about\s+/i, '')}
