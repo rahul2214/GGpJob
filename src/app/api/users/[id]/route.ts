@@ -123,6 +123,16 @@ async function mapProfileToUser(profile: any): Promise<User> {
     delete cleanMetadata.openWorldwide;
     delete cleanMetadata.visaRequirement;
 
+    let userReferralCode = profile.referral_code;
+    if (!userReferralCode && (role === 'Job Seeker' || !role)) {
+        userReferralCode = 'JD' + (profile.uuid ? profile.uuid.replace(/-/g, '').substring(0, 6).toUpperCase() : Math.random().toString(36).substring(2, 8).toUpperCase());
+        supabaseAdmin
+            .from('jobseekers')
+            .update({ referral_code: userReferralCode })
+            .eq('id', profile.id)
+            .then(() => {});
+    }
+
     const baseObj = {
         id: profile.id,       // BIGINT primary key
         uuid: profile.uuid,   // Public UUID
@@ -197,7 +207,7 @@ async function mapProfileToUser(profile: any): Promise<User> {
         planExpiresAt: profile.plan_expires_at,
         location: profile.location_id || undefined,
         metadata: cleanMetadata,
-        referralCode: profile.referral_code,
+        referralCode: userReferralCode || profile.referral_code,
         referredBy: profile.referred_by ? Number(profile.referred_by) : undefined,
         referralCount: profile.referral_count || 0,
         companyName: profile.company_name,

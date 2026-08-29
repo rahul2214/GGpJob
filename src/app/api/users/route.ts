@@ -85,6 +85,16 @@ export async function GET(request: Request) {
                 formattedLocation: [pl.cities?.name, pl.states_provinces?.name, pl.countries?.name].filter(Boolean).join(', ')
             }));
 
+            let userReferralCode = jobseeker.referral_code;
+            if (!userReferralCode && (jobseeker.role === 'Job Seeker' || !jobseeker.role || (jobseeker as any).roles?.name === 'Job Seeker')) {
+                userReferralCode = 'JD' + (jobseeker.uuid ? jobseeker.uuid.replace(/-/g, '').substring(0, 6).toUpperCase() : Math.random().toString(36).substring(2, 8).toUpperCase());
+                supabaseAdmin
+                    .from('jobseekers')
+                    .update({ referral_code: userReferralCode })
+                    .eq('id', jobseeker.id)
+                    .then(() => {});
+            }
+
             const user: any = {
                 id: jobseeker.id,
                 uuid: jobseeker.uuid,
@@ -164,7 +174,7 @@ export async function GET(request: Request) {
                         credentialUrl: c.credential_url
                       }))
                     : jobseeker.metadata?.certifications || [],
-                referralCode: jobseeker.referral_code,
+                referralCode: userReferralCode || jobseeker.referral_code,
                 referredBy: jobseeker.referred_by ? Number(jobseeker.referred_by) : undefined,
                 referralCount: jobseeker.referral_count || 0,
                 credits: (jobseeker.subscription_credits || 0) + (jobseeker.purchased_credits || 0),

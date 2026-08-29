@@ -47,11 +47,12 @@ export default function JobSeekerDashboard() {
 
   const [copied, setCopied] = useState(false);
   const referralCount = user?.referralCount || 0;
+  const effectiveReferralCode = user?.referralCode || (user?.uuid ? 'JD' + user.uuid.replace(/-/g, '').substring(0, 6).toUpperCase() : '');
+  const referralLink = effectiveReferralCode && typeof window !== 'undefined' ? `${window.location.origin}/signup?ref=${effectiveReferralCode}` : '';
 
   const handleCopyLink = () => {
-    if (!user?.referralCode) return;
-    const shareUrl = `${window.location.origin}/signup?ref=${user.referralCode}`;
-    navigator.clipboard.writeText(shareUrl);
+    if (!referralLink) return;
+    navigator.clipboard.writeText(referralLink);
     setCopied(true);
     toast({
       title: "Link Copied!",
@@ -61,12 +62,11 @@ export default function JobSeekerDashboard() {
   };
 
   const handleShare = async () => {
-    if (!user?.referralCode) return;
-    const shareUrl = `${window.location.origin}/signup?ref=${user.referralCode}`;
+    if (!referralLink) return;
     const shareData = {
       title: 'Join JobsDart',
       text: 'Get direct employee referrals at top MNCs! Sign up using my referral link to get started:',
-      url: shareUrl
+      url: referralLink
     };
 
     if (typeof window !== 'undefined' && navigator.share && navigator.canShare && navigator.canShare(shareData)) {
@@ -240,11 +240,11 @@ export default function JobSeekerDashboard() {
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Your Referral Link</span>
                 <div className="flex gap-2">
                   <div className="flex-1 bg-slate-50 border border-slate-200/50 rounded-xl px-3 py-2 flex items-center justify-between font-mono text-xs text-slate-600 font-bold select-all overflow-hidden text-ellipsis whitespace-nowrap">
-                    {user?.referralCode ? `${typeof window !== 'undefined' ? window.location.origin : ''}/signup?ref=${user.referralCode}` : 'Generating link...'}
+                    {referralLink || (typeof window !== 'undefined' ? `${window.location.origin}/signup` : '...')}
                   </div>
                   <Button 
                     onClick={handleCopyLink} 
-                    disabled={!user?.referralCode}
+                    disabled={!referralLink}
                     variant="outline"
                     className={cn(
                       "rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 transition-all active:scale-95 shrink-0",
@@ -259,7 +259,7 @@ export default function JobSeekerDashboard() {
               {/* Share Button */}
               <Button
                 onClick={handleShare}
-                disabled={!user?.referralCode}
+                disabled={!referralLink}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md shadow-indigo-100 hover:shadow-indigo-200 transition-all py-5 flex items-center justify-center gap-2 group active:scale-98"
               >
                 <Share2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
