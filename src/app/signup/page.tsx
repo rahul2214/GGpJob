@@ -284,7 +284,7 @@ export default function SignupPage() {
                       <CountryCodeSelect
                         value={countryCode}
                         onChange={setCountryCode}
-                        className="h-11 min-w-[115px] rounded-xl border border-slate-200 bg-slate-100 text-slate-700 font-bold text-sm"
+                        className="h-11 max-w-[100px] rounded-xl border border-slate-200 bg-slate-100 text-slate-700 font-bold text-sm"
                       />
                       <Input placeholder="9876543210" className="h-11 rounded-xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors flex-1" {...field} />
                     </div>

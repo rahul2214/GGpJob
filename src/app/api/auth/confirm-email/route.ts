@@ -142,7 +142,7 @@ export async function POST(request: Request) {
             });
 
             if (rpcError) {
-              console.error('[confirm-email] RPC add_purchased_credits failed, performing manual fallback:', rpcError);
+              console.error('[confirm-email] RPC add_purchased_credits failed, performing manual fallback for referrer:', rpcError);
               const { data: currentReferrer } = await supabaseAdmin
                 .from('jobseekers')
                 .select('purchased_credits')
@@ -157,32 +157,63 @@ export async function POST(request: Request) {
                 .eq('id', referrer.id);
             }
 
-            // 2. Send notification to referrer
-            await supabaseAdmin.from('notifications').insert({
-              user_pk: referrer.id,
-              message: `You earned 2 credits for referring ${jobseeker.name || 'a new user'} (now verified)!`,
-              type: 'referral_bonus',
-              created_at: new Date().toISOString(),
+            // 2. Award 2 credits to referee (the newly confirmed user)
+            const { error: refereeRpcError } = await supabaseAdmin.rpc('add_purchased_credits', {
+              p_user_id: jobseeker.id,
+              p_amount: 2,
             });
 
-            // 3. Increment referral_count
+            if (refereeRpcError) {
+              console.error('[confirm-email] RPC add_purchased_credits failed, performing manual fallback for referee:', refereeRpcError);
+              const { data: currentReferee } = await supabaseAdmin
+                .from('jobseekers')
+                .select('purchased_credits')
+                .eq('id', jobseeker.id)
+                .single();
+              await supabaseAdmin
+                .from('jobseekers')
+                .update({
+                  purchased_credits: (currentReferee?.purchased_credits || 0) + 2,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', jobseeker.id);
+            }
+
+            // 3. Send notifications to both
+            await supabaseAdmin.from('notifications').insert([
+              {
+                user_pk: referrer.id,
+                message: `You earned 2 credits for referring ${jobseeker.name || 'a new user'} (now verified)!`,
+                type: 'referral_bonus',
+                created_at: new Date().toISOString(),
+              },
+              {
+                user_pk: jobseeker.id,
+                message: `You received 2 bonus credits for joining through a referral!`,
+                type: 'referral_bonus',
+                created_at: new Date().toISOString(),
+              }
+            ]);
+
+            // 4. Increment referral_count
             const newCount = (referrer.referral_count || 0) + 1;
             await supabaseAdmin
               .from('jobseekers')
               .update({ referral_count: newCount })
               .eq('id', referrer.id);
 
-            // 4. Mark referral as rewarded on the referred user
+            // 5. Mark referral as rewarded on the referred user
             const updatedMetadata = {
               ...(jobseeker.metadata || {}),
               referral_rewarded: true,
+              referral_rewarded_at: new Date().toISOString(),
             };
             await supabaseAdmin
               .from('jobseekers')
               .update({ metadata: updatedMetadata })
               .eq('id', jobseeker.id);
             
-            console.log(`[confirm-email] Referral rewarded successfully for user ${jobseeker.name} (referrer ID: ${referrer.id})`);
+            console.log(`[confirm-email] Both users rewarded 2 credits successfully: Referrer ID ${referrer.id} and Referee ID ${jobseeker.id}`);
           }
         }
       } catch (rewardErr) {
