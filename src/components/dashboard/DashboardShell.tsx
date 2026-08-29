@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardTopBar } from "./DashboardTopBar";
-import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { PublicNavbar } from "@/components/home/PublicNavbar";
 import { cn } from "@/lib/utils";
@@ -148,7 +147,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   // ── Public Layout (Header + Footer) ────────────────────────────────────
   return (
     <div className="flex flex-col min-h-screen">
-      {user ? <Header /> : <PublicNavbar />}
+      <PublicNavbar />
       <main className="flex-1">{children}</main>
       <Footer />
     </div>

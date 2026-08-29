@@ -4,11 +4,21 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, X, Menu, FileText, Briefcase, ScanSearch, Zap, Users, ArrowLeft, SlidersHorizontal } from 'lucide-react';
+import { Globe, X, Menu, FileText, Briefcase, ScanSearch, Zap, Users, ArrowLeft, SlidersHorizontal, LogOut, LayoutDashboard, User as UserIcon } from 'lucide-react';
 import { ShareButton } from '@/components/share-button';
 import { SaveJobButton } from '@/components/save-job-button';
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { JobFilters } from '@/components/job-filters';
+import { useUser } from '@/contexts/user-context';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const navLinks = [
   { href: '/jobs', label: 'Jobs', icon: Briefcase },
@@ -18,6 +28,7 @@ const navLinks = [
 ];
 
 export function PublicNavbar() {
+  const { user, logout } = useUser();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
@@ -85,20 +96,63 @@ export function PublicNavbar() {
             })}
           </nav>
 
-          {/* Desktop CTA Buttons */}
+          {/* Desktop CTA Buttons / User Profile */}
           <div className="hidden md:flex items-center gap-4">
-            <Link
-              href="/login"
-              className="text-sm font-semibold text-slate-650 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-white transition-colors"
-            >
-              Candidate Login
-            </Link>
-            <Link
-              href="/company/login"
-              className="btn-primary flex items-center gap-1.5 text-sm py-2.5 px-5"
-            >
-              <span>For Recruiter</span>
-            </Link>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-2.5 outline-none p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                  <Avatar className="h-9 w-9 border border-slate-200 dark:border-slate-700">
+                    <AvatarImage src={user.profilePhotoUrl || ""} alt={user.name || "User"} />
+                    <AvatarFallback className="bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-bold text-xs">
+                      {user.name?.charAt(0).toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="text-left hidden lg:block pr-1">
+                    <p className="text-xs font-bold text-slate-800 dark:text-white leading-tight max-w-[120px] truncate">
+                      {user.name || "Account"}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-medium leading-none mt-0.5 capitalize">
+                      {user.role || "Job Seeker"}
+                    </p>
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52 rounded-2xl shadow-xl border-slate-100 p-1.5">
+                  <DropdownMenuLabel className="font-normal px-2.5 py-2">
+                    <p className="text-xs font-bold text-slate-800 leading-none">{user.name}</p>
+                    <p className="text-[11px] text-slate-400 mt-1 truncate">{user.email}</p>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
+                    <Link href="/" className="flex items-center gap-2">
+                      <LayoutDashboard className="w-4 h-4 text-slate-500" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => logout()}
+                    className="rounded-xl cursor-pointer text-rose-600 focus:text-rose-600 focus:bg-rose-50 flex items-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-sm font-semibold text-slate-650 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-white transition-colors"
+                >
+                  Candidate Login
+                </Link>
+                <Link
+                  href="/company/login"
+                  className="btn-primary flex items-center gap-1.5 text-sm py-2.5 px-5"
+                >
+                  <span>For Recruiter</span>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile actions (Filter / Share + hamburger) */}
@@ -177,21 +231,53 @@ export function PublicNavbar() {
                 })}
               </div>
               <div className="h-px bg-slate-200 dark:bg-white/5" />
-              <div className="grid grid-cols-2 gap-3">
-                <Link
-                  href="/login"
-                  className="flex items-center justify-center p-3 rounded-xl text-slate-650 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5 text-sm font-semibold transition-all"
-                >
-                  Candidate Login
-                </Link>
-                <Link
-                  href="/company/login"
-                  className="btn-primary flex items-center justify-center gap-1.5 p-3 text-sm font-semibold"
-                >
-                  <span>For Recruiter</span>
-                  
-                </Link>
-              </div>
+              {user ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-white/5 rounded-xl">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={user.profilePhotoUrl || ""} alt={user.name || "User"} />
+                      <AvatarFallback className="bg-indigo-50 text-indigo-700 font-bold text-xs">
+                        {user.name?.charAt(0).toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{user.name}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link
+                      href="/"
+                      className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold"
+                    >
+                      <LayoutDashboard className="w-4 h-4" />
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={() => logout()}
+                      className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-rose-50 text-rose-600 text-xs font-bold"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <Link
+                    href="/login"
+                    className="flex items-center justify-center p-3 rounded-xl text-slate-650 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5 text-sm font-semibold transition-all"
+                  >
+                    Candidate Login
+                  </Link>
+                  <Link
+                    href="/company/login"
+                    className="btn-primary flex items-center justify-center gap-1.5 p-3 text-sm font-semibold"
+                  >
+                    <span>For Recruiter</span>
+                  </Link>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
