@@ -53,7 +53,7 @@ export function ChatWidget() {
     return (
         <section id="chat-showcase" aria-label="Direct In-App Chat Features" className="py-24 relative overflow-hidden bg-slate-50 dark:bg-[hsl(220_65%_8%)] transition-colors duration-300">
             <div className="absolute top-1/4 left-10 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-1/4 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-1/4 right-10 w-96 h-96  pointer-events-none" />
 
             <div className="container-xl relative z-10">
                 <div className="grid lg:grid-cols-12 gap-12 items-center">

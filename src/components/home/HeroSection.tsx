@@ -131,8 +131,7 @@ export function HeroSection() {
                 }}
             />
 
-            {/* ── Hairline accent — top of page ───────────────────────────── */}
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-indigo-600 dark:bg-indigo-500" />
+
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 

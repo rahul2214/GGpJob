@@ -92,8 +92,15 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const showDashboard = isAuthenticated && !isExcluded;
 
 
-  // During SSR or loading, render the public shell to avoid flash
+  // During SSR or loading, render loading shell
   if (!mounted || userLoading) {
+    if (pathname === "/") {
+      return (
+        <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950">
+          <main className="min-h-screen">{children}</main>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col min-h-screen">
         <div className="h-16 border-b bg-white/80 animate-pulse" />

@@ -11,6 +11,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { UserProvider } from '@/contexts/user-context';
 import CareerAssistant from '@/components/chat/CareerAssistant';
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
+import { NetworkStatusIndicator } from '@/components/NetworkStatusIndicator';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -388,6 +389,7 @@ export default function RootLayout({
           inter.variable
         )}
       >
+        <NetworkStatusIndicator />
         <UserProvider>
           <Suspense
             fallback={

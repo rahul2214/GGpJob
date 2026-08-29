@@ -19,7 +19,7 @@ export function FaqSection() {
 
     return (
         <section id="faq" aria-label="Platform Rules and FAQs" className="py-20 md:py-28 relative overflow-hidden border-t border-slate-200 dark:border-white/5 bg-white dark:bg-[hsl(220_65%_6%)] transition-colors duration-300">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-violet-900/15 via-transparent to-transparent pointer-events-none" />
+          
             <div className="container-xl relative z-10">
                 <motion.div 
                     initial="hidden" 

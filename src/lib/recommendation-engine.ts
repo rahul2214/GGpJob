@@ -67,7 +67,7 @@ export function calculateInternationalJobMatch(
   // 2. Preferred Job Titles (15%)
   let titleScore = 0;
   const userTitles = (user.preferredJobTitles || []).concat(user.headline ? [user.headline] : []);
-  const jobTitleNorm = normalizeString(`${job.title || ''} ${job.job_role || ''} ${job.jobFunction || ''}`);
+  const jobTitleNorm = normalizeString(`${job.title || ''} ${job.jobFunction || ''}`);
   if (userTitles.length > 0) {
     const hasMatch = userTitles.some(t => {
       const normT = normalizeString(t);

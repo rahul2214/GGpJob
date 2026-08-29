@@ -227,7 +227,6 @@ export interface Job {
   industry?: string;
   // 17. Job Function
   jobFunction?: string;
-  job_role?: string;
   // 18. Visa Sponsorship
   visaSponsorship?: boolean;
   visa_sponsorship?: boolean;

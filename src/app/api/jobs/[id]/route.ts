@@ -129,7 +129,6 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
         sections: job.sections || [],
         benefitIds: benefitUuids,
         benefits: benefitNames,
-        job_role: job.job_role,
         jobTypeId: job.job_types?.uuid || null,
         jobTypePk: job.job_type_pk,
         workplaceTypeId: job.workplace_types?.uuid || null,
@@ -220,10 +219,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 
     // In both cases, ensure we map the DB column correctly
-    const finalJob = await mapJobDetailToFrontend({
-        ...job,
-        job_role: job.job_role || (job as any).role // Fallback during migration
-    }, hasApplied);
+    const finalJob = await mapJobDetailToFrontend(job, hasApplied);
 
     const response = NextResponse.json(finalJob);
     
@@ -349,7 +345,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             salary_max_usd_cents: body.salaryMax ?? body.salary_max ?? null,
             currency_id: currencyPk || undefined,
             visa_sponsorship: body.visaSponsorship !== undefined ? !!body.visaSponsorship : (body.visa_sponsorship !== undefined ? !!body.visa_sponsorship : undefined),
-            job_role: body.job_role || body.role || body.title,
             experience_min: typeof body.minExperience === 'number' ? body.minExperience : 0,
             experience_max: typeof body.maxExperience === 'number' ? body.maxExperience : 0,
             vacancies: body.vacancies || 1,

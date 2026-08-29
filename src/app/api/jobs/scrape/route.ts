@@ -150,7 +150,6 @@ export async function POST(request: NextRequest) {
         industry: matchedIndustry,
         salary_min: item.salaryMin,
         salary_max: item.salaryMax,
-        job_role: item.title,
         experience_min: 2,
         experience_max: 5,
         is_referral: isReferral,

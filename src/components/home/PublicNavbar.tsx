@@ -74,20 +74,12 @@ export function PublicNavbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`relative flex items-center gap-2 py-2 text-sm font-semibold transition-colors hover:text-slate-900 dark:hover:text-white ${
-                    isActive ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-zinc-400'
+                  className={`flex items-center gap-2 py-2 text-sm font-semibold transition-colors hover:text-slate-900 dark:hover:text-white ${
+                    isActive ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-zinc-400'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
                   <span>{link.label}</span>
-                 
-                  {isActive && (
-                    <motion.div
-                      layoutId="active-indicator"
-                      className="absolute -bottom-1 left-0 right-0 h-0.5 bg-violet-600 dark:bg-violet-500 rounded-full"
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    />
-                  )}
                 </Link>
               );
             })}

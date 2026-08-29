@@ -19,7 +19,6 @@ function mapJobToFrontend(job: any): any {
         locationPks: job.location_pks || [],
         salaryMin: job.salary_min ?? job.salary_min_usd_cents ?? null,
         salaryMax: job.salary_max ?? job.salary_max_usd_cents ?? null,
-        job_role: job.job_role,
         minExperience: job.experience_min,
         maxExperience: job.experience_max,
         isReferral: job.is_referral,

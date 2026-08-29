@@ -608,15 +608,11 @@ function JobDetailsContent() {
                                         {renderFormattedDescription(job.description)}
                                     </div>
 
-                                    {/* Secondary Info: Job Type, Role, Workplace, Visa Sponsorship */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 mt-8 border-t pt-8">
+                                    {/* Secondary Info: Job Type, Workplace, Visa Sponsorship */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-4 mt-8 border-t pt-8">
                                         <div className="text-sm">
                                             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Job Type</div>
                                             <div className="font-bold text-slate-800">{job.type || 'Not Disclosed'}</div>
-                                        </div>
-                                        <div className="text-sm">
-                                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Role</div>
-                                            <div className="font-bold text-slate-800">{job.job_role || 'Not Disclosed'}</div>
                                         </div>
                                         <div className="text-sm">
                                             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Workplace</div>

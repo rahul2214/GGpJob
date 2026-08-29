@@ -479,46 +479,79 @@ export default function OnboardingPage() {
 
         setIsSubmitting(true);
         try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+            const authHeaders: Record<string, string> = { "Content-Type": "application/json" };
+            if (token) authHeaders["Authorization"] = `Bearer ${token}`;
+
             // 1. Upload Resume if needed
             let currentResumeUrl = user.resumeUrl || "";
             if (!user.resumeUrl && resumeFile) {
                 setUploadProgress(30);
-                
-                // 1. Get presigned upload URL from our API
-                const presignedResponse = await fetch(`/api/users/${user.uuid}/resume/presigned`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-                        fileName: resumeFile.name, 
-                        contentType: resumeFile.type || 'application/pdf'
-                    }),
-                });
 
-                if (!presignedResponse.ok) throw new Error("Failed to get upload authorization.");
-                const { url, r2Uri } = await presignedResponse.json();
-                
-                setUploadProgress(50);
+                let uploadedUrl = "";
 
-                // 2. Upload directly to Cloudflare R2
-                const uploadResponse = await fetch(url, {
-                    method: "PUT",
-                    body: resumeFile,
-                    headers: {
-                        "Content-Type": resumeFile.type || 'application/pdf',
-                    },
-                });
+                // Attempt 1: Get presigned upload URL from our API for direct Cloudflare R2 upload
+                try {
+                    const presignedResponse = await fetch(`/api/users/${user.uuid}/resume/presigned`, {
+                        method: "POST",
+                        headers: authHeaders,
+                        body: JSON.stringify({ 
+                            fileName: resumeFile.name, 
+                            contentType: resumeFile.type || 'application/pdf'
+                        }),
+                    });
 
-                if (!uploadResponse.ok) {
-                    const errorText = await uploadResponse.text();
-                    console.error("R2 Upload Error:", errorText);
-                    throw new Error("Direct upload to Cloudflare failed.");
+                    if (presignedResponse.ok) {
+                        const { url, r2Uri } = await presignedResponse.json();
+                        setUploadProgress(50);
+
+                        // Direct upload to Cloudflare R2
+                        const uploadResponse = await fetch(url, {
+                            method: "PUT",
+                            body: resumeFile,
+                            headers: {
+                                "Content-Type": resumeFile.type || 'application/pdf',
+                            },
+                        });
+
+                        if (uploadResponse.ok) {
+                            uploadedUrl = r2Uri;
+                        }
+                    }
+                } catch (presignedErr) {
+                    console.warn("Direct R2 presigned upload error, falling back to server proxy upload:", presignedErr);
                 }
-                
-                currentResumeUrl = r2Uri;
+
+                // Attempt 2 (Fallback): Upload via server proxy endpoint if direct R2 was not completed
+                if (!uploadedUrl) {
+                    setUploadProgress(45);
+                    const formData = new FormData();
+                    formData.append("file", resumeFile);
+
+                    const proxyHeaders: Record<string, string> = {};
+                    if (token) proxyHeaders["Authorization"] = `Bearer ${token}`;
+
+                    const proxyResponse = await fetch(`/api/users/${user.uuid}/resume/upload`, {
+                        method: "POST",
+                        headers: proxyHeaders,
+                        body: formData,
+                    });
+
+                    if (!proxyResponse.ok) {
+                        const errorData = await proxyResponse.json().catch(() => ({}));
+                        throw new Error(errorData.error || "Failed to upload resume.");
+                    }
+
+                    const proxyData = await proxyResponse.json();
+                    uploadedUrl = proxyData.resumeUrl || proxyData.resume_url;
+                }
+
+                currentResumeUrl = uploadedUrl;
 
                 const resumeRes = await fetch(`/api/users/${user.uuid}/resume`, {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json" },
+                    headers: authHeaders,
                     body: JSON.stringify({ resumeUrl: currentResumeUrl }),
                 });
                 if (!resumeRes.ok) throw new Error("Failed to save resume URL.");
@@ -539,7 +572,7 @@ export default function OnboardingPage() {
 
             const profileRes = await fetch(`/api/users/${user.uuid}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
+                headers: authHeaders,
                 body: JSON.stringify({ 
                     name: user.name, 
                     email: user.email, 

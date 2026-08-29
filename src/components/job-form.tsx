@@ -218,7 +218,6 @@ export function JobForm({ job }: JobFormProps) {
     country: z.string().optional(),
     state: z.string().optional(),
     city: z.string().optional(),
-    job_role: z.string().min(2, "Role must be at least 2 characters long."),
     industry: z.string().optional(),
     jobFunction: z.string().optional(),
     jobDescription: z.string().min(50, "Job description must be at least 50 characters long."),
@@ -353,7 +352,6 @@ export function JobForm({ job }: JobFormProps) {
       country: job?.country || "",
       state: job?.state || "",
       city: job?.city || "",
-      job_role: job?.job_role || "",
       industry: job?.industry || "",
       jobFunction: job?.jobFunction || "",
       jobDescription: job?.description || "",
@@ -416,7 +414,6 @@ export function JobForm({ job }: JobFormProps) {
         country: job.country || "",
         state: job.state || "",
         city: job.city || "",
-        job_role: job.job_role || "",
         industry: job.industry || "",
         jobFunction: job.jobFunction || "",
         jobDescription: job.description || "",
@@ -473,7 +470,6 @@ export function JobForm({ job }: JobFormProps) {
         jobId: data.jobId,
         title: data.jobTitle,
         description: data.jobDescription,
-        job_role: data.job_role,
         locations: data.locations || [],
         countryId: primaryLoc.countryId || data.countryId || null,
         stateId: primaryLoc.stateId || data.stateId || null,
@@ -555,19 +551,6 @@ export function JobForm({ job }: JobFormProps) {
               <FormLabel>Job ID (Optional)</FormLabel>
               <FormControl>
                 <Input placeholder="e.g. JOB-1234" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="job_role"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Role</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. Full Stack Developer" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
