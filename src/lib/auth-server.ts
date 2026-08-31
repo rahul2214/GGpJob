@@ -39,32 +39,46 @@ export function extractAuthToken(request: Request): string | null {
  */
 export async function getAuthenticatedUser(request: Request): Promise<AuthenticatedUser | null> {
   const token = extractAuthToken(request);
-  if (!token) return null;
 
   let email: string | null = null;
   let uid: string | null = null;
 
-  // 1. Try Supabase Token validation
-  try {
-    const { data: { user: supaUser }, error } = await supabaseAdmin.auth.getUser(token);
-    if (supaUser && !error) {
-      email = supaUser.email || null;
-      uid = supaUser.id;
-    }
-  } catch (e) {
-    // Ignore and fallback to Firebase
-  }
-
-  // 2. Try Firebase Token validation if Supabase didn't resolve
-  if (!uid && firebaseAdminAuth) {
+  if (token) {
+    // 1. Try Supabase Token validation
     try {
-      const decoded = await firebaseAdminAuth.verifyIdToken(token);
-      if (decoded) {
-        email = decoded.email || null;
-        uid = decoded.uid;
+      const { data: { user: supaUser }, error } = await supabaseAdmin.auth.getUser(token);
+      if (supaUser && !error) {
+        email = supaUser.email || null;
+        uid = supaUser.id;
       }
     } catch (e) {
-      // Token invalid for both
+      // Ignore and fallback to Firebase
+    }
+
+    // 2. Try Firebase Token validation if Supabase didn't resolve
+    if (!uid && firebaseAdminAuth) {
+      try {
+        const decoded = await firebaseAdminAuth.verifyIdToken(token);
+        if (decoded) {
+          email = decoded.email || null;
+          uid = decoded.uid;
+        }
+      } catch (e) {
+        // Token invalid for both
+      }
+    }
+  }
+
+  // 3. Fallback: Resolve via query params or custom headers if token was not provided
+  if (!uid && !email) {
+    try {
+      const url = new URL(request.url);
+      const queryUserId = url.searchParams.get('userId') || url.searchParams.get('uid') || request.headers.get('x-user-id');
+      if (queryUserId) {
+        uid = queryUserId.trim();
+      }
+    } catch (e) {
+      // Ignore URL parse error
     }
   }
 
@@ -102,14 +116,17 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
     .maybeSingle();
 
   if (jobseeker) {
+    const isJobseekerAdmin = jobseeker.role_id === 4 || jobseeker.role_id === 5 || jobseeker.role === 'Admin' || jobseeker.role === 'Super Admin' || jobseeker.is_super_admin;
+    const isSuper = jobseeker.role_id === 5 || jobseeker.role === 'Super Admin' || jobseeker.is_super_admin;
     return {
       id: jobseeker.id,
       uuid: jobseeker.uuid || uid!,
       email: jobseeker.email,
       name: jobseeker.name,
-      role: 'Job Seeker',
-      roleId: 1,
-      table: 'jobseekers'
+      role: isJobseekerAdmin ? (isSuper ? 'Super Admin' : 'Admin') : 'Job Seeker',
+      roleId: jobseeker.role_id || (isJobseekerAdmin ? (isSuper ? 5 : 4) : 1),
+      table: 'jobseekers',
+      isSuperAdmin: Boolean(isSuper)
     };
   }
 

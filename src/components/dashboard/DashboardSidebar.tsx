@@ -31,7 +31,6 @@ import {
   UserCog,
   Database,
   BarChart2,
-  FlagTriangleRight,
   Bookmark,
 } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
@@ -101,7 +100,6 @@ const NAV_CONFIG: Record<string, NavSection[]> = {
       label: "Operations Log",
       items: [
         { icon: Briefcase, label: "Jobs Moderation", href: "/admin/jobs" },
-        { icon: FlagTriangleRight, label: "Refund Disputes", href: "/admin/disputes" },
       ],
     },
     {

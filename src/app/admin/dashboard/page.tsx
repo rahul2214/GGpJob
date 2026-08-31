@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { useUser } from "@/contexts/user-context";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -161,7 +162,12 @@ export default function AdminDashboardPage() {
         const userIdVal = user?.uuid || user?.id;
         if (userIdVal) params.append('userId', String(userIdVal));
 
-        const res = await fetch(`/api/analytics?${params.toString()}`);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`/api/analytics?${params.toString()}`, { headers });
         if (!res.ok) throw new Error("Failed to fetch analytics");
         const data = await res.json();
         setAnalytics(data);

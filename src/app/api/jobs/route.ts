@@ -89,10 +89,18 @@ function mapJobToFrontend(job: any): any {
 async function resolveJobNames(jobs: any[]): Promise<any[]> {
     if (!jobs || jobs.length === 0) return [];
 
-    const jobPks = jobs.map(j => j.id).filter(Boolean);
-    const allLocationPks = Array.from(new Set(jobs.flatMap(j => j.location_pks || [])));
-    const allBenefitPks = Array.from(new Set(jobs.flatMap(j => j.benefit_ids || [])));
-    const allSkillPks = Array.from(new Set(jobs.flatMap(j => j.skill_pks || [])));
+    const seenPks = new Set<string>();
+    const uniqueInputJobs = jobs.filter((j: any) => {
+        const k = String(j.uuid || j.id);
+        if (seenPks.has(k)) return false;
+        seenPks.add(k);
+        return true;
+    });
+
+    const jobPks = uniqueInputJobs.map(j => j.id).filter(Boolean);
+    const allLocationPks = Array.from(new Set(uniqueInputJobs.flatMap(j => j.location_pks || [])));
+    const allBenefitPks = Array.from(new Set(uniqueInputJobs.flatMap(j => j.benefit_ids || [])));
+    const allSkillPks = Array.from(new Set(uniqueInputJobs.flatMap(j => j.skill_pks || [])));
 
     const [
         { data: cities },
@@ -143,7 +151,7 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
         }
     });
 
-    const resolved = jobs.map(job => {
+    const resolved = uniqueInputJobs.map(job => {
         const jlNames = jobLocMap.get(job.id);
         const mappedLocations = (job.location_pks || []).map((id: number) => cityMap.get(String(id))).filter(Boolean);
         const locationNames = (jlNames && jlNames.length > 0) ? jlNames : mappedLocations.map((l: any) => l.name);
@@ -515,13 +523,19 @@ export async function GET(request: NextRequest) {
         }
     }
 
+    const pageParam = searchParams.get('page');
+    const pageNum = pageParam ? parseInt(pageParam, 10) : 1;
+    const validPage = !isNaN(pageNum) && pageNum > 0 ? pageNum : 1;
+
     const limitParam = searchParams.get('limit');
     const limitNum = limitParam ? parseInt(limitParam, 10) : null;
     const isValidLimit = limitNum !== null && !isNaN(limitNum) && limitNum > 0;
 
     query = query.order('posted_at', { ascending: false });
     if (isValidLimit) {
-        query = query.limit(limitNum);
+        const fromOffset = (validPage - 1) * limitNum;
+        const toOffset = fromOffset + limitNum - 1;
+        query = query.range(fromOffset, toOffset);
     }
 
     let { data: jobs, error } = await query;
@@ -611,7 +625,9 @@ export async function GET(request: NextRequest) {
 
         fallbackQuery = fallbackQuery.order('posted_at', { ascending: false });
         if (isValidLimit) {
-            fallbackQuery = fallbackQuery.limit(limitNum);
+            const fromOffset = (validPage - 1) * limitNum;
+            const toOffset = fromOffset + limitNum - 1;
+            fallbackQuery = fallbackQuery.range(fromOffset, toOffset);
         }
 
         const fallbackRes = await fallbackQuery;

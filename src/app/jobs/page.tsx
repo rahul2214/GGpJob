@@ -341,7 +341,7 @@ function JobSearchContent() {
     // Paginate only on All Jobs; for smart tabs we fetch more and filter client-side
     if (activeTab === "all") {
       p.page = String(page);
-      p.limit = "25";
+      p.limit = "24";
     } else {
       p.limit = "200"; // fetch enough to rank/filter
     }
@@ -353,7 +353,15 @@ function JobSearchContent() {
 
   // ─── Client-side filtering & ranking per tab ──────────────────────────────
   const jobsToDisplay = useMemo(() => {
-    const all: Job[] = rawJobs || [];
+    // 1. Deduplicate raw jobs to ensure unique DB entries
+    const seenJobKeys = new Set<string>();
+    const all: Job[] = (rawJobs || []).filter((j: Job) => {
+      const k = String(j.uuid || j.id || `${j.title}-${j.companyName}-${j.location}`);
+      if (seenJobKeys.has(k)) return false;
+      seenJobKeys.add(k);
+      return true;
+    });
+
     const searchQ = searchParams.get("search") || "";
 
     // Apply text search if present (all tabs)
@@ -417,7 +425,7 @@ function JobSearchContent() {
   }, [rawJobs, activeTab, user, searchParams]);
 
   // Pagination slice for non-all tabs (client-side)
-  const ITEMS_PER_PAGE = 25;
+  const ITEMS_PER_PAGE = 24;
   const paginatedJobs = useMemo(() => {
     if (activeTab === "all") return jobsToDisplay; // server-paginated
     const start = (page - 1) * ITEMS_PER_PAGE;
@@ -613,7 +621,7 @@ function JobSearchContent() {
                   onClick={() => { setPage((p) => p + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                   disabled={
                     activeTab === "all"
-                      ? paginatedJobs.length < 25
+                      ? paginatedJobs.length < 24
                       : page >= (totalPages ?? 1)
                   }
                   className="font-bold border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl"

@@ -39,7 +39,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/revenue": "Platform Revenue",
   "/admin/crm": "Candidate CRM & Brevo Automation",
   "/admin/feedback": "User Feedback Center",
-  "/admin/disputes": "Refund Disputes",
   "/admin/locations": "Locations Registry",
   "/admin/skills": "Skills Catalog Seeding",
   "/admin/coupons": "Promo Coupon Codes",
