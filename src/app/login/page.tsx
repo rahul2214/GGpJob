@@ -255,9 +255,7 @@ export default function LoginPage() {
          
 
           <div className="mb-8">
-            <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
-              <Zap className="w-3 h-3" /> Candidate Login
-            </div>
+            
             <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Welcome back 👋</h2>
             <p className="text-slate-500">Sign in to continue your job search journey.</p>
           </div>

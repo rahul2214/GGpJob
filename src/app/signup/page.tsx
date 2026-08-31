@@ -39,7 +39,7 @@ const GoogleIcon = () => (
 
 const benefits = [
   { icon: Rocket, text: "Get hired 5x faster with direct applications", color: "text-amber-400" },
-  { icon: CheckCircle2, text: "Free forever â€” no hidden charges", color: "text-emerald-400" },
+  { icon: CheckCircle2, text: "Free forever no hidden charges", color: "text-emerald-400" },
   { icon: ShieldCheck, text: "Your data is always private & secure", color: "text-sky-400" },
 ];
 
@@ -223,10 +223,8 @@ export default function SignupPage() {
 
 
           <div className="mb-7">
-            <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
-              <Zap className="w-3 h-3" /> Candidate Sign Up
-            </div>
-            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-1">Create your account âœ¨</h2>
+            
+            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-1">Create your account</h2>
             <p className="text-slate-500 text-sm">Free forever. No credit card required.</p>
           </div>
 
