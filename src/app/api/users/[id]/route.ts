@@ -4,15 +4,42 @@ import { User } from '@/lib/types';
 import { resolveResumeUrl } from '@/lib/resolve-resume';
 import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
-// Helper to normalize YYYY-MM to YYYY-MM-DD for PostgreSQL DATE type
-function normalizeDate(dateStr: string | null | undefined): string | null | undefined {
-    if (!dateStr || (typeof dateStr === 'string' && dateStr.trim() === '')) {
+// Helper to normalize any date input (YYYY, YYYY-M, YYYY-MM, YYYY-M-D, etc.) to valid YYYY-MM-DD for PostgreSQL DATE type
+function normalizeDate(dateStr: string | null | undefined): string | null {
+    if (!dateStr || typeof dateStr !== 'string' || !dateStr.trim()) {
         return null;
     }
-    if (typeof dateStr === 'string' && /^\d{4}-\d{2}$/.test(dateStr)) {
-        return `${dateStr}-01`;
+    const trimmed = dateStr.trim();
+    
+    // YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+        return trimmed;
     }
-    return dateStr;
+    // YYYY-M-D or YYYY-MM-D or YYYY-M-DD
+    const ymdMatch = trimmed.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+    if (ymdMatch) {
+        const [, y, m, d] = ymdMatch;
+        return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+    // YYYY-MM or YYYY-M
+    const ymMatch = trimmed.match(/^(\d{4})[-/](\d{1,2})$/);
+    if (ymMatch) {
+        const [, y, m] = ymMatch;
+        return `${y}-${m.padStart(2, '0')}-01`;
+    }
+    // YYYY alone
+    if (/^\d{4}$/.test(trimmed)) {
+        return `${trimmed}-01-01`;
+    }
+    // Fallback: Try native Date parse
+    const parsed = new Date(trimmed);
+    if (!isNaN(parsed.getTime())) {
+        const y = parsed.getUTCFullYear();
+        const m = String(parsed.getUTCMonth() + 1).padStart(2, '0');
+        const d = String(parsed.getUTCDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    return null;
 }
 
 // Helper to ensure jobseekers metadata ONLY stores UI state flags (hasSeenReferralPrompt, referralStepDismissed, etc.)
@@ -183,11 +210,11 @@ async function mapProfileToUser(profile: any): Promise<User> {
             cityName: pl.cities?.name,
             formattedLocation: [pl.cities?.name, pl.states_provinces?.name, pl.countries?.name].filter(Boolean).join(', ')
         })),
-        country: profile.countries?.name || profile.country || null,
-        state: profile.states_provinces?.name || profile.state || null,
+        country: profile.cities?.states_provinces?.countries?.name || profile.countries?.name || profile.country || null,
+        state: profile.cities?.states_provinces?.name || profile.states_provinces?.name || profile.state || null,
         currentCity: profile.cities?.name || profile.current_city || null,
-        countryId: profile.current_country_id || null,
-        stateId: profile.current_state_province_id || null,
+        countryId: profile.cities?.states_provinces?.countries?.id || profile.current_country_id || null,
+        stateId: profile.cities?.states_provinces?.id || profile.current_state_province_id || null,
         cityId: profile.current_city_id || null,
         preferredJobTitles: profile.preferred_job_titles || profile.metadata?.preferredJobTitles || [],
         preferredSalaryMin: profile.preferred_salary_min ?? profile.metadata?.preferredSalaryMin,
@@ -333,7 +360,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
                 jobseeker_skills(proficiency_level, years_experience, skills(id, uuid, name)),
                 countries:current_country_id(id, name, code),
                 states_provinces:current_state_province_id(id, name, code),
-                cities:current_city_id(id, name, is_featured),
+                cities:current_city_id(id, name, is_featured, states_provinces:state_province_id(id, name, code, countries:country_id(id, name, code))),
                 jobseeker_achievements:jobseeker_achievements!jobseeker_id(*),
                 jobseeker_certifications:jobseeker_certifications!jobseeker_id(*),
                 jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name)),
@@ -584,8 +611,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 sId = null;
             }
 
-            // 3. Resolve City (prefer cleanCityName over stale rest.cityId)
-            if (cleanCityName && sId) {
+            // 3. Resolve City
+            if (cleanCityName && sId && !ciId) {
                 const { data: ciObj } = await supabaseAdmin
                     .from('cities')
                     .select('id')
@@ -593,7 +620,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                     .ilike('name', cleanCityName)
                     .maybeSingle();
                 if (ciObj) ciId = ciObj.id;
-            } else if (!cleanCityName) {
+            } else if (cleanCityName && !ciId) {
+                const { data: ciObj } = await supabaseAdmin
+                    .from('cities')
+                    .select('id')
+                    .ilike('name', cleanCityName)
+                    .maybeSingle();
+                if (ciObj) ciId = ciObj.id;
+            } else if (!cleanCityName && !rest.cityId) {
                 ciId = null;
             }
 
@@ -665,9 +699,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 ...(rest.openToRelocate !== undefined && { open_to_relocate: rest.openToRelocate }),
                 ...(rest.openToRelocation !== undefined && { open_to_relocate: rest.openToRelocation }),
                 ...(rest.openWorldwide !== undefined && { open_worldwide: rest.openWorldwide }),
-                ...(rest.country !== undefined || rest.countryId !== undefined ? { current_country_id: cId } : {}),
-                ...(rest.state !== undefined || rest.stateId !== undefined ? { current_state_province_id: sId } : {}),
-                ...(rest.currentCity !== undefined || rest.cityId !== undefined ? { current_city_id: ciId } : {}),
+                ...(rest.currentCity !== undefined || rest.cityId !== undefined || rest.country !== undefined || rest.state !== undefined
+                    ? {
+                        current_city_id: ciId,
+                        current_country_id: null,
+                        current_state_province_id: null,
+                    }
+                    : {}),
             });
 
             if (rest.referredBy !== undefined) {
@@ -701,7 +739,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 jobseeker_skills(skills(id, uuid, name)),
                 countries:current_country_id(id, name, code),
                 states_provinces:current_state_province_id(id, name, code),
-                cities:current_city_id(id, name, is_featured),
+                cities:current_city_id(id, name, is_featured, states_provinces:state_province_id(id, name, code, countries:country_id(id, name, code))),
                 jobseeker_achievements:jobseeker_achievements!jobseeker_id(*),
                 jobseeker_certifications:jobseeker_certifications!jobseeker_id(*),
                 jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name))
@@ -1020,7 +1058,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                     jobseeker_skills(skills(id, uuid, name)),
                     countries:current_country_id(id, name, code),
                     states_provinces:current_state_province_id(id, name, code),
-                    cities:current_city_id(id, name, is_featured),
+                    cities:current_city_id(id, name, is_featured, states_provinces:state_province_id(id, name, code, countries:country_id(id, name, code))),
                     jobseeker_achievements:jobseeker_achievements!jobseeker_id(*),
                     jobseeker_certifications:jobseeker_certifications!jobseeker_id(*),
                     jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name))

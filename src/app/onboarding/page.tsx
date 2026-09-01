@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { LoaderCircle, FileText, CheckCircle2, UploadCloud, Building2, ChevronRight, Phone, Sparkles, X, ArrowLeft, GraduationCap, Briefcase, Award, Plus, Trash2, Layers, Globe } from "lucide-react";
+import { LoaderCircle, FileText, CheckCircle2, UploadCloud, Building2, ChevronRight, Phone, Sparkles, X, ArrowLeft, GraduationCap, Briefcase, Award, Plus, Trash2, Layers, Globe, ChevronsUpDown, Check, MapPin } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/lib/supabase-client";
@@ -17,6 +17,114 @@ import { isOnboardingComplete } from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
 import { COUNTRY_CODES } from "@/utils/country-codes";
 import { CountryCodeSelect } from "@/components/country-code-select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+
+function SearchableCombobox({
+  options,
+  value,
+  onSelect,
+  placeholder,
+  disabled = false,
+  emptyText = "No results found.",
+  className = ""
+}: {
+  options: { id: number; name: string }[];
+  value?: string | number | null;
+  onSelect: (option: { id: number; name: string }) => void;
+  placeholder: string;
+  disabled?: boolean;
+  emptyText?: string;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+
+  const selectedOption = options.find(
+    (o) => o.id === Number(value) || o.name.toLowerCase() === String(value || '').toLowerCase()
+  );
+
+  const displayValue = selectedOption ? selectedOption.name : (value ? String(value) : "");
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          type="button"
+          aria-expanded={open}
+          disabled={disabled}
+          className={cn(
+            "w-full justify-between font-normal text-left h-11 px-3 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl shadow-none text-slate-900 dark:text-white",
+            disabled && "opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800",
+            className
+          )}
+        >
+          <span className={cn("truncate text-sm font-medium", !displayValue && "text-slate-400 font-normal")}>
+            {displayValue || placeholder}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[280px] p-0 rounded-2xl shadow-xl z-50 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800" align="start">
+        <Command className="rounded-2xl">
+          <CommandInput 
+            placeholder={`Search ${placeholder.toLowerCase()}...`} 
+            value={searchValue}
+            onValueChange={setSearchValue}
+            className="h-10 text-xs"
+          />
+          <CommandList className="max-h-60 overflow-y-auto p-1">
+            <CommandEmpty className="p-3 text-center text-xs text-slate-500">
+              <p>{emptyText}</p>
+              {searchValue.trim() && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 text-indigo-600 hover:text-indigo-700 text-xs w-full font-bold"
+                  onClick={() => {
+                    onSelect({ id: 0, name: searchValue.trim() });
+                    setOpen(false);
+                    setSearchValue("");
+                  }}
+                >
+                  Use "{searchValue.trim()}"
+                </Button>
+              )}
+            </CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => {
+                const isSelected = selectedOption?.id === option.id || selectedOption?.name.toLowerCase() === option.name.toLowerCase();
+                return (
+                  <CommandItem
+                    key={option.id}
+                    value={option.name}
+                    onSelect={() => {
+                      onSelect(option);
+                      setOpen(false);
+                      setSearchValue("");
+                    }}
+                    className="cursor-pointer text-xs font-semibold rounded-lg px-2.5 py-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-3.5 w-3.5 text-indigo-600",
+                        isSelected ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {option.name}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export default function OnboardingPage() {
     const { user, loading, setUser } = useUser();
@@ -24,12 +132,17 @@ export default function OnboardingPage() {
     const { toast } = useToast();
 
     const [masterSkills, setMasterSkills] = useState<MasterSkill[]>([]);
+    const [dbCountries, setDbCountries] = useState<{ id: number; name: string }[]>([]);
+    const [dbStates, setDbStates] = useState<{ id: number; name: string }[]>([]);
+    const [dbCities, setDbCities] = useState<{ id: number; name: string }[]>([]);
     const [selectedCountry, setSelectedCountry] = useState<string>("");
     const [selectedState, setSelectedState] = useState<string>("");
     const [selectedCity, setSelectedCity] = useState<string>("");
-    const [selectedCountryId, setSelectedCountryId] = useState<string | number | undefined>(undefined);
-    const [selectedStateId, setSelectedStateId] = useState<string | number | undefined>(undefined);
-    const [selectedCityId, setSelectedCityId] = useState<string | number | undefined>(undefined);
+    const [selectedCountryId, setSelectedCountryId] = useState<number | null>(null);
+    const [selectedStateId, setSelectedStateId] = useState<number | null>(null);
+    const [selectedCityId, setSelectedCityId] = useState<number | null>(null);
+    const [loadingStates, setLoadingStates] = useState(false);
+    const [loadingCities, setLoadingCities] = useState(false);
     const [phone, setPhone] = useState<string>("");
     const [countryCode, setCountryCode] = useState<string>("+91");
     const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -189,6 +302,19 @@ export default function OnboardingPage() {
 
     useEffect(() => {
         if (user) {
+            if ((user.country || user.countryId) && !selectedCountry && !selectedCountryId) {
+                setSelectedCountry(user.country || "");
+                if (user.countryId) setSelectedCountryId(Number(user.countryId));
+            }
+            if ((user.state || user.stateId) && !selectedState && !selectedStateId) {
+                setSelectedState(user.state || "");
+                if (user.stateId) setSelectedStateId(Number(user.stateId));
+            }
+            if ((user.currentCity || user.cityId) && !selectedCity && !selectedCityId) {
+                setSelectedCity(user.currentCity || "");
+                if (user.cityId) setSelectedCityId(Number(user.cityId));
+            }
+
             if (user.education && user.education.length > 0 && education.length === 0) {
                 setEducation(user.education.map(e => ({
                     institution: e.institution || "",
@@ -317,17 +443,54 @@ export default function OnboardingPage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [skillsRes] = await Promise.all([
+                const [skillsRes, countriesRes] = await Promise.all([
                     fetch('/api/skills'),
+                    fetch('/api/geo?type=countries'),
                 ]);
                
                 if (skillsRes.ok) setMasterSkills(await skillsRes.json());
+                if (countriesRes.ok) {
+                    const countriesData = await countriesRes.json();
+                    if (Array.isArray(countriesData)) setDbCountries(countriesData);
+                }
             } catch (error) {
                 console.error("Failed to fetch onboarding data", error);
             }
         };
         fetchData();
     }, []);
+
+    // Cascading fetch: Load states when selectedCountryId changes
+    useEffect(() => {
+        if (selectedCountryId) {
+            setLoadingStates(true);
+            fetch(`/api/geo?type=states&countryId=${selectedCountryId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) setDbStates(data);
+                })
+                .catch(err => console.error("Failed to load states", err))
+                .finally(() => setLoadingStates(false));
+        } else {
+            setDbStates([]);
+        }
+    }, [selectedCountryId]);
+
+    // Cascading fetch: Load cities when selectedStateId changes
+    useEffect(() => {
+        if (selectedStateId) {
+            setLoadingCities(true);
+            fetch(`/api/geo?type=cities&stateId=${selectedStateId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) setDbCities(data);
+                })
+                .catch(err => console.error("Failed to load cities", err))
+                .finally(() => setLoadingCities(false));
+        } else {
+            setDbCities([]);
+        }
+    }, [selectedStateId]);
 
     const handleParseResume = async () => {
         if (!resumeFile) return;
@@ -463,7 +626,24 @@ export default function OnboardingPage() {
         e.preventDefault();
         if (!user) return;
 
-       
+        const finalCountry = selectedCountry || user.country;
+        const finalState = selectedState || user.state;
+        const finalCity = selectedCity || user.currentCity;
+        const finalCityId = selectedCityId || user.cityId;
+
+        if (!finalCountry) {
+            toast({ title: "Country Required", description: "Please select your country.", variant: "destructive" });
+            return;
+        }
+        if (!finalState) {
+            toast({ title: "State Required", description: "Please select your state / province.", variant: "destructive" });
+            return;
+        }
+        if (!finalCity && !finalCityId) {
+            toast({ title: "City Required", description: "Please select your city.", variant: "destructive" });
+            return;
+        }
+
         if ((!user.phone || user.phone.length < 10) && (!phone || phone.length < 10)) {
             toast({ title: "Phone Required", description: "Please enter a valid 10-digit phone number.", variant: "destructive" });
             return;
@@ -1032,31 +1212,75 @@ export default function OnboardingPage() {
                 <form onSubmit={handleSubmit} className="space-y-8">
 
                     {/* Location Hierarchy Selector */}
-                    {needsLocation && (
-                        <div className="space-y-3 bg-gradient-to-b from-indigo-50/40 via-slate-50/40 to-slate-50/40 dark:from-slate-900/60 dark:to-slate-900/30 p-6 rounded-2xl border border-indigo-100/80 dark:border-slate-800">
-                            <label className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-1">
+                    <div className="space-y-4 bg-gradient-to-b from-indigo-50/40 via-slate-50/40 to-slate-50/40 dark:from-slate-900/60 dark:to-slate-900/30 p-6 rounded-2xl border border-indigo-100/80 dark:border-slate-800">
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                                 <Globe className="w-4 h-4 text-indigo-500" />
-                                Select your Primary Location
+                                Your Primary Location <span className="text-rose-500 font-bold">*</span>
                             </label>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <Input 
-                                    placeholder="Country" 
-                                    value={selectedCountry || user?.country || ""} 
-                                    onChange={(e) => setSelectedCountry(e.target.value)} 
+                            <span className="text-[11px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-0.5 rounded-full border border-rose-200 dark:border-rose-900/40">
+                                Required
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                                    Country <span className="text-rose-500">*</span>
+                                </label>
+                                <SearchableCombobox
+                                    options={dbCountries}
+                                    value={selectedCountryId || selectedCountry}
+                                    placeholder="Select Country"
+                                    emptyText="No countries found."
+                                    onSelect={(c) => {
+                                        setSelectedCountry(c.name);
+                                        setSelectedCountryId(c.id || null);
+                                        setSelectedState("");
+                                        setSelectedStateId(null);
+                                        setSelectedCity("");
+                                        setSelectedCityId(null);
+                                        setDbStates([]);
+                                        setDbCities([]);
+                                    }}
                                 />
-                                <Input 
-                                    placeholder="State / Province" 
-                                    value={selectedState || user?.state || ""} 
-                                    onChange={(e) => setSelectedState(e.target.value)} 
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                                    State / Province <span className="text-rose-500">*</span>
+                                </label>
+                                <SearchableCombobox
+                                    options={dbStates}
+                                    value={selectedStateId || selectedState}
+                                    placeholder={loadingStates ? "Loading states..." : "Select State"}
+                                    disabled={!selectedCountry && !selectedCountryId}
+                                    emptyText={(!selectedCountry && !selectedCountryId) ? "Select country first" : (loadingStates ? "Loading states..." : "No states found.")}
+                                    onSelect={(s) => {
+                                        setSelectedState(s.name);
+                                        setSelectedStateId(s.id || null);
+                                        setSelectedCity("");
+                                        setSelectedCityId(null);
+                                        setDbCities([]);
+                                    }}
                                 />
-                                <Input 
-                                    placeholder="City" 
-                                    value={selectedCity || user?.currentCity || ""} 
-                                    onChange={(e) => setSelectedCity(e.target.value)} 
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                                    City / Metro <span className="text-rose-500">*</span>
+                                </label>
+                                <SearchableCombobox
+                                    options={dbCities}
+                                    value={selectedCityId || selectedCity}
+                                    placeholder={loadingCities ? "Loading cities..." : "Select City"}
+                                    disabled={!selectedState && !selectedStateId}
+                                    emptyText={(!selectedState && !selectedStateId) ? "Select state first" : (loadingCities ? "Loading cities..." : "No cities found.")}
+                                    onSelect={(ci) => {
+                                        setSelectedCity(ci.name);
+                                        setSelectedCityId(ci.id || null);
+                                    }}
                                 />
                             </div>
                         </div>
-                    )}
+                    </div>
 
                     {/* Phone & Contact Details */}
                     {needsPhone && (

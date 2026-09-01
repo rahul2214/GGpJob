@@ -52,69 +52,27 @@ export async function GET(request: NextRequest) {
             getCount('applications', from, to, 'applied_at')
         ]);
 
-        // Referral & Direct Jobs counts (safe against missing is_referral column)
+        // Jobs count
         let totalReferralJobs = 0;
         let totalDirectJobsResult = 0;
 
-        try {
-            const { count: refCount, error: refErr } = await supabaseAdmin
-                .from('jobs')
-                .select('*', { count: 'exact', head: true })
-                .eq('is_referral', true);
-
-            if (!refErr && refCount !== null) {
-                totalReferralJobs = refCount;
-            }
-        } catch {
-            totalReferralJobs = 0;
-        }
-
-        try {
-            const { count: dirCount, error: dirErr } = await supabaseAdmin
-                .from('jobs')
-                .select('*', { count: 'exact', head: true })
-                .eq('is_referral', false);
-
-            if (!dirErr && dirCount !== null) {
-                totalDirectJobsResult = dirCount;
-            } else {
-                const { count: totalJobs } = await supabaseAdmin
-                    .from('jobs')
-                    .select('*', { count: 'exact', head: true });
-                totalDirectJobsResult = totalJobs || 0;
-            }
-        } catch {
-            const { count: totalJobs } = await supabaseAdmin
-                .from('jobs')
-                .select('*', { count: 'exact', head: true });
-            totalDirectJobsResult = totalJobs || 0;
-        }
+        const { count: totalJobs } = await supabaseAdmin
+            .from('jobs')
+            .select('*', { count: 'exact', head: true });
+        totalDirectJobsResult = totalJobs || 0;
 
         // 2. Fetch Grouped Data for Charts
-        let jobsByIndustryRaw: any[] | null = null;
-        const { data: rawWithRef, error: jobsErr } = await supabaseAdmin
+        const { data: rawJobs } = await supabaseAdmin
             .from('jobs')
-            .select('is_referral, industry');
+            .select('industry');
 
-        if (jobsErr) {
-            // Column is_referral does not exist on DB schema; fallback to selecting industry only
-            const { data: rawWithoutRef } = await supabaseAdmin
-                .from('jobs')
-                .select('industry');
-            jobsByIndustryRaw = rawWithoutRef || [];
-        } else {
-            jobsByIndustryRaw = rawWithRef || [];
-        }
+        const jobsByIndustryRaw = rawJobs || [];
 
         const directJobsByIndustryMap: Record<string, number> = {};
         const referralJobsByIndustryMap: Record<string, number> = {};
         jobsByIndustryRaw?.forEach((j: any) => {
             const name = j.industry || 'Other';
-            if (j.is_referral) {
-                referralJobsByIndustryMap[name] = (referralJobsByIndustryMap[name] || 0) + 1;
-            } else {
-                directJobsByIndustryMap[name] = (directJobsByIndustryMap[name] || 0) + 1;
-            }
+            directJobsByIndustryMap[name] = (directJobsByIndustryMap[name] || 0) + 1;
         });
 
         // Users Grouping by Country

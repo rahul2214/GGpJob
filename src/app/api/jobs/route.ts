@@ -260,8 +260,8 @@ export async function GET(request: NextRequest) {
         const postedDays = searchParams.get('posted');
         const nowIso = new Date().toISOString();
 
-        let recQuery = supabaseAdmin.from('jobs').select('*, job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name)').eq('status', 'active').gt('expires_at', nowIso).eq('is_referral', false).order('posted_at', { ascending: false });
-        let refQuery = supabaseAdmin.from('jobs').select('*, job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name)').eq('status', 'active').gt('expires_at', nowIso).eq('is_referral', true).limit(10).order('posted_at', { ascending: false });
+        let recQuery = supabaseAdmin.from('jobs').select('*, job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name)').eq('status', 'active').gt('expires_at', nowIso).order('posted_at', { ascending: false });
+        let refQuery = supabaseAdmin.from('jobs').select('*, job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name)').eq('status', 'active').gt('expires_at', nowIso).limit(10).order('posted_at', { ascending: false });
 
         if (appliedJobPks.length > 0) {
             recQuery = recQuery.not('id', 'in', `(${appliedJobPks.join(',')})`);
@@ -300,7 +300,6 @@ export async function GET(request: NextRequest) {
                     .select('*, job_types!job_type_pk(uuid, name), workplace_types!workplace_type_pk(uuid, name), company_sizes!company_size_id(name)')
                     .eq('status', 'active')
                     .gt('expires_at', nowIso)
-                    .eq('is_referral', false)
                     .in('id', matchedJobPks);
 
                 if (appliedJobPks.length > 0) {
@@ -374,11 +373,6 @@ export async function GET(request: NextRequest) {
 
     // General Filters
     const isRecommended = searchParams.get('view') === 'recommended';
-
-    if (searchParams.get('isReferral') !== null) {
-      query = query.eq('is_referral', searchParams.get('isReferral') === 'true');
-    }
-
     const isReferralParam = searchParams.get('isReferral') === 'true';
     // Handle Similar Jobs, Recommended Jobs, and Referral Lists
     const isSimilar = searchParams.get('similar') === 'true';
