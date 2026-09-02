@@ -190,6 +190,8 @@ async function mapProfileToUser(profile: any): Promise<User> {
         annualSalary: profile.annual_salary,
         expectedSalary: profile.expected_salary,
         salaryBreakdown: profile.salary_breakdown,
+        noticePeriod: profile.notice_periods?.name || profile.notice_period || profile.metadata?.noticePeriod || null,
+        noticePeriodId: profile.notice_period_id || profile.notice_periods?.id || profile.metadata?.noticePeriodId || undefined,
         preferredLocations: (profile.jobseeker_preferred_locations && profile.jobseeker_preferred_locations.length > 0)
             ? profile.jobseeker_preferred_locations.map((pl: any) => {
                 const parts = [
@@ -230,7 +232,21 @@ async function mapProfileToUser(profile: any): Promise<User> {
         workAuthorization: profile.work_authorization || profile.metadata?.workAuthorization || [],
         visaRequirementId: profile.visa_requirement_id || profile.visa_requirements?.id || undefined,
         visaRequirement: profile.visa_requirements?.name || profile.visa_requirement || profile.metadata?.visaRequirement || '',
+        workplaceTypeId: profile.workplace_type_id || profile.workplace_types?.id || profile.metadata?.workplaceTypeId || undefined,
+        workplaceType: profile.workplace_types?.name || (profile.workplace_type_id === 1 ? 'Remote' : profile.workplace_type_id === 2 ? 'On-site' : profile.workplace_type_id === 3 ? 'Hybrid' : profile.workplace_type_id === 4 ? 'Flexible / Any' : null) || profile.workplace_type || profile.metadata?.workplaceType || '',
         preferredLanguages: profile.preferred_languages || profile.metadata?.preferredLanguages || [],
+        hasUsedAtsChecker: profile.has_used_ats_checker ?? profile.metadata?.has_used_ats_checker ?? false,
+        has_used_ats_checker: profile.has_used_ats_checker ?? profile.metadata?.has_used_ats_checker ?? false,
+        hasSeenReferralPrompt: profile.has_seen_referral_prompt ?? profile.metadata?.hasSeenReferralPrompt ?? false,
+        has_seen_referral_prompt: profile.has_seen_referral_prompt ?? profile.metadata?.hasSeenReferralPrompt ?? false,
+        referralStepDismissed: profile.referral_step_dismissed ?? profile.metadata?.referralStepDismissed ?? false,
+        referral_step_dismissed: profile.referral_step_dismissed ?? profile.metadata?.referralStepDismissed ?? false,
+        hasUsedResumeBuilder: profile.has_used_resume_builder ?? profile.metadata?.has_used_resume_builder ?? false,
+        has_used_resume_builder: profile.has_used_resume_builder ?? profile.metadata?.has_used_resume_builder ?? false,
+        referralRewarded: profile.referral_rewarded ?? profile.metadata?.referral_rewarded ?? false,
+        referral_rewarded: profile.referral_rewarded ?? profile.metadata?.referral_rewarded ?? false,
+        referralRewardedAt: profile.referral_rewarded_at || profile.metadata?.referral_rewarded_at || null,
+        referral_rewarded_at: profile.referral_rewarded_at || profile.metadata?.referral_rewarded_at || null,
         planExpiresAt: profile.plan_expires_at,
         location: profile.location_id || undefined,
         metadata: cleanMetadata,
@@ -365,6 +381,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
                 jobseeker_certifications:jobseeker_certifications!jobseeker_id(*),
                 jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name)),
                 visa_requirements:visa_requirement_id(id, name),
+                workplace_types:workplace_type_id(id, name),
+                notice_periods:notice_period_id(id, name, days),
                 currencies:preferred_currency_id(id, code, symbol, name)
             `)
             .eq(column, idValue)
@@ -674,8 +692,29 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 }
             }
 
-            // Ensure metadata ONLY contains UI state flags (hasSeenReferralPrompt, referralStepDismissed, etc.)
-            const mergedMetadata = cleanJobseekerMetadata(rest.metadata || {});
+            const mergedMetadata = { ...(rest.metadata || {}) };
+
+            let wpId: number | null = null;
+            if (rest.workplaceTypeId !== undefined && rest.workplaceTypeId !== null && rest.workplaceTypeId !== '') {
+                wpId = Number(rest.workplaceTypeId);
+            } else if (rest.workplace_type_id !== undefined && rest.workplace_type_id !== null && rest.workplace_type_id !== '') {
+                wpId = Number(rest.workplace_type_id);
+            }
+
+            if (wpId) {
+                mergedMetadata.workplaceTypeId = wpId;
+            }
+
+            let npId: number | null = null;
+            if (rest.noticePeriodId !== undefined && rest.noticePeriodId !== null && rest.noticePeriodId !== '') {
+                npId = Number(rest.noticePeriodId);
+            } else if (rest.notice_period_id !== undefined && rest.notice_period_id !== null && rest.notice_period_id !== '') {
+                npId = Number(rest.notice_period_id);
+            }
+
+            if (npId) {
+                mergedMetadata.noticePeriodId = npId;
+            }
 
             Object.assign(updateData, {
                 headline: rest.headline,
@@ -695,6 +734,26 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 metadata: mergedMetadata,
                 referral_code: rest.referralCode,
                 referral_count: rest.referralCount,
+                ...(rest.has_used_ats_checker !== undefined || rest.hasUsedAtsChecker !== undefined || rest.metadata?.has_used_ats_checker !== undefined
+                    ? { has_used_ats_checker: Boolean(rest.has_used_ats_checker ?? rest.hasUsedAtsChecker ?? rest.metadata?.has_used_ats_checker) }
+                    : {}),
+                ...(rest.has_seen_referral_prompt !== undefined || rest.hasSeenReferralPrompt !== undefined || rest.metadata?.hasSeenReferralPrompt !== undefined || rest.metadata?.has_seen_referral_prompt !== undefined
+                    ? { has_seen_referral_prompt: Boolean(rest.has_seen_referral_prompt ?? rest.hasSeenReferralPrompt ?? rest.metadata?.hasSeenReferralPrompt ?? rest.metadata?.has_seen_referral_prompt) }
+                    : {}),
+                ...(rest.referral_step_dismissed !== undefined || rest.referralStepDismissed !== undefined || rest.metadata?.referralStepDismissed !== undefined || rest.metadata?.referral_step_dismissed !== undefined
+                    ? { referral_step_dismissed: Boolean(rest.referral_step_dismissed ?? rest.referralStepDismissed ?? rest.metadata?.referralStepDismissed ?? rest.metadata?.referral_step_dismissed) }
+                    : {}),
+                ...(rest.has_used_resume_builder !== undefined || rest.hasUsedResumeBuilder !== undefined || rest.metadata?.has_used_resume_builder !== undefined
+                    ? { has_used_resume_builder: Boolean(rest.has_used_resume_builder ?? rest.hasUsedResumeBuilder ?? rest.metadata?.has_used_resume_builder) }
+                    : {}),
+                ...(rest.referral_rewarded !== undefined || rest.referralRewarded !== undefined || rest.metadata?.referral_rewarded !== undefined
+                    ? { referral_rewarded: Boolean(rest.referral_rewarded ?? rest.referralRewarded ?? rest.metadata?.referral_rewarded) }
+                    : {}),
+                ...(rest.referral_rewarded_at !== undefined || rest.referralRewardedAt !== undefined || rest.metadata?.referral_rewarded_at !== undefined
+                    ? { referral_rewarded_at: rest.referral_rewarded_at ?? rest.referralRewardedAt ?? rest.metadata?.referral_rewarded_at }
+                    : {}),
+                ...(wpId !== null ? { workplace_type_id: wpId } : (rest.workplaceTypeId === null || rest.workplace_type_id === null ? { workplace_type_id: null } : {})),
+                ...(npId !== null ? { notice_period_id: npId } : (rest.noticePeriodId === null || rest.notice_period_id === null ? { notice_period_id: null } : {})),
                 ...(vReqId !== null ? { visa_requirement_id: vReqId } : {}),
                 ...(rest.openToRelocate !== undefined && { open_to_relocate: rest.openToRelocate }),
                 ...(rest.openToRelocation !== undefined && { open_to_relocate: rest.openToRelocation }),
@@ -731,6 +790,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             selectString = `
                 *, 
                 roles(name),
+                workplace_types:workplace_type_id(id, uuid, name),
+                notice_periods:notice_period_id(id, uuid, name, days),
                 education(*),
                 experience(*),
                 projects(*),

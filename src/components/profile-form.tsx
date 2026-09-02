@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { useEffect, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "next/navigation";
-import { User, CompanySize, VisaRequirement } from "@/lib/types";
+import { User, CompanySize, VisaRequirement, NoticePeriod } from "@/lib/types";
 import { MultiSelectFilter } from "./multi-select-filter";
 import { COUNTRY_CODES, parsePhoneNumber } from "@/utils/country-codes";
 import { CountryCodeSelect } from "./country-code-select";
@@ -208,7 +208,8 @@ const formSchema = z.object({
     annualSalary: z.coerce.number().optional().or(z.literal('')),
     expectedSalary: z.coerce.number().optional().or(z.literal('')),
     salaryBreakdown: z.enum(['Fixed', 'Fixed + Variable', 'Fixed + Variable + Stocks', 'Fixed + Stocks']).nullable().optional().or(z.literal('')),
-    noticePeriod: z.enum(['15 Days or less', '1 Month', '2 Months', '3 Months', 'More than 3 Months', 'Serving Notice Period']).nullable().optional().or(z.literal('')),
+    noticePeriod: z.string().nullable().optional().or(z.literal('')),
+    noticePeriodId: z.coerce.number().optional().nullable(),
     companyName: z.string().optional().or(z.literal('')),
     companyWebsite: z.string().optional().or(z.literal('')),
     companySizeId: z.string().optional().or(z.literal('')),
@@ -228,6 +229,7 @@ const formSchema = z.object({
     workAuthorization: z.array(z.string()).optional(),
     visaRequirement: z.string().optional(),
     visaRequirementId: z.number().nullable().optional(),
+    workplaceTypeId: z.coerce.number().optional().nullable(),
     preferredLanguages: z.array(z.string()).optional(),
 });
 
@@ -243,6 +245,8 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
     const { setUser } = useUser();
     const [companySizes, setCompanySizes] = useState<CompanySize[]>([]);
     const [visaRequirements, setVisaRequirements] = useState<VisaRequirement[]>([]);
+    const [workplaceTypes, setWorkplaceTypes] = useState<{ id: number; name: string }[]>([]);
+    const [noticePeriods, setNoticePeriods] = useState<NoticePeriod[]>([]);
     const isMobile = useIsMobile();
     const router = useRouter();
 
@@ -265,12 +269,18 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [sizesRes, visaRes] = await Promise.all([
+                const [sizesRes, visaRes, workplaceRes, noticeRes] = await Promise.all([
                     fetch('/api/company-sizes'),
-                    fetch('/api/visa-requirements')
+                    fetch('/api/visa-requirements'),
+                    fetch('/api/workplace-types'),
+                    fetch('/api/notice-periods')
                 ]);
                 setCompanySizes(await sizesRes.json());
                 setVisaRequirements(await visaRes.json());
+                const wpData = await workplaceRes.json();
+                if (Array.isArray(wpData)) setWorkplaceTypes(wpData);
+                const npData = await noticeRes.json();
+                if (Array.isArray(npData)) setNoticePeriods(npData);
             } catch (error) {
                 console.error("Failed to fetch form data", error);
             }
@@ -302,6 +312,7 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
             expectedSalary: user.expectedSalary || "" as any,
             salaryBreakdown: user.salaryBreakdown || "" as any,
             noticePeriod: user.noticePeriod || "" as any,
+            noticePeriodId: (user as any).noticePeriodId || (user as any).notice_period_id || null,
             companyName: user.companyName || "",
             companyWebsite: user.companyWebsite || "",
             companySizeId: user.companySizeId || "",
@@ -320,6 +331,7 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
             openWorldwide: user.openWorldwide ?? false,
             workAuthorization: user.workAuthorization || [],
             visaRequirement: user.visaRequirement || "",
+            workplaceTypeId: (user as any).workplaceTypeId || (user as any).workplace_type_id || null,
             preferredLanguages: user.preferredLanguages || [],
         },
     });
@@ -409,6 +421,7 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
             expectedSalary: user.expectedSalary || "" as any,
             salaryBreakdown: user.salaryBreakdown || "" as any,
             noticePeriod: user.noticePeriod || "" as any,
+            noticePeriodId: (user as any).noticePeriodId || (user as any).notice_period_id || null,
             companyName: user.companyName || "",
             companyWebsite: user.companyWebsite || "",
             companySizeId: user.companySizeId ? String(user.companySizeId) : "",
@@ -427,6 +440,7 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
             openWorldwide: user.openWorldwide ?? false,
             workAuthorization: user.workAuthorization || [],
             visaRequirement: user.visaRequirement || "",
+            workplaceTypeId: (user as any).workplaceTypeId || (user as any).workplace_type_id || null,
             preferredLanguages: user.preferredLanguages || [],
         });
     }, [user, reset]);
@@ -468,7 +482,7 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                 headers["Authorization"] = `Bearer ${token}`;
             }
 
-            const { countryId, stateId, cityId, visaRequirementId, ...userClean } = user as any;
+            const { countryId, stateId, cityId, visaRequirementId, workplaceTypeId, noticePeriodId, ...userClean } = user as any;
             const response = await fetch(`/api/users/${user.uuid}`, {
                 method: "PUT",
                 headers,
@@ -547,7 +561,9 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                             </div>
                             <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
                                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Notice Period</span>
-                                <span className="text-sm text-slate-800 font-medium">{user.noticePeriod || "Not specified"}</span>
+                                <span className="text-sm text-slate-800 font-medium">
+                                    {noticePeriods.find(np => np.id === (user as any).noticePeriodId || np.id === (user as any).notice_period_id)?.name || user.noticePeriod || "Not specified"}
+                                </span>
                             </div>
                             <div className="flex flex-col gap-1.5 border-b border-slate-100 pb-3">
                                  <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1">
@@ -570,6 +586,12 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                                      </div>
                                  </div>
                              </div>
+                            <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
+                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Work Preference</span>
+                                <span className="text-sm text-slate-800 font-medium">
+                                    {workplaceTypes.find(wt => wt.id === (user as any).workplaceTypeId || wt.id === (user as any).workplace_type_id)?.name || user.workplaceType || (user.remotePreference ? user.remotePreference.toUpperCase() : "Not specified")}
+                                </span>
+                            </div>
                             <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
                                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Preferred Locations</span>
                                 <span className="text-sm text-slate-800 font-medium">
@@ -765,26 +787,44 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                             />
                             <FormField
                                 control={form.control}
-                                name="remotePreference"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-slate-600">Work Preference</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value || "any"}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select preference" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="any">Flexible / Any</SelectItem>
-                                                <SelectItem value="remote">Remote Only</SelectItem>
-                                                <SelectItem value="hybrid">Hybrid</SelectItem>
-                                                <SelectItem value="onsite">On-site</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
+                                name="workplaceTypeId"
+                                render={({ field }) => {
+                                    const currentWpId = field.value;
+                                    return (
+                                        <FormItem>
+                                            <FormLabel className="text-slate-600">Work Preference</FormLabel>
+                                            <Select 
+                                                onValueChange={(val) => {
+                                                    const idNum = val ? Number(val) : null;
+                                                    field.onChange(idNum);
+                                                    const matched = workplaceTypes.find(wt => wt.id === idNum);
+                                                    if (matched) {
+                                                        const lower = matched.name.toLowerCase();
+                                                        if (lower.includes('remote')) form.setValue('remotePreference', 'remote');
+                                                        else if (lower.includes('hybrid')) form.setValue('remotePreference', 'hybrid');
+                                                        else if (lower.includes('site') || lower.includes('on-site')) form.setValue('remotePreference', 'onsite');
+                                                        else form.setValue('remotePreference', 'any');
+                                                    }
+                                                }} 
+                                                value={currentWpId ? String(currentWpId) : ""}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select work preference" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {workplaceTypes.map((wt) => (
+                                                        <SelectItem key={wt.id} value={String(wt.id)}>
+                                                            {wt.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    );
+                                }}
                             />
                             <FormField
                                 control={form.control}
@@ -1015,28 +1055,44 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                                     />
                                     <FormField
                                         control={form.control}
-                                        name="noticePeriod"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-slate-600">Notice Period</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value || ""}>
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Select notice period" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="15 Days or less">15 Days or less</SelectItem>
-                                                        <SelectItem value="1 Month">1 Month</SelectItem>
-                                                        <SelectItem value="2 Months">2 Months</SelectItem>
-                                                        <SelectItem value="3 Months">3 Months</SelectItem>
-                                                        <SelectItem value="More than 3 Months">More than 3 Months</SelectItem>
-                                                        <SelectItem value="Serving Notice Period">Serving Notice Period</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
+                                        name="noticePeriodId"
+                                        render={({ field }) => {
+                                            const currentId = field.value;
+                                            const currentName = form.watch("noticePeriod") || "";
+                                            const activeObj = noticePeriods.find(
+                                                np => (currentId && np.id === Number(currentId)) || (currentName && np.name.toLowerCase() === currentName.toLowerCase())
+                                            );
+                                            return (
+                                                <FormItem>
+                                                    <FormLabel className="text-slate-600">Notice Period</FormLabel>
+                                                    <Select 
+                                                        onValueChange={(val) => {
+                                                            const idNum = val ? Number(val) : null;
+                                                            field.onChange(idNum);
+                                                            const matched = noticePeriods.find(np => np.id === idNum);
+                                                            if (matched) {
+                                                                form.setValue("noticePeriod", matched.name);
+                                                            }
+                                                        }} 
+                                                        value={activeObj ? String(activeObj.id) : (currentId ? String(currentId) : "")}
+                                                    >
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select notice period" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {noticePeriods.map((np) => (
+                                                                <SelectItem key={np.id} value={String(np.id)}>
+                                                                    {np.name}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            );
+                                        }}
                                     />
                                 </div>
 

@@ -221,7 +221,7 @@ export function AtsChecker() {
       return
     }
 
-    const hasUsedAts = user.metadata?.has_used_ats_checker === true
+    const hasUsedAts = user.has_used_ats_checker === true || user.hasUsedAtsChecker === true || user.metadata?.has_used_ats_checker === true
     const totalCredits = user.totalCredits ?? 0
     
     if (hasUsedAts && totalCredits < 1) {
@@ -396,7 +396,7 @@ export function AtsChecker() {
                 <div className="flex items-center justify-between text-xs border rounded-2xl p-3 bg-slate-50/40 dark:bg-slate-950/20 border-slate-200/40 dark:border-slate-850">
                   <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-medium">
                     <Coins className="w-4 h-4 text-indigo-500 shrink-0" />
-                    {!user.metadata?.has_used_ats_checker ? (
+                    {!(user.has_used_ats_checker || user.hasUsedAtsChecker || user.metadata?.has_used_ats_checker) ? (
                       <span>First scan is <strong className="text-indigo-600 dark:text-indigo-400 font-bold">FREE</strong>!</span>
                     ) : (
                       <span>Scan cost: <strong className="font-semibold text-slate-700 dark:text-slate-350">1 Credit</strong></span>
@@ -412,7 +412,7 @@ export function AtsChecker() {
                 </div>
               )}
 
-              {user && user.metadata?.has_used_ats_checker && (user.totalCredits || 0) < 1 && (
+              {user && (user.has_used_ats_checker || user.hasUsedAtsChecker || user.metadata?.has_used_ats_checker) && (user.totalCredits || 0) < 1 && (
                 <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-100 text-rose-800 dark:bg-rose-950/10 dark:border-rose-900/30 dark:text-rose-400 text-xs flex flex-col gap-2 shadow-sm">
                   <p className="font-medium">You need at least 1 credit to perform this scan.</p>
                   <Link href="/jobseeker/credits" className="text-indigo-600 dark:text-indigo-400 font-bold underline hover:text-indigo-700 flex items-center gap-1">
@@ -425,7 +425,7 @@ export function AtsChecker() {
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold h-11 shadow-md hover:shadow-lg transition-all duration-300 rounded-xl" 
                 size="lg" 
                 onClick={handleAnalyze}
-                disabled={!file || isUploading || (user && user.metadata?.has_used_ats_checker && (user.totalCredits || 0) < 1)}
+                disabled={!file || isUploading || (user && (user.has_used_ats_checker || user.hasUsedAtsChecker || user.metadata?.has_used_ats_checker) && (user.totalCredits || 0) < 1)}
               >
                 {isUploading ? (
                   <>

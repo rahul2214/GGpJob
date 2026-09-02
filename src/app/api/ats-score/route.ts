@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     if (userId) {
       const { data: jobseeker, error: dbErr } = await supabaseAdmin
         .from('jobseekers')
-        .select('id, uuid, subscription_credits, purchased_credits, metadata')
+        .select('id, uuid, subscription_credits, purchased_credits, has_used_ats_checker, metadata')
         .eq('uuid', userId)
         .maybeSingle()
 
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
         console.error("Database fetch error for jobseeker:", dbErr)
       } else if (jobseeker) {
         jobseekerRecord = jobseeker
-        isFirstTime = !jobseeker.metadata?.has_used_ats_checker
+        isFirstTime = !(jobseeker.has_used_ats_checker ?? jobseeker.metadata?.has_used_ats_checker)
         
         // If not first time, check credit balance
         if (!isFirstTime) {
@@ -271,7 +271,10 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks (e.g., no \`\`\`
           const newMetadata = { ...currentMetadata, has_used_ats_checker: true }
           await supabaseAdmin
             .from('jobseekers')
-            .update({ metadata: newMetadata })
+            .update({ 
+              has_used_ats_checker: true,
+              metadata: newMetadata 
+            })
             .eq('id', jobseekerRecord.id)
           console.log(`[ATS_SCORE_API] Mark has_used_ats_checker for user: ${userId}`)
         } else {

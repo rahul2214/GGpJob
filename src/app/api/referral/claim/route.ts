@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     // 2. Find the referee (the current user claiming the code)
     const { data: referee, error: refereeErr } = await supabaseAdmin
       .from('jobseekers')
-      .select('id, uuid, name, email, referred_by, metadata')
+      .select('id, uuid, name, email, referred_by, referral_rewarded, referral_rewarded_at, metadata')
       .eq('uuid', userUuid.trim())
       .maybeSingle();
 
@@ -58,15 +58,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Check if user was already referred by someone
+    // 4. Check if already referred by someone else
     if (referee.referred_by && referee.referred_by !== referrer.id) {
       return NextResponse.json(
-        { error: 'A referral code has already been applied to this account.' },
+        { error: 'You have already applied a referral code.' },
         { status: 400 }
       );
     }
 
-    // 5. Update referee with referred_by
+    // 5. Update the referee's referred_by
     const { error: updateRefereeErr } = await supabaseAdmin
       .from('jobseekers')
       .update({
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
       .eq('id', referee.id);
 
     if (updateRefereeErr) {
-      console.error('[API_REFERRAL_CLAIM_UPDATE_REFEREE_ERROR]:', updateRefereeErr);
+      console.error('[API_REFERRAL_CLAIM_UPDATE_REFEREE_ERR]:', updateRefereeErr);
       return NextResponse.json(
         { error: 'Failed to apply referral to profile.' },
         { status: 500 }
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(referee.uuid);
     const isEmailConfirmed = Boolean(authUser?.user?.email_confirmed_at);
 
-    if (isEmailConfirmed && !referee.metadata?.referral_rewarded) {
+    if (isEmailConfirmed && !(referee.referral_rewarded ?? referee.metadata?.referral_rewarded)) {
       // 1. Award 2 credits to Referrer
       const { error: rpcError } = await supabaseAdmin.rpc('add_purchased_credits', {
         p_user_id: referrer.id,
@@ -151,16 +151,19 @@ export async function POST(request: Request) {
         }
       ]);
 
-      // 4. Mark metadata as rewarded
+      // 4. Mark referral as rewarded
+      const nowIso = new Date().toISOString();
       await supabaseAdmin
         .from('jobseekers')
         .update({
+          referral_rewarded: true,
+          referral_rewarded_at: nowIso,
           metadata: {
             ...(referee.metadata || {}),
             referral_rewarded: true,
-            referral_rewarded_at: new Date().toISOString(),
+            referral_rewarded_at: nowIso,
           },
-          updated_at: new Date().toISOString(),
+          updated_at: nowIso,
         })
         .eq('id', referee.id);
     }

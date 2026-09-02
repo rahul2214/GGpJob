@@ -123,11 +123,11 @@ export async function POST(request: Request) {
       try {
         const { data: jobseeker } = await supabaseAdmin
           .from('jobseekers')
-          .select('id, name, referred_by, metadata')
+          .select('id, name, referred_by, referral_rewarded, referral_rewarded_at, metadata')
           .eq('uuid', targetUuid)
           .maybeSingle();
 
-        if (jobseeker && jobseeker.referred_by && !jobseeker.metadata?.referral_rewarded) {
+        if (jobseeker && jobseeker.referred_by && !(jobseeker.referral_rewarded ?? jobseeker.metadata?.referral_rewarded)) {
           const { data: referrer } = await supabaseAdmin
             .from('jobseekers')
             .select('id, referral_count')
@@ -203,14 +203,19 @@ export async function POST(request: Request) {
               .eq('id', referrer.id);
 
             // 5. Mark referral as rewarded on the referred user
+            const nowIso = new Date().toISOString();
             const updatedMetadata = {
               ...(jobseeker.metadata || {}),
               referral_rewarded: true,
-              referral_rewarded_at: new Date().toISOString(),
+              referral_rewarded_at: nowIso,
             };
             await supabaseAdmin
               .from('jobseekers')
-              .update({ metadata: updatedMetadata })
+              .update({ 
+                referral_rewarded: true,
+                referral_rewarded_at: nowIso,
+                metadata: updatedMetadata 
+              })
               .eq('id', jobseeker.id);
             
             console.log(`[confirm-email] Both users rewarded 2 credits successfully: Referrer ID ${referrer.id} and Referee ID ${jobseeker.id}`);

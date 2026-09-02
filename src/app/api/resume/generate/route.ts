@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     if (userId) {
       const { data: jobseeker, error: dbErr } = await supabaseAdmin
         .from('jobseekers')
-        .select('id, uuid, subscription_credits, purchased_credits, metadata')
+        .select('id, uuid, subscription_credits, purchased_credits, has_used_resume_builder, metadata')
         .eq('uuid', userId)
         .maybeSingle()
 
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
         console.error("Database fetch error for jobseeker:", dbErr)
       } else if (jobseeker) {
         jobseekerRecord = jobseeker
-        isFirstTime = !jobseeker.metadata?.has_used_resume_builder
+        isFirstTime = !(jobseeker.has_used_resume_builder ?? jobseeker.metadata?.has_used_resume_builder)
         
         // If not first time, check credit balance
         if (!isFirstTime) {
@@ -176,7 +176,10 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks, no explanations
           const newMetadata = { ...currentMetadata, has_used_resume_builder: true }
           await supabaseAdmin
             .from('jobseekers')
-            .update({ metadata: newMetadata })
+            .update({ 
+              has_used_resume_builder: true,
+              metadata: newMetadata 
+            })
             .eq('id', jobseekerRecord.id)
           console.log(`[RESUME_GENERATE_API] Mark has_used_resume_builder for user: ${userId}`)
         } else {

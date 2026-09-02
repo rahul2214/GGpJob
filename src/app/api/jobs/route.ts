@@ -467,16 +467,29 @@ export async function GET(request: NextRequest) {
         if (lpks.length > 0) query = query.overlaps('location_pks', lpks);
     } 
 
-    // Industry filter (replaces domain filter)
+    // Industry / Job Type filter
     const industryParams = searchParams.getAll('industry').flatMap(i => i.split(',')).filter(i => i && i !== 'all');
     if (industryParams.length > 0) {
-        query = query.in('industry', industryParams);
+        const jtPks = await resolveToPks('job_types', industryParams);
+        if (jtPks.length > 0) {
+            query = query.in('job_type_pk', jtPks);
+        }
     }
 
     // Country filter
     const countryParams = searchParams.getAll('country').flatMap(c => c.split(',')).filter(c => c && c !== 'all');
     if (countryParams.length > 0) {
-        query = query.in('country', countryParams);
+        const countryPks = await resolveToPks('countries', countryParams);
+        if (countryPks.length > 0) {
+            const { data: matchedJobLocations } = await supabaseAdmin
+                .from('job_locations')
+                .select('job_id')
+                .in('country_id', countryPks);
+            const jobIds = (matchedJobLocations || []).map((jl: any) => jl.job_id);
+            if (jobIds.length > 0) {
+                query = query.in('id', jobIds);
+            }
+        }
     }
 
     // Workplace / Remote type filter
@@ -596,11 +609,22 @@ export async function GET(request: NextRequest) {
         }
 
         if (industryParams.length > 0) {
-            fallbackQuery = fallbackQuery.in('industry', industryParams);
+            const jtPks = await resolveToPks('job_types', industryParams);
+            if (jtPks.length > 0) fallbackQuery = fallbackQuery.in('job_type_pk', jtPks);
         }
 
         if (countryParams.length > 0) {
-            fallbackQuery = fallbackQuery.in('country', countryParams);
+            const countryPks = await resolveToPks('countries', countryParams);
+            if (countryPks.length > 0) {
+                const { data: matchedJobLocations } = await supabaseAdmin
+                    .from('job_locations')
+                    .select('job_id')
+                    .in('country_id', countryPks);
+                const jobIds = (matchedJobLocations || []).map((jl: any) => jl.job_id);
+                if (jobIds.length > 0) {
+                    fallbackQuery = fallbackQuery.in('id', jobIds);
+                }
+            }
         }
 
         if (workplaceTypeParams.length > 0) {

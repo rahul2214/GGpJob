@@ -967,7 +967,7 @@ export default function ResumeBuilderPage() {
       return
     }
 
-    const hasUsedBuilder = user.metadata?.has_used_resume_builder === true
+    const hasUsedBuilder = user.has_used_resume_builder === true || user.hasUsedResumeBuilder === true || user.metadata?.has_used_resume_builder === true
     const totalCredits = user.totalCredits ?? 0
 
     if (hasUsedBuilder && totalCredits < 1) {
@@ -1850,7 +1850,7 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
             <div className="flex items-center justify-between text-[11px] border rounded-2xl p-3 bg-slate-50/50 dark:bg-slate-950/20 border-slate-200/40 dark:border-slate-850 shadow-sm">
               <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-medium">
                 <Coins className="w-4 h-4 text-indigo-500 shrink-0" />
-                {!user.metadata?.has_used_resume_builder ? (
+                {!(user.has_used_resume_builder || user.hasUsedResumeBuilder || user.metadata?.has_used_resume_builder) ? (
                   <span>First generation is <strong className="text-indigo-600 dark:text-indigo-400 font-bold">FREE</strong>!</span>
                 ) : (
                   <span>Cost: <strong className="font-bold text-slate-700 dark:text-slate-350">1 Credit</strong></span>
@@ -1865,7 +1865,7 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
             </div>
           )}
 
-          {user && user.metadata?.has_used_resume_builder && (user.totalCredits || 0) < 1 && (
+          {user && (user.has_used_resume_builder || user.hasUsedResumeBuilder || user.metadata?.has_used_resume_builder) && (user.totalCredits || 0) < 1 && (
             <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-100 text-rose-800 dark:bg-rose-950/10 dark:border-rose-900/30 dark:text-rose-400 text-xs flex flex-col gap-1.5 shadow-sm">
               <p className="font-semibold">You need 1 credit to generate your resume with Grok.</p>
               <Link href="/jobseeker/credits" className="text-indigo-600 dark:text-indigo-400 font-bold underline hover:text-indigo-700">
@@ -1877,7 +1877,7 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
           <Button
             className="w-full py-6 text-sm font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-transform"
             onClick={handleGenerate}
-            disabled={isGenerating || (user && user.metadata?.has_used_resume_builder && (user.totalCredits || 0) < 1)}
+            disabled={isGenerating || (user && (user.has_used_resume_builder || user.hasUsedResumeBuilder || user.metadata?.has_used_resume_builder) && (user.totalCredits || 0) < 1)}
           >
             {isGenerating ? (
               <>

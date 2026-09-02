@@ -36,6 +36,14 @@ export interface JobseekerPreferredLocation {
   formattedLocation?: string;
 }
 
+export interface NoticePeriod {
+  id: number;
+  uuid?: string;
+  name: string;
+  days?: number;
+  display_order?: number;
+}
+
 export interface User {
   id: number;     // Numeric Primary Key
   uuid: string;   // Public UUID (links to auth.users)
@@ -83,6 +91,8 @@ export interface User {
   workAuthorization?: string[];
   visaRequirement?: string;
   visaRequirementId?: number;
+  workplaceTypeId?: number;
+  workplaceType?: string;
   preferredLanguages?: string[];
   workStatus?: 'Fresher' | 'Experienced';
   experienceYears?: number;
@@ -92,8 +102,23 @@ export interface User {
   annualSalary?: number;
   expectedSalary?: number;
   salaryBreakdown?: 'Fixed' | 'Fixed + Variable' | 'Fixed + Variable + Stocks' | 'Fixed + Stocks';
-  noticePeriod?: '15 Days or less' | '1 Month' | '2 Months' | '3 Months' | 'More than 3 Months' | 'Serving Notice Period';
+  noticePeriod?: 'Immediate / Available Now' | '15 Days or less' | '1 Month' | '2 Months' | '3 Months' | 'More than 3 Months' | 'Serving Notice Period' | string;
+  noticePeriodId?: number;
   preferredLocations?: string[];
+
+  // Jobseeker Feature Flags
+  hasUsedAtsChecker?: boolean;
+  has_used_ats_checker?: boolean;
+  hasSeenReferralPrompt?: boolean;
+  has_seen_referral_prompt?: boolean;
+  referralStepDismissed?: boolean;
+  referral_step_dismissed?: boolean;
+  hasUsedResumeBuilder?: boolean;
+  has_used_resume_builder?: boolean;
+  referralRewarded?: boolean;
+  referral_rewarded?: boolean;
+  referralRewardedAt?: string;
+  referral_rewarded_at?: string;
 
   isPaid?: boolean;
   planType?: 'none' | 'basic' | 'premium' | 'pro';

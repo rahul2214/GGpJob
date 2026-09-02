@@ -64,25 +64,25 @@ export async function GET(request: NextRequest) {
         // 2. Fetch Grouped Data for Charts
         const { data: rawJobs } = await supabaseAdmin
             .from('jobs')
-            .select('industry');
+            .select('job_types:job_type_pk(name)');
 
         const jobsByIndustryRaw = rawJobs || [];
 
         const directJobsByIndustryMap: Record<string, number> = {};
         const referralJobsByIndustryMap: Record<string, number> = {};
         jobsByIndustryRaw?.forEach((j: any) => {
-            const name = j.industry || 'Other';
+            const name = (j.job_types as any)?.name || 'General Tech';
             directJobsByIndustryMap[name] = (directJobsByIndustryMap[name] || 0) + 1;
         });
 
         // Users Grouping by Country
         const { data: usersByCountryRaw } = await supabaseAdmin
             .from('jobseekers')
-            .select('country');
+            .select('countries:current_country_id(name)');
 
         const usersByCountryMap: Record<string, number> = {};
         usersByCountryRaw?.forEach((u: any) => {
-            const name = u.country || 'Other';
+            const name = (u.countries as any)?.name || 'Other';
             usersByCountryMap[name] = (usersByCountryMap[name] || 0) + 1;
         });
 
@@ -91,13 +91,13 @@ export async function GET(request: NextRequest) {
         try {
             const { data: appsData } = await supabaseAdmin
                 .from('applications')
-                .select('jobs!job_pk(industry)');
+                .select('jobs!job_pk(job_types:job_type_pk(name))');
             appsByIndustryRaw = appsData;
         } catch {}
 
         const appsByIndustryMap: Record<string, number> = {};
         appsByIndustryRaw?.forEach((a: any) => {
-            const name = (a.jobs as any)?.industry || 'Other';
+            const name = (a.jobs as any)?.job_types?.name || 'General Tech';
             appsByIndustryMap[name] = (appsByIndustryMap[name] || 0) + 1;
         });
 

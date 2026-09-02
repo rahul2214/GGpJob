@@ -215,6 +215,12 @@ export default function ProfilePage() {
                                             <span className="font-bold text-slate-700">{user.country}</span>
                                         </div>
                                     )}
+                                    {(user.workplaceType || (user as any).workplaceTypeId) && (
+                                        <div className="flex items-center justify-center gap-1.5 text-slate-600 pt-0.5">
+                                            <Briefcase className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                            <span className="font-bold text-slate-700">{user.workplaceType}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </motion.div>

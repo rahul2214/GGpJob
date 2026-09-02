@@ -187,6 +187,10 @@ export default function OnboardingPage() {
                     };
                     setUser({
                         ...user,
+                        hasSeenReferralPrompt: true,
+                        has_seen_referral_prompt: true,
+                        referralStepDismissed: true,
+                        referral_step_dismissed: true,
                         metadata: updatedMeta
                     });
                     await fetch(`/api/users/${targetId}`, {
@@ -194,6 +198,10 @@ export default function OnboardingPage() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             role: 'Job Seeker',
+                            hasSeenReferralPrompt: true,
+                            has_seen_referral_prompt: true,
+                            referralStepDismissed: true,
+                            referral_step_dismissed: true,
                             metadata: updatedMeta
                         })
                     });
@@ -206,9 +214,13 @@ export default function OnboardingPage() {
 
     useEffect(() => {
         if (user) {
-            // 100% Database metadata check
+            // 100% Database column & metadata check
             const isDismissedDb = !!(
                 user.referredBy ||
+                user.hasSeenReferralPrompt ||
+                user.has_seen_referral_prompt ||
+                user.referralStepDismissed ||
+                user.referral_step_dismissed ||
                 user.metadata?.hasSeenReferralPrompt ||
                 user.metadata?.referralStepDismissed
             );

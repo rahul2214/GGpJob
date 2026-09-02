@@ -439,6 +439,17 @@ export default function PublicProfilePage() {
                   </div>
                 </div>
               )}
+              {(profileUser.workplaceType || (profileUser as any).workplaceTypeId) && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
+                    <Briefcase className="w-4 h-4 text-violet-600" />
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">Work Preference</span>
+                    <p className="font-semibold text-slate-800">{profileUser.workplaceType || 'Remote / Hybrid'}</p>
+                  </div>
+                </div>
+              )}
               {profileUser.noticePeriod && (
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
