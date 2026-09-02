@@ -40,7 +40,6 @@ export interface NoticePeriod {
   id: number;
   uuid?: string;
   name: string;
-  days?: number;
   display_order?: number;
 }
 

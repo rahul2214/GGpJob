@@ -4,13 +4,13 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 export const dynamic = 'force-dynamic';
 
 const DEFAULT_NOTICE_PERIODS = [
-  { id: 1, name: "Immediate / Available Now", days: 0, display_order: 1 },
-  { id: 2, name: "15 Days or less", days: 15, display_order: 2 },
-  { id: 3, name: "1 Month", days: 30, display_order: 3 },
-  { id: 4, name: "2 Months", days: 60, display_order: 4 },
-  { id: 5, name: "3 Months", days: 90, display_order: 5 },
-  { id: 6, name: "More than 3 Months", days: 120, display_order: 6 },
-  { id: 7, name: "Serving Notice Period", days: 0, display_order: 7 }
+  { id: 1, name: "Immediate / Available Now", display_order: 1 },
+  { id: 2, name: "15 Days or less", display_order: 2 },
+  { id: 3, name: "1 Month", display_order: 3 },
+  { id: 4, name: "2 Months", display_order: 4 },
+  { id: 5, name: "3 Months", display_order: 5 },
+  { id: 6, name: "More than 3 Months", display_order: 6 },
+  { id: 7, name: "Serving Notice Period", display_order: 7 }
 ];
 
 export async function GET() {
@@ -33,14 +33,14 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, days, display_order } = body;
+    const { name, display_order } = body;
     if (!name) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
     const { data, error } = await supabaseAdmin
       .from('notice_periods')
-      .insert([{ name, days: days ?? null, display_order: display_order ?? 99 }])
+      .insert([{ name, display_order: display_order ?? 99 }])
       .select()
       .single();
 
