@@ -491,18 +491,17 @@ export async function POST(request: Request) {
     let conflictField = 'uuid';
 
     if (table === 'jobseekers') {
-        dataToSave.role = role; // Compatibility until role column is fully dropped
-
         // Check if jobseeker already exists to set default credits
         const { data: existingJS } = await supabaseAdmin
             .from('jobseekers')
-            .select('id')
+            .select('id, subscription_credits, subscription_allowance')
             .eq('uuid', id)
             .maybeSingle();
 
         if (!existingJS) {
             dataToSave.subscription_credits = 2;
             dataToSave.subscription_allowance = 2;
+            dataToSave.purchased_credits = 0;
         }
     } else if (table === 'admins') {
         dataToSave.is_super_admin = (role === 'Super Admin');

@@ -75,11 +75,11 @@ export async function GET(request: Request) {
           }
         };
 
-        // Add role string and default credits for jobseekers
+        // Add default credits for jobseekers
         if (targetTable === 'jobseekers') {
-            (profileData as any).role = 'Job Seeker';
             (profileData as any).subscription_credits = 2;
             (profileData as any).subscription_allowance = 2;
+            (profileData as any).purchased_credits = 0;
 
             // Generate unique referral code for the new user
             let referralCodeGenerated = '';

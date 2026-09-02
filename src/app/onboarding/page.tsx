@@ -178,7 +178,7 @@ export default function OnboardingPage() {
         setShowReferralStep(false);
         if (user) {
             try {
-                const targetId = user.id || user.uuid;
+                const targetId = user.uuid || user.id;
                 if (targetId) {
                     setUser({
                         ...user,
@@ -187,17 +187,23 @@ export default function OnboardingPage() {
                         referralStepDismissed: true,
                         referral_step_dismissed: true,
                     });
-                    await fetch(`/api/users/${targetId}`, {
+                    const res = await fetch(`/api/users/${targetId}`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            role: 'Job Seeker',
+                            name: user.name,
+                            email: user.email,
+                            role: user.role || 'Job Seeker',
                             hasSeenReferralPrompt: true,
                             has_seen_referral_prompt: true,
                             referralStepDismissed: true,
                             referral_step_dismissed: true,
                         })
                     });
+                    if (!res.ok) {
+                        const errJson = await res.json().catch(() => ({}));
+                        console.warn('[ONBOARDING] Failed to save referral dismissal:', errJson);
+                    }
                 }
             } catch (err) {
                 console.warn('[ONBOARDING] Failed to save referral prompt dismissal to database:', err);

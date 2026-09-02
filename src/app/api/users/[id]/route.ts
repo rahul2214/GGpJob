@@ -1244,6 +1244,24 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         if (body.referralCode && table === 'jobseekers') updateData.referral_code = body.referralCode;
         if (body.referredBy && table === 'jobseekers') updateData.referred_by = Number(body.referredBy);
         if (body.referralCount !== undefined && table === 'jobseekers') updateData.referral_count = body.referralCount;
+        if ((body.hasSeenReferralPrompt !== undefined || body.has_seen_referral_prompt !== undefined) && table === 'jobseekers') {
+            updateData.has_seen_referral_prompt = Boolean(body.has_seen_referral_prompt ?? body.hasSeenReferralPrompt);
+        }
+        if ((body.referralStepDismissed !== undefined || body.referral_step_dismissed !== undefined) && table === 'jobseekers') {
+            updateData.referral_step_dismissed = Boolean(body.referral_step_dismissed ?? body.referralStepDismissed);
+        }
+        if ((body.hasUsedAtsChecker !== undefined || body.has_used_ats_checker !== undefined) && table === 'jobseekers') {
+            updateData.has_used_ats_checker = Boolean(body.has_used_ats_checker ?? body.hasUsedAtsChecker);
+        }
+        if ((body.hasUsedResumeBuilder !== undefined || body.has_used_resume_builder !== undefined) && table === 'jobseekers') {
+            updateData.has_used_resume_builder = Boolean(body.has_used_resume_builder ?? body.hasUsedResumeBuilder);
+        }
+        if ((body.referralRewarded !== undefined || body.referral_rewarded !== undefined) && table === 'jobseekers') {
+            updateData.referral_rewarded = Boolean(body.referral_rewarded ?? body.referralRewarded);
+        }
+        if ((body.referralRewardedAt !== undefined || body.referral_rewarded_at !== undefined) && table === 'jobseekers') {
+            updateData.referral_rewarded_at = body.referral_rewarded_at ?? body.referralRewardedAt;
+        }
         
         updateData.updated_at = new Date().toISOString();
 
@@ -1354,10 +1372,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
     } catch (e: any) {
         console.error(e);
-        return NextResponse.json({ error: 'Failed to patch user', details: e.message }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to update user', details: e.message }, { status: 500 });
     }
 }
-
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
     try {

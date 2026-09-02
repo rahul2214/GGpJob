@@ -66,11 +66,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // 5. Update the referee's referred_by
+    // 5. Update the referee's referred_by and mark referral step dismissed
     const { error: updateRefereeErr } = await supabaseAdmin
       .from('jobseekers')
       .update({
         referred_by: referrer.id,
+        has_seen_referral_prompt: true,
+        referral_step_dismissed: true,
         updated_at: new Date().toISOString(),
       })
       .eq('id', referee.id);
