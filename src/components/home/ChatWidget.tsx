@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, CheckCircle2, Sparkles } from 'lucide-react';
+import { Send, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function ChatWidget() {

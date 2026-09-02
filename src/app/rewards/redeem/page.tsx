@@ -2,10 +2,7 @@
 
 import { useUser } from "@/contexts/user-context";
 import { RedemptionHub } from "@/components/rewards/redemption-hub";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 
 export default function RedeemPage() {
     const { user, refreshUser } = useUser();

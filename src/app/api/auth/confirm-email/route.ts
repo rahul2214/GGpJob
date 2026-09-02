@@ -62,26 +62,15 @@ export async function POST(request: Request) {
       if (recData?.uuid) {
         targetUuid = recData.uuid;
       } else {
-        // Check employees
-        const { data: empData } = await supabaseAdmin
-          .from('employees')
+        // Check admins
+        const { data: admData } = await supabaseAdmin
+          .from('admins')
           .select('uuid')
           .ilike('email', email)
           .maybeSingle();
 
-        if (empData?.uuid) {
-          targetUuid = empData.uuid;
-        } else {
-          // Check admins
-          const { data: admData } = await supabaseAdmin
-            .from('admins')
-            .select('uuid')
-            .ilike('email', email)
-            .maybeSingle();
-
-          if (admData?.uuid) {
-            targetUuid = admData.uuid;
-          }
+        if (admData?.uuid) {
+          targetUuid = admData.uuid;
         }
       }
     }

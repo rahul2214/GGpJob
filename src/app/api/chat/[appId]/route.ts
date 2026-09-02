@@ -68,9 +68,7 @@ async function getOrCreateSession(appId: string) {
             jobseeker_id: jobseekerPk,
             is_unlocked: true
         };
-        if (posterPk) {
-            payload.employee_id = posterPk;
-        }
+       
 
         const { data: newSession, error: insertError } = await supabaseAdmin
             .from('chat_sessions')
@@ -80,15 +78,6 @@ async function getOrCreateSession(appId: string) {
 
         if (insertError) {
             console.error('[CHAT_SESSION_CREATE] Error:', insertError);
-            if (payload.employee_id) {
-                delete payload.employee_id;
-                const { data: fallbackSession } = await supabaseAdmin
-                    .from('chat_sessions')
-                    .insert(payload)
-                    .select()
-                    .maybeSingle();
-                session = fallbackSession;
-            }
         } else {
             session = newSession;
         }
@@ -100,10 +89,9 @@ async function getOrCreateSession(appId: string) {
             id: internalAppId,
             application_id: internalAppId,
             jobseeker_id: jobseekerPk,
-            employee_id: posterPk,
             is_unlocked: true,
             msg_count_jobseeker: 0,
-            msg_count_employee: 0
+            msg_count_recruiter: 0
         };
     }
 
@@ -222,7 +210,8 @@ export async function GET(
                 statusId,
                 jobPk: session.job?.id,
                 jobseekerId: session.jobseeker.uuid,
-                employeeId: session.poster.uuid
+                recruiterId: session.poster.uuid,
+                posterId: session.poster.uuid
             }
         });
     } catch (e: any) {

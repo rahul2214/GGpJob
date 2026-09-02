@@ -159,18 +159,6 @@ export async function POST(request: Request) {
       case 'pro_pack':
         updateData.credits_to_add = 150;
         break;
-      case 'employee_starter':
-        updateData.credits_to_add = 50;
-        break;
-      case 'employee_double':
-        updateData.credits_to_add = 100;
-        break;
-      case 'employee_pro':
-        updateData.credits_to_add = 250;
-        break;
-      case 'employee_enterprise':
-        updateData.credits_to_add = 600;
-        break;
     }
 
     if (['basic', 'premium', 'pro'].includes(planId)) {
@@ -222,12 +210,10 @@ export async function POST(request: Request) {
 
     const [
       { data: jobseeker },
-      { data: recruiter },
-      { data: employee }
+      { data: recruiter }
     ] = await Promise.all([
       supabaseAdmin.from('jobseekers').select('id, uuid').eq(isUUID ? 'uuid' : 'id', isUUID ? userId : parseInt(userId, 10)).maybeSingle(),
-      supabaseAdmin.from('recruiters').select('id, uuid').eq(isUUID ? 'uuid' : 'id', isUUID ? userId : parseInt(userId, 10)).maybeSingle(),
-      supabaseAdmin.from('employees').select('id, uuid').eq(isUUID ? 'uuid' : 'id', isUUID ? userId : parseInt(userId, 10)).maybeSingle()
+      supabaseAdmin.from('recruiters').select('id, uuid').eq(isUUID ? 'uuid' : 'id', isUUID ? userId : parseInt(userId, 10)).maybeSingle()
     ]);
 
     if (jobseeker) {
@@ -236,17 +222,14 @@ export async function POST(request: Request) {
     } else if (recruiter) {
       profileId = recruiter.id;
       targetTable = 'recruiters';
-    } else if (employee) {
-      profileId = employee.id;
-      targetTable = 'employees';
     }
 
     if (!profileId) {
       throw new Error(`Profile not found for user ${userId}`);
     }
 
-    // Only set plan_type for recruiters/employees — jobseekers table has no plan_type column
-    if (targetTable !== 'jobseekers') {
+    // Only set plan_type for recruiters — jobseekers table has no plan_type column
+    if (targetTable === 'recruiters') {
       updateData.plan_type = planId;
     }
 
@@ -257,43 +240,26 @@ export async function POST(request: Request) {
       const creditsToAdd = updateData.credits_to_add;
       delete updateData.credits_to_add;
       
-      if (targetTable === 'employees') {
+      const { error } = await supabaseAdmin.rpc('add_purchased_credits', { 
+        p_user_id: profileId, 
+        p_amount: creditsToAdd 
+      });
+      
+      if (error) {
         const { data: currentData } = await supabaseAdmin
-          .from('employees')
-          .select('credits')
+          .from(targetTable)
+          .select('purchased_credits')
           .eq('id', profileId)
           .single();
         
-        const { error } = await supabaseAdmin
-          .from('employees')
+        const { error: fallbackError } = await supabaseAdmin
+          .from(targetTable)
           .update({ 
-            credits: (currentData?.credits || 0) + creditsToAdd,
+            purchased_credits: (currentData?.purchased_credits || 0) + creditsToAdd,
             updated_at: now.toISOString()
           })
           .eq('id', profileId);
-        profileError = error;
-      } else {
-        const { error } = await supabaseAdmin.rpc('add_purchased_credits', { 
-          p_user_id: profileId, 
-          p_amount: creditsToAdd 
-        });
-        
-        if (error) {
-          const { data: currentData } = await supabaseAdmin
-            .from(targetTable)
-            .select('purchased_credits')
-            .eq('id', profileId)
-            .single();
-          
-          const { error: fallbackError } = await supabaseAdmin
-            .from(targetTable)
-            .update({ 
-              purchased_credits: (currentData?.purchased_credits || 0) + creditsToAdd,
-              updated_at: now.toISOString()
-            })
-            .eq('id', profileId);
-          profileError = fallbackError;
-        }
+        profileError = fallbackError;
       }
     } else {
       let { error } = await supabaseAdmin

@@ -98,7 +98,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const jobId = searchParams.get('jobId');
-    const employeeId = searchParams.get('employeeId');
+    const recruiterId = searchParams.get('recruiterId');
     const requesterId = searchParams.get('requesterId');
 
     let query = supabaseAdmin
@@ -109,18 +109,18 @@ export async function GET(request: Request) {
             jobs(*)
         `);
 
-    if (employeeId) {
-      const { data: emp } = await supabaseAdmin
-        .from('employees')
+    if (recruiterId) {
+      const { data: rec } = await supabaseAdmin
+        .from('recruiters')
         .select('id')
-        .eq('uuid', employeeId)
+        .eq('uuid', recruiterId)
         .maybeSingle();
 
-      if (emp) {
+      if (rec) {
         const { data: jobs } = await supabaseAdmin
           .from('jobs')
           .select('id')
-          .eq('employee_pk', emp.id);
+          .eq('recruiter_pk', rec.id);
 
         if (jobs && jobs.length > 0) {
           const jobPks = jobs.map((j: any) => j.id);
@@ -129,28 +129,7 @@ export async function GET(request: Request) {
           return NextResponse.json([]);
         }
       } else {
-        // Try recruiter lookup
-        const { data: rec } = await supabaseAdmin
-          .from('recruiters')
-          .select('id')
-          .eq('uuid', employeeId)
-          .maybeSingle();
-
-        if (rec) {
-          const { data: jobs } = await supabaseAdmin
-            .from('jobs')
-            .select('id')
-            .eq('recruiter_pk', rec.id);
-
-          if (jobs && jobs.length > 0) {
-            const jobPks = jobs.map((j: any) => j.id);
-            query = query.in('job_pk', jobPks);
-          } else {
-            return NextResponse.json([]);
-          }
-        } else {
-          return NextResponse.json([]);
-        }
+        return NextResponse.json([]);
       }
     }
 
@@ -163,10 +142,9 @@ export async function GET(request: Request) {
         if (u) {
           query = query.eq('user_pk', u.id);
         } else {
-          // Fallback: Check if this is an employee UUID (or recruiter UUID)
-          const { data: emp } = await supabaseAdmin.from('employees').select('id').eq('uuid', userId).maybeSingle();
-          if (emp) {
-            const { data: jobs } = await supabaseAdmin.from('jobs').select('id').eq('employee_pk', emp.id);
+          const { data: rec } = await supabaseAdmin.from('recruiters').select('id').eq('uuid', userId).maybeSingle();
+          if (rec) {
+            const { data: jobs } = await supabaseAdmin.from('jobs').select('id').eq('recruiter_pk', rec.id);
             if (jobs && jobs.length > 0) {
               const jobPks = jobs.map((j: any) => j.id);
               query = query.in('job_pk', jobPks);
@@ -174,18 +152,7 @@ export async function GET(request: Request) {
               return NextResponse.json([]);
             }
           } else {
-            const { data: rec } = await supabaseAdmin.from('recruiters').select('id').eq('uuid', userId).maybeSingle();
-            if (rec) {
-              const { data: jobs } = await supabaseAdmin.from('jobs').select('id').eq('recruiter_pk', rec.id);
-              if (jobs && jobs.length > 0) {
-                const jobPks = jobs.map((j: any) => j.id);
-                query = query.in('job_pk', jobPks);
-              } else {
-                return NextResponse.json([]);
-              }
-            } else {
-              return NextResponse.json([]);
-            }
+            return NextResponse.json([]);
           }
         }
       } else {
@@ -239,15 +206,12 @@ export async function GET(request: Request) {
         } else {
             const [
                 { data: js },
-                { data: emp },
                 { data: rec }
             ] = await Promise.all([
                 supabaseAdmin.from('jobseekers').select('id').eq('uuid', requesterId).maybeSingle(),
-                supabaseAdmin.from('employees').select('id').eq('uuid', requesterId).maybeSingle(),
                 supabaseAdmin.from('recruiters').select('id').eq('uuid', requesterId).maybeSingle()
             ]);
             if (js) allPks.push(js.id);
-            if (emp) allPks.push(emp.id);
             if (rec) allPks.push(rec.id);
         }
 

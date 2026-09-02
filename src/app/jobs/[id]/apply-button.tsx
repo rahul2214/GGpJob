@@ -6,7 +6,7 @@ import { useUser } from '@/contexts/user-context';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { CheckCircle, LoaderCircle, Ban, AlertTriangle, Sparkles, ArrowRight } from 'lucide-react';
-import { Application, Job } from '@/lib/types';
+import { Job } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import {
     Dialog,
@@ -199,7 +199,7 @@ export function ApplyButton({ job, variant = 'default', isApplied: propIsApplied
                             </DialogTitle>
                         </div>
                         <DialogDescription className="text-slate-300 text-sm leading-relaxed">
-                            Your resume has an ATS match score of only <span className="font-bold text-amber-400">{atsResult?.score}%</span> for this role. Employees are far more likely to refer candidates with an ATS score of <span className="font-semibold text-emerald-400">80% or above</span>.
+                            Your resume has an ATS match score of only <span className="font-bold text-amber-400">{atsResult?.score}%</span> for this role.
                         </DialogDescription>
                     </DialogHeader>
 

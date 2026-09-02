@@ -6,13 +6,6 @@ export enum NotificationType {
   ATS_SCORE_READY = 'ats_score_ready',
   CREDITS_ADDED = 'credits_added',
 
-  // Employees / Referrers
-  REFERRAL_SHORTLISTED = 'referral_shortlisted',
-  REFERRAL_HIRED = 'referral_hired',
-  REWARD_CREDITED = 'reward_credited',
-  NEW_JOB_FOR_REFERRAL = 'new_job_for_referral',
-  LEADERBOARD_RANK_CHANGE = 'leaderboard_rank_change',
-
   // Recruiters
   NEW_APPLICATION = 'new_application',
   JOB_EXPIRING = 'job_expiring',

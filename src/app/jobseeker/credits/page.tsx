@@ -6,7 +6,7 @@ import { useUser } from "@/contexts/user-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, ShieldCheck, Zap, Lock, CheckCircle2, Coins, Tag, ArrowLeft } from "lucide-react";
+import { LoaderCircle, Lock, Coins, Tag, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";

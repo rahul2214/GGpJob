@@ -9,7 +9,6 @@ import {
   Home, 
   ArrowLeft, 
   CheckCircle2, 
-  AlertCircle, 
   Radio, 
   ShieldAlert, 
   Smartphone, 

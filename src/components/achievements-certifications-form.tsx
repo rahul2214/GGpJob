@@ -6,7 +6,7 @@ import { useUser } from "@/contexts/user-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Award, Plus, Trash2, LoaderCircle, CheckCircle2, Trophy, Medal, Calendar, FileText, LinkIcon, Hash } from "lucide-react";
+import { Plus, Trash2, LoaderCircle, CheckCircle2, Trophy, Medal, Calendar, FileText, LinkIcon, Hash } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface AchievementsCertificationsFormProps {

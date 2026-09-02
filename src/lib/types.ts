@@ -278,11 +278,8 @@ export interface Job {
   jobTypePk?: number;
   workplaceTypeId?: string;
   workplaceTypePk?: number;
-  isReferral?: boolean;
   recruiterId?: string;
   recruiterPk?: number;
-  employeeId?: string;
-  employeePk?: number;
   jobLink?: string;
   vacancies?: number;
   companyLogo?: string;
@@ -372,7 +369,7 @@ export interface Application {
 
   // Verification System
   proofUrl?: string;
-  verificationStatus?: 'none' | 'pending' | 'verified' | 'disputed' | 'pending_jobseeker' | 'pending_employee';
+  verificationStatus?: 'none' | 'pending' | 'verified' | 'disputed' | 'pending_jobseeker';
   verificationExpiresAt?: string;
   disputeReason?: string;
   isUnlocked?: boolean;

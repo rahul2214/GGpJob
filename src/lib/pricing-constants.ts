@@ -1,4 +1,4 @@
-import { Star, Crown, Search, Rocket, Zap } from "lucide-react";
+import { Star, Crown, Rocket } from "lucide-react";
 
 export const RECRUITER_PLANS = [
   {
@@ -52,7 +52,6 @@ export const RECRUITER_PLANS = [
   }
 ];
 
-export const JOB_SEEKER_PLANS: any[] = [];
 
 export const CREDIT_PACKS = [
   {
@@ -88,46 +87,3 @@ export const CREDIT_PACKS = [
   }
 ];
 
-export const EMPLOYEE_CREDIT_PACKS = [
-  {
-    id: "employee_starter",
-    name: "Starter Boost",
-    credits: 50,
-    price: 5, // USD Base
-    perCredit: 0.1,
-    description: "Perfect for boosting 1 referral job posting.",
-    icon: Zap,
-    color: "sky"
-  },
-  {
-    id: "employee_double",
-    name: "Double Boost",
-    credits: 100,
-    price: 9, // USD Base
-    perCredit: 0.09,
-    description: "Ideal for boosting 2 referral job postings.",
-    icon: Zap,
-    color: "emerald"
-  },
-  {
-    id: "employee_pro",
-    name: "Pro Boost Pack",
-    credits: 250,
-    price: 19, // USD Base
-    perCredit: 0.076,
-    description: "Great value for active corporate referrers.",
-    icon: Crown,
-    color: "amber",
-    popular: true
-  },
-  {
-    id: "employee_enterprise",
-    name: "Enterprise Boost",
-    credits: 600,
-    price: 39, // USD Base
-    perCredit: 0.065,
-    description: "Maximum visibility for high volume referrers.",
-    icon: Crown,
-    color: "indigo"
-  }
-];

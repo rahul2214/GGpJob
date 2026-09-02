@@ -3,17 +3,14 @@
 import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation';
 import type { Job, Application } from "@/lib/types";
 import {
-    Briefcase, MapPin, Building, Calendar, Users,
-    BadgeDollarSign, Clock, UserCheck,
-    ChevronRight, Info, Award, LayoutList, CheckCircle2,
-    Layers, User as UserIcon, ArrowLeft, Bookmark,
-    ChevronDown, Linkedin, Star, ShieldCheck
+    Briefcase, MapPin, Building, Users,
+    ChevronRight, Award, LayoutList, CheckCircle2,
+    User as UserIcon, Linkedin,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { ApplyButton } from './apply-button';
 import JobCard from '@/components/job-card';
-import { ShareButton } from '@/components/share-button';
 import { useUser } from '@/contexts/user-context';
 import { useState, useEffect, Suspense, useCallback, useMemo, useRef } from 'react';
 import JobDetailsLoading from './loading';

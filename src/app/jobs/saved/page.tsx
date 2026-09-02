@@ -7,7 +7,7 @@ import JobCard from "@/components/job-card";
 import { useUser } from "@/contexts/user-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bookmark, Sparkles, ArrowRight, Loader2 } from "lucide-react";
+import { Bookmark, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 function SavedJobsContent() {

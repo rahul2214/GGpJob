@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, AlertCircle, Eye, EyeOff, CheckCircle2, Rocket, ShieldCheck, ArrowRight, Zap } from "lucide-react";
+import { LoaderCircle, AlertCircle, Eye, EyeOff, CheckCircle2, Rocket, ShieldCheck, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
@@ -24,7 +24,6 @@ import { supabase } from "@/lib/supabase-client"; // still used for Google OAuth
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from "framer-motion";
-import { COUNTRY_CODES } from "@/utils/country-codes";
 import { CountryCodeSelect } from "@/components/country-code-select";
 import { onFormInvalid } from "@/lib/form-toast-utils";
 

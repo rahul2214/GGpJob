@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 
     // 2. Also update the Supabase password so the user can log in normally
     let targetUid: string | null = null;
-    const tables = ['jobseekers', 'recruiters', 'employees', 'admins'];
+    const tables = ['jobseekers', 'recruiters', 'admins'];
     for (const tbl of tables) {
       const { data } = await supabaseAdmin.from(tbl).select('uuid').eq('email', email).maybeSingle();
       if (data?.uuid) {

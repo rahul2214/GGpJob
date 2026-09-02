@@ -14,7 +14,6 @@ import {
   Building2, Info
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { format } from "date-fns";

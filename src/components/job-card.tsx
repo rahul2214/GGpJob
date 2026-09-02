@@ -1,10 +1,10 @@
 "use client";
 
 import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Job } from "@/lib/types";
-import { MapPin, Briefcase, Clock, Star, CheckCircle, BadgeDollarSign, ShieldCheck, Bookmark } from 'lucide-react';
+import { MapPin, Briefcase, Clock, CheckCircle, BadgeDollarSign, Bookmark } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useUser } from '@/contexts/user-context';
 import { useToast } from '@/hooks/use-toast';

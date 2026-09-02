@@ -65,7 +65,7 @@ export default function JobSeekerDashboard() {
     if (!referralLink) return;
     const shareData = {
       title: 'Join JobsDart',
-      text: 'Get direct employee referrals at top MNCs! Sign up using my referral link to get started:',
+      text: 'Sign up using my referral link to get started:',
       url: referralLink
     };
 

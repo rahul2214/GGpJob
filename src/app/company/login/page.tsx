@@ -55,7 +55,6 @@ export default function CompanyLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [activeTab, setActiveTab] = useState<'recruiters' | 'employees'>('recruiters');
 
   useEffect(() => {
     if (!loading && user) {

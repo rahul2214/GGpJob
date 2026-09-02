@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { calculateInternationalJobMatch } from '@/lib/recommendation-engine';
-import { syncContactToBrevo, sendBrevoTransactionalEmail, isBrevoConfigured, getBrevoAccountInfo } from './brevo-service';
+import { syncContactToBrevo, sendBrevoTransactionalEmail } from './brevo-service';
 import type {
   CRMCandidate,
   CRMEmailLog,

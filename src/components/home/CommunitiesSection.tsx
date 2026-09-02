@@ -11,13 +11,8 @@ import {
   ShieldCheck, 
   Zap, 
   Globe, 
-  Flame, 
-  Calendar, 
-  Award,
-  TrendingUp,
-  Lock,
-  Compass,
-  Briefcase
+  Flame,
+  Compass
 } from 'lucide-react';
 
 const FEATURED_COMMUNITIES = [

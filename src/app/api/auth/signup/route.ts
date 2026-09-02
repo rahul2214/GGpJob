@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
     }
 
-    if ((role === 'Recruiter' || role === 'Employee') && !companyName) {
+    if ((role === 'Recruiter') && !companyName) {
       return NextResponse.json({ error: 'Missing required company details.' }, { status: 400 });
     }
 
@@ -103,9 +103,6 @@ export async function POST(request: Request) {
     if (role === 'Recruiter') {
         table = 'recruiters';
         roleId = 2;
-    } else if (role === 'Employee') {
-        table = 'employees';
-        roleId = 3;
     } else {
         // Default strictly to Job Seeker for any unauthorized/tampered role strings
         table = 'jobseekers';

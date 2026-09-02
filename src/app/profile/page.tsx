@@ -1,7 +1,6 @@
 "use client"
 
 import { useUser } from "@/contexts/user-context";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { ProfileForm } from "@/components/profile-form";
 import { Button } from "@/components/ui/button";
 import { ChangePasswordForm } from "@/components/change-password-form";
@@ -14,13 +13,11 @@ import { SummaryForm } from "@/components/summary-form";
 import { PersonalInfoFormCombined } from "@/components/personal-info-form-combined";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserCog, ShieldCheck, FileText, Briefcase, Link2, Users, HeartHandshake, Mail, Phone, LayoutDashboard, Trash2, Wallet, Award, Sparkles, Zap, Camera, Loader2, ChevronRight, User, Globe } from "lucide-react";
+import { UserCog, ShieldCheck, FileText, Briefcase, Link2, Users, Mail, Phone, LayoutDashboard, Trash2, Wallet, Award, Sparkles, Zap, Camera, Loader2, ChevronRight, Globe } from "lucide-react";
 import { DeleteAccountButton } from "@/components/delete-account-button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { CurrencySelector } from "@/components/currency-selector";
-import { AchievementsForm } from "@/components/achievements-form";
-import { CertificationsForm } from "@/components/certifications-form";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 

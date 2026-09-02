@@ -28,20 +28,16 @@ export async function POST(request: Request) {
     // Search role tables to verify profile
     const [
       { data: seeker },
-      { data: recruiter },
-      { data: employee }
+      { data: recruiter }
     ] = await Promise.all([
       supabaseAdmin.from('jobseekers').select('id, uuid, role_id').eq(lookupField, lookupId).maybeSingle(),
-      supabaseAdmin.from('recruiters').select('id, uuid, role_id').eq(lookupField, lookupId).maybeSingle(),
-      supabaseAdmin.from('employees').select('id, uuid, role_id').eq(lookupField, lookupId).maybeSingle()
+      supabaseAdmin.from('recruiters').select('id, uuid, role_id').eq(lookupField, lookupId).maybeSingle()
     ]);
 
     if (seeker) {
       profile = { id: seeker.id, role: 'Job Seeker' };
     } else if (recruiter) {
       profile = { id: recruiter.id, role: 'Recruiter' };
-    } else if (employee) {
-      profile = { id: employee.id, role: 'Employee' };
     }
 
     if (!profile) {

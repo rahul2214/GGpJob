@@ -4,7 +4,6 @@ import { useUser } from "@/contexts/user-context";
 import { AtsChecker } from "@/components/ats-checker";
 import { AtsFaq } from "@/components/ats-faq";
 import { TrendingUp, AlertCircle, FileText, ArrowRight, CheckCircle } from "lucide-react";
-import { useMemo } from "react";
 
 export function AtsScoreClient() {
   const { user, loading } = useUser();

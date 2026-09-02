@@ -6,7 +6,7 @@ export interface AuthenticatedUser {
   id: number | string;
   uuid: string;
   email: string;
-  role: 'Job Seeker' | 'Recruiter' | 'Employee' | 'Admin' | 'Super Admin' | string;
+  role: 'Job Seeker' | 'Recruiter' | 'Admin' | 'Super Admin' | string;
   roleId?: number;
   name?: string;
   table?: string;
@@ -146,25 +146,6 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
       role: 'Recruiter',
       roleId: 2,
       table: 'recruiters'
-    };
-  }
-
-  // Check employees
-  const { data: employee } = await supabaseAdmin
-    .from('employees')
-    .select('*')
-    .or(`uuid.eq.${uid}${email ? `,email.eq.${email}` : ''}`)
-    .maybeSingle();
-
-  if (employee) {
-    return {
-      id: employee.id,
-      uuid: employee.uuid || uid!,
-      email: employee.email,
-      name: employee.name,
-      role: 'Employee',
-      roleId: 3,
-      table: 'employees'
     };
   }
 

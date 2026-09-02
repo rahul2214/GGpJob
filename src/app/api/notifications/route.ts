@@ -18,15 +18,13 @@ export async function GET(request: Request) {
     } else {
         const [
             { data: js },
-            { data: emp },
+  
             { data: rec }
         ] = await Promise.all([
             supabaseAdmin.from('jobseekers').select('id').eq('uuid', userId).maybeSingle(),
-            supabaseAdmin.from('employees').select('id').eq('uuid', userId).maybeSingle(),
             supabaseAdmin.from('recruiters').select('id').eq('uuid', userId).maybeSingle()
         ]);
         if (js) allPks.push(js.id);
-        if (emp) allPks.push(emp.id);
         if (rec) allPks.push(rec.id);
     }
 
@@ -55,16 +53,11 @@ export async function GET(request: Request) {
         msg = msg.replace(/\[APP_ID:[^\]]+\]\s*/gi, '');
         msg = msg.replace(/\[SENDER_UUID:[^\]]+\]\s*/gi, '');
         msg = msg.replace(
-            /Great news! An employee from the company is interested in referring you for (.*?)\. Check your dashboard to unlock this referral\./gi,
             'Great news! The recruiter has selected your application for $1.'
         );
         msg = msg.replace(
-            /An employee from the company is interested in referring you for (.*?)\. Check your dashboard to unlock this referral\./gi,
-            'The recruiter has selected your application for $1.'
+            'The recruiter has selected your application.'
         );
-        msg = msg.replace(/Check your dashboard to unlock this referral\./gi, '');
-        msg = msg.replace(/An employee from the company is interested in referring you/gi, 'The recruiter has selected your application');
-        msg = msg.replace(/interested in referring you for/gi, 'selected your application for');
 
         return {
             id: n.id,
@@ -113,7 +106,7 @@ export async function POST(request: Request) {
 
         // Try to find user in any role table
         let userProfileId = null;
-        const tables = ['jobseekers', 'recruiters', 'employees'];
+        const tables = ['jobseekers', 'recruiters'];
         
         for (const table of tables) {
             const { data: profile } = await (isNumericUser
@@ -167,15 +160,13 @@ export async function PATCH(request: Request) {
         } else if (userId) {
             const [
                 { data: js },
-                { data: emp },
                 { data: rec }
             ] = await Promise.all([
                 supabaseAdmin.from('jobseekers').select('id').eq('uuid', userId).maybeSingle(),
-                supabaseAdmin.from('employees').select('id').eq('uuid', userId).maybeSingle(),
                 supabaseAdmin.from('recruiters').select('id').eq('uuid', userId).maybeSingle()
             ]);
             
-            const allPks = [js?.id, emp?.id, rec?.id].filter(Boolean) as number[];
+            const allPks = [js?.id, rec?.id].filter(Boolean) as number[];
             if (allPks.length === 0) return NextResponse.json({ success: true });
 
             if (applicationId) {

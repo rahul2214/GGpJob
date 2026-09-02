@@ -2,8 +2,8 @@
 
 import { useEffect, useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, Sparkles, MessageSquare, Loader2, Plus, ArrowRight, UserCheck } from "lucide-react";
+import { motion } from "framer-motion";
+import { Search, MessageSquare, Loader2, ArrowRight, UserCheck } from "lucide-react";
 import * as Icons from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { Button } from "@/components/ui/button";

@@ -5,8 +5,8 @@ import { useUser } from "@/contexts/user-context";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { 
-  MessageSquare, Search, FileText, MapPin, Sparkles, 
-  Clock, ShieldCheck, AlertCircle, RefreshCw, ChevronRight
+  MessageSquare, Search, FileText, MapPin, 
+  AlertCircle, RefreshCw, ChevronRight
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

@@ -7,7 +7,6 @@ import {
     AlertDialogAction, 
     AlertDialogCancel, 
     AlertDialogContent, 
-    AlertDialogDescription, 
     AlertDialogFooter, 
     AlertDialogHeader, 
     AlertDialogTitle, 
@@ -16,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/contexts/user-context";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Trash2, Loader2, AlertTriangle } from "lucide-react";
 
 export function DeleteAccountButton() {
     const { user, logout } = useUser();

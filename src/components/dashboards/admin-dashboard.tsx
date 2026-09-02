@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
-import { UserCog, Briefcase, PlusCircle, Edit, Trash2, MoreHorizontal, Layers, ShieldCheck, Star, Building, Eye, CheckCircle, XCircle, Info, CheckSquare, Square } from "lucide-react";
+import { UserCog, Briefcase, Edit, Trash2, MoreHorizontal, ShieldCheck, Star, Building, Eye, CheckCircle, XCircle, Info } from "lucide-react";
 import { Checkbox } from "../ui/checkbox";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback } from "../ui/avatar";

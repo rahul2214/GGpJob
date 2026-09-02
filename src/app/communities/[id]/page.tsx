@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  MessageSquare, Plus, Loader2, ArrowLeft,
+  MessageSquare, Loader2, ArrowLeft,
   Users, CheckCircle, Heart, AlertTriangle, Megaphone,
   Edit2, Trash2, Share2
 } from "lucide-react";

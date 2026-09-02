@@ -373,8 +373,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             delete dataToUpdate.location_pks;
             delete dataToUpdate.skill_pks;
             delete dataToUpdate.benefit_ids;
-            delete dataToUpdate.is_referral;
-            delete dataToUpdate.employee_pk;
             delete dataToUpdate.admin_pk;
             const retryRes = await supabaseAdmin
                 .from('jobs')

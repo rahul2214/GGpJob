@@ -3,8 +3,7 @@
 import { useMemo } from 'react';
 import type { User } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { Lightbulb, CheckCircle2, Plus, ArrowRight, Sparkles, Trophy, Crown, Check, MapPin, FileText, Briefcase, GraduationCap, Code2, Award, BookmarkCheck, Globe } from 'lucide-react';
-import { Badge } from './ui/badge';
+import { Plus, ArrowRight, Sparkles, Trophy, Crown, Check, MapPin, FileText, Briefcase, GraduationCap, Code2, Award, BookmarkCheck, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from './ui/card';
 

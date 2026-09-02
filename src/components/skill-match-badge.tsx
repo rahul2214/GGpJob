@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Sparkles, Zap, Target, AlertCircle, CheckCircle2, PlusCircle, ChevronRight, X } from "lucide-react";
 import { calculateSkillMatch } from "@/lib/skill-match";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface SkillMatchBadgeProps {

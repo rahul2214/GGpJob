@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import {
-  MessageSquare, Sparkles, Loader2, ArrowLeft, Heart,
-  Calendar, CheckCircle, Reply, Trash2, Edit2, ShieldAlert, AlertTriangle, Share2
+  MessageSquare, Loader2, ArrowLeft, Heart,
+  Reply, Trash2, Edit2, ShieldAlert, AlertTriangle, Share2
 } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { Button } from "@/components/ui/button";

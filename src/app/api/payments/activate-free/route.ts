@@ -60,22 +60,6 @@ export async function POST(request: Request) {
         }
     }
 
-    // 3. Check employees if still not found
-    if (!profile) {
-        const { data: employee } = await supabaseAdmin
-            .from('employees')
-            .select('id, uuid, roles(name)')
-            .eq(column, queryValue)
-            .maybeSingle();
-        
-        if (employee) {
-            profile = { 
-                id: employee.id, 
-                uuid: employee.uuid,
-                role: (employee as any).roles?.name || 'Employee' 
-            };
-        }
-    }
 
     if (!profile) {
         return NextResponse.json({ error: 'User profile not found. Please log in again.' }, { status: 404 });

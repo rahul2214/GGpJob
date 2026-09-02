@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserCheck, Shield, Users, ArrowRight, Zap, Target } from 'lucide-react';
+import { UserCheck, Shield, ArrowRight, Target } from 'lucide-react';
 import Link from 'next/link';
 
 const tabs = [

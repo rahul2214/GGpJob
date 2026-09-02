@@ -11,11 +11,7 @@ export const DEFAULT_USD_PRICES: Record<string, number> = {
   'jobseeker_pro': 19,
   'mini': 3,
   'popular_pack': 9,
-  'pro_pack': 19,
-  'employee_starter': 5,
-  'employee_double': 9,
-  'employee_pro': 19,
-  'employee_enterprise': 39
+  'pro_pack': 19
 };
 
 export async function getPlanPrices(): Promise<Record<string, number>> {

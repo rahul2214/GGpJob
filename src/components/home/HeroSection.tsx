@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
 import { Search, MapPin, ChevronRight, Check, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 

@@ -22,7 +22,6 @@ interface ChatSession {
     id: string;
     is_unlocked: boolean;
     msg_count_jobseeker: number;
-    msg_count_employee: number;
     expires_at: string;
 }
 

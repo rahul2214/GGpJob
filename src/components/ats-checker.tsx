@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react"
-import { UploadCloud, FileText, CheckCircle, AlertCircle, Loader2, Copy, Check, Sparkles, TrendingUp, Coins, Share2, Twitter, Linkedin, ArrowRight, ShieldCheck, RefreshCw, X } from "lucide-react"
+import { UploadCloud, FileText, CheckCircle, AlertCircle, Loader2, Copy, Check, Sparkles, TrendingUp, Coins, Share2, Twitter, Linkedin, ArrowRight, ShieldCheck, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"

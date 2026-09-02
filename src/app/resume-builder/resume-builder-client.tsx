@@ -11,10 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import {
-  Loader2, Sparkles, Plus, Trash2, Printer, Copy, Check, Briefcase,
-  Code, GraduationCap, User, FileText, ChevronRight, Settings, Coins,
-  Award, Download, ShieldCheck, Info, RefreshCw, Layers, ArrowRight, Sparkle,
-  AlertCircle
+  Loader2, Sparkles, Plus, Trash2, Copy, Check, Briefcase,
+  Code, GraduationCap, User, FileText, ChevronRight, Coins,
+  Award, Download, Layers
 } from "lucide-react"
 import Link from "next/link"
 import {

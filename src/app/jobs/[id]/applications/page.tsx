@@ -9,9 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Download, User, MoreHorizontal, CheckCircle, XCircle, Lock, MessageCircle, ShieldCheck, Trophy, Calendar } from "lucide-react";
+import { User, MoreHorizontal, CheckCircle, XCircle, Lock, MessageCircle, Trophy } from "lucide-react";
 import { ChatDrawer } from '@/components/chat/ChatDrawer';
-import Link from "next/link";
 import { useUser } from "@/contexts/user-context";
 import {
   DropdownMenu,
@@ -287,20 +286,7 @@ export default function JobApplicationsPage() {
                                                      )}
                                                  </div>
                                              )}
-                                             {(app.verificationStatus === 'pending_employee' || (app.verificationStatus === 'pending' && (app.statusId === 6 || app.statusId === 7 || app.statusId === 9))) && (
-                                                 <Button 
-                                                     variant="outline" 
-                                                     size="sm" 
-                                                     className="rounded-xl font-bold h-9 border-emerald-200 text-emerald-600 hover:bg-emerald-50"
-                                                     onClick={() => {
-                                                        setVerifyingApp(app);
-                                                        setIsVerifyModalOpen(true);
-                                                     }}
-                                                 >
-                                                     <ShieldCheck className="w-4 h-4 mr-2" />
-                                                     Verify Proof
-                                                 </Button>
-                                             )}
+                                            
 
                                              {/* Primary Next Action Buttons */}
 

@@ -26,7 +26,7 @@ export async function GET(request: Request) {
       const session = data?.session;
       
       // 1. Search across all tables to see if the profile already exists
-      const tables = ['jobseekers', 'recruiters', 'employees', 'admins'];
+      const tables = ['jobseekers', 'recruiters', 'admins'];
       let foundProfile = null;
 
       for (const t of tables) {
@@ -55,9 +55,6 @@ export async function GET(request: Request) {
         if (roleRequest === 'Recruiter') {
             targetTable = 'recruiters';
             roleId = 2;
-        } else if (roleRequest === 'Employee') {
-            targetTable = 'employees';
-            roleId = 3;
         }
 
         const metadata = user.user_metadata;

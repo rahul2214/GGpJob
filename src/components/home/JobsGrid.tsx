@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { MapPin, Briefcase, DollarSign, Search, ArrowRight, ShieldCheck, Building2, Sparkles } from 'lucide-react';
+import { MapPin, Briefcase, DollarSign, Search, ArrowRight, Building2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { intelligentSearchJobs } from '@/lib/intelligent-search';
 

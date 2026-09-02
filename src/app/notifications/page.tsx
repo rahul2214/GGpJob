@@ -1,17 +1,16 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, Briefcase, Eye, CheckCircle, XCircle, MessageSquareQuote } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/use-jobs";
-import axiosInstance from "@/lib/axios";
 
 interface Notification {
     id: string;
