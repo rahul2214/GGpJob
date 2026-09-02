@@ -17,8 +17,7 @@ export async function GET(request: Request) {
     // 1. Query all role tables for accounts past their scheduled permanent deletion date
     const [
       { data: expiredSeekers },
-      { data: expiredRecruiters },
-      { data: expiredEmployees }
+      { data: expiredRecruiters }
     ] = await Promise.all([
       supabaseAdmin
         .from('jobseekers')
@@ -29,18 +28,12 @@ export async function GET(request: Request) {
         .from('recruiters')
         .select('id, uuid')
         .eq('is_deleted', true)
-        .lte('scheduled_delete_at', nowIso),
-      supabaseAdmin
-        .from('employees')
-        .select('id, uuid')
-        .eq('is_deleted', true)
-        .lte('scheduled_delete_at', nowIso),
+        .lte('scheduled_delete_at', nowIso)
     ]);
 
     const targets: { table: string; id: number; uuid: string }[] = [
       ...(expiredSeekers || []).map((u: any) => ({ table: 'jobseekers', id: u.id, uuid: u.uuid })),
-      ...(expiredRecruiters || []).map((u: any) => ({ table: 'recruiters', id: u.id, uuid: u.uuid })),
-      ...(expiredEmployees || []).map((u: any) => ({ table: 'employees', id: u.id, uuid: u.uuid }))
+      ...(expiredRecruiters || []).map((u: any) => ({ table: 'recruiters', id: u.id, uuid: u.uuid }))
     ];
 
     for (const target of targets) {

@@ -23,11 +23,7 @@ export async function POST(request: Request) {
 
       'mini': 'Mini Credit Pack',
       'popular_pack': 'Popular Credit Pack',
-      'pro_pack': 'Pro Credit Pack',
-      'employee_starter': 'Starter Boost Pack',
-      'employee_double': 'Double Boost Pack',
-      'employee_pro': 'Pro Boost Pack',
-      'employee_enterprise': 'Enterprise Boost Pack'
+      'pro_pack': 'Pro Credit Pack'
     };
 
     const finalName = name || PLAN_NAMES[planId] || 'Plan';

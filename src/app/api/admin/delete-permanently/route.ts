@@ -28,7 +28,6 @@ export async function DELETE(request: NextRequest) {
     const [
       { data: seeker },
       { data: recruiter },
-      { data: employee },
       { data: admin }
     ] = await Promise.all([
       isNumeric
@@ -37,9 +36,6 @@ export async function DELETE(request: NextRequest) {
       isNumeric
         ? supabaseAdmin.from('recruiters').select('id, uuid').eq('id', userId).maybeSingle()
         : supabaseAdmin.from('recruiters').select('id, uuid').eq('uuid', userId).maybeSingle(),
-      isNumeric
-        ? supabaseAdmin.from('employees').select('id, uuid').eq('id', userId).maybeSingle()
-        : supabaseAdmin.from('employees').select('id, uuid').eq('uuid', userId).maybeSingle(),
       isNumeric
         ? supabaseAdmin.from('admins').select('id, uuid').eq('id', userId).maybeSingle()
         : supabaseAdmin.from('admins').select('id, uuid').eq('uuid', userId).maybeSingle()
@@ -51,9 +47,6 @@ export async function DELETE(request: NextRequest) {
     } else if (recruiter) {
       targetTable = 'recruiters';
       userUuid = recruiter.uuid;
-    } else if (employee) {
-      targetTable = 'employees';
-      userUuid = employee.uuid;
     } else if (admin) {
       targetTable = 'admins';
       userUuid = admin.uuid;

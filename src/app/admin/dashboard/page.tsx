@@ -5,10 +5,10 @@ import { useState, useEffect } from "react";
 import { useUser } from "@/contexts/user-context";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase-client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Briefcase, Users, FileSignature, BarChart3, Calendar as CalendarIcon, UserSearch, UserRound, UserCheck, ThumbsUp, ShieldCheck, Wallet, Globe, Sparkles, Loader2 } from "lucide-react";
+import { Briefcase, FileSignature, BarChart3, Calendar as CalendarIcon, UserSearch, UserCheck,Wallet, Globe, Sparkles, Loader2 } from "lucide-react";
 import {
   PieChart,
   Pie,

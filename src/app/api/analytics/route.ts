@@ -35,20 +35,16 @@ export async function GET(request: NextRequest) {
         const [
             totalJobSeekers,
             totalRecruiters,
-            totalEmployees,
             totalApplications,
             periodJobSeekers,
             periodRecruiters,
-            periodEmployees,
             periodApplications
         ] = await Promise.all([
             getCount('jobseekers', null, null, 'created_at'),
             getCount('recruiters', null, null, 'created_at'),
-            getCount('employees', null, null, 'created_at'),
             getCount('applications', null, null, 'applied_at'),
             getCount('jobseekers', from, to, 'created_at'),
             getCount('recruiters', from, to, 'created_at'),
-            getCount('employees', from, to, 'created_at'),
             getCount('applications', from, to, 'applied_at')
         ]);
 
@@ -138,13 +134,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             totalJobSeekers,
             totalRecruiters,
-            totalEmployees,
             totalDirectJobs: totalDirectJobsResult,
             totalReferralJobs,
             totalApplications,
             periodJobSeekers,
             periodRecruiters,
-            periodEmployees,
             periodApplications,
             directJobsByIndustry: directJobsChartData,
             referralJobsByIndustry: referralJobsChartData,

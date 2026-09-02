@@ -3,12 +3,11 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@/contexts/user-context";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, Mail, Sparkles, RefreshCw, Send, CheckCircle2,
-  AlertTriangle, ShieldCheck, Zap, BarChart3, Filter, Search,
-  ArrowUpRight, Clock, Eye, MousePointerClick, ShieldAlert, Cpu,
-  Settings, Check, X, ChevronRight, ExternalLink, Loader2, Play
+  AlertTriangle, ShieldCheck, Filter, Search,
+  Eye, ShieldAlert, Cpu,
+  ExternalLink, Loader2, Play
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

@@ -11,14 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Coins, TrendingUp, Receipt, Users, Search, Tag, Calendar, 
-  DollarSign, CreditCard, CheckCircle, ArrowUpDown, Filter, Sparkles, Wallet, Percent, ArrowUpRight
+  DollarSign, Sparkles, ArrowUpRight
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import { AnimatedCounter } from "@/components/animated-counter";
 
 interface Transaction {

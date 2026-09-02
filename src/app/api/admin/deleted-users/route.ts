@@ -11,24 +11,20 @@ export async function GET(request: Request) {
     const [
       { data: seekers, error: seekerErr },
       { data: recruiters, error: recruiterErr },
-      { data: employees, error: employeeErr },
       { data: admins, error: adminErr }
     ] = await Promise.all([
       supabaseAdmin.from('jobseekers').select('id, uuid, name, email, phone, role, created_at, deleted_at, scheduled_delete_at, is_deleted').eq('is_deleted', true),
       supabaseAdmin.from('recruiters').select('id, uuid, name, email, phone, role, company_name, created_at, deleted_at, scheduled_delete_at, is_deleted').eq('is_deleted', true),
-      supabaseAdmin.from('employees').select('id, uuid, name, email, phone, role, company_name, created_at, deleted_at, scheduled_delete_at, is_deleted').eq('is_deleted', true),
       supabaseAdmin.from('admins').select('id, uuid, name, email, phone, role, created_at, deleted_at, scheduled_delete_at, is_deleted').eq('is_deleted', true)
     ]);
 
     if (seekerErr) console.error('[GET_DELETED_USERS] Seekers error:', seekerErr);
     if (recruiterErr) console.error('[GET_DELETED_USERS] Recruiters error:', recruiterErr);
-    if (employeeErr) console.error('[GET_DELETED_USERS] Employees error:', employeeErr);
     if (adminErr) console.error('[GET_DELETED_USERS] Admins error:', adminErr);
 
     const deletedUsers = [
       ...(seekers || []).map((u: any) => ({ ...u, role: u.role || 'Job Seeker', companyName: undefined })),
       ...(recruiters || []).map((u: any) => ({ ...u, role: u.role || 'Recruiter', companyName: u.company_name })),
-      ...(employees || []).map((u: any) => ({ ...u, role: u.role || 'Employee', companyName: u.company_name })),
       ...(admins || []).map((u: any) => ({ ...u, role: u.role || 'Admin', companyName: undefined }))
     ];
 
