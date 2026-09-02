@@ -95,8 +95,11 @@ const mapFrontendToDb = (data: any) => {
         if (frontendKey in mappedData) {
             let value = mappedData[frontendKey];
             
-            // Normalize YYYY-MM to YYYY-MM-DD for PostgreSQL DATE type
-            if (typeof value === 'string' && /^\d{4}-\d{2}$/.test(value)) {
+            // Normalize empty strings to null for dates and optional fields
+            if (typeof value === 'string' && value.trim() === '') {
+                value = null;
+            } else if (typeof value === 'string' && /^\d{4}-\d{2}$/.test(value)) {
+                // Normalize YYYY-MM to YYYY-MM-DD for PostgreSQL DATE type
                 value = `${value}-01`;
             }
             
@@ -104,6 +107,19 @@ const mapFrontendToDb = (data: any) => {
             delete mappedData[frontendKey];
         }
     }
+
+    // Also sanitize any direct snake_case date fields that might be passed
+    const dateKeys = ['start_date', 'end_date', 'date_of_birth', 'created_at', 'updated_at', 'issue_date', 'expiration_date', 'date_achieved'];
+    for (const dKey of dateKeys) {
+        if (dKey in mappedData) {
+            if (typeof mappedData[dKey] === 'string' && mappedData[dKey].trim() === '') {
+                mappedData[dKey] = null;
+            } else if (typeof mappedData[dKey] === 'string' && /^\d{4}-\d{2}$/.test(mappedData[dKey])) {
+                mappedData[dKey] = `${mappedData[dKey]}-01`;
+            }
+        }
+    }
+
     return mappedData;
 };
 
@@ -317,7 +333,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         return NextResponse.json(data, { status: 201 });
     } catch (e: any) {
         console.error("Profile POST Error:", e);
-        return NextResponse.json({ error: `Failed to create item in ${section || 'section'}` }, { status: 500 });
+        return NextResponse.json({ error: `Failed to create item in ${section || 'section'}`, details: e.message }, { status: 500 });
     }
 }
 
@@ -403,7 +419,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         return NextResponse.json(data, { status: 200 });
     } catch (e: any) {
         console.error("Profile PUT Error:", e);
-        return NextResponse.json({ error: `Failed to update item in ${section || 'section'}` }, { status: 500 });
+        return NextResponse.json({ error: `Failed to update item in ${section || 'section'}`, details: e.message }, { status: 500 });
     }
 }
 
