@@ -36,7 +36,7 @@ export async function GET(request: Request) {
                     jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name)),
                     visa_requirements:visa_requirement_id(id, name),
                     workplace_types:workplace_type_id(id, name),
-                    notice_periods:notice_period_id(id, name, days),
+                    notice_periods:notice_period_id(id, name),
                     currencies:preferred_currency_id(id, code, symbol, name)
                 `).eq('uuid', uid).maybeSingle();
             })(),

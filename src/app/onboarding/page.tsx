@@ -180,18 +180,12 @@ export default function OnboardingPage() {
             try {
                 const targetId = user.id || user.uuid;
                 if (targetId) {
-                    const updatedMeta = {
-                        ...(user.metadata || {}),
-                        hasSeenReferralPrompt: true,
-                        referralStepDismissed: true,
-                    };
                     setUser({
                         ...user,
                         hasSeenReferralPrompt: true,
                         has_seen_referral_prompt: true,
                         referralStepDismissed: true,
                         referral_step_dismissed: true,
-                        metadata: updatedMeta
                     });
                     await fetch(`/api/users/${targetId}`, {
                         method: 'PATCH',
@@ -202,7 +196,6 @@ export default function OnboardingPage() {
                             has_seen_referral_prompt: true,
                             referralStepDismissed: true,
                             referral_step_dismissed: true,
-                            metadata: updatedMeta
                         })
                     });
                 }
@@ -214,15 +207,16 @@ export default function OnboardingPage() {
 
     useEffect(() => {
         if (user) {
-            // 100% Database column & metadata check
+            // 100% Database table columns check (not from metadata)
             const isDismissedDb = !!(
                 user.referredBy ||
-                user.hasSeenReferralPrompt ||
-                user.has_seen_referral_prompt ||
+                (user as any).referred_by ||
+                user.referralRewarded ||
+                user.referral_rewarded ||
                 user.referralStepDismissed ||
                 user.referral_step_dismissed ||
-                user.metadata?.hasSeenReferralPrompt ||
-                user.metadata?.referralStepDismissed
+                user.hasSeenReferralPrompt ||
+                user.has_seen_referral_prompt
             );
 
             if (isDismissedDb) {
@@ -232,14 +226,53 @@ export default function OnboardingPage() {
             }
 
             const stored = typeof window !== 'undefined' ? localStorage.getItem('jobsdart_referral_code') : null;
-            if (stored && !user.referredBy && !referralCode) {
-                setReferralCode(stored);
+            if (stored && !user.referredBy && !isDismissedDb && !referralCode) {
+                const storedUpper = stored.trim().toUpperCase();
+                const userOwnCode = user.referralCode?.trim().toUpperCase();
+                if (userOwnCode && storedUpper === userOwnCode) {
+                    // Do not pre-fill own referral code
+                    localStorage.removeItem('jobsdart_referral_code');
+                } else {
+                    setReferralCode(stored);
+                }
+            }
+
+            // Pre-populate missing fields state if partially filled
+            if (user.country && !selectedCountry) setSelectedCountry(user.country);
+            if (user.countryId && !selectedCountryId) setSelectedCountryId(user.countryId);
+            if (user.state && !selectedState) setSelectedState(user.state);
+            if (user.stateId && !selectedStateId) setSelectedStateId(user.stateId);
+            if (user.currentCity && !selectedCity) setSelectedCity(user.currentCity);
+            if (user.cityId && !selectedCityId) setSelectedCityId(user.cityId);
+            if (user.phone && !phone) setPhone(user.phone.replace(/^\+91/, ''));
+            if (user.linkedinUrl && !linkedinUrl) setLinkedinUrl(user.linkedinUrl);
+            if (user.githubUrl && !githubUrl) setGithubUrl(user.githubUrl);
+            if (user.portfolioUrl && !portfolioUrl) setPortfolioUrl(user.portfolioUrl);
+            if (Array.isArray(user.education) && user.education.length > 0 && education.length === 0) setEducation(user.education);
+            if (Array.isArray(user.experience) && user.experience.length > 0 && experience.length === 0) setExperience(user.experience);
+            if (Array.isArray(user.projects) && user.projects.length > 0 && projects.length === 0) setProjects(user.projects);
+            if (Array.isArray(user.achievements) && user.achievements.length > 0 && achievements.length === 0) {
+                setAchievements(user.achievements.map((a: any) => typeof a === 'string' ? a : a.title || ''));
+            }
+            if (Array.isArray(user.certifications) && user.certifications.length > 0 && certifications.length === 0) {
+                setCertifications(user.certifications.map((c: any) => typeof c === 'string' ? c : c.name || c.title || ''));
             }
         }
     }, [user]);
 
     const handleVerifyCode = async () => {
         if (!referralCode.trim() || !user) return;
+
+        const codeTrimmed = referralCode.trim().toUpperCase();
+        const userOwnCode = user.referralCode?.trim().toUpperCase();
+        if (userOwnCode && codeTrimmed === userOwnCode) {
+            setReferralMessage({
+                text: "You cannot use your own referral code.",
+                type: 'error'
+            });
+            return;
+        }
+
         setIsValidatingCode(true);
         setReferralMessage(null);
         try {
@@ -260,6 +293,14 @@ export default function OnboardingPage() {
             }
 
             const referrer = valData.referrer;
+            if (referrer.id === user.id || referrer.id === (user as any).pk || referrer.uuid === user.uuid) {
+                setReferralMessage({
+                    text: "You cannot use your own referral code.",
+                    type: 'error'
+                });
+                return;
+            }
+
             setReferrerId(referrer.id);
             setReferrerName(referrer.name);
 
@@ -281,6 +322,14 @@ export default function OnboardingPage() {
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('jobsdart_referral_code');
                 }
+                setUser({
+                    ...user,
+                    referredBy: referrer.id,
+                    hasSeenReferralPrompt: true,
+                    has_seen_referral_prompt: true,
+                    referralStepDismissed: true,
+                    referral_step_dismissed: true,
+                });
                 setTimeout(() => {
                     dismissReferralStep();
                 }, 1000);
@@ -849,7 +898,18 @@ export default function OnboardingPage() {
 
     if (loading || !user) return null;
 
-    if (showReferralStep && !user.referredBy) {
+    const isReferralCompletedOrDismissed = !!(
+        user.referredBy ||
+        (user as any).referred_by ||
+        user.referralRewarded ||
+        user.referral_rewarded ||
+        user.referralStepDismissed ||
+        user.referral_step_dismissed ||
+        user.hasSeenReferralPrompt ||
+        user.has_seen_referral_prompt
+    );
+
+    if (showReferralStep && !isReferralCompletedOrDismissed) {
         return (
             <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-hidden">
                 {/* Background Aesthetics */}
@@ -969,13 +1029,14 @@ export default function OnboardingPage() {
         );
     }
 
-    const needsPhone = !user.phone || user.phone.length < 10;
-    const needsResume = !user.resumeUrl;
+    const needsPhone = !user.phone || user.phone.trim().replace(/\D/g, "").length < 7;
+    const needsResume = !user.resumeUrl || user.resumeUrl.trim() === "";
     const needsSkills = !(
         user.profileStats?.hasSkills ||
         (Array.isArray(user.skills) && user.skills.length > 0) ||
         (Array.isArray((user as any).skill_ids) && (user as any).skill_ids.length > 0) ||
-        (Array.isArray((user as any).skillIds) && (user as any).skillIds.length > 0)
+        (Array.isArray((user as any).skillIds) && (user as any).skillIds.length > 0) ||
+        (Array.isArray((user as any).jobseeker_skills) && (user as any).jobseeker_skills.length > 0)
     );
     const needsLocation = !(
         (user?.country || user?.countryId) &&
@@ -983,23 +1044,33 @@ export default function OnboardingPage() {
         (user?.currentCity || user?.cityId)
     );
 
-    const needsLinkedin = !user.linkedinUrl;
-    const needsGithub = !user.githubUrl;
-    const needsPortfolio = !user.portfolioUrl;
+    const needsLinkedin = !user.linkedinUrl || user.linkedinUrl.trim() === "";
+    const needsGithub = !user.githubUrl || user.githubUrl.trim() === "";
+    const needsPortfolio = !user.portfolioUrl || user.portfolioUrl.trim() === "";
 
-    const needsEducation = !user.education || user.education.length === 0;
-    const needsExperience = !user.experience || user.experience.length === 0;
-    const needsProjects = !user.projects || user.projects.length === 0;
+    const needsEducation = !user.profileStats?.hasEducation && (!user.education || user.education.length === 0);
+    const needsExperience = !user.profileStats?.hasEmployment && (!user.experience || user.experience.length === 0);
+    const needsProjects = !user.profileStats?.hasProjects && (!user.projects || user.projects.length === 0);
     const needsAchievements = !(
         (Array.isArray((user as any).jobseekerAchievements) && (user as any).jobseekerAchievements.length > 0) ||
+        (Array.isArray((user as any).jobseeker_achievements) && (user as any).jobseeker_achievements.length > 0) ||
         (Array.isArray(user.metadata?.achievements) && user.metadata.achievements.length > 0) ||
         (Array.isArray(user.achievements) && user.achievements.length > 0)
     );
     const needsCertifications = !(
         (Array.isArray((user as any).jobseekerCertifications) && (user as any).jobseekerCertifications.length > 0) ||
+        (Array.isArray((user as any).jobseeker_certifications) && (user as any).jobseeker_certifications.length > 0) ||
         (Array.isArray(user.metadata?.certifications) && user.metadata.certifications.length > 0) ||
         (Array.isArray(user.certifications) && user.certifications.length > 0)
     );
+    const needsCommunities = !(
+        (Array.isArray(user.jobseekerPreferredLocations) && user.jobseekerPreferredLocations.length > 0) ||
+        (Array.isArray(user.preferredLocations) && user.preferredLocations.length > 0)
+    );
+
+    const hasAnyIncompleteField = needsLocation || needsPhone || needsResume || needsSkills || 
+        needsEducation || needsExperience || needsProjects || needsAchievements || 
+        needsCertifications || needsLinkedin || needsGithub || needsPortfolio || needsCommunities;
 
     // Accurate weighted profile completion score (0-100%)
     const calculateProgressPct = () => {
@@ -1052,6 +1123,50 @@ export default function OnboardingPage() {
     };
 
     const progressPct = calculateProgressPct();
+
+    if (!hasAnyIncompleteField) {
+        return (
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-hidden">
+                <div className="absolute top-0 -left-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 -right-20 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl shadow-slate-200/60 dark:shadow-none border border-slate-100 dark:border-slate-800 p-8 lg:p-12 relative z-10 text-center"
+                >
+                    <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-200 dark:shadow-none">
+                        <CheckCircle2 className="w-10 h-10 text-white" />
+                    </div>
+                    <h1 className="text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight mb-3">
+                        Profile Complete! 🎉
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base font-medium mb-8 leading-relaxed">
+                        All your profile fields are fully completed. You're ready to explore jobs and apply with your profile!
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <Button
+                            type="button"
+                            onClick={() => router.push('/jobs')}
+                            className="flex-1 h-14 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-extrabold text-base shadow-xl shadow-indigo-500/25 transition-all"
+                        >
+                            Explore Jobs
+                            <ChevronRight className="w-5 h-5 ml-2" />
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => router.push('/profile')}
+                            className="h-14 px-6 rounded-2xl border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-800"
+                        >
+                            View Profile
+                        </Button>
+                    </div>
+                </motion.div>
+            </div>
+        );
+    }
 
     if (buildMethod === null) {
         return (
@@ -1224,75 +1339,77 @@ export default function OnboardingPage() {
                 <form onSubmit={handleSubmit} className="space-y-8">
 
                     {/* Location Hierarchy Selector */}
-                    <div className="space-y-4 bg-gradient-to-b from-indigo-50/40 via-slate-50/40 to-slate-50/40 dark:from-slate-900/60 dark:to-slate-900/30 p-6 rounded-2xl border border-indigo-100/80 dark:border-slate-800">
-                        <div className="flex items-center justify-between">
-                            <label className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                                <Globe className="w-4 h-4 text-indigo-500" />
-                                Your Primary Location <span className="text-rose-500 font-bold">*</span>
-                            </label>
-                            <span className="text-[11px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-0.5 rounded-full border border-rose-200 dark:border-rose-900/40">
-                                Required
-                            </span>
+                    {needsLocation && (
+                        <div className="space-y-4 bg-gradient-to-b from-indigo-50/40 via-slate-50/40 to-slate-50/40 dark:from-slate-900/60 dark:to-slate-900/30 p-6 rounded-2xl border border-indigo-100/80 dark:border-slate-800">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                    <Globe className="w-4 h-4 text-indigo-500" />
+                                    Your Primary Location <span className="text-rose-500 font-bold">*</span>
+                                </label>
+                                <span className="text-[11px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-0.5 rounded-full border border-rose-200 dark:border-rose-900/40">
+                                    Required
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                                        Country <span className="text-rose-500">*</span>
+                                    </label>
+                                    <SearchableCombobox
+                                        options={dbCountries}
+                                        value={selectedCountryId || selectedCountry}
+                                        placeholder="Select Country"
+                                        emptyText="No countries found."
+                                        onSelect={(c) => {
+                                            setSelectedCountry(c.name);
+                                            setSelectedCountryId(c.id || null);
+                                            setSelectedState("");
+                                            setSelectedStateId(null);
+                                            setSelectedCity("");
+                                            setSelectedCityId(null);
+                                            setDbStates([]);
+                                            setDbCities([]);
+                                        }}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                                        State / Province <span className="text-rose-500">*</span>
+                                    </label>
+                                    <SearchableCombobox
+                                        options={dbStates}
+                                        value={selectedStateId || selectedState}
+                                        placeholder={loadingStates ? "Loading states..." : "Select State"}
+                                        disabled={!selectedCountry && !selectedCountryId}
+                                        emptyText={(!selectedCountry && !selectedCountryId) ? "Select country first" : (loadingStates ? "Loading states..." : "No states found.")}
+                                        onSelect={(s) => {
+                                            setSelectedState(s.name);
+                                            setSelectedStateId(s.id || null);
+                                            setSelectedCity("");
+                                            setSelectedCityId(null);
+                                            setDbCities([]);
+                                        }}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                                        City / Metro <span className="text-rose-500">*</span>
+                                    </label>
+                                    <SearchableCombobox
+                                        options={dbCities}
+                                        value={selectedCityId || selectedCity}
+                                        placeholder={loadingCities ? "Loading cities..." : "Select City"}
+                                        disabled={!selectedState && !selectedStateId}
+                                        emptyText={(!selectedState && !selectedStateId) ? "Select state first" : (loadingCities ? "Loading cities..." : "No cities found.")}
+                                        onSelect={(ci) => {
+                                            setSelectedCity(ci.name);
+                                            setSelectedCityId(ci.id || null);
+                                        }}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
-                                    Country <span className="text-rose-500">*</span>
-                                </label>
-                                <SearchableCombobox
-                                    options={dbCountries}
-                                    value={selectedCountryId || selectedCountry}
-                                    placeholder="Select Country"
-                                    emptyText="No countries found."
-                                    onSelect={(c) => {
-                                        setSelectedCountry(c.name);
-                                        setSelectedCountryId(c.id || null);
-                                        setSelectedState("");
-                                        setSelectedStateId(null);
-                                        setSelectedCity("");
-                                        setSelectedCityId(null);
-                                        setDbStates([]);
-                                        setDbCities([]);
-                                    }}
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
-                                    State / Province <span className="text-rose-500">*</span>
-                                </label>
-                                <SearchableCombobox
-                                    options={dbStates}
-                                    value={selectedStateId || selectedState}
-                                    placeholder={loadingStates ? "Loading states..." : "Select State"}
-                                    disabled={!selectedCountry && !selectedCountryId}
-                                    emptyText={(!selectedCountry && !selectedCountryId) ? "Select country first" : (loadingStates ? "Loading states..." : "No states found.")}
-                                    onSelect={(s) => {
-                                        setSelectedState(s.name);
-                                        setSelectedStateId(s.id || null);
-                                        setSelectedCity("");
-                                        setSelectedCityId(null);
-                                        setDbCities([]);
-                                    }}
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
-                                    City / Metro <span className="text-rose-500">*</span>
-                                </label>
-                                <SearchableCombobox
-                                    options={dbCities}
-                                    value={selectedCityId || selectedCity}
-                                    placeholder={loadingCities ? "Loading cities..." : "Select City"}
-                                    disabled={!selectedState && !selectedStateId}
-                                    emptyText={(!selectedState && !selectedStateId) ? "Select state first" : (loadingCities ? "Loading cities..." : "No cities found.")}
-                                    onSelect={(ci) => {
-                                        setSelectedCity(ci.name);
-                                        setSelectedCityId(ci.id || null);
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </div>
+                    )}
 
                     {/* Phone & Contact Details */}
                     {needsPhone && (
@@ -1948,83 +2065,85 @@ export default function OnboardingPage() {
                     )}
 
                     {/* Communities Network Setup */}
-                    <div className="space-y-5 p-6 bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
-                        <div className="space-y-1">
-                            <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                                <Sparkles className="w-4 h-4 text-indigo-600 animate-pulse" />
-                                Communities Network Setup
-                            </h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Select your target locations, interests, and career goals to automatically connect with relevant hubs.</p>
+                    {needsCommunities && (
+                        <div className="space-y-5 p-6 bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                            <div className="space-y-1">
+                                <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-indigo-600 animate-pulse" />
+                                    Communities Network Setup
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Select your target locations, interests, and career goals to automatically connect with relevant hubs.</p>
+                            </div>
+
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Target Countries</label>
+                                <div className="flex flex-wrap gap-2">
+                                  {["India", "USA", "Canada", "Germany", "United Kingdom", "Australia", "Singapore", "UAE"].map(c => {
+                                    const active = selectedCountries.includes(c);
+                                    return (
+                                      <button
+                                        key={c}
+                                        type="button"
+                                        onClick={() => setSelectedCountries(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])}
+                                        className={cn(
+                                          "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all",
+                                          active ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400"
+                                        )}
+                                      >
+                                        {c}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Professional Interests</label>
+                                <div className="flex flex-wrap gap-2">
+                                  {["React", "Next.js", "Node.js", "Python", "Java", "AI & Machine Learning", "Data Science", "DevOps", "UI/UX Design"].map(i => {
+                                    const active = selectedInterests.includes(i);
+                                    return (
+                                      <button
+                                        key={i}
+                                        type="button"
+                                        onClick={() => setSelectedInterests(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
+                                        className={cn(
+                                          "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all",
+                                          active ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400"
+                                        )}
+                                      >
+                                        {i}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Career Goals</label>
+                                <div className="flex flex-wrap gap-2">
+                                  {["Resume Reviews", "Mock Interviews", "Career Guidance", "Remote Jobs", "Freelancing"].map(g => {
+                                    const active = selectedGoals.includes(g);
+                                    return (
+                                      <button
+                                        key={g}
+                                        type="button"
+                                        onClick={() => setSelectedGoals(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
+                                        className={cn(
+                                          "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all",
+                                          active ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400"
+                                        )}
+                                      >
+                                        {g}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
                         </div>
-
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Target Countries</label>
-                            <div className="flex flex-wrap gap-2">
-                              {["India", "USA", "Canada", "Germany", "United Kingdom", "Australia", "Singapore", "UAE"].map(c => {
-                                const active = selectedCountries.includes(c);
-                                return (
-                                  <button
-                                    key={c}
-                                    type="button"
-                                    onClick={() => setSelectedCountries(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])}
-                                    className={cn(
-                                      "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all",
-                                      active ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400"
-                                    )}
-                                  >
-                                    {c}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Professional Interests</label>
-                            <div className="flex flex-wrap gap-2">
-                              {["React", "Next.js", "Node.js", "Python", "Java", "AI & Machine Learning", "Data Science", "DevOps", "UI/UX Design"].map(i => {
-                                const active = selectedInterests.includes(i);
-                                return (
-                                  <button
-                                    key={i}
-                                    type="button"
-                                    onClick={() => setSelectedInterests(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
-                                    className={cn(
-                                      "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all",
-                                      active ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400"
-                                    )}
-                                  >
-                                    {i}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Career Goals</label>
-                            <div className="flex flex-wrap gap-2">
-                              {["Resume Reviews", "Mock Interviews", "Career Guidance", "Remote Jobs", "Freelancing"].map(g => {
-                                const active = selectedGoals.includes(g);
-                                return (
-                                  <button
-                                    key={g}
-                                    type="button"
-                                    onClick={() => setSelectedGoals(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
-                                    className={cn(
-                                      "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all",
-                                      active ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400"
-                                    )}
-                                  >
-                                    {g}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                    </div>
+                    )}
 
                     {/* Submit */}
                     <div className="pt-6 border-t border-slate-100 dark:border-slate-800">

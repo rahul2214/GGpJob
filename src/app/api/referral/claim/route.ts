@@ -158,11 +158,6 @@ export async function POST(request: Request) {
         .update({
           referral_rewarded: true,
           referral_rewarded_at: nowIso,
-          metadata: {
-            ...(referee.metadata || {}),
-            referral_rewarded: true,
-            referral_rewarded_at: nowIso,
-          },
           updated_at: nowIso,
         })
         .eq('id', referee.id);

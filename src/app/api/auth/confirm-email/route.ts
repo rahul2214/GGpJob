@@ -204,17 +204,11 @@ export async function POST(request: Request) {
 
             // 5. Mark referral as rewarded on the referred user
             const nowIso = new Date().toISOString();
-            const updatedMetadata = {
-              ...(jobseeker.metadata || {}),
-              referral_rewarded: true,
-              referral_rewarded_at: nowIso,
-            };
             await supabaseAdmin
               .from('jobseekers')
               .update({ 
                 referral_rewarded: true,
                 referral_rewarded_at: nowIso,
-                metadata: updatedMetadata 
               })
               .eq('id', jobseeker.id);
             

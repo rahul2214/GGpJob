@@ -17,7 +17,7 @@ export async function GET() {
   try {
     const { data, error } = await supabaseAdmin
       .from('notice_periods')
-      .select('id, uuid, name, days, display_order')
+      .select('id, uuid, name, display_order')
       .order('display_order', { ascending: true, nullsFirst: false });
 
     if (error || !data || data.length === 0) {

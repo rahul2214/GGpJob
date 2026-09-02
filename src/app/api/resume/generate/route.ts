@@ -172,13 +172,10 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks, no explanations
     if (userId && jobseekerRecord) {
       try {
         if (isFirstTime) {
-          const currentMetadata = jobseekerRecord.metadata || {}
-          const newMetadata = { ...currentMetadata, has_used_resume_builder: true }
           await supabaseAdmin
             .from('jobseekers')
             .update({ 
               has_used_resume_builder: true,
-              metadata: newMetadata 
             })
             .eq('id', jobseekerRecord.id)
           console.log(`[RESUME_GENERATE_API] Mark has_used_resume_builder for user: ${userId}`)

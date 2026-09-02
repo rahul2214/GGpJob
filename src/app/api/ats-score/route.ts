@@ -267,13 +267,10 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks (e.g., no \`\`\`
     if (userId && jobseekerRecord) {
       try {
         if (isFirstTime) {
-          const currentMetadata = jobseekerRecord.metadata || {}
-          const newMetadata = { ...currentMetadata, has_used_ats_checker: true }
           await supabaseAdmin
             .from('jobseekers')
             .update({ 
               has_used_ats_checker: true,
-              metadata: newMetadata 
             })
             .eq('id', jobseekerRecord.id)
           console.log(`[ATS_SCORE_API] Mark has_used_ats_checker for user: ${userId}`)

@@ -42,7 +42,7 @@ function normalizeDate(dateStr: string | null | undefined): string | null {
     return null;
 }
 
-// Helper to ensure jobseekers metadata ONLY stores UI state flags (hasSeenReferralPrompt, referralStepDismissed, etc.)
+// Helper to clean jobseekers metadata by removing migrated/relational keys, Firebase sync metadata, and dedicated column values
 function cleanJobseekerMetadata(rawMetadata: any): Record<string, any> {
     if (!rawMetadata || typeof rawMetadata !== 'object') return {};
     const clean = { ...rawMetadata };
@@ -57,7 +57,19 @@ function cleanJobseekerMetadata(rawMetadata: any): Record<string, any> {
         'workAuthorization', 'work_authorization', 'preferredLanguages', 'preferred_languages',
         'preferredLocations', 'preferred_locations', 'gender', 'maritalStatus', 'dateOfBirth',
         'category', 'disabilityStatus', 'militaryExperience', 'careerBreak', 'headline', 'summary',
-        'name', 'email', 'phone', 'skills', 'experience', 'education', 'projects', 'languages'
+        'name', 'email', 'phone', 'skills', 'experience', 'education', 'projects', 'languages',
+        'workplaceTypeId', 'workplace_type_id', 'workplaceType', 'workplace_type',
+        'noticePeriodId', 'notice_period_id', 'noticePeriod', 'notice_period',
+        'has_used_ats_checker', 'hasUsedAtsChecker',
+        'hasSeenReferralPrompt', 'has_seen_referral_prompt',
+        'referralStepDismissed', 'referral_step_dismissed',
+        'has_used_resume_builder', 'hasUsedResumeBuilder',
+        'referral_rewarded', 'referralRewarded',
+        'referral_rewarded_at', 'referralRewardedAt',
+        'firebase_uid', 'firebaseUid',
+        'synced_from_firebase', 'syncedFromFirebase',
+        'firebase_creation_time', 'firebaseCreationTime',
+        'annualSalary', 'expectedSalary', 'salaryBreakdown'
     ];
 
     for (const key of keysToRemove) {
@@ -382,7 +394,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
                 jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name)),
                 visa_requirements:visa_requirement_id(id, name),
                 workplace_types:workplace_type_id(id, name),
-                notice_periods:notice_period_id(id, name, days),
+                notice_periods:notice_period_id(id, name),
                 currencies:preferred_currency_id(id, code, symbol, name)
             `)
             .eq(column, idValue)
@@ -692,7 +704,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 }
             }
 
-            const mergedMetadata = { ...(rest.metadata || {}) };
+            const mergedMetadata = cleanJobseekerMetadata(rest.metadata || {});
 
             let wpId: number | null = null;
             if (rest.workplaceTypeId !== undefined && rest.workplaceTypeId !== null && rest.workplaceTypeId !== '') {
@@ -701,19 +713,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 wpId = Number(rest.workplace_type_id);
             }
 
-            if (wpId) {
-                mergedMetadata.workplaceTypeId = wpId;
-            }
-
             let npId: number | null = null;
             if (rest.noticePeriodId !== undefined && rest.noticePeriodId !== null && rest.noticePeriodId !== '') {
                 npId = Number(rest.noticePeriodId);
             } else if (rest.notice_period_id !== undefined && rest.notice_period_id !== null && rest.notice_period_id !== '') {
                 npId = Number(rest.notice_period_id);
-            }
-
-            if (npId) {
-                mergedMetadata.noticePeriodId = npId;
             }
 
             Object.assign(updateData, {
@@ -791,7 +795,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 *, 
                 roles(name),
                 workplace_types:workplace_type_id(id, uuid, name),
-                notice_periods:notice_period_id(id, uuid, name, days),
+                notice_periods:notice_period_id(id, uuid, name),
                 education(*),
                 experience(*),
                 projects(*),
