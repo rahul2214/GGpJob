@@ -271,6 +271,9 @@ export interface Job {
   isCompanyVerified?: boolean;
   // 24. Company Rating
   companyRating?: number;
+  isReferral?: boolean;
+  employeeTrustScore?: number;
+  employeeEmail?: string;
 
   // Additional metadata & relations
   description: string;

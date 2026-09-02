@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Job } from "@/lib/types";
-import { MapPin, Briefcase, Clock, CheckCircle, BadgeDollarSign, Bookmark } from 'lucide-react';
+import { MapPin, Briefcase, Clock, CheckCircle, Bookmark } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useUser } from '@/contexts/user-context';
 import { useToast } from '@/hooks/use-toast';
@@ -99,8 +99,6 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
     }
   };
 
-  const showVerifiedBadge = job.isReferral && (job as any).employeeTrustScore >= 90 && isCorporateEmail((job as any).employeeEmail);
-
   return (
     <motion.div
       whileHover={{ y: -6, scale: 1.01 }}
@@ -179,35 +177,13 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 flex items-center justify-center shrink-0">
-                    <BadgeDollarSign className="h-3 w-3 text-indigo-500" />
-                  </div>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">
-                    {(() => {
-                      if (!job.salaryMin && !job.salaryMax) return (job as any).salary || 'Not Disclosed';
-                      const code = (job.salaryCurrency || 'USD').toUpperCase();
-                      const fmt = (val: number) => {
-                        try {
-                          return new Intl.NumberFormat('en-US', { style: 'currency', currency: code, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val);
-                        } catch {
-                          return `${code} ${val.toLocaleString()}`;
-                        }
-                      };
-                      if (job.salaryMin && job.salaryMax) return `${fmt(job.salaryMin)} - ${fmt(job.salaryMax)}`;
-                      if (job.salaryMin) return `From ${fmt(job.salaryMin)}`;
-                      if (job.salaryMax) return `Up to ${fmt(job.salaryMax)}`;
-                      return 'Not Disclosed';
-                    })()}
-                  </span>
-                </div>
-                {job.companyVerification && (
+              {job.companyVerification && (
+                <div className="flex items-center gap-2 flex-wrap">
                   <Badge className="bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200/60 dark:border-blue-800/60 text-[9px] font-bold">
                     <CheckCircle className="w-2.5 h-2.5 mr-1" /> Verified Company
                   </Badge>
-                )}
-              </div>
+                </div>
+              )}
 
               {((job.requiredSkills && job.requiredSkills.length > 0) || (job.skills && job.skills.length > 0) || (job.requirements && job.requirements.length > 0)) && (
                 <div className="flex items-center gap-1.5 pt-1 text-xs text-slate-500 dark:text-slate-400 font-medium truncate w-full">

@@ -87,3 +87,5 @@ export const CREDIT_PACKS = [
   }
 ];
 
+export const JOB_SEEKER_PLANS = CREDIT_PACKS;
+
