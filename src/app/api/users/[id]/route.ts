@@ -619,7 +619,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             const cleanCityName = rest.currentCity ? rest.currentCity.split('★')[0].trim() : '';
 
             // 1. Resolve Country
-            if (cleanCountryName) {
+            if (cleanCountryName && !cId) {
                 const { data: cObj } = await supabaseAdmin
                     .from('countries')
                     .select('id')
@@ -629,7 +629,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             }
 
             // 2. Resolve State (prefer cleanStateName over stale rest.stateId)
-            if (cleanStateName && cId) {
+            if (cleanStateName && cId && !sId) {
                 const { data: sObj } = await supabaseAdmin
                     .from('states_provinces')
                     .select('id')
@@ -637,8 +637,16 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                     .ilike('name', cleanStateName)
                     .maybeSingle();
                 if (sObj) sId = sObj.id;
-            } else if (!cleanStateName) {
-                sId = null;
+            } else if (cleanStateName && !sId) {
+                const { data: sObj } = await supabaseAdmin
+                    .from('states_provinces')
+                    .select('id, country_id')
+                    .ilike('name', cleanStateName)
+                    .maybeSingle();
+                if (sObj) {
+                    sId = sObj.id;
+                    if (!cId) cId = sObj.country_id;
+                }
             }
 
             // 3. Resolve City
@@ -653,12 +661,38 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             } else if (cleanCityName && !ciId) {
                 const { data: ciObj } = await supabaseAdmin
                     .from('cities')
-                    .select('id')
+                    .select('id, state_province_id')
                     .ilike('name', cleanCityName)
                     .maybeSingle();
-                if (ciObj) ciId = ciObj.id;
-            } else if (!cleanCityName && !rest.cityId) {
-                ciId = null;
+                if (ciObj) {
+                    ciId = ciObj.id;
+                    if (!sId) sId = ciObj.state_province_id;
+                }
+            }
+
+            // 4. If City is known, infer state and country if missing
+            if (ciId && (!sId || !cId)) {
+                const { data: cityDetails } = await supabaseAdmin
+                    .from('cities')
+                    .select('id, state_province_id, states_provinces:state_province_id(id, country_id)')
+                    .eq('id', ciId)
+                    .maybeSingle();
+                if (cityDetails) {
+                    if (!sId && cityDetails.state_province_id) sId = cityDetails.state_province_id;
+                    if (!cId && (cityDetails.states_provinces as any)?.country_id) {
+                        cId = (cityDetails.states_provinces as any).country_id;
+                    }
+                }
+            }
+
+            // 5. If State is known, infer country if missing
+            if (sId && !cId) {
+                const { data: stateDetails } = await supabaseAdmin
+                    .from('states_provinces')
+                    .select('id, country_id')
+                    .eq('id', sId)
+                    .maybeSingle();
+                if (stateDetails && stateDetails.country_id) cId = stateDetails.country_id;
             }
 
             // 4. Resolve Visa Requirement ID
@@ -718,6 +752,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 npId = Number(rest.noticePeriodId);
             } else if (rest.notice_period_id !== undefined && rest.notice_period_id !== null && rest.notice_period_id !== '') {
                 npId = Number(rest.notice_period_id);
+            } else if (rest.noticePeriod && typeof rest.noticePeriod === 'string') {
+                const { data: matchedNp } = await supabaseAdmin
+                    .from('notice_periods')
+                    .select('id')
+                    .ilike('name', rest.noticePeriod.trim())
+                    .maybeSingle();
+                if (matchedNp) npId = matchedNp.id;
             }
 
             Object.assign(updateData, {
@@ -734,7 +775,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 annual_salary: rest.annualSalary === '' ? null : rest.annualSalary,
                 expected_salary: rest.expectedSalary === '' ? null : rest.expectedSalary,
                 salary_breakdown: rest.salaryBreakdown,
-                notice_period: rest.noticePeriod,
                 metadata: mergedMetadata,
                 referral_code: rest.referralCode,
                 referral_count: rest.referralCount,
@@ -762,11 +802,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 ...(rest.openToRelocate !== undefined && { open_to_relocate: rest.openToRelocate }),
                 ...(rest.openToRelocation !== undefined && { open_to_relocate: rest.openToRelocation }),
                 ...(rest.openWorldwide !== undefined && { open_worldwide: rest.openWorldwide }),
-                ...(rest.currentCity !== undefined || rest.cityId !== undefined || rest.country !== undefined || rest.state !== undefined
+                ...(rest.currentCity !== undefined || rest.cityId !== undefined || rest.country !== undefined || rest.state !== undefined || rest.countryId !== undefined || rest.stateId !== undefined
                     ? {
                         current_city_id: ciId,
-                        current_country_id: null,
-                        current_state_province_id: null,
+                        current_state_province_id: sId,
+                        current_country_id: cId,
                     }
                     : {}),
             });
