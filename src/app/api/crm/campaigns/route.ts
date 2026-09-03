@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { getCRMCandidates, filterCandidatesByCampaignType } from '@/lib/crm/candidate-crm';
+import { getCRMCandidates, filterCandidatesByCampaignType, getRecentJobsHtml, getRecommendedJobsHtml } from '@/lib/crm/candidate-crm';
 import { CAMPAIGN_STRUCTURE_CATALOG, renderCRMTemplate } from '@/lib/crm/template-engine';
 import { enqueueTask } from '@/lib/crm/queue-processor';
 import { sendBrevoTransactionalEmail } from '@/lib/crm/brevo-service';
@@ -33,11 +33,22 @@ export async function POST(request: NextRequest) {
     }
 
     const results = [];
+    const resolvedTemplateId = templateId || CAMPAIGN_STRUCTURE_CATALOG.find((c) => c.type === campaignType)?.defaultTemplateId || `tpl_${campaignType.toLowerCase()}`;
+
     for (const candidate of targetList) {
+      let jobsHtml = '';
+      if (campaignType === 'RECENT_JOBS_DIGEST' || resolvedTemplateId === 'tpl_recent_jobs') {
+        const recentJobsData = await getRecentJobsHtml(candidate, request.nextUrl.origin, 5);
+        jobsHtml = recentJobsData.jobsHtml;
+      } else if (campaignType === 'JOB_RECOMMENDATIONS' || campaignType === 'AI_JOB_RECOMMENDATION' || resolvedTemplateId === 'tpl_job_recommendations') {
+        const recData = await getRecommendedJobsHtml(candidate, request.nextUrl.origin, 5);
+        jobsHtml = recData.jobsHtml;
+      }
+
       const { subject, htmlContent, tags } = renderCRMTemplate(
-        templateId || `tpl_${campaignType.toLowerCase()}`,
+        resolvedTemplateId,
         candidate,
-        '',
+        jobsHtml,
         request.nextUrl.origin
       );
 

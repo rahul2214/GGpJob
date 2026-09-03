@@ -255,7 +255,7 @@ export default function AdminCRMPage() {
             <h1 className="text-3xl font-black tracking-tight">JobsDart CRM & Brevo Automation</h1>
           </div>
           <p className="text-slate-300 text-sm max-w-2xl leading-relaxed">
-            Enterprise 7-Campaign Segmentation Engine with automated Brevo email delivery, ATS score nudges, community engagement, and CAN-SPAM deliverability controls.
+            Enterprise Multi-Campaign Segmentation & Email Automation Engine with automated Brevo delivery, fresh job digests, profile completion nudges, community conversations, and CAN-SPAM deliverability controls.
           </p>
         </div>
 

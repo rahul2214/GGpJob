@@ -30,6 +30,9 @@ export type EmailDeliveryStatus =
 
 export type CampaignType =
   | 'JOB_RECOMMENDATIONS'
+  | 'RECENT_JOBS_DIGEST'
+  | 'PROFILE_UPDATE_NUDGE'
+  | 'COMMUNITY_CONVERSATIONS'
   | 'FEATURE_EDUCATION'
   | 'RESUME_BUILDER'
   | 'COMMUNITY'

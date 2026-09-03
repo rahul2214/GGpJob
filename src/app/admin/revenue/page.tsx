@@ -19,6 +19,7 @@ import {
 } from 'recharts';
 import { format } from "date-fns";
 import { AnimatedCounter } from "@/components/animated-counter";
+import { supabase } from "@/lib/supabase-client";
 
 interface Transaction {
   id: number;
@@ -106,7 +107,15 @@ export default function AdminRevenuePage() {
     if (!isAdminOrSuperAdmin) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/revenue');
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const userIdVal = user?.uuid || user?.id;
+      const url = userIdVal ? `/api/admin/revenue?userId=${encodeURIComponent(String(userIdVal))}` : '/api/admin/revenue';
+
+      const res = await fetch(url, { headers });
       if (!res.ok) throw new Error("Failed to fetch revenue analytics");
       const json = await res.json();
       setData(json);

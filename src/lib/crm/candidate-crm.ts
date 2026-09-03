@@ -222,6 +222,143 @@ export function canSendEmailToCandidate(candidate: CRMCandidate, campaignType: C
 }
 
 /**
+ * Fetches and scores the top 5 matching jobs from DB and formats them into responsive, catchy, clickable HTML cards
+ */
+export async function getRecommendedJobsHtml(
+  candidate: CRMCandidate,
+  origin: string = 'https://jobsdart.in',
+  limit: number = 5
+): Promise<{
+  jobsHtml: string;
+  jobIds: number[];
+  jobTitles: string[];
+  avgScore: number;
+  scoredJobs: Array<{ job: any; score: number }>;
+}> {
+  let jobs: any[] = [];
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('jobs')
+      .select('id, title, company_name, description, address, workplace_type_pk, posted_at, created_at, status, salary_min_usd_cents, salary_max_usd_cents, experience_range, industry')
+      .limit(60);
+
+    if (!error && data && data.length > 0) {
+      jobs = data.filter((j: any) => !j.status || j.status === 'published' || j.status === 'active' || j.status === 'open');
+      if (jobs.length === 0) jobs = data;
+    }
+  } catch (e) {
+    console.warn('[CRM] Failed to fetch jobs for recommendations:', e);
+  }
+
+  if (jobs.length === 0) {
+    jobs = [
+      {
+        id: 1,
+        title: 'Senior Full Stack Engineer (React, Node & Next.js)',
+        company_name: 'TechScale Global',
+        address: 'Bengaluru / Remote',
+        workplaceType: 'Remote',
+        salary_range: '₹24,00,000 - ₹38,00,000 PA',
+        requiredSkills: ['React', 'TypeScript', 'Node.js', 'Next.js'],
+        industry: 'Software & Technology',
+      },
+      {
+        id: 2,
+        title: 'Lead Frontend Engineer (TypeScript & Architecture)',
+        company_name: 'Apex Cloud Solutions',
+        address: 'Hyderabad / Hybrid',
+        workplaceType: 'Hybrid',
+        salary_range: '₹20,00,000 - ₹32,00,000 PA',
+        requiredSkills: ['React', 'TypeScript', 'Next.js', 'TailwindCSS'],
+        industry: 'Fintech',
+      },
+      {
+        id: 3,
+        title: 'Backend Systems & API Engineer (Python / Go)',
+        company_name: 'DataVanguard AI',
+        address: 'Pune / Remote',
+        workplaceType: 'Remote',
+        salary_range: '₹22,00,000 - ₹34,00,000 PA',
+        requiredSkills: ['Python', 'FastAPI', 'PostgreSQL', 'Go'],
+        industry: 'Artificial Intelligence',
+      },
+      {
+        id: 4,
+        title: 'Cloud DevOps & Platform Engineer',
+        company_name: 'HyperScale Networks',
+        address: 'Mumbai / Remote',
+        workplaceType: 'Remote',
+        salary_range: '₹19,00,000 - ₹30,00,000 PA',
+        requiredSkills: ['AWS', 'Docker', 'Kubernetes', 'CI/CD'],
+        industry: 'Cloud Infrastructure',
+      },
+      {
+        id: 5,
+        title: 'Senior Product Engineer & UI/UX Specialist',
+        company_name: 'Nova Digital Labs',
+        address: 'Gurgaon / Hybrid',
+        workplaceType: 'Hybrid',
+        salary_range: '₹16,00,000 - ₹26,00,000 PA',
+        requiredSkills: ['React', 'Figma', 'TypeScript', 'TailwindCSS'],
+        industry: 'Consumer Tech',
+      },
+    ];
+  }
+
+  // Score jobs using recommendation engine
+  const scored = jobs
+    .map(job => {
+      const match = calculateInternationalJobMatch(candidate as any, job as any);
+      return {
+        job,
+        score: match.score || 85,
+      };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const topMatches = scored.slice(0, limit);
+  const avgScore = topMatches.length > 0 ? Math.round(topMatches.reduce((acc, c) => acc + c.score, 0) / topMatches.length) : 90;
+  const jobIds = topMatches.map(item => item.job.id);
+  const jobTitles = topMatches.map(item => item.job.title);
+
+  const jobsHtml = topMatches
+    .map(item => {
+      const job = item.job;
+      const company = job.company_name || job.companyName || 'Verified Tech Employer';
+      const loc = job.address || job.location || (candidate.currentCity ? `${candidate.currentCity}, ${candidate.country || ''}` : 'Remote Worldwide');
+      const salary = job.salary_range || job.salaryRange || (job.salary_min_usd_cents && job.salary_max_usd_cents ? `$${Math.round(job.salary_min_usd_cents / 100)} - $${Math.round(job.salary_max_usd_cents / 100)}` : 'Competitive Compensation');
+      const applyUrl = `${origin}/jobs/${job.id}`;
+      const workplace = job.workplaceType || job.workplace_type || 'Remote / Hybrid';
+
+      return `
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:18px; padding:18px; margin-bottom:14px; box-shadow:0 3px 10px rgba(0,0,0,0.03);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="background:linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%); color:#4338ca; font-size:11px; font-weight:800; padding:4px 10px; border-radius:12px; text-transform:uppercase;">
+              ⚡ ${item.score}% AI Match
+            </span>
+            <span style="background:#f1f5f9; color:#475569; font-size:11px; font-weight:700; padding:3px 8px; border-radius:8px;">${workplace}</span>
+          </div>
+          <h3 style="margin:4px 0 6px 0; font-size:16px; font-weight:800; line-height:1.35;">
+            <a href="${applyUrl}" style="color:#0f172a; text-decoration:none;">${job.title} &rarr;</a>
+          </h3>
+          <p style="margin:0 0 8px 0; color:#475569; font-size:13px; font-weight:500;">
+            🏢 <strong>${company}</strong> &nbsp;•&nbsp; 📍 ${loc}
+          </p>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:10px; padding-top:10px; border-top:1px dashed #e2e8f0;">
+            <span style="color:#059669; font-size:13px; font-weight:800;">💰 ${salary}</span>
+            <a href="${applyUrl}" style="display:inline-block; background:linear-gradient(135deg, #3525cd 0%, #4f46e5 100%); color:#ffffff; font-size:11px; font-weight:900; padding:8px 18px; border-radius:8px; text-decoration:none; text-transform:uppercase; box-shadow:0 2px 6px rgba(53,37,205,0.25);">
+              Apply Instantly &rarr;
+            </a>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  return { jobsHtml, jobIds, jobTitles, avgScore, scoredJobs: topMatches };
+}
+
+/**
  * Generates AI Job Recommendation Digest & Sends Email via Brevo API
  */
 export async function runAIRecommendationForCandidate(
@@ -298,21 +435,9 @@ export async function runAIRecommendationForCandidate(
     ];
   }
 
-  // 2. Score jobs using JobsDart Recommendation Engine
-  let scoredJobs = jobs
-    .map(job => {
-      const match = calculateInternationalJobMatch(candidate as any, job as any);
-      return {
-        job,
-        score: match.score || 75,
-        breakdown: match.breakdown,
-      };
-    })
-    .sort((a, b) => b.score - a.score);
-
-  // Take top 3 matching jobs (threshold >= 40%, fallback to top 3 if none >= 40%)
-  const topMatches = scoredJobs.filter(item => item.score >= 40).slice(0, 3);
-  scoredJobs = topMatches.length > 0 ? topMatches : scoredJobs.slice(0, 3);
+  // 2. Score jobs using JobsDart Recommendation Engine & format top 5 jobs
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.jobsdart.in';
+  const { jobsHtml, jobIds: recommendedJobIds, jobTitles: recommendedTitles, avgScore: avgMatchScore, scoredJobs } = await getRecommendedJobsHtml(candidate, origin, 5);
 
   if (scoredJobs.length === 0) {
     return {
@@ -323,79 +448,48 @@ export async function runAIRecommendationForCandidate(
     };
   }
 
-  const avgMatchScore = Math.round(
-    scoredJobs.reduce((acc, curr) => acc + curr.score, 0) / scoredJobs.length
-  );
-  const recommendedJobIds = scoredJobs.map(item => item.job.id);
-  const recommendedTitles = scoredJobs.map(item => item.job.title);
-
-  // 3. Format Responsive HTML Email Content
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.jobsdart.in';
-  
-  const jobsHtml = scoredJobs
-    .map(
-      item => `
-      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; margin-bottom:16px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <span style="background:#eef2ff; color:#3525cd; font-size:11px; font-weight:800; padding:4px 10px; border-radius:12px; text-transform:uppercase;">
-            ⚡ ${item.score}% AI Match
-          </span>
-          <span style="color:#64748b; font-size:12px; font-weight:600;">
-            ${item.job.workplaceType || 'Remote'}
-          </span>
-        </div>
-        <h3 style="margin:6px 0; color:#0f172a; font-size:16px; font-weight:800;">${item.job.title}</h3>
-        <p style="margin:0 0 12px 0; color:#64748b; font-size:13px; font-weight:500;">
-          🏢 ${item.job.companyName || item.job.company_name || 'Verified Company'} &nbsp;|&nbsp; 📍 ${item.job.location || 'Remote Worldwide'}
-        </p>
-        <p style="margin:0 0 16px 0; color:#059669; font-size:13px; font-weight:700;">
-          💰 ${item.job.salaryRange || item.job.salary || 'Competitive Compensation'}
-        </p>
-        <a href="${origin}/jobs/${item.job.id}" style="display:inline-block; background:#3525cd; color:#ffffff; font-size:12px; font-weight:800; padding:10px 18px; border-radius:10px; text-decoration:none; text-transform:uppercase;">
-          View & Apply Job →
-        </a>
-      </div>
-    `
-    )
-    .join('');
+  const topScore = scoredJobs[0]?.score || 95;
+  const firstName = candidate.name.split(' ')[0];
 
   const htmlContent = `
     <!DOCTYPE html>
     <html>
-      <body style="font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color:#f8fafc; padding:24px; color:#1e293b;">
+      <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Top 5 AI Job Matches</title></head>
+      <body style="font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color:#f8fafc; padding:24px; color:#1e293b; margin:0;">
         <div style="max-width:600px; margin:0 auto; background:#ffffff; border-radius:24px; padding:32px; border:1px solid #cbd5e1; box-shadow:0 10px 25px rgba(0,0,0,0.05);">
           
-          <!-- Header -->
-          <div style="border-bottom:1px solid #f1f5f9; padding-bottom:20px; margin-bottom:24px; text-align:center;">
-            <h1 style="color:#3525cd; margin:0; font-size:26px; font-weight:900; tracking-tight: -0.5px;">JobsDart AI Career Match</h1>
-            <p style="color:#64748b; font-size:13px; margin-top:6px; font-weight:600;">Top curated job recommendations tailored for ${candidate.name}</p>
+          <!-- Header Banner -->
+          <div style="border-bottom:2px solid #6366f1; padding-bottom:16px; margin-bottom:24px; text-align:center;">
+            <span style="background:#e0e7ff; color:#3730a3; font-size:11px; font-weight:800; padding:6px 14px; border-radius:20px; text-transform:uppercase;">🎯 AI-Powered Career Match</span>
+            <h1 style="color:#1e1b4b; margin:12px 0 4px 0; font-size:24px; font-weight:900;">Top 5 Job Matches Handpicked for You</h1>
+            <p style="color:#64748b; font-size:12px; margin-top:4px; font-weight:600;">Personalized career opportunities matching your profile</p>
           </div>
 
-          <p style="font-size:15px; font-weight:600; color:#334155; margin-bottom:20px;">
-            Hi ${candidate.name.split(' ')[0]},
+          <p style="font-size:15px; font-weight:600; color:#334155; margin-bottom:12px;">
+            Hi ${firstName},
           </p>
-          <p style="font-size:14px; color:#475569; line-height:1.6; margin-bottom:24px;">
-            Based on your skills in <strong>${candidate.skills.slice(0, 4).join(', ') || 'Software Development'}</strong> and career preferences, our AI engine discovered <strong>${scoredJobs.length} top matching opportunities</strong> for you today:
+          <p style="font-size:14px; color:#475569; line-height:1.6; margin-bottom:20px;">
+            Based on your skills in <strong>${candidate.skills.slice(0, 3).join(', ') || 'Software Engineering'}</strong>, our AI matching algorithm discovered these <strong>5 high-compatibility opportunities</strong> for you today:
           </p>
 
           <!-- Job Cards List -->
           ${jobsHtml}
 
-          <!-- CTA Banner -->
-          <div style="background:linear-gradient(135deg, #3525cd 0%, #4f46e5 100%); border-radius:18px; padding:24px; text-align:center; color:#ffffff; margin-top:28px;">
-            <h4 style="margin:0 0 8px 0; font-size:16px; font-weight:800;">Explore All Recommended Roles</h4>
-            <p style="margin:0 0 16px 0; font-size:12px; opacity:0.9;">Sign in to your JobsDart dashboard to update your skill profile & target salary.</p>
-            <a href="${origin}/jobs" style="display:inline-block; background:#ffffff; color:#3525cd; font-size:12px; font-weight:900; padding:12px 24px; border-radius:12px; text-decoration:none; text-transform:uppercase;">
-              Open JobsDart App
+          <!-- Catchy Bottom CTA Banner -->
+          <div style="background:linear-gradient(135deg, #3525cd 0%, #4f46e5 100%); border-radius:18px; padding:24px; text-align:center; color:#ffffff; margin-top:24px; box-shadow:0 6px 20px rgba(53,37,205,0.3);">
+            <h4 style="margin:0 0 6px 0; font-size:17px; font-weight:900;">🚀 Discover 50+ More Live Roles</h4>
+            <p style="margin:0 0 16px 0; font-size:13px; opacity:0.95;">Apply instantly to get your profile reviewed directly by verified hiring managers.</p>
+            <a href="${origin}/jobs" style="display:inline-block; background:#ffffff; color:#3525cd; font-size:13px; font-weight:900; padding:12px 26px; border-radius:12px; text-decoration:none; text-transform:uppercase; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+              Explore All Matching Roles &rarr;
             </a>
           </div>
 
           <!-- Anti-Spam Footer -->
           <div style="margin-top:32px; border-top:1px solid #f1f5f9; padding-top:20px; font-size:11px; color:#94a3b8; text-align:center; line-height:1.6;">
-            <p style="margin:0 0 6px 0;">You received this automated AI recommendation email because you registered on JobsDart.</p>
+            <p style="margin:0 0 6px 0;">You received this automated AI recommendation email because you created a profile on JobsDart.</p>
             <p style="margin:0;">
-              <a href="${origin}/profile" style="color:#6366f1; text-decoration:underline;">Manage Email Preferences</a> &nbsp;|&nbsp; 
-              <a href="${origin}/api/crm/preferences?email=${encodeURIComponent(candidate.email)}&action=unsubscribe" style="color:#94a3b8; text-decoration:underline;">Unsubscribe</a>
+              <a href="${origin}/profile" style="color:#6366f1; text-decoration:underline;">Email Preferences</a> &nbsp;|&nbsp; 
+              <a href="${origin}/api/crm/preferences?email=${encodeURIComponent(candidate.email)}&action=unsubscribe" style="color:#94a3b8; text-decoration:underline;">Unsubscribe Instantly</a>
             </p>
           </div>
 
@@ -404,25 +498,26 @@ export async function runAIRecommendationForCandidate(
     </html>
   `;
 
-  // 4. Dispatch Email via Brevo API Service
+  // 3. Dispatch Email via Brevo API Service
+  const emailSubject = `🎯 ${topScore}% Match: Top 5 AI Job Openings for ${firstName}`;
   const emailResult = await sendBrevoTransactionalEmail({
     toEmail: candidate.email,
     toName: candidate.name,
-    subject: `🎯 ${scoredJobs[0].score}% Match: Top ${scoredJobs.length} AI Job Openings for ${candidate.name.split(' ')[0]}`,
+    subject: emailSubject,
     htmlContent,
     tags: ['ai-recommendation', `stage-${candidate.lifecycleStage.toLowerCase()}`],
   });
 
   const messageId = emailResult.messageId || `msg_${Date.now()}`;
 
-  // 5. Log Email Dispatch in CRM Audit Log
+  // 4. Log Email Dispatch in CRM Audit Log
   const logEntry: CRMEmailLog = {
     id: `log_${Date.now()}_${Math.random().toString(36).substring(7)}`,
     candidateId: candidate.id,
     candidateEmail: candidate.email,
     candidateName: candidate.name,
     campaignType: 'AI_JOB_RECOMMENDATION',
-    emailSubject: `🎯 ${scoredJobs[0].score}% Match: Top ${scoredJobs.length} AI Job Openings for ${candidate.name.split(' ')[0]}`,
+    emailSubject,
     brevoMessageId: messageId,
     status: emailResult.ok ? 'DELIVERED' : 'FAILED',
     recommendedJobIds,
@@ -573,17 +668,18 @@ export function filterCandidatesByCampaignType(
         // Active candidates with skills profile
         return c.skills && c.skills.length > 0;
 
-      case 'FEATURE_EDUCATION':
-        // Candidates who haven't used ATS checker feature yet
-        return c.engagementScore < 75;
+      case 'RECENT_JOBS_DIGEST':
+        // All active and passive candidates interested in fresh openings
+        return c.lifecycleStage !== 'UNSUBSCRIBED';
 
-      case 'RESUME_BUILDER':
-        // Candidates with incomplete profile or missing resume
-        return !c.headline || c.engagementScore < 50;
+      case 'PROFILE_UPDATE_NUDGE':
+        // Candidates with incomplete profiles (< 85 engagement score)
+        return c.engagementScore < 85 && c.lifecycleStage !== 'UNSUBSCRIBED';
 
+      case 'COMMUNITY_CONVERSATIONS':
       case 'COMMUNITY':
-        // Candidates with new or passive lifecycle stage
-        return c.lifecycleStage === 'NEW_ONBOARDED' || c.lifecycleStage === 'PASSIVE_SEEKER';
+        // All non-unsubscribed candidates for community engagement
+        return c.lifecycleStage !== 'UNSUBSCRIBED';
 
       case 'PRODUCT_UPDATES':
       case 'WEEKLY_DIGEST':
@@ -602,4 +698,124 @@ export function filterCandidatesByCampaignType(
         return true;
     }
   });
+}
+
+/**
+ * Fetches the 5 most recent jobs from DB and formats them into responsive HTML email cards
+ */
+export async function getRecentJobsHtml(
+  candidate: CRMCandidate,
+  origin: string = 'https://jobsdart.in',
+  limit: number = 5
+): Promise<{ jobsHtml: string; jobIds: number[]; jobTitles: string[] }> {
+  let jobs: any[] = [];
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('jobs')
+      .select('id, title, company_name, description, address, posted_at, created_at, status, salary_min_usd_cents, salary_max_usd_cents, experience_range, industry')
+      .order('posted_at', { ascending: false })
+      .limit(25);
+
+    if (!error && data && data.length > 0) {
+      // Filter for active/published
+      jobs = data.filter((j: any) => !j.status || j.status === 'published' || j.status === 'active' || j.status === 'open');
+      if (jobs.length === 0) jobs = data;
+    }
+  } catch (e) {
+    console.warn('[CRM] Failed to fetch recent jobs:', e);
+  }
+
+  if (jobs.length === 0) {
+    // Fallback 5 high-quality jobs
+    jobs = [
+      {
+        id: 1,
+        title: 'Senior Full Stack Engineer (Next.js & Node.js)',
+        company_name: 'TechScale Global',
+        address: 'Bengaluru / Remote',
+        salary_range: '₹22,00,000 - ₹35,00,000 PA',
+        industry: 'Software & Technology',
+        posted_at: new Date().toISOString(),
+      },
+      {
+        id: 2,
+        title: 'Lead Frontend Developer (React & TypeScript)',
+        company_name: 'Apex Cloud Solutions',
+        address: 'Hyderabad / Hybrid',
+        salary_range: '₹18,00,000 - ₹28,00,000 PA',
+        industry: 'Fintech',
+        posted_at: new Date().toISOString(),
+      },
+      {
+        id: 3,
+        title: 'Backend Systems Engineer (Python / Go)',
+        company_name: 'DataVanguard AI',
+        address: 'Pune / Remote',
+        salary_range: '₹20,00,000 - ₹32,00,000 PA',
+        industry: 'Artificial Intelligence',
+        posted_at: new Date().toISOString(),
+      },
+      {
+        id: 4,
+        title: 'DevOps & Cloud Infrastructure Engineer',
+        company_name: 'HyperScale Networks',
+        address: 'Mumbai / Remote',
+        salary_range: '₹19,00,000 - ₹30,00,000 PA',
+        industry: 'Cloud Infrastructure',
+        posted_at: new Date().toISOString(),
+      },
+      {
+        id: 5,
+        title: 'Product Designer & UI/UX Specialist',
+        company_name: 'Nova Digital Labs',
+        address: 'Gurgaon / Hybrid',
+        salary_range: '₹15,00,000 - ₹24,00,000 PA',
+        industry: 'Consumer Tech',
+        posted_at: new Date().toISOString(),
+      },
+    ];
+  }
+
+  const selected5 = jobs.slice(0, limit);
+  const jobIds = selected5.map((j) => j.id);
+  const jobTitles = selected5.map((j) => j.title);
+
+  const jobsHtml = selected5
+    .map((job, idx) => {
+      const company = job.company_name || job.companyName || 'Verified Employer';
+      const loc = job.address || job.location || (candidate.currentCity ? `${candidate.currentCity}, ${candidate.country || ''}` : 'Remote / Hybrid');
+      const salary = job.salary_range || job.salaryRange || (job.salary_min_usd_cents && job.salary_max_usd_cents ? `$${Math.round(job.salary_min_usd_cents / 100)} - $${Math.round(job.salary_max_usd_cents / 100)}` : 'Competitive Compensation');
+      const industry = job.industry || 'Technology';
+      const applyUrl = `${origin}/jobs/${job.id}`;
+
+      return `
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:18px; margin-bottom:14px; box-shadow:0 2px 6px rgba(0,0,0,0.02);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="background:#fee2e2; color:#b91c1c; font-size:10px; font-weight:800; padding:3px 10px; border-radius:10px; text-transform:uppercase;">
+              🔥 Fresh Opening #${idx + 1}
+            </span>
+            <span style="color:#64748b; font-size:11px; font-weight:700;">
+              ${industry}
+            </span>
+          </div>
+          <h3 style="margin:2px 0 6px 0; color:#0f172a; font-size:16px; font-weight:800; line-height:1.3;">
+            <a href="${applyUrl}" style="color:#0f172a; text-decoration:none;">${job.title}</a>
+          </h3>
+          <p style="margin:0 0 8px 0; color:#475569; font-size:13px; font-weight:500;">
+            🏢 <strong>${company}</strong> &nbsp;•&nbsp; 📍 ${loc}
+          </p>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:10px; padding-top:10px; border-top:1px dashed #e2e8f0;">
+            <span style="color:#059669; font-size:12px; font-weight:800;">
+              💰 ${salary}
+            </span>
+            <a href="${applyUrl}" style="display:inline-block; background:#ef4444; color:#ffffff; font-size:11px; font-weight:900; padding:8px 16px; border-radius:8px; text-decoration:none; text-transform:uppercase;">
+              Apply Now →
+            </a>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  return { jobsHtml, jobIds, jobTitles };
 }

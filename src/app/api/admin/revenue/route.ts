@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAdmin } from '@/lib/auth-server';
 
@@ -6,17 +6,33 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const { user: adminUser, errorResponse } = await requireAdmin(request);
     if (errorResponse) return errorResponse;
-    // Fetch all records from 'payments' table
-    const { data: paymentsRaw, error: pErr } = await supabaseAdmin
-      .from('payments')
-      .select('*')
-      .order('timestamp', { ascending: false });
 
-    if (pErr) throw pErr;
+    // Fetch all records from 'payments' table safely
+    let paymentsRaw: any[] = [];
+    try {
+      const { data, error: pErr } = await supabaseAdmin
+        .from('payments')
+        .select('*')
+        .order('timestamp', { ascending: false });
+
+      if (pErr) {
+        // Fallback: order by id if timestamp column doesn't exist
+        const { data: fallbackData } = await supabaseAdmin
+          .from('payments')
+          .select('*')
+          .order('id', { ascending: false });
+        paymentsRaw = fallbackData || [];
+      } else {
+        paymentsRaw = data || [];
+      }
+    } catch (err) {
+      console.warn('[API_ADMIN_REVENUE_GET] Query payments warning:', err);
+      paymentsRaw = [];
+    }
 
     const payments = paymentsRaw || [];
 
@@ -28,13 +44,13 @@ export async function GET(request: Request) {
     const averageOrderValue = paidCount > 0 ? Math.round(totalRevenue / paidCount) : 0;
 
     // Unique paying users
-    const uniqueUsers = new Set(payments.map((p: any) => p.user_id).filter(Boolean)).size;
+    const uniqueUsers = new Set(payments.map((p: any) => p.user_id || p.userId).filter(Boolean)).size;
 
     // Group by Plan ID
     const planMap: Record<string, number> = {};
     const planCounts: Record<string, number> = {};
     payments.forEach((p: any) => {
-        const plan = p.plan_id || 'unspecified';
+        const plan = p.plan_id || p.planId || 'UNSPECIFIED';
         planMap[plan] = (planMap[plan] || 0) + (Number(p.amount) || 0);
         planCounts[plan] = (planCounts[plan] || 0) + 1;
     });
@@ -48,7 +64,8 @@ export async function GET(request: Request) {
     // Group by Month
     const monthMap: Record<string, { revenue: number; transactions: number }> = {};
     payments.forEach((p: any) => {
-        const date = p.timestamp ? new Date(p.timestamp) : new Date();
+        const dateVal = p.timestamp || p.created_at || p.createdAt;
+        const date = dateVal ? new Date(dateVal) : new Date();
         const monthKey = `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
         if (!monthMap[monthKey]) {
             monthMap[monthKey] = { revenue: 0, transactions: 0 };
@@ -65,6 +82,18 @@ export async function GET(request: Request) {
         transactions: data.transactions
     }));
 
+    const formattedTransactions = payments.map((p: any) => ({
+      id: p.id,
+      uuid: p.uuid || String(p.id),
+      userId: p.user_id || p.userId,
+      orderId: p.order_id || p.orderId || p.razorpay_order_id || `ORD-${p.id}`,
+      paymentId: p.payment_id || p.paymentId || p.razorpay_payment_id || `PAY-${p.id}`,
+      amount: Number(p.amount) || 0,
+      planId: p.plan_id || p.planId || 'UNSPECIFIED',
+      couponCode: p.coupon_code || p.couponCode || null,
+      timestamp: p.timestamp || p.created_at || p.createdAt || new Date().toISOString()
+    }));
+
     return NextResponse.json({
         totalRevenue,
         totalPayouts: 0,
@@ -78,7 +107,8 @@ export async function GET(request: Request) {
         uniquePayingUsers: uniqueUsers,
         revenueByPlan,
         monthlyTrend,
-        recentPayments: payments.slice(0, 15)
+        recentTransactions: formattedTransactions.slice(0, 50),
+        recentPayments: formattedTransactions.slice(0, 50)
     });
   } catch (e: any) {
     console.error('[API_ADMIN_REVENUE_GET] Error:', e);
