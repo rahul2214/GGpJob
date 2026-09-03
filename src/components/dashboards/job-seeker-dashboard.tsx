@@ -223,7 +223,7 @@ export default function JobSeekerDashboard() {
               </div>
 
               <div className="space-y-1">
-                <h3 className="font-bold text-slate-800 text-base">Get 2 Credits, Give 2 Credits</h3>
+                <h3 className="font-bold text-slate-800 text-base">Get 2 Credits</h3>
                 <p className="text-xs text-slate-500 leading-relaxed">
                   Invite your friends to join JobsDart. Both you and your friend earn <span className="font-bold text-indigo-600">2 credits</span> when they join and verify their account!
                 </p>

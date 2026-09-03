@@ -97,6 +97,22 @@ export async function GET(request: Request) {
                     .then(() => {});
             }
 
+            // Ensure 2 credits & 2 allowance for free jobseekers if uninitialized or 0
+            if ((jobseeker.subscription_credits === null || jobseeker.subscription_credits === undefined || (jobseeker.subscription_credits === 0 && (jobseeker.subscription_allowance === null || jobseeker.subscription_allowance === undefined || jobseeker.subscription_allowance === 0))) && (!jobseeker.plan_type || jobseeker.plan_type === 'none') && !jobseeker.is_paid) {
+                const initCredits = 2;
+                const initAllowance = 2;
+                jobseeker.subscription_credits = initCredits;
+                jobseeker.subscription_allowance = initAllowance;
+                supabaseAdmin
+                    .from('jobseekers')
+                    .update({
+                        subscription_credits: initCredits,
+                        subscription_allowance: initAllowance
+                    })
+                    .eq('id', jobseeker.id)
+                    .then(() => {});
+            }
+
             const user: any = {
                 id: jobseeker.id,
                 uuid: jobseeker.uuid,
@@ -494,7 +510,7 @@ export async function POST(request: Request) {
         // Check if jobseeker already exists to set default credits
         const { data: existingJS } = await supabaseAdmin
             .from('jobseekers')
-            .select('id, subscription_credits, subscription_allowance')
+            .select('id, subscription_credits, subscription_allowance, referral_code')
             .eq('uuid', id)
             .maybeSingle();
 
@@ -502,6 +518,16 @@ export async function POST(request: Request) {
             dataToSave.subscription_credits = 2;
             dataToSave.subscription_allowance = 2;
             dataToSave.purchased_credits = 0;
+            dataToSave.referral_code = 'JD' + (id ? String(id).replace(/-/g, '').substring(0, 6).toUpperCase() : Math.random().toString(36).substring(2, 8).toUpperCase());
+            dataToSave.referral_count = 0;
+        } else {
+            if (existingJS.subscription_credits === null || existingJS.subscription_credits === undefined || (existingJS.subscription_credits === 0 && (existingJS.subscription_allowance === 0 || existingJS.subscription_allowance === null))) {
+                dataToSave.subscription_credits = 2;
+                dataToSave.subscription_allowance = 2;
+            }
+            if (!existingJS.referral_code) {
+                dataToSave.referral_code = 'JD' + (id ? String(id).replace(/-/g, '').substring(0, 6).toUpperCase() : Math.random().toString(36).substring(2, 8).toUpperCase());
+            }
         }
     } else if (table === 'admins') {
         dataToSave.is_super_admin = (role === 'Super Admin');

@@ -25,15 +25,15 @@ export async function GET(request: Request) {
       const user = data.user;
       const session = data?.session;
       
-      // 1. Search across all tables to see if the profile already exists
+      // 1. Search across all tables to see if the profile already exists (by uuid first, then by email)
       const tables = ['jobseekers', 'recruiters', 'admins'];
-      let foundProfile = null;
+      let foundProfile: any = null;
 
       for (const t of tables) {
-        // Retrieve onboarding check fields for jobseekers
+        // Retrieve onboarding check and credit fields for jobseekers
         const selectQuery = t === 'jobseekers'
-          ? 'id, uuid, phone, resume_url, country, preferred_job_titles, jobseeker_skills(id)'
-          : 'id, uuid';
+          ? 'id, uuid, name, email, phone, resume_url, country, preferred_job_titles, subscription_credits, subscription_allowance, purchased_credits, referral_code, plan_type, is_paid, jobseeker_skills(id)'
+          : 'id, uuid, name, email';
 
         const { data: profile } = await supabaseAdmin
             .from(t)
@@ -47,6 +47,30 @@ export async function GET(request: Request) {
         }
       }
 
+      // Fallback: Check by email if not found by uuid
+      if (!foundProfile && user.email) {
+        for (const t of tables) {
+          const selectQuery = t === 'jobseekers'
+            ? 'id, uuid, name, email, phone, resume_url, country, preferred_job_titles, subscription_credits, subscription_allowance, purchased_credits, referral_code, plan_type, is_paid, jobseeker_skills(id)'
+            : 'id, uuid, name, email';
+
+          const { data: profileByEmail } = await supabaseAdmin
+              .from(t)
+              .select(selectQuery)
+              .eq('email', user.email)
+              .maybeSingle();
+
+          if (profileByEmail) {
+              await supabaseAdmin.from(t).update({ uuid: user.id }).eq('id', profileByEmail.id);
+              foundProfile = { ...profileByEmail, uuid: user.id, table: t };
+              break;
+          }
+        }
+      }
+
+      const metadata = user.user_metadata;
+      const name = metadata?.full_name || metadata?.name || user.email?.split('@')[0] || 'New User';
+
       if (!foundProfile) {
         // 2. Map role to target table and role ID
         let targetTable = 'jobseekers';
@@ -56,11 +80,8 @@ export async function GET(request: Request) {
             targetTable = 'recruiters';
             roleId = 2;
         }
-
-        const metadata = user.user_metadata;
-        const name = metadata?.full_name || metadata?.name || user.email?.split('@')[0] || 'New User';
         
-        const profileData = {
+        const profileData: any = {
           uuid: user.id,
           name: name,
           email: user.email!,
@@ -72,11 +93,11 @@ export async function GET(request: Request) {
           }
         };
 
-        // Add default credits for jobseekers
+        // Add 2 initial credits and 2 allowance for jobseekers
         if (targetTable === 'jobseekers') {
-            (profileData as any).subscription_credits = 2;
-            (profileData as any).subscription_allowance = 2;
-            (profileData as any).purchased_credits = 0;
+            profileData.subscription_credits = 2;
+            profileData.subscription_allowance = 2;
+            profileData.purchased_credits = 0;
 
             // Generate unique referral code for the new user
             let referralCodeGenerated = '';
@@ -94,18 +115,18 @@ export async function GET(request: Request) {
               }
               attempts++;
             }
-            (profileData as any).referral_code = referralCodeGenerated;
-            (profileData as any).referral_count = 0;
+            profileData.referral_code = referralCodeGenerated;
+            profileData.referral_count = 0;
         }
 
-        const { error: insertError } = await supabaseAdmin
+        const { error: upsertError } = await supabaseAdmin
           .from(targetTable)
-          .insert(profileData);
+          .upsert(profileData, { onConflict: 'uuid' });
 
-        if (insertError) {
-          console.error(`[AUTH_CALLBACK] Failed to create ${targetTable} profile:`, insertError);
+        if (upsertError) {
+          console.error(`[AUTH_CALLBACK] Failed to upsert ${targetTable} profile:`, upsertError);
         } else {
-            console.log(`[AUTH_CALLBACK] Created new ${targetTable} profile for ${user.email}`);
+          console.log(`[AUTH_CALLBACK] Created new ${targetTable} profile for ${user.email} with 2 credits & 2 allowance`);
         }
         
         // Redirect to onboarding for new users
@@ -115,6 +136,37 @@ export async function GET(request: Request) {
           return NextResponse.redirect(sessionUrl);
         }
         return NextResponse.redirect(`${origin}${onboardingPath}`);
+      }
+
+      // 3. For existing Job Seekers: ensure credits and allowance are at least 2 if uninitialized or 0 on free plan
+      if (foundProfile && foundProfile.table === 'jobseekers') {
+        const needsCreditsInit = (foundProfile.subscription_credits === null || foundProfile.subscription_credits === undefined || foundProfile.subscription_credits === 0) &&
+                                 (foundProfile.subscription_allowance === null || foundProfile.subscription_allowance === undefined || foundProfile.subscription_allowance === 0);
+        
+        const updates: any = {};
+        if (needsCreditsInit || foundProfile.subscription_credits === null || foundProfile.subscription_credits === undefined) {
+          updates.subscription_credits = 2;
+        }
+        if (needsCreditsInit || foundProfile.subscription_allowance === null || foundProfile.subscription_allowance === undefined || foundProfile.subscription_allowance === 0) {
+          updates.subscription_allowance = 2;
+        }
+        if (foundProfile.purchased_credits === null || foundProfile.purchased_credits === undefined) {
+          updates.purchased_credits = 0;
+        }
+        if (!foundProfile.referral_code) {
+          updates.referral_code = 'JD' + (user.id ? user.id.replace(/-/g, '').substring(0, 6).toUpperCase() : Math.random().toString(36).substring(2, 8).toUpperCase());
+        }
+        if (!foundProfile.name || foundProfile.name === 'New User') {
+          updates.name = name;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          console.log(`[AUTH_CALLBACK] Updating credits & allowance for jobseeker ${user.email}:`, updates);
+          await supabaseAdmin
+            .from('jobseekers')
+            .update(updates)
+            .eq('id', foundProfile.id);
+        }
       }
 
       // Check onboarding completeness for existing Job Seekers
