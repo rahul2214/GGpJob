@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle, ShieldAlert, ArrowLeft, Save, Edit2, Coins, Briefcase, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
+import { supabase } from "@/lib/supabase-client";
 
 // Metadata mapping for grouping and display names
 const PLAN_METADATA: Record<string, { name: string; type: string; category: string; description: string }> = {
@@ -17,13 +18,18 @@ const PLAN_METADATA: Record<string, { name: string; type: string; category: stri
   'premium': { name: 'Premium Plan', type: 'Plan', category: 'Recruiter', description: 'Standard hiring plan' },
   'pro': { name: 'Pro Recruitment', type: 'Plan', category: 'Recruiter', description: 'Unlimited premium hiring' },
 
-  
-
-  
   'mini': { name: 'Mini Credit Pack', type: 'Credits', category: 'Job Seeker Pack', description: '10 credits for referrals and topups' },
   'popular_pack': { name: 'Popular Credit Pack', type: 'Credits', category: 'Job Seeker Pack', description: '60 credits for referrals and topups' },
   'pro_pack': { name: 'Pro Credit Pack', type: 'Credits', category: 'Job Seeker Pack', description: '150 credits for referrals and topups' },
-  
+
+  'jobseeker_basic': { name: 'Basic Candidate Plan', type: 'Plan', category: 'Job Seeker', description: 'Job seeker basic plan' },
+  'jobseeker_premium': { name: 'Premium Candidate Plan', type: 'Plan', category: 'Job Seeker', description: 'Job seeker premium plan' },
+  'jobseeker_pro': { name: 'Pro Candidate Plan', type: 'Plan', category: 'Job Seeker', description: 'Job seeker pro plan' },
+
+  'employee_starter': { name: 'Starter Boost', type: 'Credits', category: 'Job Seeker Pack', description: '50 credits pack' },
+  'employee_double': { name: 'Double Boost', type: 'Credits', category: 'Job Seeker Pack', description: '100 credits pack' },
+  'employee_pro': { name: 'Pro Boost Pack', type: 'Credits', category: 'Job Seeker Pack', description: '250 credits pack' },
+  'employee_enterprise': { name: 'Enterprise Boost', type: 'Credits', category: 'Job Seeker Pack', description: '600 credits pack' },
 };
 
 export default function AdminPlansPage() {
@@ -42,7 +48,15 @@ export default function AdminPlansPage() {
   const fetchPrices = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/payments/prices');
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const userIdVal = user?.uuid || user?.id;
+      const url = userIdVal ? `/api/payments/prices?userId=${encodeURIComponent(String(userIdVal))}` : '/api/payments/prices';
+
+      const res = await fetch(url, { headers });
       if (!res.ok) throw new Error("Failed to load prices");
       const data = await res.json();
       setPrices(data.prices || {});
@@ -92,10 +106,20 @@ export default function AdminPlansPage() {
 
     setUpdatingId(planId);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const userIdVal = user?.uuid || user?.id;
+      if (userIdVal) headers['x-user-id'] = String(userIdVal);
+
+      const url = userIdVal ? `/api/admin/plans?userId=${encodeURIComponent(String(userIdVal))}` : '/api/admin/plans';
+
       const meta = PLAN_METADATA[planId] || { name: planId };
-      const res = await fetch('/api/admin/plans', {
+      const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ planId, price: numericPrice, name: meta.name })
       });
 
@@ -146,17 +170,20 @@ export default function AdminPlansPage() {
   }
 
   // Group prices by category
-  const categories = {
-    'Recruiter': [] as string[],
-    'Job Seeker': [] as string[],
-    'Job Seeker Pack': [] as string[]
+  const categories: Record<string, string[]> = {
+    'Recruiter': [],
+    'Job Seeker': [],
+    'Job Seeker Pack': [],
+    'Other': []
   };
 
   Object.keys(prices).forEach(key => {
     const meta = PLAN_METADATA[key];
-    if (meta && categories[meta.category as keyof typeof categories]) {
-      categories[meta.category as keyof typeof categories].push(key);
+    const category = meta?.category || (key.includes('pack') || key.includes('boost') ? 'Job Seeker Pack' : 'Recruiter');
+    if (!categories[category]) {
+      categories[category] = [];
     }
+    categories[category].push(key);
   });
 
   return (

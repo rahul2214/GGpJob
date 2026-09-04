@@ -21,24 +21,24 @@ interface RecruiterPricingGridProps {
 export default function RecruiterPricingGrid({ onPlanSelect, isMarketing = false, processingId = null, disabled = false }: RecruiterPricingGridProps) {
   const { currency, exchangeRates } = useUser();
   const [plans, setPlans] = useState<any[]>(RECRUITER_PLANS);
+  const [loadingPrices, setLoadingPrices] = useState(true);
 
   useEffect(() => {
     fetch('/api/payments/prices')
       .then(res => res.json())
       .then(data => {
         if (data?.prices) {
-          setPlans(prev => prev.map(plan => {
+          setPlans(RECRUITER_PLANS.map(plan => {
             const dbPrice = data.prices[plan.id];
-            if (dbPrice !== undefined) {
-              const ratio = dbPrice / (plan.price || 1);
-              const updatedOriginal = plan.originalPrice ? Math.round(plan.originalPrice * ratio) : undefined;
-              return { ...plan, price: dbPrice, originalPrice: updatedOriginal };
-            }
-            return plan;
+            return {
+              ...plan,
+              price: dbPrice !== undefined ? dbPrice : 0
+            };
           }));
         }
       })
-      .catch(err => console.warn('Failed to fetch plan prices:', err));
+      .catch(err => console.warn('Failed to fetch plan prices:', err))
+      .finally(() => setLoadingPrices(false));
   }, []);
 
   return (
@@ -95,7 +95,13 @@ export default function RecruiterPricingGrid({ onPlanSelect, isMarketing = false
                       </span>
                     </>
                   )}
-                  <span className="text-3xl font-black tracking-tighter pt-1 ml-auto">{formattedPrice}</span>
+                  <span className="text-3xl font-black tracking-tighter pt-1 ml-auto">
+                    {loadingPrices ? (
+                      <span className="animate-pulse text-2xl opacity-70">...</span>
+                    ) : (
+                      formattedPrice
+                    )}
+                  </span>
                 </div>
               </div>
 
@@ -123,6 +129,7 @@ export default function RecruiterPricingGrid({ onPlanSelect, isMarketing = false
                 {isMarketing ? (
                   <Link href="/company/signup" className="w-full">
                     <Button
+                      disabled={loadingPrices}
                       className={cn(
                         "w-full h-14 rounded-2xl font-bold text-lg shadow-lg transition-all group",
                         plan.color === 'emerald' && "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200",
@@ -132,13 +139,17 @@ export default function RecruiterPricingGrid({ onPlanSelect, isMarketing = false
                         "text-white"
                       )}
                     >
-                      Get Started <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                      {loadingPrices ? (
+                        <LoaderCircle className="w-6 h-6 animate-spin" />
+                      ) : (
+                        <>Get Started <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" /></>
+                      )}
                     </Button>
                   </Link>
                 ) : (
                   <Button
                     onClick={() => onPlanSelect?.(plan)}
-                    disabled={disabled || !!processingId}
+                    disabled={disabled || !!processingId || loadingPrices}
                     className={cn(
                       "w-full h-14 rounded-2xl font-bold text-lg shadow-lg transition-all group",
                       plan.color === 'emerald' && "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200",
@@ -148,7 +159,7 @@ export default function RecruiterPricingGrid({ onPlanSelect, isMarketing = false
                       "text-white"
                     )}
                   >
-                    {processingId === plan.id ? (
+                    {processingId === plan.id || loadingPrices ? (
                       <LoaderCircle className="w-6 h-6 animate-spin" />
                     ) : (
                       <span className="flex items-center gap-2">

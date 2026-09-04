@@ -4,8 +4,7 @@ export const RECRUITER_PLANS = [
   {
     id: "basic",
     name: "Basic Plan",
-    price: 19, // USD Base
-    originalPrice: 49,
+    price: 0,
     description: "Essential verification for new recruiters.",
     icon: Star,
     color: "emerald",
@@ -20,8 +19,7 @@ export const RECRUITER_PLANS = [
   {
     id: "premium",
     name: "Premium Plan",
-    price: 49, // USD Base
-    originalPrice: 99,
+    price: 0,
     description: "Maximum reach and full portal access.",
     icon: Crown,
     color: "amber",
@@ -37,8 +35,7 @@ export const RECRUITER_PLANS = [
   {
     id: "pro",
     name: "Pro Recruitment",
-    price: 99, // USD Base
-    originalPrice: 199,
+    price: 0,
     description: "The ultimate hiring suite for power recruiters.",
     icon: Crown,
     color: "indigo",
@@ -52,14 +49,13 @@ export const RECRUITER_PLANS = [
   }
 ];
 
-
 export const CREDIT_PACKS = [
   {
     id: "mini",
     name: "Mini Pack",
     credits: 10,
-    price: 3, // USD Base
-    perCredit: 0.3,
+    price: 0,
+    perCredit: 0,
     description: "Perfect for a quick application boost.",
     icon: Rocket,
     color: "sky"
@@ -68,8 +64,8 @@ export const CREDIT_PACKS = [
     id: "popular_pack",
     name: "Popular Pack",
     credits: 60,
-    price: 9, // USD Base
-    perCredit: 0.15,
+    price: 0,
+    perCredit: 0,
     description: "Our best value pack for active applicants.",
     icon: Star,
     color: "amber",
@@ -79,8 +75,8 @@ export const CREDIT_PACKS = [
     id: "pro_pack",
     name: "Pro Pack",
     credits: 150,
-    price: 19, // USD Base
-    perCredit: 0.12,
+    price: 0,
+    perCredit: 0,
     description: "Maximum credits for aggressive job hunting.",
     icon: Rocket,
     color: "indigo"

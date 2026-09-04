@@ -31,7 +31,26 @@ export function extractAuthToken(request: Request): string | null {
     })
   );
 
-  return cookies['sb-access-token'] || cookies['sb:token'] || cookies['firebase-token'] || null;
+  if (cookies['sb-access-token']) return cookies['sb-access-token'];
+  if (cookies['sb:token']) return cookies['sb:token'];
+  if (cookies['firebase-token']) return cookies['firebase-token'];
+
+  // Check all cookie keys for Supabase pattern (e.g. sb-project-auth-token)
+  for (const [key, val] of Object.entries(cookies)) {
+    if ((key.startsWith('sb-') && key.endsWith('-auth-token')) || key === 'supabase-auth-token') {
+      try {
+        let raw = val;
+        if (raw.startsWith('base64-')) {
+          raw = Buffer.from(raw.slice(7), 'base64').toString('utf-8');
+        }
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed[0]) return parsed[0];
+        if (parsed.access_token) return parsed.access_token;
+      } catch {}
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -86,16 +105,25 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
     return null;
   }
 
+  const isNumeric = uid ? /^\d+$/.test(String(uid)) : false;
+  const isUuid = uid ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(uid)) : false;
+
   // 3. Resolve user profile from database tables
   // Check admins table
-  const { data: adminUser } = await supabaseAdmin
-    .from('admins')
-    .select('*')
-    .or(`uuid.eq.${uid}${email ? `,email.eq.${email}` : ''}`)
-    .maybeSingle();
+  let adminQuery = supabaseAdmin.from('admins').select('*');
+  if (isNumeric) {
+    adminQuery = email ? adminQuery.or(`id.eq.${uid},email.eq.${email}`) : adminQuery.eq('id', Number(uid));
+  } else if (isUuid) {
+    adminQuery = email ? adminQuery.or(`uuid.eq.${uid},email.eq.${email}`) : adminQuery.eq('uuid', uid);
+  } else if (email) {
+    adminQuery = adminQuery.eq('email', email);
+  } else {
+    adminQuery = adminQuery.eq('uuid', uid!);
+  }
+  const { data: adminUser } = await adminQuery.maybeSingle();
 
   if (adminUser) {
-    const isSuper = adminUser.role === 'Super Admin' || adminUser.role_id === 5;
+    const isSuper = adminUser.role === 'Super Admin' || adminUser.role_id === 5 || Boolean(adminUser.is_super_admin);
     return {
       id: adminUser.id,
       uuid: adminUser.uuid || uid!,
@@ -109,15 +137,21 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
   }
 
   // Check jobseekers
-  const { data: jobseeker } = await supabaseAdmin
-    .from('jobseekers')
-    .select('*')
-    .or(`uuid.eq.${uid}${email ? `,email.eq.${email}` : ''}`)
-    .maybeSingle();
+  let seekerQuery = supabaseAdmin.from('jobseekers').select('*');
+  if (isNumeric) {
+    seekerQuery = email ? seekerQuery.or(`id.eq.${uid},email.eq.${email}`) : seekerQuery.eq('id', Number(uid));
+  } else if (isUuid) {
+    seekerQuery = email ? seekerQuery.or(`uuid.eq.${uid},email.eq.${email}`) : seekerQuery.eq('uuid', uid);
+  } else if (email) {
+    seekerQuery = seekerQuery.eq('email', email);
+  } else {
+    seekerQuery = seekerQuery.eq('uuid', uid!);
+  }
+  const { data: jobseeker } = await seekerQuery.maybeSingle();
 
   if (jobseeker) {
-    const isJobseekerAdmin = jobseeker.role_id === 4 || jobseeker.role_id === 5 || jobseeker.role === 'Admin' || jobseeker.role === 'Super Admin' || jobseeker.is_super_admin;
-    const isSuper = jobseeker.role_id === 5 || jobseeker.role === 'Super Admin' || jobseeker.is_super_admin;
+    const isJobseekerAdmin = jobseeker.role_id === 4 || jobseeker.role_id === 5 || jobseeker.role === 'Admin' || jobseeker.role === 'Super Admin' || Boolean(jobseeker.is_super_admin);
+    const isSuper = jobseeker.role_id === 5 || jobseeker.role === 'Super Admin' || Boolean(jobseeker.is_super_admin);
     return {
       id: jobseeker.id,
       uuid: jobseeker.uuid || uid!,
@@ -131,21 +165,30 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
   }
 
   // Check recruiters
-  const { data: recruiter } = await supabaseAdmin
-    .from('recruiters')
-    .select('*')
-    .or(`uuid.eq.${uid}${email ? `,email.eq.${email}` : ''}`)
-    .maybeSingle();
+  let recruiterQuery = supabaseAdmin.from('recruiters').select('*');
+  if (isNumeric) {
+    recruiterQuery = email ? recruiterQuery.or(`id.eq.${uid},email.eq.${email}`) : recruiterQuery.eq('id', Number(uid));
+  } else if (isUuid) {
+    recruiterQuery = email ? recruiterQuery.or(`uuid.eq.${uid},email.eq.${email}`) : recruiterQuery.eq('uuid', uid);
+  } else if (email) {
+    recruiterQuery = recruiterQuery.eq('email', email);
+  } else {
+    recruiterQuery = recruiterQuery.eq('uuid', uid!);
+  }
+  const { data: recruiter } = await recruiterQuery.maybeSingle();
 
   if (recruiter) {
+    const isRecruiterAdmin = recruiter.role_id === 4 || recruiter.role_id === 5 || recruiter.role === 'Admin' || recruiter.role === 'Super Admin' || Boolean(recruiter.is_super_admin);
+    const isSuper = recruiter.role_id === 5 || recruiter.role === 'Super Admin' || Boolean(recruiter.is_super_admin);
     return {
       id: recruiter.id,
       uuid: recruiter.uuid || uid!,
       email: recruiter.email,
       name: recruiter.name,
-      role: 'Recruiter',
-      roleId: 2,
-      table: 'recruiters'
+      role: isRecruiterAdmin ? (isSuper ? 'Super Admin' : 'Admin') : 'Recruiter',
+      roleId: recruiter.role_id || (isRecruiterAdmin ? (isSuper ? 5 : 4) : 2),
+      table: 'recruiters',
+      isSuperAdmin: Boolean(isSuper)
     };
   }
 

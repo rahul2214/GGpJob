@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useUser } from "@/contexts/user-context";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import { UserX, RefreshCw, Trash2, Calendar, Search, ShieldAlert, Loader2 } from
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
+import { supabase } from "@/lib/supabase-client";
 
 interface DeletedUser {
   id: number;
@@ -36,6 +38,7 @@ interface DeletedUser {
 }
 
 export default function AdminDeletedUsersPage() {
+  const { user } = useUser();
   const [deletedUsers, setDeletedUsers] = useState<DeletedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,7 +50,17 @@ export default function AdminDeletedUsersPage() {
   const fetchDeletedUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/deleted-users");
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const userIdVal = user?.uuid || user?.id;
+      if (userIdVal) headers['x-user-id'] = String(userIdVal);
+
+      const url = userIdVal ? `/api/admin/deleted-users?userId=${encodeURIComponent(String(userIdVal))}` : '/api/admin/deleted-users';
+
+      const res = await fetch(url, { headers });
       if (res.ok) {
         const data = await res.json();
         setDeletedUsers(Array.isArray(data) ? data : []);
@@ -64,15 +77,23 @@ export default function AdminDeletedUsersPage() {
 
   useEffect(() => {
     fetchDeletedUsers();
-  }, []);
+  }, [user]);
 
   const handleRestoreAccount = async () => {
     if (!userToRestore) return;
     setActionLoading(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const userIdVal = user?.uuid || user?.id;
+      if (userIdVal) headers['x-user-id'] = String(userIdVal);
+
       const res = await fetch("/api/account/restore", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ userId: userToRestore.uuid }),
       });
 
@@ -98,9 +119,19 @@ export default function AdminDeletedUsersPage() {
     if (!userToPermDelete) return;
     setActionLoading(true);
     try {
-      const res = await fetch("/api/admin/delete-permanently", {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const userIdVal = user?.uuid || user?.id;
+      if (userIdVal) headers['x-user-id'] = String(userIdVal);
+
+      const url = userIdVal ? `/api/admin/delete-permanently?userId=${encodeURIComponent(String(userIdVal))}` : '/api/admin/delete-permanently';
+
+      const res = await fetch(url, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ userId: userToPermDelete.uuid }),
       });
 

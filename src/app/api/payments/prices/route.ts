@@ -1,19 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
-// Default USD plan prices from code as fallbacks in case database lookup fails
-const DEFAULT_USD_PRICES: Record<string, number> = {
-  'basic': 19,
-  'premium': 49,
-  'pro': 99,
-
-  'free': 0,
-
-  'mini': 3,
-  'popular_pack': 9,
-  'pro_pack': 19
-};
-
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
@@ -33,7 +20,7 @@ export async function GET() {
 
     return NextResponse.json({ prices });
   } catch (err: any) {
-    console.warn('[API_PAYMENTS_PRICES] Lookup failed (using hardcoded defaults):', err.message);
-    return NextResponse.json({ prices: DEFAULT_USD_PRICES });
+    console.error('[API_PAYMENTS_PRICES] Lookup failed:', err.message);
+    return NextResponse.json({ error: 'Failed to fetch prices from database', prices: {} }, { status: 500 });
   }
 }

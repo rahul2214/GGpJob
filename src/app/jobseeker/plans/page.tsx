@@ -34,6 +34,7 @@ export default function JobSeekerPlansPage() {
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   
   const [plans, setPlans] = useState<any[]>(JOB_SEEKER_PLANS);
+  const [loadingPlans, setLoadingPlans] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<typeof JOB_SEEKER_PLANS[0] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -42,19 +43,16 @@ export default function JobSeekerPlansPage() {
       .then(res => res.json())
       .then(data => {
         if (data?.prices) {
-          setPlans(prev => prev.map(plan => {
+          setPlans(JOB_SEEKER_PLANS.map(plan => {
             const dbPrice = data.prices[plan.id];
-            if (dbPrice !== undefined) {
-              // Recalculate originalPrice proportionally if needed, or simply update price
-              const ratio = dbPrice / (plan.price || 1);
-              const updatedOriginal = plan.originalPrice ? Math.round(plan.originalPrice * ratio) : undefined;
-              return { ...plan, price: dbPrice, originalPrice: updatedOriginal };
-            }
-            return plan;
+            const price = dbPrice !== undefined ? dbPrice : 0;
+            const perCredit = plan.credits > 0 ? (price / plan.credits) : 0;
+            return { ...plan, price, perCredit };
           }));
         }
       })
-      .catch(err => console.warn('Failed to fetch plan prices:', err));
+      .catch(err => console.warn('Failed to fetch plan prices:', err))
+      .finally(() => setLoadingPlans(false));
   }, []);
 
   useEffect(() => {
@@ -294,9 +292,11 @@ export default function JobSeekerPlansPage() {
                       ) : <div />}
                       <div className="flex flex-col items-end">
                         <span className="text-3xl font-black tracking-tighter text-white">
-                          {plan.price === 0 ? "Free" : formattedPrice}
+                          {loadingPlans ? (
+                            <span className="animate-pulse text-2xl opacity-70">...</span>
+                          ) : plan.price === 0 ? "Free" : formattedPrice}
                         </span>
-                        {plan.price > 0 && (
+                        {!loadingPlans && plan.price > 0 && (
                           <span className="text-white/70 text-[10px] font-bold uppercase tracking-wider mt-0.5">
                             for 4 months
                           </span>
@@ -328,7 +328,7 @@ export default function JobSeekerPlansPage() {
                   <CardFooter className="p-8 pt-0">
                     <Button
                       onClick={() => handlePlanSelect(plan)}
-                      disabled={!!processing}
+                      disabled={!!processing || loadingPlans}
                       variant={plan.id === 'free' ? "outline" : "default"}
                       className={cn(
                         "w-full h-14 rounded-2xl font-bold text-lg transition-all group",
@@ -338,7 +338,7 @@ export default function JobSeekerPlansPage() {
                         plan.id === 'jobseeker_pro' && "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200",
                       )}
                     >
-                      {processing === plan.id ? (
+                      {processing === plan.id || loadingPlans ? (
                         <LoaderCircle className="w-6 h-6 animate-spin" />
                       ) : (
                         <span className="flex items-center gap-2">

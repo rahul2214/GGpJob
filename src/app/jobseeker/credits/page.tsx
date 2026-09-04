@@ -35,6 +35,7 @@ export default function CreditsPage() {
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   
   const [packs, setPacks] = useState<any[]>(CREDIT_PACKS);
+  const [loadingPacks, setLoadingPacks] = useState(true);
   const [selectedPack, setSelectedPack] = useState<typeof CREDIT_PACKS[0] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -43,16 +44,16 @@ export default function CreditsPage() {
       .then(res => res.json())
       .then(data => {
         if (data?.prices) {
-          setPacks(prev => prev.map(pack => {
+          setPacks(CREDIT_PACKS.map(pack => {
             const dbPrice = data.prices[pack.id];
-            if (dbPrice !== undefined) {
-              return { ...pack, price: dbPrice };
-            }
-            return pack;
+            const price = dbPrice !== undefined ? dbPrice : 0;
+            const perCredit = pack.credits > 0 ? (price / pack.credits) : 0;
+            return { ...pack, price, perCredit };
           }));
         }
       })
-      .catch(err => console.warn('Failed to fetch pack prices:', err));
+      .catch(err => console.warn('Failed to fetch pack prices:', err))
+      .finally(() => setLoadingPacks(false));
   }, []);
 
   useEffect(() => {
@@ -254,14 +255,20 @@ export default function CreditsPage() {
                   <CardContent className="p-8 flex-grow flex flex-col justify-center items-center text-center">
                     <div className="space-y-1">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Price</p>
-                      <p className="text-3xl font-black text-slate-900">{formattedPrice}</p>
+                      <p className="text-3xl font-black text-slate-900">
+                        {loadingPacks ? (
+                          <span className="animate-pulse text-2xl opacity-60">...</span>
+                        ) : (
+                          formattedPrice
+                        )}
+                      </p>
                     </div>
                   </CardContent>
 
                   <CardFooter className="p-8 pt-0">
                     <Button
                       onClick={() => handlePackSelect(pack)}
-                      disabled={!!processing}
+                      disabled={!!processing || loadingPacks}
                       className={cn(
                         "w-full h-12 rounded-2xl font-bold text-base transition-all text-white",
                         pack.color === 'sky' && "bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-200",
@@ -269,7 +276,7 @@ export default function CreditsPage() {
                         pack.color === 'indigo' && "bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200"
                       )}
                     >
-                      {processing === pack.id ? (
+                      {processing === pack.id || loadingPacks ? (
                         <LoaderCircle className="w-5 h-5 animate-spin" />
                       ) : (
                         <span>Buy Pack</span>
