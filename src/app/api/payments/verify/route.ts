@@ -125,6 +125,7 @@ export async function POST(request: Request) {
     // Map Plan Details based on User Request
     switch (planId) {
       case 'basic':
+      case 'basic_plan':
         updateData.job_post_limit = 1;
         updateData.job_post_validity = 30;
         updateData.app_access_days = 30;
@@ -161,7 +162,7 @@ export async function POST(request: Request) {
         break;
     }
 
-    if (['basic', 'premium', 'pro'].includes(planId)) {
+    if (['basic', 'basic_plan', 'premium', 'pro'].includes(planId)) {
       const validityDays = planId === 'pro' ? 90 : 30;
       const planExp = new Date();
       planExp.setDate(now.getDate() + validityDays);
@@ -294,7 +295,7 @@ export async function POST(request: Request) {
     if (profileError) throw profileError;
 
     // Restore archived jobs if a recruiter renews
-    if (targetTable === 'recruiters' && ['basic', 'premium', 'pro'].includes(planId)) {
+    if (targetTable === 'recruiters' && ['basic', 'basic_plan', 'premium', 'pro'].includes(planId)) {
       await supabaseAdmin
         .from('jobs')
         .update({ status: 'active' })
@@ -349,7 +350,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: `Payment verified. ${planId} plan is now active.`,
-      restored: targetTable === 'recruiters' && ['basic', 'premium', 'pro'].includes(planId),
+      restored: targetTable === 'recruiters' && ['basic', 'basic_plan', 'premium', 'pro'].includes(planId),
     }, { status: 200 });
   } catch (error: any) {
     console.error('[PAYMENT_VERIFY] Error:', error);

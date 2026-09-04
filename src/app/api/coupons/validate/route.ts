@@ -32,9 +32,16 @@ export async function POST(request: Request) {
     }
 
     // Validate Applicable Plan
-    if (coupon.applicable_plan && coupon.applicable_plan !== 'all' && coupon.applicable_plan !== targetId) {
+    const isPlanMatch = !coupon.applicable_plan || 
+      coupon.applicable_plan === 'all' || 
+      coupon.applicable_plan === targetId ||
+      (coupon.applicable_plan === 'basic' && targetId === 'basic_plan') ||
+      (coupon.applicable_plan === 'basic_plan' && targetId === 'basic');
+
+    if (!isPlanMatch) {
           const planNames: Record<string, string> = {
               'basic': 'Recruiter Basic',
+              'basic_plan': 'Recruiter Basic',
               'premium': 'Recruiter Premium',
               'pro': 'Recruiter Pro',
 

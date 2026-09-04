@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase-client";
 const PLAN_METADATA: Record<string, { name: string; type: string; category: string; description: string }> = {
   'free': { name: 'Free Plan', type: 'Plan', category: 'Recruiter', description: 'Default free posting' },
   'basic': { name: 'Basic Plan', type: 'Plan', category: 'Recruiter', description: 'Single job posting' },
+  'basic_plan': { name: 'Basic Plan', type: 'Plan', category: 'Recruiter', description: 'Single job posting' },
   'premium': { name: 'Premium Plan', type: 'Plan', category: 'Recruiter', description: 'Standard hiring plan' },
   'pro': { name: 'Pro Recruitment', type: 'Plan', category: 'Recruiter', description: 'Unlimited premium hiring' },
 

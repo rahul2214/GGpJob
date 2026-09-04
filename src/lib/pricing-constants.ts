@@ -2,7 +2,7 @@ import { Star, Crown, Rocket } from "lucide-react";
 
 export const RECRUITER_PLANS = [
   {
-    id: "basic",
+    id: "basic_plan",
     name: "Basic Plan",
     price: 0,
     description: "Essential verification for new recruiters.",

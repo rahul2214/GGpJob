@@ -120,7 +120,7 @@ export interface User {
   referral_rewarded_at?: string;
 
   isPaid?: boolean;
-  planType?: 'none' | 'basic' | 'premium' | 'pro';
+  planType?: 'none' | 'basic' | 'basic_plan' | 'premium' | 'pro';
   planExpiresAt?: string;
   /** Recruiter subscription lifecycle: active | expired | cancelled */
   subscriptionStatus?: 'active' | 'expired' | 'cancelled';

@@ -17,6 +17,7 @@ export async function POST(request: Request) {
     const PLAN_NAMES: Record<string, string> = {
       'free': 'Free Plan',
       'basic': 'Basic Plan',
+      'basic_plan': 'Basic Plan',
       'premium': 'Premium Plan',
       'pro': 'Pro Recruitment',
 

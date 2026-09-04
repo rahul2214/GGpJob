@@ -34,6 +34,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase-client";
 import { motion } from "framer-motion";
 import RecruiterPricingGrid from "@/components/recruiter-pricing-grid";
+import { CurrencySelector } from "@/components/currency-selector";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -403,16 +404,25 @@ export default function CompanyLoginPage() {
 
         {/* Pricing Plans Section */}
         <div id="plans" className="max-w-7xl mx-auto px-6 py-20 border-t border-slate-800">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-emerald-900/50 border border-emerald-700/40 text-emerald-400 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
-              <Zap className="w-3 h-3" /> Flexible Hiring Plans & Limits
+          <div className="flex flex-col items-center mb-12">
+            <div className="flex justify-end w-full mb-6">
+              <div className="flex items-center gap-2 bg-slate-900/80 px-4 py-2 rounded-2xl border border-slate-800">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Currency:</span>
+                <CurrencySelector />
+              </div>
             </div>
-            <h3 className="text-3xl md:text-4xl font-extrabold text-white mb-3">
-              Job Posting Limits & <span className="text-emerald-400">Application Access</span>
-            </h3>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Compare our transparent quotas below — including maximum job posts allowed, job listing validity (30 to 90 days), and application tracking windows.
-            </p>
+
+            <div className="text-center">
+              <div className="inline-flex items-center gap-2 bg-emerald-900/50 border border-emerald-700/40 text-emerald-400 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
+                <Zap className="w-3 h-3" /> Flexible Hiring Plans & Limits
+              </div>
+              <h3 className="text-3xl md:text-4xl font-extrabold text-white mb-3">
+                Job Posting Limits & <span className="text-emerald-400">Application Access</span>
+              </h3>
+              <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+                Compare our transparent quotas below — including maximum job posts allowed, job listing validity (30 to 90 days), and application tracking windows.
+              </p>
+            </div>
           </div>
 
           <RecruiterPricingGrid isMarketing={true} />

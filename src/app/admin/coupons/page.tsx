@@ -216,7 +216,8 @@ export default function AdminCouponsPage() {
                  >
                     <option value="all">All Plans (Global)</option>
                     <optgroup label="Recruiter Plans">
-                        <option value="basic">Recruiter - Basic Plan</option>
+                        <option value="basic_plan">Recruiter - Basic Plan</option>
+                        <option value="basic">Recruiter - Basic Plan (Legacy)</option>
                         <option value="premium">Recruiter - Premium Plan</option>
                         <option value="pro">Recruiter - Pro Recruitment</option>
                     </optgroup>
@@ -293,7 +294,7 @@ export default function AdminCouponsPage() {
                             <TableCell>
                                 <Badge variant="outline" className="text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
                                      {coupon.applicablePlan === 'all' || !coupon.applicablePlan ? 'All Plans' : 
-                                      coupon.applicablePlan === 'basic' ? 'RC - Basic' : 
+                                      (coupon.applicablePlan === 'basic' || coupon.applicablePlan === 'basic_plan') ? 'RC - Basic' : 
                                       coupon.applicablePlan === 'premium' ? 'RC - Premium' : 
                                       coupon.applicablePlan === 'pro' ? 'RC - Pro' : 
                                      coupon.applicablePlan === 'mini' ? 'Credits - Mini' :  
