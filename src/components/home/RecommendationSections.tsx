@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUser } from '@/contexts/user-context';
-import { calculateInternationalJobMatch } from '@/lib/recommendation-engine';
+import { calculateInternationalJobMatch, matchesCountry } from '@/lib/recommendation-engine';
 import JobCard from '../job-card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Skeleton } from '../ui/skeleton';
@@ -86,7 +86,8 @@ export default function RecommendationSections() {
     async function fetchJobs() {
       try {
         setLoading(true);
-        const res = await fetch('/api/jobs?limit=50');
+        const url = user?.uuid ? `/api/jobs?limit=50&userId=${user.uuid}` : '/api/jobs?limit=50';
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
           const list = Array.isArray(data) ? data : (data.jobs || data.recommended || []);
@@ -99,11 +100,15 @@ export default function RecommendationSections() {
       }
     }
     fetchJobs();
-  }, []);
+  }, [user?.uuid]);
 
   // Compute recommendation scores for logged in candidate
   const scoredJobs = useMemo(() => {
-    return allJobs.map(job => {
+    const list = (user?.openWorldwide === false && user?.country)
+      ? allJobs.filter(j => matchesCountry(j, user.country))
+      : allJobs;
+
+    return list.map(job => {
       if (user) {
         const matchResult = calculateInternationalJobMatch(user, job);
         return { ...job, matchScore: matchResult.score, matchBreakdown: matchResult.breakdown };

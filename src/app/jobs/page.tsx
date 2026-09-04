@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { intelligentSearchJobs } from "@/lib/intelligent-search";
+import { matchesCountry } from "@/lib/recommendation-engine";
 
 // ─── Tab config ────────────────────────────────────────────────────────────
 
@@ -99,6 +100,10 @@ function normalize(s: string = "") {
 
 /** Score a job for "Near You" tab: country > state > city */
 function scoreNearYou(job: Job, user: any): number {
+  if (user?.openWorldwide === false && user?.country && !matchesCountry(job, user.country)) {
+    return 0;
+  }
+
   let score = 0;
   const jCountry = normalize(job.country || job.location || "");
   const jState = normalize(job.state || "");
@@ -109,11 +114,11 @@ function scoreNearYou(job: Job, user: any): number {
   const uState = normalize(user?.state || user?.province || "");
   const uCity = normalize(user?.city || "");
 
-  // Remote jobs match everyone
-  if (jRemote === "remote") score += 20;
+  // Remote jobs match everyone if worldwide or in country
+  if (jRemote === "remote" && (user?.openWorldwide !== false || matchesCountry(job, user?.country))) score += 20;
 
   // Country match
-  if (uCountry && (jCountry.includes(uCountry) || uCountry.includes(jCountry))) score += 60;
+  if (uCountry && (jCountry.includes(uCountry) || uCountry.includes(jCountry) || matchesCountry(job, user?.country))) score += 60;
   // State match
   if (uState && (jState.includes(uState) || uState.includes(jState))) score += 30;
   // City match
@@ -124,6 +129,10 @@ function scoreNearYou(job: Job, user: any): number {
 
 /** Score a job for "Skill Match" tab: count overlapping skills */
 function scoreSkillMatch(job: Job, user: any): number {
+  if (user?.openWorldwide === false && user?.country && !matchesCountry(job, user.country)) {
+    return 0;
+  }
+
   const userSkills: string[] = (
     user?.skills?.map((s: any) => normalize(s?.name || s)) ||
     user?.preferredSkills?.map((s: string) => normalize(s)) ||
@@ -143,6 +152,10 @@ function scoreSkillMatch(job: Job, user: any): number {
 
 /** Score a job for "Recommended" tab: multi-factor relevance */
 function scoreRecommended(job: Job, user: any): number {
+  if (user?.openWorldwide === false && user?.country && !matchesCountry(job, user.country)) {
+    return 0;
+  }
+
   let score = scoreSkillMatch(job, user) * 15;
   score += scoreNearYou(job, user);
 
@@ -355,12 +368,17 @@ function JobSearchContent() {
   const jobsToDisplay = useMemo(() => {
     // 1. Deduplicate raw jobs to ensure unique DB entries
     const seenJobKeys = new Set<string>();
-    const all: Job[] = (rawJobs || []).filter((j: Job) => {
+    let all: Job[] = (rawJobs || []).filter((j: Job) => {
       const k = String(j.uuid || j.id || `${j.title}-${j.companyName}-${j.location}`);
       if (seenJobKeys.has(k)) return false;
       seenJobKeys.add(k);
       return true;
     });
+
+    // 2. If user is a Jobseeker and openWorldwide is false, only show jobs from their country
+    if ((user?.role === "Job Seeker" || !user?.role) && user?.openWorldwide === false && user?.country) {
+      all = all.filter((j: Job) => matchesCountry(j, user.country));
+    }
 
     const searchQ = searchParams.get("search") || "";
 
@@ -399,6 +417,12 @@ function JobSearchContent() {
       case "recent":
         return [...searched]
           .filter(isRecent)
+          .filter((j) => {
+            if ((user?.role === "Job Seeker" || !user?.role) && user?.openWorldwide === false && user?.country) {
+              return matchesCountry(j, user.country);
+            }
+            return true;
+          })
           .sort((a, b) => {
             const ta = new Date((a as any).postedAt || (a as any).posted_at || 0).getTime();
             const tb = new Date((b as any).postedAt || (b as any).posted_at || 0).getTime();

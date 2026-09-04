@@ -155,9 +155,9 @@ export function AtsChecker() {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFile = e.target.files[0]
       
-      // Check for 2MB limit
-      if (selectedFile.size > 2 * 1024 * 1024) {
-        setError("File size exceeds 2MB limit. Please upload a smaller PDF.")
+      // Check for 5MB limit
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        setError("File size exceeds 5MB limit. Please upload a smaller file.")
         setFile(null)
         e.target.value = "" // Reset input
         return
@@ -307,7 +307,7 @@ export function AtsChecker() {
                       {file.name}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {(file.size / (1024 * 1024)).toFixed(2)} MB · PDF Document
+                      {(file.size / (1024 * 1024)).toFixed(2)} MB · Resume Document
                     </p>
                   </div>
                 </div>
@@ -317,7 +317,7 @@ export function AtsChecker() {
                     type="file"
                     id="resume-upload"
                     className="hidden"
-                    accept=".pdf"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     onChange={handleFileChange}
                   />
                   <label htmlFor="resume-upload" className="cursor-pointer flex flex-col items-center gap-3">
@@ -328,7 +328,7 @@ export function AtsChecker() {
                       <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
                         Click to select resume file
                       </p>
-                      <p className="text-xs text-slate-400">Drag & drop your PDF here</p>
+                      <p className="text-xs text-slate-400">PDF, DOC, or DOCX (max. 5MB)</p>
                     </div>
                   </label>
                 </div>

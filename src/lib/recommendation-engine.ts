@@ -28,8 +28,78 @@ export const DEFAULT_DETAILED_WEIGHTS: DetailedRecommendationWeights = {
   preferredLanguages: 0.03,
 };
 
-function normalizeString(str: string): string {
+export function normalizeString(str: string): string {
   return (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Common country aliases and variants map
+ */
+export const COUNTRY_ALIASES: Record<string, string[]> = {
+  india: ['in', 'ind', 'india', 'bharat'],
+  'united states': ['us', 'usa', 'united states', 'united states of america', 'america'],
+  'united kingdom': ['uk', 'united kingdom', 'great britain', 'england', 'scotland', 'wales'],
+  'united arab emirates': ['uae', 'united arab emirates', 'dubai', 'abu dhabi'],
+  canada: ['ca', 'can', 'canada'],
+  australia: ['au', 'aus', 'australia'],
+  singapore: ['sg', 'sgp', 'singapore'],
+  germany: ['de', 'deu', 'germany', 'deutschland'],
+  netherlands: ['nl', 'nld', 'netherlands', 'holland'],
+  france: ['fr', 'fra', 'france'],
+  ireland: ['ie', 'irl', 'ireland'],
+  switzerland: ['ch', 'che', 'switzerland'],
+  japan: ['jp', 'jpn', 'japan'],
+  china: ['cn', 'chn', 'china'],
+  brazil: ['br', 'bra', 'brazil', 'brasil'],
+  'south africa': ['za', 'zaf', 'south africa'],
+  'saudi arabia': ['sa', 'sau', 'saudi arabia', 'saudi'],
+};
+
+/**
+ * Checks if a job is located within a given user country
+ */
+export function matchesCountry(job: any, targetCountry?: string | null): boolean {
+  if (!targetCountry || !targetCountry.trim()) return true;
+  const normTarget = targetCountry.trim().toLowerCase();
+  const targetVariants = COUNTRY_ALIASES[normTarget] || [normTarget];
+
+  // 1. Check direct country field
+  const jobCountry = (job.country || '').trim().toLowerCase();
+  if (jobCountry) {
+    if (jobCountry === normTarget || targetVariants.some(v => v === jobCountry || jobCountry.includes(v) || v.includes(jobCountry))) {
+      return true;
+    }
+  }
+
+  // 2. Check locations array (e.g. ["Bengaluru, Karnataka, India"])
+  const locations: string[] = Array.isArray(job.locations)
+    ? job.locations
+    : (Array.isArray(job.location_names) ? job.location_names : []);
+
+  for (const loc of locations) {
+    const normLoc = (loc || '').toLowerCase();
+    if (normLoc.includes(normTarget) || targetVariants.some(v => normLoc.includes(v))) {
+      return true;
+    }
+  }
+
+  // 3. Check location string
+  const locStr = (job.location || '').toLowerCase();
+  if (locStr) {
+    if (locStr.includes(normTarget) || targetVariants.some(v => locStr.includes(v))) {
+      return true;
+    }
+  }
+
+  // 4. Check address string
+  const addrStr = (job.address || '').toLowerCase();
+  if (addrStr) {
+    if (addrStr.includes(normTarget) || targetVariants.some(v => addrStr.includes(v))) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -43,6 +113,11 @@ export function calculateInternationalJobMatch(
 ): { score: number; breakdown: Record<string, number> } {
   if (!user) {
     return { score: 50, breakdown: {} };
+  }
+
+  // If user is not open to worldwide, do not recommend jobs from other countries
+  if (user.openWorldwide === false && user.country && !matchesCountry(job, user.country)) {
+    return { score: 0, breakdown: { locationMatch: 0 } };
   }
 
   // 1. Skills Match (25%)
@@ -81,7 +156,7 @@ export function calculateInternationalJobMatch(
   // 3. Country, State / Province, City Location Match (15%)
   let locationScore = 0;
   const isJobRemote = job.remoteType === 'remote' || job.workplaceType === 'Remote';
-  if (isJobRemote || user.openWorldwide) {
+  if (user.openWorldwide && isJobRemote) {
     locationScore = 1.0;
   } else {
     const userCountry = (user.country || '').toLowerCase();
@@ -98,7 +173,7 @@ export function calculateInternationalJobMatch(
       locationScore = 1.0;
     } else if (userState && jobState && userState === jobState) {
       locationScore = 0.9;
-    } else if (userCountry && jobCountry && userCountry === jobCountry) {
+    } else if (userCountry && jobCountry && (userCountry === jobCountry || matchesCountry(job, userCountry))) {
       locationScore = 0.8;
     } else if (prefLocations.some(pref => `${jobCity} ${jobState} ${jobCountry}`.includes(pref))) {
       locationScore = 0.85;

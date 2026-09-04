@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import type { Job } from '@/lib/types';
 import { getSubscriptionInfo, expiredResponse } from '@/lib/subscription';
 import { intelligentSearchJobs } from '@/lib/intelligent-search';
+import { matchesCountry } from '@/lib/recommendation-engine';
 
 // Helper to map Supabase snake_case job to camelCase Job type
 function mapJobToFrontend(job: any): any {
@@ -134,6 +135,7 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
     });
 
     const jobLocMap = new Map<number, string[]>();
+    const jobCountryMap = new Map<number, string>();
     (jobLocs || []).forEach((jl: any) => {
         const parts = [jl.cities?.name, jl.states_provinces?.name, jl.countries?.name].filter(Boolean);
         if (parts.length > 0) {
@@ -142,12 +144,16 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
             existing.push(locName);
             jobLocMap.set(jl.job_id, existing);
         }
+        if (jl.countries?.name && !jobCountryMap.has(jl.job_id)) {
+            jobCountryMap.set(jl.job_id, jl.countries.name);
+        }
     });
 
     const resolved = uniqueInputJobs.map(job => {
         const jlNames = jobLocMap.get(job.id);
         const mappedLocations = (job.location_pks || []).map((id: number) => cityMap.get(String(id))).filter(Boolean);
         const locationNames = (jlNames && jlNames.length > 0) ? jlNames : mappedLocations.map((l: any) => l.name);
+        const resolvedCountry = job.country || jobCountryMap.get(job.id) || null;
 
         const relBens = relBenefitMap.get(job.id) || [];
         const mappedBenefits = relBens.length > 0
@@ -161,6 +167,7 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
 
         return mapJobToFrontend({
             ...job,
+            country: resolvedCountry,
             location_names: locationNames,
             location_uuids: mappedLocations.map((l: any) => l.uuid),
             benefit_names: mappedBenefits.map((b: any) => b.name),
@@ -193,7 +200,15 @@ export async function GET(request: NextRequest) {
 
         if (userId) {
             const isUuid = userId.includes('-');
-            const { data: jobseeker } = await supabaseAdmin.from('jobseekers').select('id').eq(isUuid ? 'uuid' : 'id', userId).maybeSingle();
+            const { data: jobseeker } = await supabaseAdmin
+                .from('jobseekers')
+                .select(`
+                    id, uuid, open_worldwide, country, current_country_id,
+                    countries:current_country_id(name),
+                    cities:current_city_id(name, states_provinces:state_province_id(name, countries:country_id(name)))
+                `)
+                .eq(isUuid ? 'uuid' : 'id', userId)
+                .maybeSingle();
             user = jobseeker as any;
 
             if (user) {
@@ -203,6 +218,9 @@ export async function GET(request: NextRequest) {
                 }
             }
         }
+
+        const userCountry = user?.cities?.states_provinces?.countries?.name || user?.countries?.name || user?.country || null;
+        const isOpenWorldwide = user?.open_worldwide === true;
 
         // Fetch Jobseeker skills for recommendation matching
         let userSkillPks: number[] = [];
@@ -353,10 +371,16 @@ export async function GET(request: NextRequest) {
                 refSnap = { data: [], error: null } as any;
             }
 
-            const [recommended, referral] = await Promise.all([
+            let [recommended, referral] = await Promise.all([
                 resolveJobNames(recSnap.data || []),
                 resolveJobNames(refSnap.data || [])
             ]);
+
+            // If jobseeker is not open to worldwide, only show jobs matching their country
+            if (user && !isOpenWorldwide && userCountry) {
+                recommended = recommended.filter(j => matchesCountry(j, userCountry));
+                referral = referral.filter(j => matchesCountry(j, userCountry));
+            }
 
             return NextResponse.json({
                 recommended,
@@ -638,6 +662,11 @@ export async function GET(request: NextRequest) {
         if (error) throw error;
 
         let finalJobs = await resolveJobNames(jobs || []);
+
+        // If jobseeker is not open to worldwide, strictly filter out other country jobs
+        if (user && !isOpenWorldwide && userCountry) {
+            finalJobs = finalJobs.filter(j => matchesCountry(j, userCountry));
+        }
 
         const searchTerm = searchParams.get('search');
         if (searchTerm && searchTerm.trim() !== '') {

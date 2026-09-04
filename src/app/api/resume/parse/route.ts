@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { parsePDF } from "@/lib/parse-pdf"
+import { parseResumeDocument } from "@/lib/parse-document"
 
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      return NextResponse.json({ error: "File size exceeds 2MB limit." }, { status: 413 })
+    if (file.size > 5 * 1024 * 1024) {
+      return NextResponse.json({ error: "File size exceeds 5MB limit." }, { status: 413 })
     }
 
     const apiKey = process.env.GROK_API_KEY || process.env.GROQ_API_KEY;
@@ -30,22 +30,22 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Parse PDF
+    // Parse Document (PDF / DOCX / DOC)
     let resumeText = "";
     try {
-      const data = await parsePDF(buffer);
+      const data = await parseResumeDocument(buffer, file.name, file.type);
       resumeText = data.text;
-    } catch (pdfError: any) {
-      console.error("PDF Parse Error:", pdfError);
+    } catch (docError: any) {
+      console.error("Document Parse Error:", docError);
       return NextResponse.json({ 
-        error: "Failed to parse PDF. Please ensure it's a valid text-based PDF file.",
-        details: pdfError?.message || String(pdfError)
+        error: "Failed to parse document. Please ensure it is a valid text-based PDF, DOC, or DOCX file.",
+        details: docError?.message || String(docError)
       }, { status: 400 });
     }
 
     if (!resumeText || resumeText.trim().length === 0) {
       return NextResponse.json({ 
-        error: "Could not extract text from the PDF. Please ensure it's not a scanned/image-based PDF." 
+        error: "Could not extract text from the file. Please ensure it's not a scanned image or empty document." 
       }, { status: 400 })
     }
 

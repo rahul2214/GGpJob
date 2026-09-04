@@ -6,6 +6,8 @@ import { motion } from 'framer-motion';
 import { MapPin, Briefcase, DollarSign, Search, ArrowRight, Building2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { intelligentSearchJobs } from '@/lib/intelligent-search';
+import { useUser } from '@/contexts/user-context';
+import { matchesCountry } from '@/lib/recommendation-engine';
 
 const FALLBACK_JOBS = [
   {
@@ -310,6 +312,7 @@ function formatSalary(job: any): string {
 
 export function JobsGrid() {
   const router = useRouter();
+  const { user } = useUser();
   const [dbJobs, setDbJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -319,7 +322,8 @@ export function JobsGrid() {
     async function fetchRecentJobs() {
       try {
         setLoading(true);
-        const res = await fetch('/api/jobs?limit=6');
+        const url = user?.uuid ? `/api/jobs?limit=6&userId=${user.uuid}` : '/api/jobs?limit=6';
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
           const jobsList = Array.isArray(data) ? data : (data.recommended || []);
@@ -351,9 +355,12 @@ export function JobsGrid() {
     }
 
     fetchRecentJobs();
-  }, []);
+  }, [user?.uuid]);
 
-  const displayJobs = dbJobs.length > 0 ? dbJobs : FALLBACK_JOBS;
+  const rawDisplayJobs = dbJobs.length > 0 ? dbJobs : FALLBACK_JOBS;
+  const displayJobs = (user?.openWorldwide === false && user?.country)
+    ? rawDisplayJobs.filter(j => matchesCountry(j, user.country))
+    : rawDisplayJobs;
 
   const categoryFiltered = displayJobs.filter(j => {
     const jobDomain = (j.domain || j.category || "Engineering").toLowerCase();

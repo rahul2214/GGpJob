@@ -137,15 +137,15 @@ export function ResumeForm({ user: initialUser }: ResumeFormProps) {
                        <UploadCloud className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input 
                             type="file"
-                            accept=".pdf,.doc,.docx"
+                            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                             className="pl-8"
                             onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                    if (file.size > 2 * 1024 * 1024) {
+                                    if (file.size > 5 * 1024 * 1024) {
                                         toast({
                                             title: "File too large",
-                                            description: "Resume must be less than 2MB.",
+                                            description: "Resume must be less than 5MB.",
                                             variant: "destructive"
                                         });
                                         e.target.value = ""; // Clear file

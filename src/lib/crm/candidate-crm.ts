@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { calculateInternationalJobMatch } from '@/lib/recommendation-engine';
+import { calculateInternationalJobMatch, matchesCountry } from '@/lib/recommendation-engine';
 import { syncContactToBrevo, sendBrevoTransactionalEmail } from './brevo-service';
 import type {
   CRMCandidate,
@@ -307,13 +307,20 @@ export async function getRecommendedJobsHtml(
 
   // Score jobs using recommendation engine
   const scored = jobs
+    .filter(job => {
+      if ((candidate as any).openWorldwide === false && (candidate as any).country) {
+        return matchesCountry(job, (candidate as any).country);
+      }
+      return true;
+    })
     .map(job => {
       const match = calculateInternationalJobMatch(candidate as any, job as any);
       return {
         job,
-        score: match.score || 85,
+        score: match.score || 0,
       };
     })
+    .filter(item => item.score > 0)
     .sort((a, b) => b.score - a.score);
 
   const topMatches = scored.slice(0, limit);
@@ -776,7 +783,11 @@ export async function getRecentJobsHtml(
     ];
   }
 
-  const selected5 = jobs.slice(0, limit);
+  const candidateJobs = ((candidate as any).openWorldwide === false && (candidate as any).country)
+    ? jobs.filter(j => matchesCountry(j, (candidate as any).country))
+    : jobs;
+
+  const selected5 = candidateJobs.slice(0, limit);
   const jobIds = selected5.map((j) => j.id);
   const jobTitles = selected5.map((j) => j.title);
 

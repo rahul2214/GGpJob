@@ -650,7 +650,7 @@ export default function OnboardingPage() {
             console.error(error);
             toast({
                 title: "Parsing Failed",
-                description: error.message || "Could not auto-fill details from this PDF. You can still enter them manually.",
+                description: error.message || "Could not auto-fill details from this document. You can still enter them manually.",
                 variant: "destructive",
             });
         } finally {
@@ -1285,7 +1285,7 @@ export default function OnboardingPage() {
                                 </p>
                                 <Input
                                     type="file"
-                                    accept=".pdf,.doc,.docx"
+                                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     onChange={(e) => {
                                         const file = e.target.files?.[0];
@@ -1522,7 +1522,7 @@ export default function OnboardingPage() {
                                     </p>
                                     <Input
                                         type="file"
-                                        accept=".pdf,.doc,.docx"
+                                        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                         onChange={(e) => {
                                             const file = e.target.files?.[0];
