@@ -1083,8 +1083,7 @@ ${exp.points ? exp.points.filter(Boolean).map(b => `* ${b}`).join("\n") : ""}
 `).join("\n")
 
     const formattedProj = projects.filter(p => p.name).map(proj => `### ${proj.projectLink ? `[${proj.name}](${proj.projectLink})` : proj.name}
-*Technologies: ${proj.techStack || ""}*
-${proj.points ? proj.points.filter(Boolean).map(b => `* ${b}`).join("\n") : ""}
+${proj.techStack && proj.techStack.trim() ? `*Technologies: ${proj.techStack}*\n` : ""}${proj.points ? proj.points.filter(Boolean).map(b => `* ${b}`).join("\n") : ""}
 `).join("\n")
 
     const skillsStr = typeof skills[0] === 'string'
@@ -2073,7 +2072,9 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
                                     </span>
                                   )}
                                 </span>
-                                <span className="font-semibold text-slate-500 dark:text-slate-400">Tech: {proj.techStack}</span>
+                                {proj.techStack && proj.techStack.trim() ? (
+                                  <span className="font-semibold text-slate-500 dark:text-slate-400">Tech: {proj.techStack}</span>
+                                ) : null}
                               </div>
                               {proj.points && proj.points.filter(Boolean).length > 0 && (
                                 <ul className="list-disc pl-4 space-y-0.5">

@@ -373,7 +373,9 @@ export function ResumePdfDocument({ data, template = 'classic-serif' }: Props) {
                     )}
                     {/* {proj.projectLink ? ")" : ""} */}
                   </Text>
-                  <Text style={styles.entryDate}>Tech: {proj.techStack}</Text>
+                  {proj.techStack && proj.techStack.trim() ? (
+                    <Text style={styles.entryDate}>Tech: {proj.techStack}</Text>
+                  ) : null}
                 </View>
                 <BulletList items={proj.bullets} styles={styles} />
               </View>
