@@ -189,9 +189,7 @@ export default function CreditsPage() {
       
       <div className="max-w-5xl mx-auto relative z-10">
         <div className="flex items-center justify-between mb-8">
-          <Link href="/profile" className="flex items-center text-xs font-bold text-slate-500 uppercase tracking-widest hover:text-indigo-600 transition-colors">
-            <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to Profile
-          </Link>
+          
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Currency:</span>
             <CurrencySelector />
