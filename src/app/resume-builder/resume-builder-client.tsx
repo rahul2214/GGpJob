@@ -1628,46 +1628,50 @@ export default function ResumeBuilderPage() {
       )}
 
       {/* Toolbar: Draft Naming & Saving Options */}
-      <div className="mb-6 p-4 bg-white/60 dark:bg-slate-900/50 backdrop-blur border border-slate-200/60 dark:border-slate-800/80 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-sm print:hidden">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-3">
-            <Layers className="w-5 h-5 text-indigo-500 shrink-0" />
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Version:</span>
-              <Select value={selectedDraftId} onValueChange={handleLoadDraft}>
-                <SelectTrigger className="w-[180px] h-9 rounded-xl border-slate-250 text-xs font-semibold bg-slate-50/50">
-                  <SelectValue placeholder="Select draft" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  <SelectItem value="new" className="text-xs font-bold text-indigo-600">+ Create New Version</SelectItem>
-                  {drafts.map(d => (
-                    <SelectItem key={d.id} value={d.id} className="text-xs">
-                      {d.title} ({new Date(d.updated_at).toLocaleDateString("en-US", { month: 'short', day: 'numeric' })})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <div className="mb-6 p-3 sm:p-4 bg-white/60 dark:bg-slate-900/50 backdrop-blur border border-slate-200/60 dark:border-slate-800/80 rounded-2xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4 shadow-sm print:hidden">
+        {/* Left Side: Version selector & Template picker */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
+          {/* Version Selector */}
+          <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+            <Layers className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500 shrink-0" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0">Version:</span>
+            <Select value={selectedDraftId} onValueChange={handleLoadDraft}>
+              <SelectTrigger className="flex-1 sm:w-[180px] h-9 rounded-xl border-slate-250 text-xs font-semibold bg-slate-50/50">
+                <SelectValue placeholder="Select draft" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="new" className="text-xs font-bold text-indigo-600">+ Create New Version</SelectItem>
+                {drafts.map(d => (
+                  <SelectItem key={d.id} value={d.id} className="text-xs">
+                    {d.title} ({new Date(d.updated_at).toLocaleDateString("en-US", { month: 'short', day: 'numeric' })})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {selectedDraftId !== 'new' && (
               <Button
                 variant="ghost"
                 size="icon"
                 className="text-rose-500 hover:bg-rose-50 h-8 w-8 rounded-lg shrink-0"
                 onClick={handleDeleteDraft}
+                title="Delete this version"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
             )}
           </div>
 
-          <div className="flex items-center gap-2 border-l border-slate-200/65 dark:border-slate-800/80 pl-4">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Design Layout:</span>
+          <div className="hidden sm:block h-5 w-px bg-slate-200/80 dark:bg-slate-800/80" />
+
+          {/* Design Layout Picker Button */}
+          <div className="flex items-center justify-between sm:justify-start gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0">Design Layout:</span>
             <Button
               type="button"
               variant={showTemplatePicker ? "default" : "outline"}
               size="sm"
               onClick={() => setShowTemplatePicker(prev => !prev)}
-              className={`h-9 rounded-xl border-slate-250 text-xs font-semibold flex items-center gap-2 shadow-sm transition-all ${
+              className={`flex-1 sm:flex-none h-9 rounded-xl border-slate-250 text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all ${
                 showTemplatePicker
                   ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 dark:shadow-none"
                   : "bg-slate-50/50 hover:bg-slate-100 text-slate-700 dark:text-slate-200"
@@ -1680,7 +1684,8 @@ export default function ResumeBuilderPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 flex-1 sm:flex-none justify-end">
+        {/* Right Side: Sync from Profile + Draft Name + Save Version */}
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 justify-stretch sm:justify-end border-t lg:border-t-0 pt-3 lg:pt-0 border-slate-200/50 dark:border-slate-800/50">
           {user && (
             <Button
               size="sm"
@@ -1689,27 +1694,29 @@ export default function ResumeBuilderPage() {
                 populateFromUserProfile(user)
                 toast({ title: "Profile Auto-Filled! ✨", description: "All experience, projects, education, summary & skills imported from your profile." })
               }}
-              className="border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100 text-indigo-700 font-bold h-9 rounded-xl text-xs flex items-center gap-1.5 shadow-sm"
+              className="w-full sm:w-auto border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100 text-indigo-700 font-bold h-9 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm shrink-0"
             >
               <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
               Sync from Profile
             </Button>
           )}
-          <Input
-            value={draftTitle}
-            onChange={e => setDraftTitle(e.target.value)}
-            placeholder="Draft Name"
-            className="w-[150px] sm:w-[180px] h-9 rounded-xl border-slate-250 text-xs bg-slate-50/50"
-          />
-          <Button
-            size="sm"
-            onClick={handleSaveDraft}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-9 rounded-xl text-xs flex items-center gap-1.5 shadow-sm"
-            disabled={isSavingDraft}
-          >
-            {isSavingDraft ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Layers className="w-3.5 h-3.5" />}
-            Save Version
-          </Button>
+          <div className="flex items-center gap-2 flex-1 sm:flex-initial w-full sm:w-auto">
+            <Input
+              value={draftTitle}
+              onChange={e => setDraftTitle(e.target.value)}
+              placeholder="Draft Name"
+              className="flex-1 sm:w-[160px] md:w-[180px] h-9 rounded-xl border-slate-250 text-xs bg-slate-50/50"
+            />
+            <Button
+              size="sm"
+              onClick={handleSaveDraft}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-9 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm shrink-0"
+              disabled={isSavingDraft}
+            >
+              {isSavingDraft ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Layers className="w-3.5 h-3.5" />}
+              Save Version
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -2472,7 +2479,7 @@ export default function ResumeBuilderPage() {
               ) : (
                 <>
                   <Sparkles className="w-5 h-5 text-amber-300 fill-amber-300 animate-pulse" />
-                  {isFirstTimeResumeBuilder ? "Generate ATS Resume with AI (Free 1st Time)" : "Generate ATS Resume with AI (1 Credit)"}
+                  {isFirstTimeResumeBuilder ? "Generate with AI (Free 1st Time)" : "Generate with AI (1 Credit)"}
                   <ChevronRight className="w-5 h-5 ml-1" />
                 </>
               )}
