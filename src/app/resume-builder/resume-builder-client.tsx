@@ -1545,8 +1545,7 @@ export default function ResumeBuilderPage() {
       URL.revokeObjectURL(url)
 
       toast({
-        title: "PDF Saved! 📄",
-        description: "Your ATS-optimized text-selectable PDF has been downloaded directly."
+        title: "PDF Saved! 📄"
       })
     } catch (err: any) {
       console.error(err)
@@ -1852,7 +1851,7 @@ export default function ResumeBuilderPage() {
             }`}
         >
           <Sparkles className="w-4 h-4" />
-          Preview & ATS
+          Preview
         </button>
       </div>
 
@@ -2548,12 +2547,13 @@ export default function ResumeBuilderPage() {
 
               const previewFontClass = isSerif ? "font-serif" : isAtsClean ? "font-mono" : "font-sans"
               const previewTextColor = isMinimal || isElegant ? "text-slate-700 dark:text-slate-300" : "text-slate-950 dark:text-slate-100"
-              const previewPadding = isCompact ? "p-5 sm:p-7" : isAtsClean ? "p-6 sm:p-8" : "p-6 sm:p-10 lg:p-12"
-              const previewTextSize = isCompact ? "text-[11px]" : "text-xs"
-              const previewHeadlineSize = isCompact ? "text-[10px]" : "text-[11px]"
-              const previewTitleSize = isCompact ? "text-2xl" : isCreative ? "text-3xl sm:text-4xl" : "text-3xl"
-              const previewSectionMargin = isCompact ? "mb-3" : (isTwoColumn || isElegant || isPhotoSidebar) ? "mb-4" : "mb-5"
-              const previewSectionHeaderMargin = isCompact ? "mb-1" : "mb-1.5"
+              const previewPadding = isCompact ? "p-2.5 sm:p-5 md:p-7" : isAtsClean ? "p-3 sm:p-6 md:p-8" : "p-3 sm:p-8 lg:p-12"
+              const previewTextSize = isCompact ? "text-[8px] sm:text-[11px]" : "text-[8.5px] sm:text-xs"
+              const previewSectionTitleSize = isCompact ? "text-[8px] sm:text-[10px] font-black uppercase tracking-wider" : "text-[8.5px] sm:text-xs font-black uppercase tracking-wider"
+              const previewHeadlineSize = isCompact ? "text-[7.5px] sm:text-[10px]" : "text-[8px] sm:text-[11px]"
+              const previewTitleSize = isCompact ? "text-sm sm:text-2xl" : isCreative ? "text-base sm:text-3xl md:text-4xl" : "text-base sm:text-2xl md:text-3xl"
+              const previewSectionMargin = isCompact ? "mb-1.5 sm:mb-3" : (isTwoColumn || isElegant || isPhotoSidebar) ? "mb-2 sm:mb-4" : "mb-2 sm:mb-5"
+              const previewSectionHeaderMargin = isCompact ? "mb-0.5 sm:mb-1" : "mb-0.5 sm:mb-1.5"
               const previewSectionDividerColor = isNavy
                 ? "border-blue-900 dark:border-blue-800 border-b-2"
                 : isMinimal
@@ -2564,7 +2564,7 @@ export default function ResumeBuilderPage() {
               const previewHeaderAlign = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isPhotoCreative || isPhotoMinimal) ? "text-left" : "text-center"
               const previewContactJustify = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isPhotoCreative || isPhotoMinimal || isPhotoExec) ? "justify-start" : "justify-center"
 
-              const renderAvatar = (size = "w-28 h-28") => {
+              const renderAvatar = (size = "w-14 h-14 sm:w-28 sm:h-28") => {
                 if (photoUrl) {
                   return (
                     <div className={`relative group/photo ${size} rounded-none overflow-hidden border-2 border-slate-900 dark:border-slate-100 shadow-sm shrink-0`}>
@@ -2576,9 +2576,9 @@ export default function ResumeBuilderPage() {
                       <button
                         type="button"
                         onClick={() => photoInputRef.current?.click()}
-                        className="absolute inset-0 bg-black/60 opacity-0 group-hover/photo:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold gap-1 rounded-none print:hidden cursor-pointer"
+                        className="absolute inset-0 bg-black/60 opacity-0 group-hover/photo:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[8px] sm:text-[10px] font-bold gap-1 rounded-none print:hidden cursor-pointer"
                       >
-                        <Camera className="w-3.5 h-3.5" />
+                        <Camera className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                         Change
                       </button>
                     </div>
@@ -2592,56 +2592,56 @@ export default function ResumeBuilderPage() {
                       setActiveSection('personal')
                       photoInputRef.current?.click()
                     }}
-                    className={`${size} rounded-none border-2 border-dashed border-indigo-400 dark:border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all flex flex-col items-center justify-center gap-1 text-indigo-600 dark:text-indigo-400 p-2 shrink-0 group cursor-pointer print:hidden shadow-sm`}
+                    className={`${size} rounded-none border-2 border-dashed border-indigo-400 dark:border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all flex flex-col items-center justify-center gap-1 text-indigo-600 dark:text-indigo-400 p-1 sm:p-2 shrink-0 group cursor-pointer print:hidden shadow-sm`}
                     title="Click to upload profile photo"
                   >
-                    <Upload className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    <span className="text-[10px] font-black uppercase tracking-tight text-center leading-tight">
-                      + Upload Photo
+                    <Upload className="w-3 h-3 sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
+                    <span className="text-[7.5px] sm:text-[10px] font-black uppercase tracking-tight text-center leading-tight">
+                      + Photo
                     </span>
                   </button>
                 )
               }
 
               const renderContactRow = () => (
-                <div className={`text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium flex flex-wrap ${previewContactJustify} gap-x-3 gap-y-1`}>
+                <div className={`text-[8px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium flex flex-wrap ${previewContactJustify} gap-x-1 sm:gap-x-3 gap-y-0.5 sm:gap-y-1 items-center`}>
                   {email && (
-                    <a href={`mailto:${email.trim()}`} className="hover:underline">
+                    <a href={`mailto:${email.trim()}`} className="hover:underline break-all">
                       {email}
                     </a>
                   )}
                   {phone && (
                     <>
-                      {email && <span>•</span>}
-                      <span>{phone}</span>
+                      {email && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
+                      <span className="shrink-0">{phone}</span>
                     </>
                   )}
                   {location && (
                     <>
-                      {(email || phone) && <span>•</span>}
-                      <span>{location}</span>
+                      {(email || phone) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
+                      <span className="break-words">{location}</span>
                     </>
                   )}
                   {linkedinUrl && (
                     <>
-                      {(email || phone || location) && <span>•</span>}
-                      <a href={formatUrl(linkedinUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold">
+                      {(email || phone || location) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
+                      <a href={formatUrl(linkedinUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
                         LinkedIn
                       </a>
                     </>
                   )}
                   {githubUrl && (
                     <>
-                      {(email || phone || location || linkedinUrl) && <span>•</span>}
-                      <a href={formatUrl(githubUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold">
+                      {(email || phone || location || linkedinUrl) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
+                      <a href={formatUrl(githubUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
                         GitHub
                       </a>
                     </>
                   )}
                   {portfolioUrl && (
                     <>
-                      {(email || phone || location || linkedinUrl || githubUrl) && <span>•</span>}
-                      <a href={formatUrl(portfolioUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold">
+                      {(email || phone || location || linkedinUrl || githubUrl) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
+                      <a href={formatUrl(portfolioUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
                         Portfolio
                       </a>
                     </>
@@ -2650,26 +2650,26 @@ export default function ResumeBuilderPage() {
               )
 
               const renderContactColumn = () => (
-                <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium flex flex-col gap-y-1">
+                <div className="text-[7.5px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium flex flex-col gap-y-0.5 sm:gap-y-1 break-words">
                   {email && (
                     <a href={`mailto:${email.trim()}`} className="hover:underline break-all">
                       {email}
                     </a>
                   )}
-                  {phone && <span>{phone}</span>}
-                  {location && <span>{location}</span>}
+                  {phone && <span className="break-all">{phone}</span>}
+                  {location && <span className="break-words">{location}</span>}
                   {linkedinUrl && (
-                    <a href={formatUrl(linkedinUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold">
+                    <a href={formatUrl(linkedinUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
                       LinkedIn
                     </a>
                   )}
                   {githubUrl && (
-                    <a href={formatUrl(githubUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold">
+                    <a href={formatUrl(githubUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
                       GitHub
                     </a>
                   )}
                   {portfolioUrl && (
-                    <a href={formatUrl(portfolioUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold">
+                    <a href={formatUrl(portfolioUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
                       Portfolio
                     </a>
                   )}
@@ -2678,37 +2678,37 @@ export default function ResumeBuilderPage() {
 
               const renderPreviewSummary = () => professionalSummary ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${
+                  <h2 className={`${previewSectionTitleSize} ${
                     isNavy ? "text-blue-900 dark:text-blue-400" :
-                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-4 border-indigo-600 pl-2" :
+                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
                     isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
                     "text-slate-905 dark:text-white"
                   } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
                     Professional Summary
                   </h2>
-                  <p className={`${previewTextSize} leading-relaxed ${previewTextColor}`}>{professionalSummary}</p>
+                  <p className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} break-words`}>{professionalSummary}</p>
                 </div>
               ) : null
 
               const renderPreviewSkills = () => skills && skills.length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${
+                  <h2 className={`${previewSectionTitleSize} ${
                     isNavy ? "text-blue-900 dark:text-blue-400" :
-                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-4 border-indigo-600 pl-2" :
+                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
                     isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
                     "text-slate-905 dark:text-white"
                   } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
                     Skills & Tech Stack
                   </h2>
                   {typeof (skills as any)[0] === 'string' ? (
-                    <p className={`${previewTextSize} leading-relaxed ${previewTextColor} font-medium`}>{(skills as any).filter(Boolean).join(",  ")}</p>
+                    <p className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} font-medium break-words`}>{(skills as any).filter(Boolean).join(",  ")}</p>
                   ) : (
-                    <div className={`${previewTextSize} leading-relaxed ${previewTextColor} font-medium space-y-0.5`}>
+                    <div className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} font-medium space-y-0.5`}>
                       {(skills as any).map((cat: any, idx: number) => {
                         const skillsList = Array.isArray(cat.skills) ? cat.skills.filter(Boolean) : [];
                         if (skillsList.length === 0) return null;
                         return (
-                          <div key={idx}>
+                          <div key={idx} className="break-words">
                             <strong className={
                               isNavy ? "text-blue-900 dark:text-blue-400" :
                               isCreative ? "text-indigo-950 dark:text-indigo-300" :
@@ -2726,30 +2726,30 @@ export default function ResumeBuilderPage() {
 
               const renderPreviewExperience = () => jobs.filter(j => j.company || j.role).length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${
+                  <h2 className={`${previewSectionTitleSize} ${
                     isNavy ? "text-blue-900 dark:text-blue-400" :
-                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-4 border-indigo-600 pl-2" :
+                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
                     isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
                     "text-slate-905 dark:text-white"
                   } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
                     Experience
                   </h2>
-                  <div className={isCompact ? "space-y-2" : "space-y-3.5"}>
+                  <div className={isCompact ? "space-y-1 sm:space-y-2" : "space-y-1.5 sm:space-y-3.5"}>
                     {jobs.filter(j => j.company || j.role).map((job, idx) => (
                       <div key={idx}>
-                        <div className={`flex justify-between ${previewTextSize} font-bold ${
+                        <div className={`flex flex-wrap items-baseline justify-between ${previewTextSize} font-bold ${
                           isNavy ? "text-blue-900 dark:text-blue-400" :
                           isCreative ? "text-slate-900 dark:text-white" :
                           isMinimal || isElegant ? "text-slate-800 dark:text-white" :
                           "text-slate-950 dark:text-white"
-                        } mb-0.5`}>
-                          <span>{job.role || "Role"} — {job.company || "Company"}{job.location ? ` (${job.location})` : ""}</span>
-                          <span className="font-semibold text-slate-500 dark:text-slate-400">{formatExperienceDateRange(job.startDate, job.endDate, job.currentlyWorkHere)}</span>
+                        } mb-0.5 gap-x-1 gap-y-0.5`}>
+                          <span className="break-words">{job.role || "Role"} — {job.company || "Company"}{job.location ? ` (${job.location})` : ""}</span>
+                          <span className="font-semibold text-slate-500 dark:text-slate-400 text-[7.5px] sm:text-xs shrink-0">{formatExperienceDateRange(job.startDate, job.endDate, job.currentlyWorkHere)}</span>
                         </div>
                         {job.points && job.points.filter(Boolean).length > 0 && (
-                          <ul className="list-disc pl-4 space-y-0.5">
+                          <ul className="list-disc pl-2.5 sm:pl-4 space-y-0.5">
                             {job.points.filter(Boolean).map((bullet, bIdx) => (
-                              <li key={bIdx} className={`${previewTextSize} leading-relaxed ${previewTextColor}`}>{renderRichText(bullet)}</li>
+                              <li key={bIdx} className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} break-words`}>{renderRichText(bullet)}</li>
                             ))}
                           </ul>
                         )}
@@ -2761,27 +2761,27 @@ export default function ResumeBuilderPage() {
 
               const renderPreviewProjects = () => projects.filter(p => p.name).length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${
+                  <h2 className={`${previewSectionTitleSize} ${
                     isNavy ? "text-blue-900 dark:text-blue-400" :
-                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-4 border-indigo-600 pl-2" :
+                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
                     isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
                     "text-slate-905 dark:text-white"
                   } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
                     Projects
                   </h2>
-                  <div className={isCompact ? "space-y-2" : "space-y-3.5"}>
-                    {projects.filter(p => p.name).map((proj, idx) => (
+                  <div className={isCompact ? "space-y-1 sm:space-y-2" : "space-y-1.5 sm:space-y-3.5"}>
+                    {projects.filter(p => p.name).length > 0 && projects.filter(p => p.name).map((proj, idx) => (
                       <div key={idx}>
-                        <div className={`flex justify-between ${previewTextSize} font-bold ${
+                        <div className={`flex flex-wrap items-baseline justify-between ${previewTextSize} font-bold ${
                           isNavy ? "text-blue-900 dark:text-blue-400" :
                           isCreative ? "text-slate-900 dark:text-white" :
                           isMinimal || isElegant ? "text-slate-800 dark:text-white" :
                           "text-slate-950 dark:text-white"
-                        } mb-0.5`}>
-                          <span>
+                        } mb-0.5 gap-1`}>
+                          <span className="break-words">
                             {proj.name}
                             {proj.projectLink && (
-                              <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500 ml-1.5">
+                              <span className="text-[7.5px] sm:text-[10px] font-normal text-slate-400 dark:text-slate-500 ml-1 inline-block">
                                 <a href={formatUrl(proj.projectLink)} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline">
                                   LINK
                                 </a>
@@ -2790,14 +2790,14 @@ export default function ResumeBuilderPage() {
                           </span>
                         </div>
                         {proj.techStack && proj.techStack.trim() ? (
-                          <p className={`text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1`}>
+                          <p className={`text-[7.5px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1 break-words`}>
                             Tech: {proj.techStack}
                           </p>
                         ) : null}
                         {proj.points && proj.points.filter(Boolean).length > 0 && (
-                          <ul className="list-disc pl-4 space-y-0.5">
+                          <ul className="list-disc pl-2.5 sm:pl-4 space-y-0.5">
                             {proj.points.filter(Boolean).map((bullet, bIdx) => (
-                              <li key={bIdx} className={`${previewTextSize} leading-relaxed ${previewTextColor}`}>{renderRichText(bullet)}</li>
+                              <li key={bIdx} className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} break-words`}>{renderRichText(bullet)}</li>
                             ))}
                           </ul>
                         )}
@@ -2809,28 +2809,28 @@ export default function ResumeBuilderPage() {
 
               const renderPreviewEducation = () => education.filter(e => e.institution || e.degree).length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${
+                  <h2 className={`${previewSectionTitleSize} ${
                     isNavy ? "text-blue-900 dark:text-blue-400" :
-                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-4 border-indigo-600 pl-2" :
+                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
                     isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
                     "text-slate-905 dark:text-white"
                   } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
                     Education
                   </h2>
-                  <div className={isCompact ? "space-y-1.5" : "space-y-3"}>
+                  <div className={isCompact ? "space-y-1 sm:space-y-1.5" : "space-y-1 sm:space-y-3"}>
                     {education.filter(e => e.institution || e.degree).map((edu, idx) => (
                       <div key={idx}>
-                        <div className={`flex justify-between ${previewTextSize} font-bold ${
+                        <div className={`flex flex-wrap items-baseline justify-between ${previewTextSize} font-bold ${
                           isNavy ? "text-blue-900 dark:text-blue-400" :
                           isCreative ? "text-slate-900 dark:text-white" :
                           isMinimal || isElegant ? "text-slate-800 dark:text-white" :
                           "text-slate-950 dark:text-white"
-                        }`}>
-                          <span>{edu.degree || "Degree"}{edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ""} — {edu.institution || "Institution"}</span>
-                          <span className="font-semibold text-slate-500 dark:text-slate-400">{edu.year}</span>
+                        } gap-x-1 gap-y-0.5`}>
+                          <span className="break-words">{edu.degree || "Degree"}{edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ""} — {edu.institution || "Institution"}</span>
+                          <span className="font-semibold text-slate-500 dark:text-slate-400 text-[7.5px] sm:text-xs shrink-0">{edu.year}</span>
                         </div>
                         {edu.grade && (
-                          <p className={`text-[10px] sm:text-[11px] ${previewTextColor} font-medium mt-0.5`}>GPA/Grade: {edu.grade}</p>
+                          <p className={`text-[7.5px] sm:text-[11px] ${previewTextColor} font-medium mt-0.5 break-words`}>GPA/Grade: {edu.grade}</p>
                         )}
                       </div>
                     ))}
@@ -2840,17 +2840,17 @@ export default function ResumeBuilderPage() {
 
               const renderPreviewAchievements = () => achievements.filter(Boolean).length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${
+                  <h2 className={`${previewSectionTitleSize} ${
                     isNavy ? "text-blue-900 dark:text-blue-400" :
-                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-4 border-indigo-600 pl-2" :
+                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
                     isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
                     "text-slate-905 dark:text-white"
                   } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
                     Achievements
                   </h2>
-                  <ul className="list-disc pl-4 space-y-0.5">
+                  <ul className="list-disc pl-2.5 sm:pl-4 space-y-0.5">
                     {achievements.filter(Boolean).map((achievement, aIdx) => (
-                      <li key={aIdx} className={`${previewTextSize} leading-relaxed ${previewTextColor}`}>{renderRichText(achievement)}</li>
+                      <li key={aIdx} className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} break-words`}>{renderRichText(achievement)}</li>
                     ))}
                   </ul>
                 </div>
@@ -2858,34 +2858,34 @@ export default function ResumeBuilderPage() {
 
               const renderPreviewLanguages = () => languages.filter(Boolean).length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${
+                  <h2 className={`${previewSectionTitleSize} ${
                     isNavy ? "text-blue-900 dark:text-blue-400" :
-                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-4 border-indigo-600 pl-2" :
+                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
                     isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
                     "text-slate-905 dark:text-white"
                   } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
                     Languages
                   </h2>
-                  <p className={`${previewTextSize} leading-relaxed ${previewTextColor} font-medium`}>{languages.filter(Boolean).join(", ")}</p>
+                  <p className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} font-medium break-words`}>{languages.filter(Boolean).join(", ")}</p>
                 </div>
               ) : null
 
               return (
                 <div
                   id="printable-resume-area"
-                  className={`min-h-[800px] w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-3xl ${previewPadding} shadow-xl shadow-slate-100 dark:shadow-none ${previewFontClass} ${previewTextColor} select-text overflow-hidden transition-all duration-350`}
+                  className={`min-h-0 sm:min-h-[800px] w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl sm:rounded-3xl ${previewPadding} shadow-sm sm:shadow-xl shadow-slate-100 dark:shadow-none ${previewFontClass} ${previewTextColor} select-text overflow-hidden transition-all duration-350`}
                 >
                   <div className="text-left max-w-full animate-in fade-in duration-500">
                     {/* Modern Photo Sidebar Layout */}
                     {isPhotoSidebar ? (
-                      <div className="flex flex-col md:flex-row gap-6">
-                        {/* Left Sidebar (25%) */}
-                        <div className="w-full md:w-[25%] border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 pr-0 md:pr-4 pb-4 md:pb-0 space-y-4">
-                          <div className="flex justify-center md:justify-start">
-                            {renderAvatar("w-32 h-32")}
+                      <div className="flex flex-row gap-2.5 sm:gap-6">
+                        {/* Left Sidebar (25% on desktop, 28% on mobile) */}
+                        <div className="w-[28%] sm:w-[25%] shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-4 space-y-2 sm:space-y-4">
+                          <div className="flex justify-center sm:justify-start">
+                            {renderAvatar("w-14 h-14 sm:w-32 sm:h-32")}
                           </div>
                           <div>
-                            <h2 className={`${previewTextSize} font-black uppercase tracking-widest text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-0.5 mb-2`}>
+                            <h2 className={`${previewSectionTitleSize} text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-0.5 mb-1 sm:mb-2`}>
                               Contact
                             </h2>
                             {renderContactColumn()}
@@ -2895,14 +2895,14 @@ export default function ResumeBuilderPage() {
                           {renderPreviewLanguages()}
                           {renderPreviewAchievements()}
                         </div>
-                        {/* Right Main (75%) */}
-                        <div className="w-full md:w-[75%] pl-0 md:pl-2 space-y-4">
-                          <div className="pb-3 border-b-2 border-indigo-600">
-                            <h1 className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5`}>
+                        {/* Right Main (72% on mobile, 75% on desktop) */}
+                        <div className="flex-1 min-w-0 pl-1 sm:pl-2 space-y-2 sm:space-y-4">
+                          <div className="pb-1.5 sm:pb-3 border-b-2 border-indigo-600">
+                            <h1 className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 break-words`}>
                               {name || "Your Name"}
                             </h1>
                             {role && (
-                              <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider`}>
+                              <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider break-words`}>
                                 {role}
                               </p>
                             )}
@@ -2915,14 +2915,14 @@ export default function ResumeBuilderPage() {
                     ) : isPhotoExec ? (
                       /* Executive Headshot Layout */
                       <div>
-                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-4 mb-4 border-b-2 border-blue-900 dark:border-blue-700">
-                          {renderAvatar("w-28 h-28")}
-                          <div className="flex-1 text-center sm:text-left space-y-1">
-                            <h1 className={`${previewTitleSize} font-black text-blue-900 dark:text-blue-400 tracking-tight`}>
+                        <div className="flex flex-row items-center sm:items-start gap-2.5 sm:gap-5 pb-2.5 sm:pb-4 mb-2.5 sm:mb-4 border-b-2 border-blue-900 dark:border-blue-700">
+                          {renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
+                          <div className="flex-1 min-w-0 text-left space-y-0.5 sm:space-y-1">
+                            <h1 className={`${previewTitleSize} font-black text-blue-900 dark:text-blue-400 tracking-tight break-words`}>
                               {name || "Your Name"}
                             </h1>
                             {role && (
-                              <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider`}>
+                              <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider break-words`}>
                                 {role}
                               </p>
                             )}
@@ -2941,21 +2941,21 @@ export default function ResumeBuilderPage() {
                     ) : isPhotoCreative ? (
                       /* Creative Portfolio Layout */
                       <div>
-                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-2 mb-2">
-                          {renderAvatar("w-28 h-28")}
-                          <div className="flex-1 text-center sm:text-left space-y-1">
-                            <h1 className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight`}>
+                        <div className="flex flex-row items-center sm:items-start gap-2.5 sm:gap-5 pb-2 mb-2">
+                          {renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
+                          <div className="flex-1 min-w-0 text-left space-y-0.5 sm:space-y-1">
+                            <h1 className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight break-words`}>
                               {name || "Your Name"}
                             </h1>
                             {role && (
-                              <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider`}>
+                              <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider break-words`}>
                                 {role}
                               </p>
                             )}
                             {renderContactRow()}
                           </div>
                         </div>
-                        <div className="h-1 w-full bg-indigo-600 mb-4" />
+                        <div className="h-0.5 sm:h-1 w-full bg-indigo-600 mb-2.5 sm:mb-4" />
 
                         {renderPreviewSummary()}
                         {renderPreviewSkills()}
@@ -2968,19 +2968,19 @@ export default function ResumeBuilderPage() {
                     ) : isPhotoMinimal ? (
                       /* Minimal Avatar Layout */
                       <div>
-                        <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
-                          <div className="space-y-1 text-left">
-                            <h1 className={`${previewTitleSize} font-bold text-slate-800 dark:text-white tracking-tight`}>
+                        <div className="flex flex-row items-center justify-between gap-2 pb-2 sm:pb-3 mb-2.5 sm:mb-4 border-b border-slate-200 dark:border-slate-800">
+                          <div className="space-y-0.5 sm:space-y-1 text-left flex-1 min-w-0">
+                            <h1 className={`${previewTitleSize} font-bold text-slate-800 dark:text-white tracking-tight break-words`}>
                               {name || "Your Name"}
                             </h1>
                             {role && (
-                              <p className={`${previewHeadlineSize} font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider`}>
+                              <p className={`${previewHeadlineSize} font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider break-words`}>
                                 {role}
                               </p>
                             )}
                             {renderContactRow()}
                           </div>
-                          {renderAvatar("w-20 h-20")}
+                          {renderAvatar("w-12 h-12 sm:w-20 sm:h-20")}
                         </div>
 
                         {renderPreviewSummary()}
@@ -2994,23 +2994,23 @@ export default function ResumeBuilderPage() {
                     ) : isTwoColumn ? (
                       <div>
                         {/* Header */}
-                        <div className={`flex flex-col text-left mb-4`}>
-                          <h1 className={`${previewTitleSize} font-black tracking-tight mb-1 text-slate-950 dark:text-white`}>{name || "Your Name"}</h1>
+                        <div className={`flex flex-col text-left mb-2.5 sm:mb-4`}>
+                          <h1 className={`${previewTitleSize} font-black tracking-tight mb-0.5 sm:mb-1 text-slate-950 dark:text-white break-words`}>{name || "Your Name"}</h1>
                           {role && (
-                            <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5`}>{role}</p>
+                            <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{role}</p>
                           )}
                           {renderContactRow()}
                         </div>
 
-                        {/* 2 Column Body: 30% Left / 70% Right */}
-                        <div className="flex flex-col md:flex-row gap-6">
-                          <div className="w-full md:w-[30%] space-y-4">
+                        {/* 2 Column Body: 30% Left / 70% Right side-by-side */}
+                        <div className="flex flex-row gap-2.5 sm:gap-6">
+                          <div className="w-[30%] sm:w-[30%] shrink-0 space-y-2 sm:space-y-4">
                             {renderPreviewSkills()}
                             {renderPreviewEducation()}
                             {renderPreviewLanguages()}
                             {renderPreviewAchievements()}
                           </div>
-                          <div className="w-full md:w-[70%] space-y-4">
+                          <div className="flex-1 min-w-0 space-y-2 sm:space-y-4">
                             {renderPreviewSummary()}
                             {renderPreviewExperience()}
                             {renderPreviewProjects()}
@@ -3019,13 +3019,13 @@ export default function ResumeBuilderPage() {
                       </div>
                     ) : isElegant ? (
                       /* Elegant Sidebar */
-                      <div className="flex flex-col md:flex-row gap-6">
+                      <div className="flex flex-row gap-2.5 sm:gap-6">
                         {/* Left Sidebar (30%) */}
-                        <div className="w-full md:w-[30%] border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 pr-0 md:pr-4 pb-4 md:pb-0 space-y-4">
+                        <div className="w-[30%] sm:w-[30%] shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-4 space-y-2 sm:space-y-4">
                           <div>
-                            <h1 className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-1`}>{name || "Your Name"}</h1>
+                            <h1 className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 sm:mb-1 break-words`}>{name || "Your Name"}</h1>
                             {role && (
-                              <p className={`${previewHeadlineSize} font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2`}>{role}</p>
+                              <p className={`${previewHeadlineSize} font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 sm:mb-2 break-words`}>{role}</p>
                             )}
                             {renderContactColumn()}
                           </div>
@@ -3035,7 +3035,12 @@ export default function ResumeBuilderPage() {
                           {renderPreviewAchievements()}
                         </div>
                         {/* Right Main (70%) */}
-                        <div className="w-full md:w-[70%] pl-0 md:pl-2 space-y-4">
+                        <div className="flex-1 min-w-0 pl-1 sm:pl-2 space-y-2 sm:space-y-4">
+                          <div className="pb-1.5 sm:pb-3 border-b-2 border-slate-200 dark:border-slate-800">
+                            <h2 className={`${previewSectionTitleSize} text-slate-900 dark:text-white`}>
+                              Overview & History
+                            </h2>
+                          </div>
                           {renderPreviewSummary()}
                           {renderPreviewExperience()}
                           {renderPreviewProjects()}
@@ -3045,21 +3050,21 @@ export default function ResumeBuilderPage() {
                       /* Single Column Layouts: Classic Serif, Modern Minimal, Executive Navy, Compact Tech, Creative Bold, ATS Clean */
                       <div>
                         {/* Header */}
-                        <div className={`flex flex-col ${previewHeaderAlign} mb-4`}>
+                        <div className={`flex flex-col ${previewHeaderAlign} mb-2.5 sm:mb-4`}>
                           <h1 className={`${previewTitleSize} font-black ${
                             isNavy ? "text-blue-900 dark:text-blue-400" :
                             isMinimal ? "text-slate-800 dark:text-white" :
                             "text-slate-950 dark:text-white"
-                          } tracking-tight mb-1`}>{name || "Your Name"}</h1>
+                          } tracking-tight mb-0.5 sm:mb-1 break-words`}>{name || "Your Name"}</h1>
                           {role && (
                             <p className={`${previewHeadlineSize} font-bold ${
                               isNavy ? "text-blue-900 dark:text-blue-400" :
                               isCreative ? "text-indigo-600 dark:text-indigo-400 font-extrabold" :
                               isMinimal ? "text-slate-600 dark:text-slate-450" :
                               "text-slate-700 dark:text-slate-300"
-                            } uppercase tracking-wider mb-1.5`}>{role}</p>
+                            } uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{role}</p>
                           )}
-                          {isCreative && <div className="h-1 w-full bg-indigo-600 rounded-full my-2" />}
+                          {isCreative && <div className="h-0.5 sm:h-1 w-full bg-indigo-600 rounded-full my-1.5 sm:my-2" />}
                           {renderContactRow()}
                         </div>
 
