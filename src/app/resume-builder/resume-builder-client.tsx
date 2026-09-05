@@ -553,6 +553,7 @@ export default function ResumeBuilderPage() {
   // Credit & Usage State
   const isFirstTimeResumeBuilder = !(user?.hasUsedResumeBuilder ?? user?.has_used_resume_builder ?? (user as any)?.metadata?.has_used_resume_builder)
   const userTotalCredits = user ? ((user.subscriptionCredits || 0) + (user.purchasedCredits || 0) || (user.credits || 0)) : 0
+  const [showCreditConfirmDialog, setShowCreditConfirmDialog] = useState(false)
 
   // App States
   const [isGenerating, setIsGenerating] = useState(false)
@@ -1454,6 +1455,17 @@ export default function ResumeBuilderPage() {
       return
     }
 
+    // If using credits (not first-time free trial), ask for confirmation in a popup
+    if (!isFirstTimeResumeBuilder) {
+      setShowCreditConfirmDialog(true)
+      return
+    }
+
+    await executeGenerate()
+  }
+
+  const handleConfirmCreditDeduction = async () => {
+    setShowCreditConfirmDialog(false)
     await executeGenerate()
   }
 
@@ -3128,6 +3140,47 @@ export default function ResumeBuilderPage() {
             <AlertDialogCancel className="rounded-xl border-slate-200 text-xs font-bold w-full sm:w-auto" onClick={() => setShowAiAssist(false)}>
               Cancel
             </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Credit Deduction Confirmation Popup */}
+      <AlertDialog open={showCreditConfirmDialog} onOpenChange={setShowCreditConfirmDialog}>
+        <AlertDialogContent className="rounded-2xl border-slate-200 dark:border-slate-800 max-w-md bg-white dark:bg-slate-900 shadow-2xl backdrop-blur-md">
+          <AlertDialogHeader>
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/80 flex items-center justify-center mb-2 text-indigo-600 dark:text-indigo-400">
+              <Coins className="w-6 h-6 text-amber-500" />
+            </div>
+            <AlertDialogTitle className="text-lg font-extrabold text-slate-900 dark:text-white">
+              Use 1 Credit to Generate Resume?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed pt-1">
+              Generating an ATS-optimized resume with AI will deduct <strong className="text-slate-900 dark:text-white font-bold">1 credit</strong> from your account balance.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="p-3 my-2 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 rounded-xl flex items-center justify-between text-xs">
+            <span className="text-slate-600 dark:text-slate-400 font-medium">Your current balance:</span>
+            <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
+              <Coins className="w-3.5 h-3.5 text-amber-500" />
+              {userTotalCredits} {userTotalCredits === 1 ? 'Credit' : 'Credits'}
+            </span>
+          </div>
+
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel 
+              className="rounded-xl border-slate-200 dark:border-slate-700 text-xs font-bold"
+              onClick={() => setShowCreditConfirmDialog(false)}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold shadow-md"
+              onClick={handleConfirmCreditDeduction}
+            >
+              <Sparkles className="w-3.5 h-3.5 mr-1" />
+              Confirm & Use 1 Credit
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
