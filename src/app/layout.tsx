@@ -247,11 +247,8 @@ export default function RootLayout({
                 'JobsDart is an AI-powered global job portal helping job seekers discover jobs, build ATS-friendly resumes, check ATS scores, and receive personalized career recommendations.',
 
               sameAs: [
-                'https://www.facebook.com/jobsdart.in',
-                'https://www.instagram.com/jobsdart.in',
-                'https://www.youtube.com/@jobsdart',
-                'https://www.linkedin.com/company/jobsdart',
-                'https://x.com/jobsdart',
+                'https://www.instagram.com/jobsdartofficial',
+                'https://www.linkedin.com/company/veltria',
               ],
 
               contactPoint: {

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Twitter, Linkedin, Github, Facebook, Instagram, Youtube, Heart } from 'lucide-react';
+import { Linkedin, Instagram, Heart } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -20,16 +20,7 @@ export default function Footer() {
             </p>
             <div className="flex flex-wrap gap-2.5">
               <a
-                href="https://www.facebook.com/jobsdart.in"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="JobsDart Official Facebook Page"
-                className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-blue-400 hover:bg-white/10 transition-colors"
-              >
-                <Facebook className="w-4 h-4" />
-              </a>
-              <a
-                href="https://www.instagram.com/jobsdart.in"
+                href="https://www.instagram.com/jobsdartofficial"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="JobsDart Official Instagram Profile"
@@ -38,40 +29,13 @@ export default function Footer() {
                 <Instagram className="w-4 h-4" />
               </a>
               <a
-                href="https://www.youtube.com/@jobsdart"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="JobsDart Official YouTube Channel"
-                className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-white/10 transition-colors"
-              >
-                <Youtube className="w-4 h-4" />
-              </a>
-              <a
-                href="https://www.linkedin.com/company/jobsdart"
+                href="https://www.linkedin.com/company/veltria"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="JobsDart Official LinkedIn Page"
                 className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-sky-400 hover:bg-white/10 transition-colors"
               >
                 <Linkedin className="w-4 h-4" />
-              </a>
-              <a
-                href="https://twitter.com/jobsdart"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Follow JobsDart on Twitter X"
-                className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-violet-400 hover:bg-white/10 transition-colors"
-              >
-                <Twitter className="w-4 h-4" />
-              </a>
-              <a
-                href="https://github.com/jobsdart"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="JobsDart GitHub Community"
-                className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-violet-400 hover:bg-white/10 transition-colors"
-              >
-                <Github className="w-4 h-4" />
               </a>
             </div>
           </div>
