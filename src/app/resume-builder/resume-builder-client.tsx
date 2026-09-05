@@ -1947,7 +1947,7 @@ export default function ResumeBuilderPage() {
                 <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/80">
                   <label className="text-[10px] font-bold text-slate-400 block mb-1.5 flex items-center gap-1.5">
                     <Camera className="w-3.5 h-3.5 text-indigo-500" />
-                    Profile Photo (For Photo-Enabled Templates)
+                    Profile Photo
                   </label>
                   <div className="flex items-center gap-3.5 p-3 rounded-none bg-slate-50/70 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/60">
                     <div className="relative w-14 h-14 rounded-none overflow-hidden bg-slate-200 dark:bg-slate-800 border-2 border-slate-900 dark:border-slate-100 flex items-center justify-center shrink-0 shadow-inner">
@@ -2469,7 +2469,7 @@ export default function ResumeBuilderPage() {
               {isGenerating ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Grok is Writing Your Resume...
+                  AI is Writing Your Resume...
                 </>
               ) : (
                 <>
@@ -3081,7 +3081,7 @@ export default function ResumeBuilderPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base font-extrabold flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
               <Sparkles className="w-5 h-5 text-indigo-500 fill-indigo-500 animate-pulse" />
-              Grok Inline AI Assistant
+              Inline AI Assistant
             </AlertDialogTitle>
             <AlertDialogDescription className="text-xs text-slate-400">
               Suggested alternatives and action verbs tailored for your {aiAssistSection === 'experience' ? 'accomplishment' : 'summary'}
