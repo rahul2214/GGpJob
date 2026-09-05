@@ -1596,21 +1596,7 @@ export default function ResumeBuilderPage() {
               Fill in your details, let our AI generate polished bullet points, score your ATS compatibility, and export a recruiter-ready PDF — all in one place.
             </p>
 
-            {/* Feature pills */}
-            <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
-              {[
-                { label: "AI Bullet Generator", color: "bg-purple-500/15 text-purple-300 border-purple-400/30" },
-                { label: "ATS Score Preview", color: "bg-indigo-500/15 text-indigo-300 border-indigo-400/30" },
-                { label: "PDF Download", color: "bg-blue-500/15 text-blue-300 border-blue-400/30" },
-                { label: "Multiple Templates", color: "bg-sky-500/15 text-sky-300 border-sky-400/30" },
-                { label: "Draft Versioning", color: "bg-violet-500/15 text-violet-300 border-violet-400/30" },
-              ].map((f) => (
-                <span key={f.label} className={`flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-full border backdrop-blur-sm ${f.color}`}>
-                  <span className="w-1 h-1 rounded-full bg-current opacity-70" />
-                  {f.label}
-                </span>
-              ))}
-            </div>
+            
 
             {/* Stats row */}
             <div className="flex flex-wrap items-center justify-center gap-8 pt-3">
