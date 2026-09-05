@@ -122,6 +122,7 @@ export async function GET(request: Request) {
                 role: (jobseeker as any).roles?.name || jobseeker.role || 'Job Seeker',
                 roleId: jobseeker.role_id,
                 headline: jobseeker.headline,
+                summary: jobseeker.summary,
                 country: jobseeker.cities?.states_provinces?.countries?.name || jobseeker.countries?.name || jobseeker.country || null,
                 state: jobseeker.cities?.states_provinces?.name || jobseeker.states_provinces?.name || jobseeker.state || null,
                 currentCity: jobseeker.cities?.name || jobseeker.current_city || null,

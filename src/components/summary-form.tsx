@@ -57,14 +57,12 @@ export function SummaryForm({ user }: SummaryFormProps) {
   const { isSubmitting } = form.formState;
 
   useEffect(() => {
-    // Only reset if the user identity has actually changed
-    // Prevents focus-reset issues where unsaved text is lost on tab focus
     if (user?.uuid) {
       reset({
         summary: user.summary || "",
       });
     }
-  }, [user?.uuid, reset]); // Removed 'user' object reference dependency
+  }, [user?.uuid, user?.summary, reset]);
 
 
   const onSubmit = async (data: SummaryFormValues) => {

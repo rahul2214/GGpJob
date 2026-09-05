@@ -841,12 +841,64 @@ export default function ResumeBuilderPage() {
       }
     }
 
-    // Populate Achievements
-    if (usr.achievements && Array.isArray(usr.achievements) && usr.achievements.length > 0) {
-      const achNames = usr.achievements.map((a: any) => typeof a === 'string' ? a : a.title || a.description || a.name).filter(Boolean)
-      if (achNames.length > 0) {
-        setAchievements(achNames)
-      }
+    // Populate Achievements & Certifications
+    const fetchedItems: string[] = []
+
+    // 1. From Achievements
+    const rawAchievements = usr.achievements || usr.jobseeker_achievements || usr.metadata?.achievements
+    if (rawAchievements && Array.isArray(rawAchievements) && rawAchievements.length > 0) {
+      rawAchievements.forEach((a: any) => {
+        if (typeof a === 'string' && a.trim()) {
+          fetchedItems.push(a.trim())
+        } else if (a && typeof a === 'object') {
+          const title = a.title || a.name || a.description || ""
+          const issuer = a.issuer || a.organization || ""
+          const dateAchieved = a.dateAchieved || a.date_achieved || a.year || ""
+          let combined = title
+          if (title && issuer) {
+            combined = `${title} — ${issuer}`
+          } else if (!title && issuer) {
+            combined = issuer
+          }
+          if (combined && dateAchieved) {
+            combined = `${combined} (${dateAchieved})`
+          }
+          if (combined && combined.trim()) {
+            fetchedItems.push(combined.trim())
+          }
+        }
+      })
+    }
+
+    // 2. From Certifications
+    const rawCertifications = usr.certifications || usr.jobseeker_certifications || usr.metadata?.certifications
+    if (rawCertifications && Array.isArray(rawCertifications) && rawCertifications.length > 0) {
+      rawCertifications.forEach((c: any) => {
+        if (typeof c === 'string' && c.trim()) {
+          fetchedItems.push(c.trim())
+        } else if (c && typeof c === 'object') {
+          const certTitle = c.name || c.title || c.certificateName || c.certification_name || ""
+          const issuer = c.issuingOrganization || c.issuer || c.organization || c.issuing_organization || ""
+          const issueDate = c.issueDate || c.issue_date || c.year || ""
+          let combined = certTitle
+          if (certTitle && issuer) {
+            combined = `${certTitle} — ${issuer}`
+          } else if (!certTitle && issuer) {
+            combined = issuer
+          }
+          if (combined && issueDate) {
+            combined = `${combined} (${issueDate})`
+          }
+          if (combined && combined.trim()) {
+            fetchedItems.push(combined.trim())
+          }
+        }
+      })
+    }
+
+    if (fetchedItems.length > 0) {
+      const uniqueItems = Array.from(new Set(fetchedItems))
+      setAchievements(uniqueItems)
     }
   }
 
@@ -2846,7 +2898,7 @@ export default function ResumeBuilderPage() {
                     isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
                     "text-slate-905 dark:text-white"
                   } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
-                    Achievements
+                    Achievements & Certifications
                   </h2>
                   <ul className="list-disc pl-2.5 sm:pl-4 space-y-0.5">
                     {achievements.filter(Boolean).map((achievement, aIdx) => (
