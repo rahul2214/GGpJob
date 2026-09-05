@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
-
+ 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
@@ -8,33 +8,37 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { contactInfo, templateType, experience, projects, skills, education, professionalSummary, languages, achievements, userId } = body
 
-    // Credits & usage tracking
-    let isFirstTime = true
-    let jobseekerRecord: any = null
+    if (!userId) {
+      return NextResponse.json({ 
+        error: "Authentication required. Please sign in to generate an ATS resume with AI.", 
+        code: "UNAUTHORIZED" 
+      }, { status: 401 })
+    }
 
-    if (userId) {
-      const { data: jobseeker, error: dbErr } = await supabaseAdmin
-        .from('jobseekers')
-        .select('id, uuid, subscription_credits, purchased_credits, has_used_resume_builder, metadata')
-        .eq('uuid', userId)
-        .maybeSingle()
+    // Check user profile & credit balance
+    const { data: jobseeker, error: dbErr } = await supabaseAdmin
+      .from('jobseekers')
+      .select('id, uuid, subscription_credits, purchased_credits, has_used_resume_builder, metadata')
+      .eq('uuid', userId)
+      .maybeSingle()
 
-      if (dbErr) {
-        console.error("Database fetch error for jobseeker:", dbErr)
-      } else if (jobseeker) {
-        jobseekerRecord = jobseeker
-        isFirstTime = !(jobseeker.has_used_resume_builder ?? jobseeker.metadata?.has_used_resume_builder)
-        
-        // If not first time, check credit balance
-        if (!isFirstTime) {
-          const totalCredits = (jobseeker.subscription_credits || 0) + (jobseeker.purchased_credits || 0)
-          if (totalCredits < 1) {
-            return NextResponse.json({ 
-              error: "Insufficient credits. Using the Resume Builder costs 1 credit.", 
-              code: "INSUFFICIENT_CREDITS" 
-            }, { status: 402 })
-          }
-        }
+    if (dbErr || !jobseeker) {
+      console.error("Database fetch error for jobseeker:", dbErr)
+      return NextResponse.json({ 
+        error: "Jobseeker profile not found. Please sign in with a valid jobseeker account.", 
+        code: "USER_NOT_FOUND" 
+      }, { status: 404 })
+    }
+
+    const isFirstTime = !(jobseeker.has_used_resume_builder ?? jobseeker.metadata?.has_used_resume_builder)
+
+    if (!isFirstTime) {
+      const totalCredits = (jobseeker.subscription_credits || 0) + (jobseeker.purchased_credits || 0)
+      if (totalCredits < 1) {
+        return NextResponse.json({ 
+          error: "Insufficient credits. Generating an ATS resume with AI costs 1 credit.", 
+          code: "INSUFFICIENT_CREDITS" 
+        }, { status: 402 })
       }
     }
 
@@ -48,6 +52,7 @@ export async function POST(req: NextRequest) {
 
     const prompt = `You are an expert resume writer and technical recruiter. Create an optimized, ATS-safe resume based on the user's details and the selected template guidelines.
 Synthesize raw bullet points/descriptions into powerful, quantified achievements using active verbs.
+In bullet points, wrap the single most impactful metric or key achievement in **double asterisks** (e.g., **reduced latency by 30%**) to mark for bold emphasis. Only 1-2 bold spans per bullet max.
 
 Template Type Selected: ${templateType || "Software Engineer / General"}
 Guidelines for Template Type:
@@ -169,40 +174,56 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks, no explanations
       return NextResponse.json({ error: "Failed to generate structured resume JSON from AI." }, { status: 500 })
     }
 
-    if (userId && jobseekerRecord) {
-      try {
-        if (isFirstTime) {
-          await supabaseAdmin
-            .from('jobseekers')
-            .update({ 
-              has_used_resume_builder: true,
-            })
-            .eq('id', jobseekerRecord.id)
-          console.log(`[RESUME_GENERATE_API] Mark has_used_resume_builder for user: ${userId}`)
+    // Deduct 1 credit if not first-time, or mark first-time used
+    let creditsDeducted = 0
+    try {
+      if (isFirstTime) {
+        const { error: updateErr } = await supabaseAdmin
+          .from('jobseekers')
+          .update({
+            has_used_resume_builder: true
+          })
+          .eq('id', jobseeker.id)
+
+        if (updateErr) {
+          console.error("Failed to mark has_used_resume_builder for jobseeker:", updateErr)
         } else {
-          // Deduct 1 credit
-          let newSubCredits = jobseekerRecord.subscription_credits || 0
-          let newPurCredits = jobseekerRecord.purchased_credits || 0
-          if (newSubCredits > 0) {
-            newSubCredits -= 1
-          } else if (newPurCredits > 0) {
-            newPurCredits -= 1
-          }
-          await supabaseAdmin
-            .from('jobseekers')
-            .update({
-              subscription_credits: newSubCredits,
-              purchased_credits: newPurCredits
-            })
-            .eq('id', jobseekerRecord.id)
-          console.log(`[RESUME_GENERATE_API] Charged 1 credit from user: ${userId}`)
+          console.log(`[RESUME_GENERATE_API] First-time free use completed for user: ${userId}`)
         }
-      } catch (dbUpdateError) {
-        console.error("Failed to charge credit / update user metadata:", dbUpdateError)
+      } else {
+        let newSubCredits = jobseeker.subscription_credits || 0
+        let newPurCredits = jobseeker.purchased_credits || 0
+        if (newSubCredits > 0) {
+          newSubCredits -= 1
+        } else if (newPurCredits > 0) {
+          newPurCredits -= 1
+        }
+        creditsDeducted = 1
+
+        const { error: updateErr } = await supabaseAdmin
+          .from('jobseekers')
+          .update({
+            subscription_credits: newSubCredits,
+            purchased_credits: newPurCredits,
+            has_used_resume_builder: true
+          })
+          .eq('id', jobseeker.id)
+
+        if (updateErr) {
+          console.error("Failed to deduct credit from jobseeker:", updateErr)
+        } else {
+          console.log(`[RESUME_GENERATE_API] Deducted 1 credit for user: ${userId}. Remaining credits: ${newSubCredits + newPurCredits}`)
+        }
       }
+    } catch (creditErr) {
+      console.error("Failed to charge credit for resume generation:", creditErr)
     }
 
-    return NextResponse.json(parsedResult)
+    return NextResponse.json({
+      ...parsedResult,
+      _creditsDeducted: creditsDeducted,
+      _isFirstTime: isFirstTime
+    })
 
   } catch (error: any) {
     console.error("Resume Generate API Error:", error)

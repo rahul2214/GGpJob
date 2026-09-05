@@ -28,6 +28,7 @@ Current Accomplishment Bullet (if any): "${rawText || ""}"
 
 Generate 3 high-impact, quantified resume bullet points for this role that incorporate the candidate's skills where appropriate. 
 Each bullet point MUST start with a strong action verb and follow the Action-Context-Result structure, including clear metrics (e.g. percentages, times, or amounts like "reduced latency by 30%").
+Wrap the single most impactful metric or keyword in each bullet with **double asterisks** (e.g., **30% faster**) to mark it for bold rendering. Only bold 1-2 key phrases per bullet.
 Also provide a list of 5 powerful, context-appropriate action verbs.
 
 Return ONLY a valid JSON object matching this schema:

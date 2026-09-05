@@ -11,11 +11,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import {
-  Loader2, Sparkles, Plus, Trash2, Copy, Check, Briefcase,
-  Code, GraduationCap, User, FileText, ChevronRight, Coins,
-  Award, Download, Layers
+  Loader2, Sparkles, Plus, Trash2, Check, Briefcase,
+  Code, GraduationCap, User, FileText, ChevronRight, ChevronLeft, ChevronDown,
+  Award, Download, Layers, Palette, X, Camera, Upload, Image as ImageIcon, Coins
 } from "lucide-react"
+import { AnimatePresence, motion } from "framer-motion"
 import Link from "next/link"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,6 +69,7 @@ interface SkillCategory {
 interface ResumeData {
   name: string;
   role?: string;
+  photoUrl?: string;
   contact: {
     email: string;
     phone: string;
@@ -67,6 +77,7 @@ interface ResumeData {
     github: string;
     portfolio?: string;
     location?: string;
+    photoUrl?: string;
   };
   summary: string;
   skills: SkillCategory[];
@@ -120,6 +131,396 @@ const formatUrl = (url?: string) => {
   return `https://${trimmed}`
 }
 
+const formatMonthYear = (dateStr?: string) => {
+  if (!dateStr) return ""
+  const trimmed = dateStr.trim()
+  if (!trimmed) return ""
+  if (trimmed.toLowerCase() === 'present') return 'Present'
+  if (/^[A-Za-z]+\s+\d{4}$/.test(trimmed)) return trimmed
+  const isoMatch = trimmed.match(/^(\d{4})[-/](\d{1,2})(?:[-/](\d{1,2}))?/)
+  if (isoMatch) {
+    const year = isoMatch[1]
+    const monthIndex = parseInt(isoMatch[2], 10) - 1
+    if (monthIndex >= 0 && monthIndex <= 11) {
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+      return `${monthNames[monthIndex]} ${year}`
+    }
+  }
+  const slashMatch = trimmed.match(/^(\d{1,2})[-/](\d{4})$/)
+  if (slashMatch) {
+    const monthIndex = parseInt(slashMatch[1], 10) - 1
+    const year = slashMatch[2]
+    if (monthIndex >= 0 && monthIndex <= 11) {
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+      return `${monthNames[monthIndex]} ${year}`
+    }
+  }
+  const parsed = new Date(trimmed)
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString("en-US", { month: "short", year: "numeric" })
+  }
+  return trimmed
+}
+
+const formatExperienceDateRange = (startDate?: string, endDate?: string, currentlyWorkHere?: boolean) => {
+  const start = formatMonthYear(startDate)
+  const end = currentlyWorkHere ? "Present" : formatMonthYear(endDate)
+  if (start && end) return `${start} - ${end}`
+  if (start) return currentlyWorkHere ? `${start} - Present` : start
+  if (end) return end
+  return ""
+}
+
+const normalizeMonthInput = (dateStr?: string) => {
+  if (!dateStr) return ""
+  const trimmed = dateStr.trim()
+  if (!trimmed || trimmed.toLowerCase() === 'present') return ""
+  const isoMatch = trimmed.match(/^(\d{4})[-/](\d{1,2})/)
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}`
+  const slashMatch = trimmed.match(/^(\d{1,2})[-/](\d{4})$/)
+  if (slashMatch) return `${slashMatch[2]}-${slashMatch[1].padStart(2, '0')}`
+  const parsed = new Date(trimmed)
+  if (!isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear()
+    const m = String(parsed.getMonth() + 1).padStart(2, '0')
+    return `${y}-${m}`
+  }
+  return trimmed
+}
+
+function renderRichText(text: string) {
+  if (!text) return null
+  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  return parts.map((p, i) =>
+    p.startsWith('**') && p.endsWith('**')
+      ? <strong key={i} className="font-bold text-slate-950 dark:text-white">{p.slice(2, -2)}</strong>
+      : <span key={i}>{p}</span>
+  )
+}
+
+interface TemplateOption {
+  id: string
+  name: string
+  description: string
+  renderThumbnail: () => React.ReactNode
+}
+
+const TEMPLATES: TemplateOption[] = [
+  {
+    id: "classic-serif",
+    name: "Classic Serif",
+    description: "Traditional academic styling with Times-Roman serif typography and centered headers.",
+    renderThumbnail: () => (
+      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800 font-serif">
+        <div className="text-center space-y-0.5">
+          <div className="h-2 w-16 bg-slate-800 dark:bg-slate-200 mx-auto rounded-sm" />
+          <div className="h-0.5 w-24 bg-slate-400 mx-auto rounded-sm" />
+          <div className="h-0.5 w-full bg-slate-800 dark:bg-slate-200 my-0.5" />
+        </div>
+        <div className="space-y-0.5">
+          <div className="h-1.5 w-12 bg-slate-600 rounded-sm" />
+          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+          <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-sm" />
+        </div>
+        <div className="space-y-0.5">
+          <div className="h-1.5 w-10 bg-slate-600 rounded-sm" />
+          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "modern-minimal",
+    name: "Modern Minimalist",
+    description: "Clean sans-serif layout with muted slate tones and left-aligned headers.",
+    renderThumbnail: () => (
+      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
+        <div className="space-y-0.5">
+          <div className="h-2.5 w-20 bg-slate-700 dark:bg-slate-300 rounded-sm" />
+          <div className="h-0.5 w-14 bg-slate-400 rounded-sm" />
+          <div className="h-0.5 w-full bg-slate-200 dark:bg-slate-700 my-0.5" />
+        </div>
+        <div className="space-y-0.5">
+          <div className="h-1.5 w-14 bg-slate-500 rounded-sm" />
+          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+          <div className="h-0.5 w-5/6 bg-slate-300 dark:bg-slate-700 rounded-sm" />
+        </div>
+        <div className="space-y-0.5">
+          <div className="h-1.5 w-10 bg-slate-500 rounded-sm" />
+          <div className="h-0.5 w-3/4 bg-slate-300 dark:bg-slate-700 rounded-sm" />
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "executive-navy",
+    name: "Executive Navy",
+    description: "Polished corporate style featuring deep navy accents and sharp dividing lines.",
+    renderThumbnail: () => (
+      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
+        <div className="text-center space-y-0.5">
+          <div className="h-2.5 w-20 bg-blue-900 dark:bg-blue-400 mx-auto rounded-sm" />
+          <div className="h-0.5 w-28 bg-blue-700 dark:bg-blue-300 mx-auto rounded-sm" />
+          <div className="h-0.5 w-full bg-blue-900 dark:bg-blue-400 my-0.5" />
+        </div>
+        <div className="space-y-0.5">
+          <div className="h-1.5 w-16 bg-blue-900 dark:bg-blue-400 rounded-sm" />
+          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+          <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-sm" />
+        </div>
+        <div className="space-y-0.5">
+          <div className="h-1.5 w-12 bg-blue-900 dark:bg-blue-400 rounded-sm" />
+          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "compact-tech",
+    name: "Compact Tech",
+    description: "High-density layout optimized for tech professionals with maximum content space.",
+    renderThumbnail: () => (
+      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
+        <div className="space-y-0.5">
+          <div className="h-2 w-16 bg-slate-800 dark:bg-slate-200 rounded-sm" />
+          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+          <div className="h-0.5 w-full bg-slate-800 dark:bg-slate-200" />
+        </div>
+        <div className="space-y-0.5">
+          <div className="h-1 w-10 bg-slate-700 dark:bg-slate-300 rounded-sm" />
+          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+        </div>
+        <div className="space-y-0.5">
+          <div className="h-1 w-10 bg-slate-700 dark:bg-slate-300 rounded-sm" />
+          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "two-column",
+    name: "Two-Column",
+    description: "30/70 split layout with skills & education on the left, experience & projects on the right.",
+    renderThumbnail: () => (
+      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
+        <div className="space-y-0.5 pb-0.5 border-b border-slate-200 dark:border-slate-700">
+          <div className="h-2 w-16 bg-slate-800 dark:bg-slate-200 rounded-sm" />
+          <div className="h-0.5 w-24 bg-slate-400 rounded-sm" />
+        </div>
+        <div className="flex gap-1.5 flex-1 pt-1">
+          <div className="w-[25%] border-r border-slate-200 dark:border-slate-700 pr-1 space-y-1">
+            <div className="h-1 w-6 bg-slate-600 rounded-sm" />
+            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+            <div className="h-0.5 w-3/4 bg-slate-300 dark:bg-slate-700 rounded-sm" />
+            <div className="h-1 w-6 bg-slate-600 rounded-sm mt-0.5" />
+            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+          </div>
+          <div className="w-[75%] space-y-1">
+            <div className="h-1 w-10 bg-slate-700 dark:bg-slate-300 rounded-sm" />
+            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+            <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-sm" />
+          </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "creative-bold",
+    name: "Creative Bold",
+    description: "Eye-catching design with a vibrant accent bar and border-accented section headers.",
+    renderThumbnail: () => (
+      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
+        <div className="space-y-0.5">
+          <div className="h-2.5 w-18 bg-indigo-900 dark:bg-indigo-300 rounded-sm" />
+          <div className="h-0.5 w-full bg-indigo-600 rounded-full" />
+          <div className="h-0.5 w-24 bg-slate-400 rounded-sm" />
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-1">
+            <div className="h-2 w-0.5 bg-indigo-600 rounded-sm" />
+            <div className="h-1.5 w-12 bg-indigo-900 dark:bg-indigo-300 rounded-sm" />
+          </div>
+          <div className="space-y-0.5 pl-1.5">
+            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+            <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-sm" />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-1">
+            <div className="h-2 w-0.5 bg-indigo-600 rounded-sm" />
+            <div className="h-1.5 w-10 bg-indigo-900 dark:bg-indigo-300 rounded-sm" />
+          </div>
+          <div className="h-0.5 w-3/4 pl-1.5 bg-slate-300 dark:bg-slate-700 rounded-sm" />
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "elegant-sidebar",
+    name: "Elegant Sidebar",
+    description: "Distinct left sidebar with contact info & skills separated by a clean vertical divider.",
+    renderThumbnail: () => (
+      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex border border-slate-200 dark:border-slate-800">
+        <div className="w-[25%] border-r border-slate-300 dark:border-slate-700 pr-1 space-y-1">
+          <div className="h-2 w-10 bg-slate-900 dark:bg-white rounded-sm" />
+          <div className="h-0.5 w-8 bg-slate-400 rounded-sm" />
+          <div className="space-y-0.5 pt-0.5">
+            <div className="h-0.5 w-full bg-slate-400 rounded-sm" />
+            <div className="h-0.5 w-full bg-slate-400 rounded-sm" />
+          </div>
+          <div className="h-1 w-8 bg-slate-600 rounded-sm pt-0.5" />
+          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+        </div>
+        <div className="w-[75%] pl-1.5 space-y-1">
+          <div className="space-y-0.5">
+            <div className="h-1.5 w-12 bg-slate-700 dark:bg-slate-300 rounded-sm" />
+            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+            <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-sm" />
+          </div>
+          <div className="space-y-0.5">
+            <div className="h-1.5 w-12 bg-slate-700 dark:bg-slate-300 rounded-sm" />
+            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+          </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "ats-clean",
+    name: "ATS Clean",
+    description: "Ultra-clean monospace layout without borders, engineered for 100% ATS readability.",
+    renderThumbnail: () => (
+      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800 font-mono">
+        <div className="space-y-0.5">
+          <div className="h-2 w-18 bg-slate-900 dark:bg-white rounded-none" />
+          <div className="h-0.5 w-24 bg-slate-400 rounded-none" />
+        </div>
+        <div className="space-y-1">
+          <div className="h-1.5 w-14 bg-slate-800 dark:bg-slate-200 rounded-none" />
+          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-none" />
+          <div className="h-0.5 w-5/6 bg-slate-300 dark:bg-slate-700 rounded-none" />
+        </div>
+        <div className="space-y-1">
+          <div className="h-1.5 w-10 bg-slate-800 dark:bg-slate-200 rounded-none" />
+          <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-none" />
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "photo-modern-sidebar",
+    name: "Modern Photo Sidebar",
+    description: "Professional two-column layout with candidate photo (sharp edges), skills & contacts in a stylish left sidebar.",
+    renderThumbnail: () => (
+      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex border border-slate-200 dark:border-slate-800">
+        <div className="w-[25%] border-r border-slate-300 dark:border-slate-700 pr-1 space-y-1 flex flex-col items-center">
+          <div className="w-6 h-6 rounded-none bg-indigo-500/30 border border-indigo-400 flex items-center justify-center shrink-0">
+            <User className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div className="w-full space-y-0.5 pt-0.5">
+            <div className="h-1 w-full bg-slate-600 rounded-none" />
+            <div className="h-0.5 w-3/4 bg-slate-400 rounded-none" />
+            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-none" />
+          </div>
+        </div>
+        <div className="w-[75%] pl-1.5 space-y-1">
+          <div className="space-y-0.5 pb-0.5 border-b border-indigo-500">
+            <div className="h-2 w-14 bg-slate-900 dark:bg-white rounded-none" />
+            <div className="h-0.5 w-10 bg-indigo-600 rounded-none" />
+          </div>
+          <div className="space-y-0.5">
+            <div className="h-1.5 w-12 bg-slate-700 dark:bg-slate-300 rounded-none" />
+            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-none" />
+            <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-none" />
+          </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "photo-executive",
+    name: "Executive Headshot",
+    description: "Prestigious executive template with a sharp rectangular headshot and corporate navy accents.",
+    renderThumbnail: () => (
+      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-1.5 pb-1 border-b border-blue-900 dark:border-blue-700">
+          <div className="w-6 h-6 rounded-none bg-blue-900/20 border border-blue-800 flex items-center justify-center shrink-0">
+            <User className="w-3.5 h-3.5 text-blue-900 dark:text-blue-400" />
+          </div>
+          <div className="space-y-0.5 flex-1">
+            <div className="h-2 w-16 bg-blue-900 dark:bg-blue-300 rounded-none" />
+            <div className="h-0.5 w-20 bg-slate-400 rounded-none" />
+          </div>
+        </div>
+        <div className="space-y-0.5">
+          <div className="h-1.5 w-14 bg-blue-900 dark:bg-blue-400 rounded-none" />
+          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-none" />
+          <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-none" />
+        </div>
+        <div className="space-y-0.5">
+          <div className="h-1.5 w-10 bg-blue-900 dark:bg-blue-400 rounded-none" />
+          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-none" />
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "photo-creative",
+    name: "Creative Portfolio",
+    description: "Dynamic layout featuring candidate headshot with clean sharp edges, vibrant indigo accents, and portfolio links.",
+    renderThumbnail: () => (
+      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-1.5">
+          <div className="w-6 h-6 rounded-none bg-indigo-600/20 border border-indigo-500 flex items-center justify-center shrink-0">
+            <Camera className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div className="space-y-0.5 flex-1">
+            <div className="h-2 w-14 bg-indigo-900 dark:bg-indigo-300 rounded-none" />
+            <div className="h-0.5 w-18 bg-slate-400 rounded-none" />
+          </div>
+        </div>
+        <div className="h-0.5 w-full bg-indigo-600 rounded-none" />
+        <div className="space-y-1">
+          <div className="flex items-center gap-1">
+            <div className="h-2 w-0.5 bg-indigo-600 rounded-none" />
+            <div className="h-1.5 w-10 bg-indigo-900 dark:bg-indigo-300 rounded-none" />
+          </div>
+          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-none pl-1" />
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "photo-minimal",
+    name: "Minimal Avatar",
+    description: "Refined minimalist styling with a sharp rectangular profile photo badge alongside name & title.",
+    renderThumbnail: () => (
+      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-1 border-b border-slate-200 dark:border-slate-800">
+          <div className="space-y-0.5">
+            <div className="h-2 w-14 bg-slate-800 dark:bg-slate-200 rounded-none" />
+            <div className="h-0.5 w-20 bg-slate-400 rounded-none" />
+          </div>
+          <div className="w-5 h-5 rounded-none bg-slate-300 dark:bg-slate-700 border border-slate-400 flex items-center justify-center shrink-0">
+            <User className="w-3 h-3 text-slate-600 dark:text-slate-300" />
+          </div>
+        </div>
+        <div className="space-y-0.5">
+          <div className="h-1.5 w-12 bg-slate-600 rounded-none" />
+          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-none" />
+          <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-none" />
+        </div>
+        <div className="space-y-0.5">
+          <div className="h-1.5 w-10 bg-slate-600 rounded-none" />
+          <div className="h-0.5 w-3/4 bg-slate-300 dark:bg-slate-700 rounded-none" />
+        </div>
+      </div>
+    )
+  }
+]
+
 function normalizeSkills(skills: any): SkillCategory[] {
   const defaultSkills: SkillCategory[] = [
     { category: "Languages", skills: [""] },
@@ -149,6 +550,10 @@ export default function ResumeBuilderPage() {
   // Show promotional material only if user is NOT logged in.
   const showPromo = !user && !loading;
 
+  // Credit & Usage State
+  const isFirstTimeResumeBuilder = !(user?.hasUsedResumeBuilder ?? user?.has_used_resume_builder ?? (user as any)?.metadata?.has_used_resume_builder)
+  const userTotalCredits = user ? ((user.subscriptionCredits || 0) + (user.purchasedCredits || 0) || (user.credits || 0)) : 0
+
   // App States
   const [isGenerating, setIsGenerating] = useState(false)
   const [copiedText, setCopiedText] = useState(false)
@@ -164,6 +569,15 @@ export default function ResumeBuilderPage() {
   const [draftTitle, setDraftTitle] = useState("My Resume")
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [visualTemplate, setVisualTemplate] = useState<string>("classic-serif")
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
+  const templateScrollRef = useRef<HTMLDivElement>(null)
+
+  const scrollTemplates = (direction: 'left' | 'right') => {
+    if (templateScrollRef.current) {
+      const scrollAmount = direction === 'left' ? -300 : 300
+      templateScrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' })
+    }
+  }
 
   // AI Assist State
   const [showAiAssist, setShowAiAssist] = useState(false)
@@ -189,6 +603,43 @@ export default function ResumeBuilderPage() {
   const [githubUrl, setGithubUrl] = useState("")
   const [portfolioUrl, setPortfolioUrl] = useState("")
   const [location, setLocation] = useState("")
+  const [photoUrl, setPhotoUrl] = useState<string>("")
+  const photoInputRef = useRef<HTMLInputElement>(null)
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Please select an image smaller than 5MB.",
+        variant: "destructive"
+      })
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result as string
+      setPhotoUrl(result)
+      toast({
+        title: "Photo Uploaded! 📸",
+        description: "Your photo will display in photo-enabled templates."
+      })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemovePhoto = () => {
+    setPhotoUrl("")
+    if (photoInputRef.current) {
+      photoInputRef.current.value = ""
+    }
+    toast({
+      title: "Photo Removed",
+      description: "Profile photo removed from resume."
+    })
+  }
+
   const [skills, setSkills] = useState<SkillCategory[]>([
     { category: "Languages", skills: [""] },
     { category: "Frameworks/Libraries", skills: [""] },
@@ -233,6 +684,7 @@ export default function ResumeBuilderPage() {
         if (data.githubUrl !== undefined) setGithubUrl(data.githubUrl)
         if (data.portfolioUrl !== undefined) setPortfolioUrl(data.portfolioUrl)
         if (data.location !== undefined) setLocation(data.location)
+        if (data.photoUrl !== undefined) setPhotoUrl(data.photoUrl)
         if (data.skills !== undefined) setSkills(normalizeSkills(data.skills))
         if (data.professionalSummary !== undefined) setProfessionalSummary(data.professionalSummary)
         if (data.languages !== undefined) setLanguages(data.languages)
@@ -266,6 +718,7 @@ export default function ResumeBuilderPage() {
         githubUrl,
         portfolioUrl,
         location,
+        photoUrl,
         skills,
         professionalSummary,
         languages,
@@ -292,6 +745,7 @@ export default function ResumeBuilderPage() {
     githubUrl,
     portfolioUrl,
     location,
+    photoUrl,
     skills,
     professionalSummary,
     languages,
@@ -319,6 +773,11 @@ export default function ResumeBuilderPage() {
       .join(", ") || usr.location || ""
     setLocation(formattedLoc)
 
+    const userPhoto = usr.profilePhotoUrl || usr.photoUrl || usr.avatar || usr.profilePhoto || usr.image || usr.profile_photo_url || usr.metadata?.avatar_url || usr.metadata?.picture || ""
+    if (userPhoto) {
+      setPhotoUrl(userPhoto)
+    }
+
     if (usr.summary) {
       setProfessionalSummary(usr.summary)
     }
@@ -328,8 +787,8 @@ export default function ResumeBuilderPage() {
       setJobs(usr.experience.map((exp: any) => ({
         company: exp.company || "",
         role: exp.title || exp.role || "",
-        startDate: exp.startDate || exp.start_date || "",
-        endDate: (exp.isCurrent || exp.is_current) ? "" : (exp.endDate || exp.end_date || ""),
+        startDate: normalizeMonthInput(exp.startDate || exp.start_date || ""),
+        endDate: (exp.isCurrent || exp.is_current) ? "" : normalizeMonthInput(exp.endDate || exp.end_date || ""),
         location: exp.location || "",
         points: exp.description ? exp.description.split('\n').filter(Boolean) : [""],
         currentlyWorkHere: Boolean(exp.isCurrent || exp.is_current)
@@ -393,11 +852,16 @@ export default function ResumeBuilderPage() {
   // Set initial contact and profile details from user profile
   useEffect(() => {
     if (user && selectedDraftId === 'new') {
+      const userPhoto = user.profilePhotoUrl || (user as any).photoUrl || (user as any).avatar || (user as any).profilePhoto || (user as any).image || (user as any).profile_photo_url || user.metadata?.avatar_url || user.metadata?.picture || ""
       const savedWip = localStorage.getItem("jobsdart_resume_builder_wip")
       if (savedWip) {
         try {
           const parsed = JSON.parse(savedWip)
           if (parsed.name || parsed.email || parsed.phone) {
+            // If WIP has no photo but user profile has one, use the profile image
+            if (!parsed.photoUrl && userPhoto) {
+              setPhotoUrl(userPhoto)
+            }
             return
           }
         } catch (e) {
@@ -447,6 +911,7 @@ export default function ResumeBuilderPage() {
         setGithubUrl("")
         setPortfolioUrl("")
         setLocation("")
+        setPhotoUrl("")
         setProfessionalSummary("")
         setLanguages([""])
         setAchievements([""])
@@ -475,6 +940,7 @@ export default function ResumeBuilderPage() {
     setGithubUrl(data.contact?.github || "")
     setPortfolioUrl(data.contact?.portfolio || "")
     setLocation(data.contact?.location || "")
+    setPhotoUrl(data.photoUrl || data.contact?.photoUrl || "")
     setSkills(normalizeSkills(data.skills))
     setProfessionalSummary(data.summary || "")
     setLanguages(data.languages && data.languages.length > 0 ? data.languages : [""])
@@ -503,8 +969,8 @@ export default function ResumeBuilderPage() {
         return {
           company: exp.company || "",
           role: exp.role || "",
-          startDate: startDate,
-          endDate: endDate,
+          startDate: normalizeMonthInput(startDate) || startDate,
+          endDate: normalizeMonthInput(endDate) || endDate,
           location: exp.location || "",
           points: exp.bullets && exp.bullets.length > 0 ? exp.bullets : [""],
           currentlyWorkHere
@@ -561,7 +1027,8 @@ export default function ResumeBuilderPage() {
       const resumePayload = {
         name,
         role,
-        contact: { email, phone, linkedin: linkedinUrl, github: githubUrl, portfolio: portfolioUrl, location },
+        photoUrl: photoUrl || undefined,
+        contact: { email, phone, linkedin: linkedinUrl, github: githubUrl, portfolio: portfolioUrl, location, photoUrl: photoUrl || undefined },
         summary: professionalSummary,
         skills: skills.map(cat => ({
           category: cat.category.trim(),
@@ -572,7 +1039,7 @@ export default function ResumeBuilderPage() {
         experience: jobs.filter(j => j.company).map(j => ({
           company: j.company,
           role: j.role,
-          dates: `${j.startDate} - ${j.currentlyWorkHere ? 'Present' : j.endDate}`,
+          dates: formatExperienceDateRange(j.startDate, j.endDate, j.currentlyWorkHere),
           location: j.location,
           bullets: j.points.filter(Boolean)
         })),
@@ -820,8 +1287,6 @@ export default function ResumeBuilderPage() {
     setSkills(updated)
   }
 
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-
   const executeGenerate = async () => {
     setIsGenerating(true)
     try {
@@ -832,8 +1297,8 @@ export default function ResumeBuilderPage() {
       const experienceList = jobs.filter(j => j.company && j.role).map(j => ({
         company: j.company,
         role: j.role,
-        startDate: j.startDate,
-        endDate: j.currentlyWorkHere ? "Present" : j.endDate,
+        startDate: formatMonthYear(j.startDate),
+        endDate: j.currentlyWorkHere ? "Present" : formatMonthYear(j.endDate),
         location: j.location,
         description: j.points ? j.points.filter(Boolean).join("\n") : ""
       }))
@@ -872,6 +1337,15 @@ export default function ResumeBuilderPage() {
 
       if (!response.ok) {
         const errData = await response.json()
+        if (response.status === 402 || errData.code === "INSUFFICIENT_CREDITS") {
+          toast({
+            title: "Insufficient Credits 💳",
+            description: errData.error || "You need at least 1 credit to generate an ATS resume with AI.",
+            variant: "destructive"
+          })
+          router.push("/jobseeker/credits")
+          return
+        }
         throw new Error(errData.error || "Failed to generate resume")
       }
 
@@ -916,8 +1390,8 @@ export default function ResumeBuilderPage() {
           return {
             company: exp.company || "",
             role: exp.role || "",
-            startDate,
-            endDate,
+            startDate: normalizeMonthInput(startDate) || startDate,
+            endDate: normalizeMonthInput(endDate) || endDate,
             location: exp.location || "",
             points: exp.bullets && exp.bullets.length > 0 ? exp.bullets : [""],
             currentlyWorkHere
@@ -945,7 +1419,11 @@ export default function ResumeBuilderPage() {
       }
 
       setActiveTab("preview")
-      toast({ title: "Resume Generated! ✨", description: "Your ATS-safe resume is ready to print or copy." })
+      if (data._isFirstTime || isFirstTimeResumeBuilder) {
+        toast({ title: "Resume Generated! ✨ (Free Trial)", description: "Your ATS-safe resume is ready to preview or download as PDF." })
+      } else {
+        toast({ title: "Resume Generated! ✨ (1 Credit Used)", description: "Your ATS-safe resume is ready to preview or download as PDF." })
+      }
       await refreshUser()
     } catch (err: any) {
       console.error(err)
@@ -966,19 +1444,17 @@ export default function ResumeBuilderPage() {
       return
     }
 
-    const hasUsedBuilder = user.has_used_resume_builder === true || user.hasUsedResumeBuilder === true || user.metadata?.has_used_resume_builder === true
-    const totalCredits = user.totalCredits ?? 0
-
-    if (hasUsedBuilder && totalCredits < 1) {
-      toast({ title: "Insufficient Credits", description: "Generating resumes costs 1 credit. Please buy more credits.", variant: "destructive" })
+    if (!isFirstTimeResumeBuilder && userTotalCredits < 1) {
+      toast({
+        title: "Insufficient Credits 💳",
+        description: "You need at least 1 credit to generate an ATS resume with AI. Please purchase credits to proceed.",
+        variant: "destructive"
+      })
+      router.push("/jobseeker/credits")
       return
     }
 
-    if (!hasUsedBuilder) {
-      await executeGenerate()
-    } else {
-      setShowConfirmDialog(true)
-    }
+    await executeGenerate()
   }
 
   const handleDownloadPdf = async () => {
@@ -991,13 +1467,15 @@ export default function ResumeBuilderPage() {
     const currentResumeData = {
       name: name || "Your Name",
       role: role || "",
+      photoUrl: photoUrl || undefined,
       contact: {
         email: email || "",
         phone: phone || "",
         linkedin: linkedinUrl || "",
         github: githubUrl || "",
         portfolio: portfolioUrl || "",
-        location: location || ""
+        location: location || "",
+        photoUrl: photoUrl || undefined
       },
       summary: professionalSummary || "",
       skills: skills.map(cat => ({
@@ -1009,9 +1487,7 @@ export default function ResumeBuilderPage() {
       experience: jobs.filter(j => j.company || j.role).map(j => ({
         company: j.company || "",
         role: j.role || "",
-        dates: j.currentlyWorkHere
-          ? `${j.startDate || ""} - Present`
-          : `${j.startDate || ""}${j.endDate ? ` - ${j.endDate}` : ""}`,
+        dates: formatExperienceDateRange(j.startDate, j.endDate, j.currentlyWorkHere),
         location: j.location || "",
         bullets: j.points.filter(Boolean)
       })),
@@ -1032,11 +1508,20 @@ export default function ResumeBuilderPage() {
 
     setIsDownloadingPdf(true)
     try {
-      const { pdf } = await import("@react-pdf/renderer")
-      const { ResumePdfDocument } = await import("@/components/resume/ResumePdfDocument")
+      const response = await fetch('/api/resume/export-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: currentResumeData,
+          template: visualTemplate
+        })
+      })
 
-      const blob = await pdf(<ResumePdfDocument data={currentResumeData} template={visualTemplate} />).toBlob()
+      if (!response.ok) {
+        throw new Error('Failed to render PDF on server')
+      }
 
+      const blob = await response.blob()
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
@@ -1061,48 +1546,6 @@ export default function ResumeBuilderPage() {
     } finally {
       setIsDownloadingPdf(false)
     }
-  }
-
-  const getMarkdownFormat = () => {
-    const contactParts = [
-      email,
-      phone,
-      location,
-      linkedinUrl ? `LinkedIn: ${linkedinUrl}` : "",
-      githubUrl ? `GitHub: ${githubUrl}` : "",
-      portfolioUrl ? `Portfolio: ${portfolioUrl}` : ""
-    ].filter(Boolean).join(" | ")
-
-    const formattedEdu = education.filter(e => e.institution).map(edu => `### ${edu.degree || "Degree"}${edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ""} — ${edu.institution}
-*${edu.year || ""}*${edu.grade ? `\n*Grade: ${edu.grade}*` : ""}
-`).join("\n")
-
-    const formattedExp = jobs.filter(j => j.company).map(exp => `### ${exp.role || "Role"} - ${exp.company}${exp.location ? ` (${exp.location})` : ""}
-*${exp.startDate || ""}${exp.currentlyWorkHere ? " - Present" : exp.endDate ? ` - ${exp.endDate}` : ""}*
-${exp.points ? exp.points.filter(Boolean).map(b => `* ${b}`).join("\n") : ""}
-`).join("\n")
-
-    const formattedProj = projects.filter(p => p.name).map(proj => `### ${proj.projectLink ? `[${proj.name}](${proj.projectLink})` : proj.name}
-${proj.techStack && proj.techStack.trim() ? `*Technologies: ${proj.techStack}*\n` : ""}${proj.points ? proj.points.filter(Boolean).map(b => `* ${b}`).join("\n") : ""}
-`).join("\n")
-
-    const skillsStr = typeof skills[0] === 'string'
-      ? (skills as any).filter(Boolean).join(", ")
-      : skills.map(cat => `* **${cat.category}**: ${cat.skills.filter(Boolean).join(", ")}`).join("\n")
-    const achList = achievements.filter(Boolean).map(a => `* ${a}`).join("\n")
-    const langStr = languages.filter(Boolean).join(", ")
-
-    return `# ${name || "Your Name"}
-${role ? `${role}\n` : ""}${contactParts}
-
-${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : ""}${skillsStr ? `## Skills\n${skillsStr}\n\n` : ""}${formattedEdu ? `## Education\n${formattedEdu}\n\n` : ""}${formattedExp ? `## Experience\n${formattedExp}\n\n` : ""}${formattedProj ? `## Projects\n${formattedProj}\n\n` : ""}${achList ? `## Achievements\n${achList}\n\n` : ""}${langStr ? `## Languages\n${langStr}\n\n` : ""}`
-  }
-
-  const handleCopyMarkdown = () => {
-    navigator.clipboard.writeText(getMarkdownFormat())
-    setCopiedText(true)
-    setTimeout(() => setCopiedText(false), 2000)
-    toast({ title: "Copied!", description: "Markdown copy saved to clipboard." })
   }
 
   return (
@@ -1221,17 +1664,21 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
 
           <div className="flex items-center gap-2 border-l border-slate-200/65 dark:border-slate-800/80 pl-4">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Design Layout:</span>
-            <Select value={visualTemplate} onValueChange={setVisualTemplate}>
-              <SelectTrigger className="w-[160px] h-9 rounded-xl border-slate-250 text-xs font-semibold bg-slate-50/50">
-                <SelectValue placeholder="Select template" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                <SelectItem value="classic-serif" className="text-xs">Classic Serif</SelectItem>
-                <SelectItem value="modern-minimal" className="text-xs">Modern Minimalist</SelectItem>
-                <SelectItem value="executive-navy" className="text-xs">Executive Navy</SelectItem>
-                <SelectItem value="compact-tech" className="text-xs">Compact Tech</SelectItem>
-              </SelectContent>
-            </Select>
+            <Button
+              type="button"
+              variant={showTemplatePicker ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowTemplatePicker(prev => !prev)}
+              className={`h-9 rounded-xl border-slate-250 text-xs font-semibold flex items-center gap-2 shadow-sm transition-all ${
+                showTemplatePicker
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 dark:shadow-none"
+                  : "bg-slate-50/50 hover:bg-slate-100 text-slate-700 dark:text-slate-200"
+              }`}
+            >
+              <Palette className={`w-3.5 h-3.5 ${showTemplatePicker ? "text-white" : "text-indigo-500"}`} />
+              <span>Choose Template</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showTemplatePicker ? "rotate-180" : ""}`} />
+            </Button>
           </div>
         </div>
 
@@ -1267,6 +1714,118 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
           </Button>
         </div>
       </div>
+
+      {/* Choose Template - Scrollable Row Section below Save Button & Toolbar */}
+      <AnimatePresence>
+        {showTemplatePicker && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            transition={{ duration: 0.25 }}
+            className="mb-6 overflow-hidden print:hidden"
+          >
+            <div className="p-4 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center gap-2">
+                  
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => scrollTemplates('left')}
+                    className="h-7 w-7 rounded-lg border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
+                    title="Scroll left"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => scrollTemplates('right')}
+                    className="h-7 w-7 rounded-lg border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
+                    title="Scroll right"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowTemplatePicker(false)}
+                    className="h-7 px-2 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg ml-1"
+                  >
+                    <X className="w-3.5 h-3.5 mr-1" /> Close
+                  </Button>
+                </div>
+              </div>
+
+              {/* Horizontally scrollable row of template cards */}
+              <div
+                ref={templateScrollRef}
+                className="flex gap-3.5 overflow-x-auto pb-2 pt-1 px-1 scroll-smooth scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700"
+              >
+                {TEMPLATES.map((tmpl) => {
+                  const isSelected = visualTemplate === tmpl.id;
+                  return (
+                    <div
+                      key={tmpl.id}
+                      onClick={() => {
+                        setVisualTemplate(tmpl.id);
+                        toast({ title: "Template Selected ✨", description: `Switched to ${tmpl.name}` });
+                      }}
+                      className={`group relative rounded-xl border p-2.5 cursor-pointer transition-all hover:scale-[1.02] flex flex-col justify-between shrink-0 w-[200px] sm:w-[220px] ${
+                        isSelected
+                          ? "border-indigo-600 ring-2 ring-indigo-600/30 bg-indigo-50/60 dark:bg-indigo-950/40 shadow-sm"
+                          : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900"
+                      }`}
+                    >
+                      <div className="mb-2 overflow-hidden rounded-lg">
+                        {tmpl.renderThumbnail()}
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {tmpl.name}
+                          </h4>
+                          {isSelected && (
+                            <Badge className="bg-indigo-600 text-white text-[9px] h-4 px-1.5 font-bold shrink-0">
+                              Active
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mb-2 line-clamp-2">
+                          {tmpl.description}
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={isSelected ? "default" : "outline"}
+                          className={`w-full h-7 text-[11px] font-bold rounded-lg transition-all ${
+                            isSelected
+                              ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                              : "hover:border-indigo-200 hover:bg-indigo-50/50 text-slate-700 dark:text-slate-200"
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVisualTemplate(tmpl.id);
+                            toast({ title: "Template Selected ✨", description: `Switched to ${tmpl.name}` });
+                          }}
+                        >
+                          {isSelected ? "✓ Active" : "Use Template"}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Mobile Tab Switcher */}
       <div className="lg:hidden flex border border-slate-200 dark:border-slate-800 p-1 bg-slate-50 dark:bg-slate-900/50 rounded-2xl mb-6 shadow-sm max-w-md mx-auto print:hidden">
@@ -1381,6 +1940,63 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 block mb-1">Location</label>
                     <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="Bengaluru, India" className="rounded-xl h-9 text-xs" />
+                  </div>
+                </div>
+
+                {/* Profile Photo Upload Section */}
+                <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/80">
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1.5 flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-indigo-500" />
+                    Profile Photo (For Photo-Enabled Templates)
+                  </label>
+                  <div className="flex items-center gap-3.5 p-3 rounded-none bg-slate-50/70 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/60">
+                    <div className="relative w-14 h-14 rounded-none overflow-hidden bg-slate-200 dark:bg-slate-800 border-2 border-slate-900 dark:border-slate-100 flex items-center justify-center shrink-0 shadow-inner">
+                      {photoUrl ? (
+                        <img
+                          src={photoUrl}
+                          alt="Profile Preview"
+                          className="w-full h-full object-cover rounded-none"
+                        />
+                      ) : (
+                        <User className="w-7 h-7 text-slate-400 dark:text-slate-500" />
+                      )}
+                    </div>
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <input
+                          ref={photoInputRef}
+                          type="file"
+                          accept="image/png, image/jpeg, image/webp"
+                          className="hidden"
+                          onChange={handlePhotoUpload}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => photoInputRef.current?.click()}
+                          className="h-8 px-3 rounded-lg text-xs font-bold border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 shadow-sm"
+                        >
+                          <Upload className="w-3.5 h-3.5 mr-1" />
+                          {photoUrl ? "Change Photo" : "Upload Photo"}
+                        </Button>
+                        {photoUrl && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRemovePhoto}
+                            className="h-8 px-2.5 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1" />
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
+                        PNG, JPG or WEBP up to 5MB. Rendered in Modern Photo Sidebar, Executive Headshot, Creative Portfolio, and Minimal Avatar templates.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -1844,52 +2460,44 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
             </Card>
           )}
 
-          {user && (
-            <div className="flex items-center justify-between text-[11px] border rounded-2xl p-3 bg-slate-50/50 dark:bg-slate-950/20 border-slate-200/40 dark:border-slate-850 shadow-sm">
-              <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-medium">
-                <Coins className="w-4 h-4 text-indigo-500 shrink-0" />
-                {!(user.has_used_resume_builder || user.hasUsedResumeBuilder || user.metadata?.has_used_resume_builder) ? (
-                  <span>First generation is <strong className="text-indigo-600 dark:text-indigo-400 font-bold">FREE</strong>!</span>
+          <div className="space-y-2">
+            <Button
+              className="w-full py-6 text-sm font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-transform"
+              onClick={handleGenerate}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Grok is Writing Your Resume...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 text-amber-300 fill-amber-300 animate-pulse" />
+                  {isFirstTimeResumeBuilder ? "Generate ATS Resume with AI (Free 1st Time)" : "Generate ATS Resume with AI (1 Credit)"}
+                  <ChevronRight className="w-5 h-5 ml-1" />
+                </>
+              )}
+            </Button>
+
+            {user && (
+              <div className="flex items-center justify-between text-xs px-2.5 py-1.5 bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80 rounded-xl">
+                <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 font-medium">
+                  <Coins className="w-3.5 h-3.5 text-amber-500" />
+                  Credits left: <strong className="text-slate-900 dark:text-white font-bold">{userTotalCredits} {userTotalCredits === 1 ? 'credit' : 'credits'}</strong>
+                </span>
+                {isFirstTimeResumeBuilder ? (
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400 text-[10px] font-bold px-2 py-0.5">
+                    ✨ 1st Use Free
+                  </Badge>
                 ) : (
-                  <span>Cost: <strong className="font-bold text-slate-700 dark:text-slate-350">1 Credit</strong></span>
+                  <Link href="/jobseeker/credits" className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                    + Buy Credits
+                  </Link>
                 )}
               </div>
-              <span className={`font-bold py-0.5 px-2.5 rounded-full border shadow-sm ${(user.totalCredits || 0) > 0
-                  ? 'bg-indigo-50 border-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:border-indigo-900/30 dark:text-indigo-400'
-                  : 'bg-rose-50 border-rose-100 text-rose-500 dark:bg-rose-950/40 dark:border-rose-900/30 dark:text-rose-400'
-                }`}>
-                Credits: {user.totalCredits || 0}
-              </span>
-            </div>
-          )}
-
-          {user && (user.has_used_resume_builder || user.hasUsedResumeBuilder || user.metadata?.has_used_resume_builder) && (user.totalCredits || 0) < 1 && (
-            <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-100 text-rose-800 dark:bg-rose-950/10 dark:border-rose-900/30 dark:text-rose-400 text-xs flex flex-col gap-1.5 shadow-sm">
-              <p className="font-semibold">You need 1 credit to generate your resume with Grok.</p>
-              <Link href="/jobseeker/credits" className="text-indigo-600 dark:text-indigo-400 font-bold underline hover:text-indigo-700">
-                Buy Credits Now →
-              </Link>
-            </div>
-          )}
-
-          <Button
-            className="w-full py-6 text-sm font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-transform"
-            onClick={handleGenerate}
-            disabled={isGenerating || (user && (user.has_used_resume_builder || user.hasUsedResumeBuilder || user.metadata?.has_used_resume_builder) && (user.totalCredits || 0) < 1)}
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Grok is Writing Your Resume...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5 text-amber-300 fill-amber-300 animate-pulse" />
-                Generate ATS Resume with AI
-                <ChevronRight className="w-5 h-5 ml-1" />
-              </>
             )}
-          </Button>
+          </div>
         </div>
 
         {/* Live Resume Preview - Right Column */}
@@ -1902,11 +2510,6 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
               </h2>
               {(name || email) && (
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" className="rounded-xl h-8 text-xs font-bold shadow-sm" onClick={handleCopyMarkdown}>
-                    {copiedText ? <Check className="w-3.5 h-3.5 mr-1 text-emerald-500 animate-in zoom-in" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
-                    Copy MD
-                  </Button>
-
                   <Button
                     size="sm"
                     className="rounded-xl h-8 text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 flex items-center gap-1 shadow-sm"
@@ -1926,19 +2529,341 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
             {/* Helper style definitions based on visualTemplate */}
             {(() => {
               const isSerif = visualTemplate === 'classic-serif'
-              const isNavy = visualTemplate === 'executive-navy'
+              const isNavy = visualTemplate === 'executive-navy' || visualTemplate === 'photo-executive'
               const isCompact = visualTemplate === 'compact-tech'
-              const isMinimal = visualTemplate === 'modern-minimal'
+              const isMinimal = visualTemplate === 'modern-minimal' || visualTemplate === 'photo-minimal'
+              const isTwoColumn = visualTemplate === 'two-column'
+              const isCreative = visualTemplate === 'creative-bold' || visualTemplate === 'photo-creative'
+              const isElegant = visualTemplate === 'elegant-sidebar'
+              const isAtsClean = visualTemplate === 'ats-clean'
+              const isPhotoSidebar = visualTemplate === 'photo-modern-sidebar'
+              const isPhotoExec = visualTemplate === 'photo-executive'
+              const isPhotoCreative = visualTemplate === 'photo-creative'
+              const isPhotoMinimal = visualTemplate === 'photo-minimal'
 
-              const previewFontClass = isSerif ? "font-serif" : "font-sans"
-              const previewTextColor = isMinimal ? "text-slate-700 dark:text-slate-300" : "text-slate-950 dark:text-slate-100"
-              const previewPadding = isCompact ? "p-5 sm:p-8" : "p-6 sm:p-10 lg:p-12"
+              const previewFontClass = isSerif ? "font-serif" : isAtsClean ? "font-mono" : "font-sans"
+              const previewTextColor = isMinimal || isElegant ? "text-slate-700 dark:text-slate-300" : "text-slate-950 dark:text-slate-100"
+              const previewPadding = isCompact ? "p-5 sm:p-7" : isAtsClean ? "p-6 sm:p-8" : "p-6 sm:p-10 lg:p-12"
               const previewTextSize = isCompact ? "text-[11px]" : "text-xs"
               const previewHeadlineSize = isCompact ? "text-[10px]" : "text-[11px]"
-              const previewTitleSize = isCompact ? "text-2xl" : "text-3xl"
-              const previewSectionMargin = isCompact ? "mb-4" : "mb-5"
-              const previewSectionHeaderMargin = isCompact ? "mb-1.5" : "mb-2"
-              const previewSectionDividerColor = isNavy ? "border-blue-900 dark:border-blue-800 border-b-2" : isMinimal ? "border-slate-200 dark:border-slate-800" : "border-slate-900 dark:border-slate-100"
+              const previewTitleSize = isCompact ? "text-2xl" : isCreative ? "text-3xl sm:text-4xl" : "text-3xl"
+              const previewSectionMargin = isCompact ? "mb-3" : (isTwoColumn || isElegant || isPhotoSidebar) ? "mb-4" : "mb-5"
+              const previewSectionHeaderMargin = isCompact ? "mb-1" : "mb-1.5"
+              const previewSectionDividerColor = isNavy
+                ? "border-blue-900 dark:border-blue-800 border-b-2"
+                : isMinimal
+                ? "border-slate-200 dark:border-slate-800"
+                : isAtsClean || isCreative
+                ? "border-none"
+                : "border-slate-900 dark:border-slate-100"
+              const previewHeaderAlign = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isPhotoCreative || isPhotoMinimal) ? "text-left" : "text-center"
+              const previewContactJustify = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isPhotoCreative || isPhotoMinimal || isPhotoExec) ? "justify-start" : "justify-center"
+
+              const renderAvatar = (size = "w-28 h-28") => {
+                if (photoUrl) {
+                  return (
+                    <div className={`relative group/photo ${size} rounded-none overflow-hidden border-2 border-slate-900 dark:border-slate-100 shadow-sm shrink-0`}>
+                      <img
+                        src={photoUrl}
+                        alt={name || "Candidate"}
+                        className="w-full h-full object-cover rounded-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => photoInputRef.current?.click()}
+                        className="absolute inset-0 bg-black/60 opacity-0 group-hover/photo:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold gap-1 rounded-none print:hidden cursor-pointer"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        Change
+                      </button>
+                    </div>
+                  )
+                }
+
+                return (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveSection('personal')
+                      photoInputRef.current?.click()
+                    }}
+                    className={`${size} rounded-none border-2 border-dashed border-indigo-400 dark:border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all flex flex-col items-center justify-center gap-1 text-indigo-600 dark:text-indigo-400 p-2 shrink-0 group cursor-pointer print:hidden shadow-sm`}
+                    title="Click to upload profile photo"
+                  >
+                    <Upload className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] font-black uppercase tracking-tight text-center leading-tight">
+                      + Upload Photo
+                    </span>
+                  </button>
+                )
+              }
+
+              const renderContactRow = () => (
+                <div className={`text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium flex flex-wrap ${previewContactJustify} gap-x-3 gap-y-1`}>
+                  {email && (
+                    <a href={`mailto:${email.trim()}`} className="hover:underline">
+                      {email}
+                    </a>
+                  )}
+                  {phone && (
+                    <>
+                      {email && <span>•</span>}
+                      <span>{phone}</span>
+                    </>
+                  )}
+                  {location && (
+                    <>
+                      {(email || phone) && <span>•</span>}
+                      <span>{location}</span>
+                    </>
+                  )}
+                  {linkedinUrl && (
+                    <>
+                      {(email || phone || location) && <span>•</span>}
+                      <a href={formatUrl(linkedinUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold">
+                        LinkedIn
+                      </a>
+                    </>
+                  )}
+                  {githubUrl && (
+                    <>
+                      {(email || phone || location || linkedinUrl) && <span>•</span>}
+                      <a href={formatUrl(githubUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold">
+                        GitHub
+                      </a>
+                    </>
+                  )}
+                  {portfolioUrl && (
+                    <>
+                      {(email || phone || location || linkedinUrl || githubUrl) && <span>•</span>}
+                      <a href={formatUrl(portfolioUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold">
+                        Portfolio
+                      </a>
+                    </>
+                  )}
+                </div>
+              )
+
+              const renderContactColumn = () => (
+                <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium flex flex-col gap-y-1">
+                  {email && (
+                    <a href={`mailto:${email.trim()}`} className="hover:underline break-all">
+                      {email}
+                    </a>
+                  )}
+                  {phone && <span>{phone}</span>}
+                  {location && <span>{location}</span>}
+                  {linkedinUrl && (
+                    <a href={formatUrl(linkedinUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold">
+                      LinkedIn
+                    </a>
+                  )}
+                  {githubUrl && (
+                    <a href={formatUrl(githubUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold">
+                      GitHub
+                    </a>
+                  )}
+                  {portfolioUrl && (
+                    <a href={formatUrl(portfolioUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold">
+                      Portfolio
+                    </a>
+                  )}
+                </div>
+              )
+
+              const renderPreviewSummary = () => professionalSummary ? (
+                <div className={previewSectionMargin}>
+                  <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${
+                    isNavy ? "text-blue-900 dark:text-blue-400" :
+                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-4 border-indigo-600 pl-2" :
+                    isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
+                    "text-slate-905 dark:text-white"
+                  } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
+                    Professional Summary
+                  </h2>
+                  <p className={`${previewTextSize} leading-relaxed ${previewTextColor}`}>{professionalSummary}</p>
+                </div>
+              ) : null
+
+              const renderPreviewSkills = () => skills && skills.length > 0 ? (
+                <div className={previewSectionMargin}>
+                  <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${
+                    isNavy ? "text-blue-900 dark:text-blue-400" :
+                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-4 border-indigo-600 pl-2" :
+                    isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
+                    "text-slate-905 dark:text-white"
+                  } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
+                    Skills & Tech Stack
+                  </h2>
+                  {typeof (skills as any)[0] === 'string' ? (
+                    <p className={`${previewTextSize} leading-relaxed ${previewTextColor} font-medium`}>{(skills as any).filter(Boolean).join(",  ")}</p>
+                  ) : (
+                    <div className={`${previewTextSize} leading-relaxed ${previewTextColor} font-medium space-y-0.5`}>
+                      {(skills as any).map((cat: any, idx: number) => {
+                        const skillsList = Array.isArray(cat.skills) ? cat.skills.filter(Boolean) : [];
+                        if (skillsList.length === 0) return null;
+                        return (
+                          <div key={idx}>
+                            <strong className={
+                              isNavy ? "text-blue-900 dark:text-blue-400" :
+                              isCreative ? "text-indigo-950 dark:text-indigo-300" :
+                              isMinimal || isElegant ? "text-slate-800 dark:text-slate-200" :
+                              "text-slate-950 dark:text-white"
+                            }>{cat.category}: </strong>
+                            <span>{skillsList.join(",  ")}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : null
+
+              const renderPreviewExperience = () => jobs.filter(j => j.company || j.role).length > 0 ? (
+                <div className={previewSectionMargin}>
+                  <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${
+                    isNavy ? "text-blue-900 dark:text-blue-400" :
+                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-4 border-indigo-600 pl-2" :
+                    isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
+                    "text-slate-905 dark:text-white"
+                  } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
+                    Experience
+                  </h2>
+                  <div className={isCompact ? "space-y-2" : "space-y-3.5"}>
+                    {jobs.filter(j => j.company || j.role).map((job, idx) => (
+                      <div key={idx}>
+                        <div className={`flex justify-between ${previewTextSize} font-bold ${
+                          isNavy ? "text-blue-900 dark:text-blue-400" :
+                          isCreative ? "text-slate-900 dark:text-white" :
+                          isMinimal || isElegant ? "text-slate-800 dark:text-white" :
+                          "text-slate-950 dark:text-white"
+                        } mb-0.5`}>
+                          <span>{job.role || "Role"} — {job.company || "Company"}{job.location ? ` (${job.location})` : ""}</span>
+                          <span className="font-semibold text-slate-500 dark:text-slate-400">{formatExperienceDateRange(job.startDate, job.endDate, job.currentlyWorkHere)}</span>
+                        </div>
+                        {job.points && job.points.filter(Boolean).length > 0 && (
+                          <ul className="list-disc pl-4 space-y-0.5">
+                            {job.points.filter(Boolean).map((bullet, bIdx) => (
+                              <li key={bIdx} className={`${previewTextSize} leading-relaxed ${previewTextColor}`}>{renderRichText(bullet)}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null
+
+              const renderPreviewProjects = () => projects.filter(p => p.name).length > 0 ? (
+                <div className={previewSectionMargin}>
+                  <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${
+                    isNavy ? "text-blue-900 dark:text-blue-400" :
+                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-4 border-indigo-600 pl-2" :
+                    isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
+                    "text-slate-905 dark:text-white"
+                  } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
+                    Projects
+                  </h2>
+                  <div className={isCompact ? "space-y-2" : "space-y-3.5"}>
+                    {projects.filter(p => p.name).map((proj, idx) => (
+                      <div key={idx}>
+                        <div className={`flex justify-between ${previewTextSize} font-bold ${
+                          isNavy ? "text-blue-900 dark:text-blue-400" :
+                          isCreative ? "text-slate-900 dark:text-white" :
+                          isMinimal || isElegant ? "text-slate-800 dark:text-white" :
+                          "text-slate-950 dark:text-white"
+                        } mb-0.5`}>
+                          <span>
+                            {proj.name}
+                            {proj.projectLink && (
+                              <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500 ml-1.5">
+                                <a href={formatUrl(proj.projectLink)} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                  LINK
+                                </a>
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        {proj.techStack && proj.techStack.trim() ? (
+                          <p className={`text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1`}>
+                            Tech: {proj.techStack}
+                          </p>
+                        ) : null}
+                        {proj.points && proj.points.filter(Boolean).length > 0 && (
+                          <ul className="list-disc pl-4 space-y-0.5">
+                            {proj.points.filter(Boolean).map((bullet, bIdx) => (
+                              <li key={bIdx} className={`${previewTextSize} leading-relaxed ${previewTextColor}`}>{renderRichText(bullet)}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null
+
+              const renderPreviewEducation = () => education.filter(e => e.institution || e.degree).length > 0 ? (
+                <div className={previewSectionMargin}>
+                  <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${
+                    isNavy ? "text-blue-900 dark:text-blue-400" :
+                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-4 border-indigo-600 pl-2" :
+                    isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
+                    "text-slate-905 dark:text-white"
+                  } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
+                    Education
+                  </h2>
+                  <div className={isCompact ? "space-y-1.5" : "space-y-3"}>
+                    {education.filter(e => e.institution || e.degree).map((edu, idx) => (
+                      <div key={idx}>
+                        <div className={`flex justify-between ${previewTextSize} font-bold ${
+                          isNavy ? "text-blue-900 dark:text-blue-400" :
+                          isCreative ? "text-slate-900 dark:text-white" :
+                          isMinimal || isElegant ? "text-slate-800 dark:text-white" :
+                          "text-slate-950 dark:text-white"
+                        }`}>
+                          <span>{edu.degree || "Degree"}{edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ""} — {edu.institution || "Institution"}</span>
+                          <span className="font-semibold text-slate-500 dark:text-slate-400">{edu.year}</span>
+                        </div>
+                        {edu.grade && (
+                          <p className={`text-[10px] sm:text-[11px] ${previewTextColor} font-medium mt-0.5`}>GPA/Grade: {edu.grade}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null
+
+              const renderPreviewAchievements = () => achievements.filter(Boolean).length > 0 ? (
+                <div className={previewSectionMargin}>
+                  <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${
+                    isNavy ? "text-blue-900 dark:text-blue-400" :
+                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-4 border-indigo-600 pl-2" :
+                    isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
+                    "text-slate-905 dark:text-white"
+                  } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
+                    Achievements
+                  </h2>
+                  <ul className="list-disc pl-4 space-y-0.5">
+                    {achievements.filter(Boolean).map((achievement, aIdx) => (
+                      <li key={aIdx} className={`${previewTextSize} leading-relaxed ${previewTextColor}`}>{renderRichText(achievement)}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null
+
+              const renderPreviewLanguages = () => languages.filter(Boolean).length > 0 ? (
+                <div className={previewSectionMargin}>
+                  <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${
+                    isNavy ? "text-blue-900 dark:text-blue-400" :
+                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-4 border-indigo-600 pl-2" :
+                    isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
+                    "text-slate-905 dark:text-white"
+                  } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
+                    Languages
+                  </h2>
+                  <p className={`${previewTextSize} leading-relaxed ${previewTextColor} font-medium`}>{languages.filter(Boolean).join(", ")}</p>
+                </div>
+              ) : null
 
               return (
                 <div
@@ -1946,186 +2871,200 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
                   className={`min-h-[800px] w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-3xl ${previewPadding} shadow-xl shadow-slate-100 dark:shadow-none ${previewFontClass} ${previewTextColor} select-text overflow-hidden transition-all duration-350`}
                 >
                   <div className="text-left max-w-full animate-in fade-in duration-500">
-                    {/* Header */}
-                    <div className={`flex flex-col ${(isMinimal || isCompact) ? "text-left mb-4" : "text-center mb-5"} ${isNavy ? "border-blue-900 dark:border-blue-800" : isMinimal ? "border-slate-200 dark:border-slate-800" : "border-slate-900 dark:border-slate-100"}`}>
-                      <h1 className={`${previewTitleSize} font-black ${isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-800 dark:text-white" : "text-slate-950 dark:text-white"} tracking-tight mb-1`}>{name || "Your Name"}</h1>
-                      {role && (
-                        <p className={`${previewHeadlineSize} font-bold ${isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-600 dark:text-slate-450" : "text-slate-700 dark:text-slate-300"} uppercase tracking-wider mb-1.5`}>{role}</p>
-                      )}
-                      <div className={`text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium flex flex-wrap ${(isMinimal || isCompact) ? "justify-start" : "justify-center"} gap-x-3 gap-y-1`}>
-                        {email && (
-                          <a href={`mailto:${email.trim()}`} className="hover:underline">
-                            {email}
-                          </a>
-                        )}
-                        {phone && (
-                          <>
-                            {email && <span>•</span>}
-                            <span>{phone}</span>
-                          </>
-                        )}
-                        {location && (
-                          <>
-                            {(email || phone) && <span>•</span>}
-                            <span>{location}</span>
-                          </>
-                        )}
-                        {linkedinUrl && (
-                          <>
-                            {(email || phone || location) && <span>•</span>}
-                            <a href={formatUrl(linkedinUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold">
-                              LinkedIn
-                            </a>
-                          </>
-                        )}
-                        {githubUrl && (
-                          <>
-                            {(email || phone || location || linkedinUrl) && <span>•</span>}
-                            <a href={formatUrl(githubUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold">
-                              GitHub
-                            </a>
-                          </>
-                        )}
-                        {portfolioUrl && (
-                          <>
-                            {(email || phone || location || linkedinUrl || githubUrl) && <span>•</span>}
-                            <a href={formatUrl(portfolioUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold">
-                              Portfolio
-                            </a>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Summary */}
-                    {professionalSummary && (
-                      <div className={previewSectionMargin}>
-                        <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-700 dark:text-slate-400" : "text-slate-905 dark:text-white"} border-b ${previewSectionDividerColor} pb-0.5 ${previewSectionHeaderMargin}`}>Professional Summary</h2>
-                        <p className={`${previewTextSize} leading-relaxed ${previewTextColor}`}>{professionalSummary}</p>
-                      </div>
-                    )}
-
-                    {/* Skills */}
-                    {skills && skills.length > 0 && (
-                      <div className={previewSectionMargin}>
-                        <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-700 dark:text-slate-400" : "text-slate-905 dark:text-white"} border-b ${previewSectionDividerColor} pb-0.5 ${previewSectionHeaderMargin}`}>Skills & Tech Stack</h2>
-                        {typeof (skills as any)[0] === 'string' ? (
-                          <p className={`${previewTextSize} leading-relaxed ${previewTextColor} font-medium`}>{(skills as any).filter(Boolean).join(",  ")}</p>
-                        ) : (
-                          <div className={`${previewTextSize} leading-relaxed ${previewTextColor} font-medium space-y-0.5`}>
-                            {(skills as any).map((cat: any, idx: number) => {
-                              const skillsList = Array.isArray(cat.skills) ? cat.skills.filter(Boolean) : [];
-                              if (skillsList.length === 0) return null;
-                              return (
-                                <div key={idx}>
-                                  <strong className={isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-800 dark:text-slate-200" : "text-slate-950 dark:text-white"}>{cat.category}: </strong>
-                                  <span>{skillsList.join(",  ")}</span>
-                                </div>
-                              );
-                            })}
+                    {/* Modern Photo Sidebar Layout */}
+                    {isPhotoSidebar ? (
+                      <div className="flex flex-col md:flex-row gap-6">
+                        {/* Left Sidebar (25%) */}
+                        <div className="w-full md:w-[25%] border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 pr-0 md:pr-4 pb-4 md:pb-0 space-y-4">
+                          <div className="flex justify-center md:justify-start">
+                            {renderAvatar("w-32 h-32")}
                           </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Experience */}
-                    {jobs.filter(j => j.company || j.role).length > 0 && (
-                      <div className={previewSectionMargin}>
-                        <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-700 dark:text-slate-400" : "text-slate-905 dark:text-white"} border-b ${previewSectionDividerColor} pb-0.5 ${previewSectionHeaderMargin}`}>Experience</h2>
-                        <div className={isCompact ? "space-y-2.5" : "space-y-4"}>
-                          {jobs.filter(j => j.company || j.role).map((job, idx) => (
-                            <div key={idx}>
-                              <div className={`flex justify-between ${previewTextSize} font-bold ${isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-800 dark:text-white" : "text-slate-950 dark:text-white"} mb-0.5`}>
-                                <span>{job.role || "Role"} — {job.company || "Company"}{job.location ? ` (${job.location})` : ""}</span>
-                                <span className="font-semibold text-slate-500 dark:text-slate-400">{job.startDate || ""}{job.currentlyWorkHere ? " - Present" : job.endDate ? ` - ${job.endDate}` : ""}</span>
-                              </div>
-                              {job.points && job.points.filter(Boolean).length > 0 && (
-                                <ul className="list-disc pl-4 space-y-0.5">
-                                  {job.points.filter(Boolean).map((bullet, bIdx) => (
-                                    <li key={bIdx} className={`${previewTextSize} leading-relaxed ${previewTextColor}`}>{bullet}</li>
-                                  ))}
-                                </ul>
-                              )}
-                            </div>
-                          ))}
+                          <div>
+                            <h2 className={`${previewTextSize} font-black uppercase tracking-widest text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-0.5 mb-2`}>
+                              Contact
+                            </h2>
+                            {renderContactColumn()}
+                          </div>
+                          {renderPreviewSkills()}
+                          {renderPreviewEducation()}
+                          {renderPreviewLanguages()}
+                          {renderPreviewAchievements()}
+                        </div>
+                        {/* Right Main (75%) */}
+                        <div className="w-full md:w-[75%] pl-0 md:pl-2 space-y-4">
+                          <div className="pb-3 border-b-2 border-indigo-600">
+                            <h1 className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5`}>
+                              {name || "Your Name"}
+                            </h1>
+                            {role && (
+                              <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider`}>
+                                {role}
+                              </p>
+                            )}
+                          </div>
+                          {renderPreviewSummary()}
+                          {renderPreviewExperience()}
+                          {renderPreviewProjects()}
                         </div>
                       </div>
-                    )}
+                    ) : isPhotoExec ? (
+                      /* Executive Headshot Layout */
+                      <div>
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-4 mb-4 border-b-2 border-blue-900 dark:border-blue-700">
+                          {renderAvatar("w-28 h-28")}
+                          <div className="flex-1 text-center sm:text-left space-y-1">
+                            <h1 className={`${previewTitleSize} font-black text-blue-900 dark:text-blue-400 tracking-tight`}>
+                              {name || "Your Name"}
+                            </h1>
+                            {role && (
+                              <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider`}>
+                                {role}
+                              </p>
+                            )}
+                            {renderContactRow()}
+                          </div>
+                        </div>
 
-                    {/* Projects */}
-                    {projects.filter(p => p.name).length > 0 && (
-                      <div className={previewSectionMargin}>
-                        <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-700 dark:text-slate-400" : "text-slate-905 dark:text-white"} border-b ${previewSectionDividerColor} pb-0.5 ${previewSectionHeaderMargin}`}>Projects</h2>
-                        <div className={isCompact ? "space-y-2.5" : "space-y-4"}>
-                          {projects.filter(p => p.name).map((proj, idx) => (
-                            <div key={idx}>
-                              <div className={`flex justify-between ${previewTextSize} font-bold ${isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-800 dark:text-white" : "text-slate-950 dark:text-white"} mb-0.5`}>
-                                <span>
-                                  {proj.name}
-                                  {proj.projectLink && (
-                                    <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500 ml-1.5">
-                                      
-                                      <a href={formatUrl(proj.projectLink)} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline">
-                                        LINK
-                                      </a>
-                                      
-                                    </span>
-                                  )}
-                                </span>
-                                {proj.techStack && proj.techStack.trim() ? (
-                                  <span className="font-semibold text-slate-500 dark:text-slate-400">Tech: {proj.techStack}</span>
-                                ) : null}
-                              </div>
-                              {proj.points && proj.points.filter(Boolean).length > 0 && (
-                                <ul className="list-disc pl-4 space-y-0.5">
-                                  {proj.points.filter(Boolean).map((bullet, bIdx) => (
-                                    <li key={bIdx} className={`${previewTextSize} leading-relaxed ${previewTextColor}`}>{bullet}</li>
-                                  ))}
-                                </ul>
-                              )}
-                            </div>
-                          ))}
+                        {renderPreviewSummary()}
+                        {renderPreviewSkills()}
+                        {renderPreviewEducation()}
+                        {renderPreviewExperience()}
+                        {renderPreviewProjects()}
+                        {renderPreviewAchievements()}
+                        {renderPreviewLanguages()}
+                      </div>
+                    ) : isPhotoCreative ? (
+                      /* Creative Portfolio Layout */
+                      <div>
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-2 mb-2">
+                          {renderAvatar("w-28 h-28")}
+                          <div className="flex-1 text-center sm:text-left space-y-1">
+                            <h1 className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight`}>
+                              {name || "Your Name"}
+                            </h1>
+                            {role && (
+                              <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider`}>
+                                {role}
+                              </p>
+                            )}
+                            {renderContactRow()}
+                          </div>
+                        </div>
+                        <div className="h-1 w-full bg-indigo-600 mb-4" />
+
+                        {renderPreviewSummary()}
+                        {renderPreviewSkills()}
+                        {renderPreviewExperience()}
+                        {renderPreviewProjects()}
+                        {renderPreviewEducation()}
+                        {renderPreviewAchievements()}
+                        {renderPreviewLanguages()}
+                      </div>
+                    ) : isPhotoMinimal ? (
+                      /* Minimal Avatar Layout */
+                      <div>
+                        <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
+                          <div className="space-y-1 text-left">
+                            <h1 className={`${previewTitleSize} font-bold text-slate-800 dark:text-white tracking-tight`}>
+                              {name || "Your Name"}
+                            </h1>
+                            {role && (
+                              <p className={`${previewHeadlineSize} font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider`}>
+                                {role}
+                              </p>
+                            )}
+                            {renderContactRow()}
+                          </div>
+                          {renderAvatar("w-20 h-20")}
+                        </div>
+
+                        {renderPreviewSummary()}
+                        {renderPreviewSkills()}
+                        {renderPreviewEducation()}
+                        {renderPreviewExperience()}
+                        {renderPreviewProjects()}
+                        {renderPreviewAchievements()}
+                        {renderPreviewLanguages()}
+                      </div>
+                    ) : isTwoColumn ? (
+                      <div>
+                        {/* Header */}
+                        <div className={`flex flex-col text-left mb-4`}>
+                          <h1 className={`${previewTitleSize} font-black tracking-tight mb-1 text-slate-950 dark:text-white`}>{name || "Your Name"}</h1>
+                          {role && (
+                            <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5`}>{role}</p>
+                          )}
+                          {renderContactRow()}
+                        </div>
+
+                        {/* 2 Column Body: 30% Left / 70% Right */}
+                        <div className="flex flex-col md:flex-row gap-6">
+                          <div className="w-full md:w-[30%] space-y-4">
+                            {renderPreviewSkills()}
+                            {renderPreviewEducation()}
+                            {renderPreviewLanguages()}
+                            {renderPreviewAchievements()}
+                          </div>
+                          <div className="w-full md:w-[70%] space-y-4">
+                            {renderPreviewSummary()}
+                            {renderPreviewExperience()}
+                            {renderPreviewProjects()}
+                          </div>
                         </div>
                       </div>
-                    )}
-
-                    {/* Education */}
-                    {education.filter(e => e.institution || e.degree).length > 0 && (
-                      <div className={previewSectionMargin}>
-                        <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-700 dark:text-slate-400" : "text-slate-905 dark:text-white"} border-b ${previewSectionDividerColor} pb-0.5 ${previewSectionHeaderMargin}`}>Education</h2>
-                        <div className={isCompact ? "space-y-2" : "space-y-3.5"}>
-                          {education.filter(e => e.institution || e.degree).map((edu, idx) => (
-                            <div key={idx}>
-                              <div className={`flex justify-between ${previewTextSize} font-bold ${isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-800 dark:text-white" : "text-slate-950 dark:text-white"}`}>
-                                <span>{edu.degree || "Degree"}{edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ""} — {edu.institution || "Institution"}</span>
-                                <span className="font-semibold text-slate-500 dark:text-slate-400">{edu.year}</span>
-                              </div>
-                              {edu.grade && (
-                                <p className={`text-[10px] sm:text-[11px] ${previewTextColor} font-medium mt-0.5`}>GPA/Grade: {edu.grade}</p>
-                              )}
-                            </div>
-                          ))}
+                    ) : isElegant ? (
+                      /* Elegant Sidebar */
+                      <div className="flex flex-col md:flex-row gap-6">
+                        {/* Left Sidebar (30%) */}
+                        <div className="w-full md:w-[30%] border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 pr-0 md:pr-4 pb-4 md:pb-0 space-y-4">
+                          <div>
+                            <h1 className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-1`}>{name || "Your Name"}</h1>
+                            {role && (
+                              <p className={`${previewHeadlineSize} font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2`}>{role}</p>
+                            )}
+                            {renderContactColumn()}
+                          </div>
+                          {renderPreviewSkills()}
+                          {renderPreviewEducation()}
+                          {renderPreviewLanguages()}
+                          {renderPreviewAchievements()}
+                        </div>
+                        {/* Right Main (70%) */}
+                        <div className="w-full md:w-[70%] pl-0 md:pl-2 space-y-4">
+                          {renderPreviewSummary()}
+                          {renderPreviewExperience()}
+                          {renderPreviewProjects()}
                         </div>
                       </div>
-                    )}
+                    ) : (
+                      /* Single Column Layouts: Classic Serif, Modern Minimal, Executive Navy, Compact Tech, Creative Bold, ATS Clean */
+                      <div>
+                        {/* Header */}
+                        <div className={`flex flex-col ${previewHeaderAlign} mb-4`}>
+                          <h1 className={`${previewTitleSize} font-black ${
+                            isNavy ? "text-blue-900 dark:text-blue-400" :
+                            isMinimal ? "text-slate-800 dark:text-white" :
+                            "text-slate-950 dark:text-white"
+                          } tracking-tight mb-1`}>{name || "Your Name"}</h1>
+                          {role && (
+                            <p className={`${previewHeadlineSize} font-bold ${
+                              isNavy ? "text-blue-900 dark:text-blue-400" :
+                              isCreative ? "text-indigo-600 dark:text-indigo-400 font-extrabold" :
+                              isMinimal ? "text-slate-600 dark:text-slate-450" :
+                              "text-slate-700 dark:text-slate-300"
+                            } uppercase tracking-wider mb-1.5`}>{role}</p>
+                          )}
+                          {isCreative && <div className="h-1 w-full bg-indigo-600 rounded-full my-2" />}
+                          {renderContactRow()}
+                        </div>
 
-                    {/* Achievements */}
-                    {achievements.filter(Boolean).length > 0 && (
-                      <div className={previewSectionMargin}>
-                        <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-700 dark:text-slate-400" : "text-slate-905 dark:text-white"} border-b ${previewSectionDividerColor} pb-0.5 ${previewSectionHeaderMargin}`}>Achievements</h2>
-                        <ul className="list-disc pl-4 space-y-0.5">
-                          {achievements.filter(Boolean).map((achievement, aIdx) => (
-                            <li key={aIdx} className={`${previewTextSize} leading-relaxed ${previewTextColor}`}>{achievement}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Languages */}
-                    {languages.filter(Boolean).length > 0 && (
-                      <div className={previewSectionMargin}>
-                        <h2 className={`${previewTextSize} font-black uppercase tracking-widest ${isNavy ? "text-blue-900 dark:text-blue-400" : isMinimal ? "text-slate-700 dark:text-slate-400" : "text-slate-905 dark:text-white"} border-b ${previewSectionDividerColor} pb-0.5 ${previewSectionHeaderMargin}`}>Languages</h2>
-                        <p className={`${previewTextSize} leading-relaxed ${previewTextColor} font-medium`}>{languages.filter(Boolean).join(", ")}</p>
+                        {renderPreviewSummary()}
+                        {renderPreviewSkills()}
+                        {renderPreviewEducation()}
+                        {renderPreviewExperience()}
+                        {renderPreviewProjects()}
+                        {renderPreviewAchievements()}
+                        {renderPreviewLanguages()}
                       </div>
                     )}
                   </div>
@@ -2135,33 +3074,6 @@ ${professionalSummary ? `## Professional Summary\n${professionalSummary}\n\n` : 
           </div>
         </div>
       </div>
-
-      {/* Credit Confirmation Dialog */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent className="rounded-2xl border-slate-100 dark:border-slate-800 max-w-md print:hidden bg-white dark:bg-slate-900 shadow-2xl">
-          <AlertDialogHeader>
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 mb-2 animate-pulse">
-              <Coins className="h-6 w-6" />
-            </div>
-            <AlertDialogTitle className="text-center text-xl font-bold">Confirm Credit Charge</AlertDialogTitle>
-            <AlertDialogDescription className="text-center text-sm text-slate-500 dark:text-slate-400 mt-2">
-              Generating your resume costs <strong className="text-slate-900 dark:text-slate-100 font-bold">1 credit</strong>. Your current credit balance is <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{user?.totalCredits || 0} credits</strong>.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="sm:justify-center sm:space-x-3 mt-4">
-            <AlertDialogCancel className="rounded-xl border-slate-200" onClick={() => setShowConfirmDialog(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="rounded-xl bg-[#2e5bff] hover:bg-blue-700 text-white font-bold"
-              onClick={async () => {
-                setShowConfirmDialog(false)
-                await executeGenerate()
-              }}
-            >
-              Confirm & Generate
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Inline AI Assist dialog */}
       <AlertDialog open={showAiAssist} onOpenChange={setShowAiAssist}>
