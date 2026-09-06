@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getSubscriptionInfo, expiredResponse } from '@/lib/subscription';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
+import { safeErrorResponse } from '@/lib/security';
 
 // Helper to map Supabase snake_case job to camelCase Job type
 async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Promise<any> {
@@ -237,6 +239,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id } = params;
         const body = await request.json();
         
@@ -248,6 +253,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             .eq(isNumericId ? 'id' : 'uuid', id)
             .single();
         if (jobError || !job) throw new Error('Job not found');
+
+        const isAdmin = authUser!.role === 'Admin' || authUser!.role === 'Super Admin' || Boolean(authUser!.isSuperAdmin);
+        const isOwner = job.recruiter_pk && isOwnerOrAdmin(authUser!, job.recruiter_pk);
+        if (!isAdmin && !isOwner) {
+            return NextResponse.json({ error: 'Forbidden: You do not have permission to modify this job posting.' }, { status: 403 });
+        }
 
         // Resolve recruiter/employee for company info
         let user: any = null;
@@ -430,29 +441,37 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         return NextResponse.json(await mapJobDetailToFrontend(updatedJob), { status: 200 });
 
     } catch (e: any) {
-        console.error('[API_JOB_ID_PUT] Error:', e);
-        return NextResponse.json({ error: 'Failed to update job', details: e.message }, { status: 500 });
+        return safeErrorResponse(e, 'Failed to update job');
     }
 }
 
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id } = params;
         
-        // 1. Resolve the internal numeric PK (BIGINT) first.
-        // We need this because foreign keys in target tables (notifications, applications) usually use the BIGINT 'id'.
+        // 1. Resolve the job and verify ownership
         const isNumericId = /^\d+$/.test(id);
-        let jobPk = isNumericId ? parseInt(id) : null;
+        const { data: jobData, error: jobErr } = await supabaseAdmin
+            .from('jobs')
+            .select('id, recruiter_pk')
+            .eq(isNumericId ? 'id' : 'uuid', id)
+            .single();
 
-        if (!isNumericId) {
-            const { data: jobData } = await supabaseAdmin
-                .from('jobs')
-                .select('id')
-                .eq('uuid', id)
-                .single();
-            if (jobData) jobPk = jobData.id;
+        if (jobErr || !jobData) {
+            return NextResponse.json({ error: 'Job not found' }, { status: 404 });
         }
+
+        const isAdmin = authUser!.role === 'Admin' || authUser!.role === 'Super Admin' || Boolean(authUser!.isSuperAdmin);
+        const isOwner = jobData.recruiter_pk && isOwnerOrAdmin(authUser!, jobData.recruiter_pk);
+        if (!isAdmin && !isOwner) {
+            return NextResponse.json({ error: 'Forbidden: You do not have permission to delete this job posting.' }, { status: 403 });
+        }
+
+        const jobPk = jobData.id;
 
         // 1.1 Prevent deletion if applications exist
         if (jobPk) {
@@ -506,7 +525,6 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
         return NextResponse.json({ message: 'Job and related records deleted successfully' }, { status: 200 });
     } catch (e: any) {
-        console.error('[API_JOB_ID_DELETE] Error:', e);
-        return NextResponse.json({ error: 'Failed to delete job', details: e.message }, { status: 500 });
+        return safeErrorResponse(e, 'Failed to delete job');
     }
 }

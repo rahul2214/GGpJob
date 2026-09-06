@@ -88,19 +88,7 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
     }
   }
 
-  // 3. Fallback: Resolve via query params or custom headers if token was not provided
-  if (!uid && !email) {
-    try {
-      const url = new URL(request.url);
-      const queryUserId = url.searchParams.get('userId') || url.searchParams.get('uid') || request.headers.get('x-user-id');
-      if (queryUserId) {
-        uid = queryUserId.trim();
-      }
-    } catch (e) {
-      // Ignore URL parse error
-    }
-  }
-
+  // If neither Supabase nor Firebase token resolved to a valid user, authentication fails
   if (!uid && !email) {
     return null;
   }

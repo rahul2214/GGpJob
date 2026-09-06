@@ -1,25 +1,31 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { requireAuth, isOwnerOrAdmin } from "@/lib/auth-server"
+import { safeErrorResponse } from "@/lib/security"
  
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(req);
+    if (errorResponse) return errorResponse;
+
     const body = await req.json()
     const { contactInfo, templateType, experience, projects, skills, education, professionalSummary, languages, achievements, userId } = body
 
-    if (!userId) {
+    const targetUserId = authUser!.uuid || userId;
+    if (userId && !isOwnerOrAdmin(authUser!, userId)) {
       return NextResponse.json({ 
-        error: "Authentication required. Please sign in to generate an ATS resume with AI.", 
-        code: "UNAUTHORIZED" 
-      }, { status: 401 })
+        error: "Forbidden: Cannot spend credits or generate resume on behalf of another user.", 
+        code: "FORBIDDEN" 
+      }, { status: 403 })
     }
 
     // Check user profile & credit balance
     const { data: jobseeker, error: dbErr } = await supabaseAdmin
       .from('jobseekers')
       .select('id, uuid, subscription_credits, purchased_credits, has_used_resume_builder, metadata')
-      .eq('uuid', userId)
+      .eq('uuid', targetUserId)
       .maybeSingle()
 
     if (dbErr || !jobseeker) {
@@ -226,10 +232,6 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks, no explanations
     })
 
   } catch (error: any) {
-    console.error("Resume Generate API Error:", error)
-    return NextResponse.json({ 
-      error: "Internal Server Error",
-      message: error.message 
-    }, { status: 500 })
+    return safeErrorResponse(error, 'Failed to generate ATS resume with AI.');
   }
 }

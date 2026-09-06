@@ -248,9 +248,15 @@ export default function OnboardingPage() {
             if (user.state && !selectedState) setSelectedState(user.state);
             if (user.stateId && !selectedStateId) setSelectedStateId(user.stateId);
             if (user.currentCity && !selectedCity) setSelectedCity(user.currentCity);
-            if (user.cityId && !selectedCityId) setSelectedCityId(user.cityId);
-            if (user.phone && !phone) setPhone(user.phone.replace(/^\+91/, ''));
-            if (user.linkedinUrl && !linkedinUrl) setLinkedinUrl(user.linkedinUrl);
+            if (user.phone && !phone) {
+                const matched = user.phone.match(/^(\+\d{1,4})/);
+                if (matched) {
+                    setCountryCode(matched[1]);
+                    setPhone(user.phone.slice(matched[1].length).replace(/\D/g, ''));
+                } else {
+                    setPhone(user.phone.replace(/\D/g, ''));
+                }
+            }
             if (user.githubUrl && !githubUrl) setGithubUrl(user.githubUrl);
             if (user.portfolioUrl && !portfolioUrl) setPortfolioUrl(user.portfolioUrl);
             if (Array.isArray(user.education) && user.education.length > 0 && education.length === 0) setEducation(user.education);
@@ -710,8 +716,10 @@ export default function OnboardingPage() {
             return;
         }
 
-        if ((!user.phone || user.phone.length < 10) && (!phone || phone.length < 10)) {
-            toast({ title: "Phone Required", description: "Please enter a valid 10-digit phone number.", variant: "destructive" });
+        const inputDigits = (phone || "").replace(/\D/g, "");
+        const existingDigits = (user.phone || "").replace(/\D/g, "");
+        if (inputDigits.length < 7 && existingDigits.length < 7) {
+            toast({ title: "Phone Required", description: "Please enter a valid phone number (minimum 7 digits).", variant: "destructive" });
             return;
         }
         if (!user.resumeUrl && !resumeFile) {
@@ -806,7 +814,7 @@ export default function OnboardingPage() {
 
             // 2. Save Phone, and all other details
             const formattedPhone = phone ? `${countryCode}${phone.replace(/\D/g, '')}` : "";
-            const finalPhone = (user.phone && user.phone.length >= 10) ? user.phone : (formattedPhone || user.phone);
+            const finalPhone = formattedPhone || user.phone || "";
            
             
             // Clean empty entries from education, experience, projects, achievements, certifications
@@ -885,7 +893,7 @@ export default function OnboardingPage() {
             setUploadProgress(100);
 
             // 5. Fetch fresh profile & update context
-            const updatedProfileRes = await fetch(`/api/users?uid=${user.uuid}`);
+            const updatedProfileRes = await fetch(`/api/users?uid=${user.uuid}`, { headers: authHeaders });
             const updatedProfile = await updatedProfileRes.json();
             setUser(updatedProfile);
 

@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { User } from '@/lib/types';
 import { resolveResumeUrl } from '@/lib/resolve-resume';
 import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
+import { sanitizePostgrestFilter, safeErrorResponse } from '@/lib/security';
 
 // Helper to normalize any date input (YYYY, YYYY-M, YYYY-MM, YYYY-M-D, etc.) to valid YYYY-MM-DD for PostgreSQL DATE type
 function normalizeDate(dateStr: string | null | undefined): string | null {
@@ -172,12 +173,23 @@ async function mapProfileToUser(profile: any): Promise<User> {
             .then(() => {});
     }
 
+    let userPhone = profile.phone;
+    if (!userPhone && profile.uuid) {
+        try {
+            const { data: authUserData } = await supabaseAdmin.auth.admin.getUserById(profile.uuid);
+            userPhone = authUserData?.user?.phone || authUserData?.user?.user_metadata?.phone || null;
+            if (userPhone && (role === 'Job Seeker' || role === 'jobseeker')) {
+                supabaseAdmin.from('jobseekers').update({ phone: userPhone }).eq('id', profile.id).then();
+            }
+        } catch (err) {}
+    }
+
     const baseObj = {
         id: profile.id,       // BIGINT primary key
         uuid: profile.uuid,   // Public UUID
         name: profile.name,
         email: profile.email,
-        phone: profile.phone,
+        phone: userPhone,
         role: role as any,
         roleId: profile.role_id,
         headline: profile.headline,
@@ -453,9 +465,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
     try {
-        const { user: authUser } = await requireAuth(request);
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id } = params;
-        if (authUser && !isOwnerOrAdmin(authUser, id)) {
+        if (!isOwnerOrAdmin(authUser!, id)) {
             return NextResponse.json({ error: 'Forbidden: Access denied to update this user.' }, { status: 403 });
         }
 
@@ -537,9 +551,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             let sId = rest.stateId ? Number(rest.stateId) : null;
             let ciId = rest.cityId ? Number(rest.cityId) : null;
 
-            const cleanCountryName = rest.country ? rest.country.split('(')[0].trim() : '';
-            const cleanStateName = rest.state ? rest.state.trim() : '';
-            const cleanCityName = rest.currentCity || rest.city ? (rest.currentCity || rest.city).split('★')[0].trim() : '';
+            const cleanCountryName = sanitizePostgrestFilter(rest.country ? rest.country.split('(')[0].trim() : '');
+            const cleanStateName = sanitizePostgrestFilter(rest.state ? rest.state.trim() : '');
+            const cleanCityName = sanitizePostgrestFilter(rest.currentCity || rest.city ? (rest.currentCity || rest.city).split('★')[0].trim() : '');
 
             // 1. Resolve Country
             if (cleanCountryName && !cId) {
@@ -614,9 +628,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             let sId = rest.stateId ? Number(rest.stateId) : null;
             let ciId = rest.cityId ? Number(rest.cityId) : null;
 
-            const cleanCountryName = rest.country ? rest.country.split('(')[0].trim() : '';
-            const cleanStateName = rest.state ? rest.state.trim() : '';
-            const cleanCityName = rest.currentCity ? rest.currentCity.split('★')[0].trim() : '';
+            const cleanCountryName = sanitizePostgrestFilter(rest.country ? rest.country.split('(')[0].trim() : '');
+            const cleanStateName = sanitizePostgrestFilter(rest.state ? rest.state.trim() : '');
+            const cleanCityName = sanitizePostgrestFilter(rest.currentCity ? rest.currentCity.split('★')[0].trim() : '');
 
             // 1. Resolve Country
             if (cleanCountryName && !cId) {
@@ -697,7 +711,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
             // 4. Resolve Visa Requirement ID
             let vReqId = rest.visaRequirementId ? Number(rest.visaRequirementId) : null;
-            const cleanVisaName = rest.visaRequirement ? rest.visaRequirement.trim() : '';
+            const cleanVisaName = sanitizePostgrestFilter(rest.visaRequirement ? rest.visaRequirement.trim() : '');
 
             if (!vReqId && cleanVisaName) {
                 try {
@@ -874,6 +888,36 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             .single();
 
         if (error) throw error;
+
+        // Sync phone to Supabase Auth (auth.users)
+        const targetUuid = isUuid ? id : (profile?.uuid || (authUser as any)?.uuid || (authUser as any)?.id);
+        if (targetUuid && phone !== undefined) {
+            try {
+                const cleanPhone = phone ? (phone.startsWith('+') ? phone : `+91${phone.replace(/\D/g, '')}`) : '';
+                const { data: authUserData } = await supabaseAdmin.auth.admin.getUserById(targetUuid);
+                const currentMeta = authUserData?.user?.user_metadata || {};
+
+                const { error: updateAuthErr } = await supabaseAdmin.auth.admin.updateUserById(targetUuid, {
+                    ...(cleanPhone ? { phone: cleanPhone, phone_confirm: true } : { phone: '' }),
+                    user_metadata: {
+                        ...currentMeta,
+                        phone: cleanPhone
+                    }
+                });
+
+                if (updateAuthErr) {
+                    console.warn('[API_USERS_PUT] Phone column update error in auth.users:', updateAuthErr.message);
+                    await supabaseAdmin.auth.admin.updateUserById(targetUuid, {
+                        user_metadata: {
+                            ...currentMeta,
+                            phone: cleanPhone
+                        }
+                    });
+                }
+            } catch (authErr: any) {
+                console.warn('[API_USERS_PUT] Non-fatal error syncing phone to auth.users:', authErr?.message || authErr);
+            }
+        }
 
         // Update personal details in the new table if provided
         if (table === 'jobseekers' && (rest.gender || rest.maritalStatus || rest.dateOfBirth || rest.category || rest.disabilityStatus || rest.militaryExperience || rest.careerBreak)) {
@@ -1294,6 +1338,36 @@ export async function PATCH(request: Request, { params }: { params: { id: string
             .single();
 
         if (error) throw error;
+
+        // Sync phone to Supabase Auth (auth.users) if updated
+        const targetUuid = isUuid ? id : (profile?.uuid || (authUser as any)?.uuid || (authUser as any)?.id);
+        if (targetUuid && body.phone !== undefined) {
+            try {
+                const cleanPhone = body.phone ? (body.phone.startsWith('+') ? body.phone : `+91${body.phone.replace(/\D/g, '')}`) : '';
+                const { data: authUserData } = await supabaseAdmin.auth.admin.getUserById(targetUuid);
+                const currentMeta = authUserData?.user?.user_metadata || {};
+
+                const { error: updateAuthErr } = await supabaseAdmin.auth.admin.updateUserById(targetUuid, {
+                    ...(cleanPhone ? { phone: cleanPhone, phone_confirm: true } : { phone: '' }),
+                    user_metadata: {
+                        ...currentMeta,
+                        phone: cleanPhone
+                    }
+                });
+
+                if (updateAuthErr) {
+                    console.warn('[API_USERS_PATCH] Phone column update error in auth.users:', updateAuthErr.message);
+                    await supabaseAdmin.auth.admin.updateUserById(targetUuid, {
+                        user_metadata: {
+                            ...currentMeta,
+                            phone: cleanPhone
+                        }
+                    });
+                }
+            } catch (authErr: any) {
+                console.warn('[API_USERS_PATCH] Non-fatal error syncing phone to auth.users:', authErr?.message || authErr);
+            }
+        }
 
         if (table === 'jobseekers' && profile) {
             const userPk = profile.id;

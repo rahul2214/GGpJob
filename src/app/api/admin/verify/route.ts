@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
+import { safeErrorResponse } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,13 +14,16 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: Request) {
     try {
-        const { searchParams } = new URL(request.url);
-        const uid = searchParams.get('uid');
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
 
-        if (!uid) {
+        const { searchParams } = new URL(request.url);
+        const uid = searchParams.get('uid') || authUser!.uuid;
+
+        if (!isOwnerOrAdmin(authUser!, uid)) {
             return NextResponse.json(
-                { isAdmin: false, error: 'User ID is required.' },
-                { status: 400 }
+                { isAdmin: false, error: 'Forbidden: Access denied.' },
+                { status: 403 }
             );
         }
 
@@ -57,10 +62,6 @@ export async function GET(request: Request) {
         });
 
     } catch (e: any) {
-        console.error('[API_ADMIN_VERIFY] Error:', e.message);
-        return NextResponse.json(
-            { isAdmin: false, error: 'Verification failed. Please try again.' },
-            { status: 500 }
-        );
+        return safeErrorResponse(e, 'Verification failed. Please try again.');
     }
 }

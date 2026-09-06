@@ -20,9 +20,10 @@ export function isOnboardingComplete(user: any): boolean {
         (Array.isArray(user.education) && user.education.length > 0)
     );
 
+    const phoneDigits = user.phone ? String(user.phone).replace(/\D/g, "") : "";
+
     return Boolean(
-        user.phone &&
-        user.phone.length >= 10 &&
+        phoneDigits.length >= 7 &&
         hasProfileDetails
     );
 }

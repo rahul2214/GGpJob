@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { resolveResumeUrl } from '@/lib/resolve-resume';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
+import { safeErrorResponse } from '@/lib/security';
 
 const statusMap: { [key: number]: string } = {
     1: 'Applied',
@@ -95,11 +97,18 @@ async function mapApplicationToFrontend(app: any, skillMap?: Map<string, string>
 
 export async function GET(request: Request) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const jobId = searchParams.get('jobId');
     const recruiterId = searchParams.get('recruiterId');
     const requesterId = searchParams.get('requesterId');
+
+    const isAdmin = authUser!.role === 'Admin' || authUser!.role === 'Super Admin' || Boolean(authUser!.isSuperAdmin);
+    const isRecruiter = authUser!.role === 'Recruiter';
+    const isSeeker = !isAdmin && !isRecruiter;
 
     let query = supabaseAdmin
         .from('applications')
@@ -109,54 +118,64 @@ export async function GET(request: Request) {
             jobs(*)
         `);
 
-    if (recruiterId) {
-      const { data: rec } = await supabaseAdmin
-        .from('recruiters')
+    // Scoping for Job Seekers: Strictly their own applications
+    if (isSeeker) {
+      let seekerNumericId: number | null = typeof authUser!.id === 'number' ? authUser!.id : parseInt(String(authUser!.id));
+      if (isNaN(seekerNumericId as number)) {
+        const { data: s } = await supabaseAdmin.from('jobseekers').select('id').eq('uuid', authUser!.uuid).maybeSingle();
+        seekerNumericId = s?.id || null;
+      }
+      if (!seekerNumericId) return NextResponse.json([]);
+      query = query.eq('user_pk', seekerNumericId);
+    } 
+    // Scoping for Recruiters: Strictly applications for jobs they own
+    else if (isRecruiter) {
+      let recNumericId: number | null = typeof authUser!.id === 'number' ? authUser!.id : parseInt(String(authUser!.id));
+      if (isNaN(recNumericId as number)) {
+        const { data: r } = await supabaseAdmin.from('recruiters').select('id').eq('uuid', authUser!.uuid).maybeSingle();
+        recNumericId = r?.id || null;
+      }
+      if (!recNumericId) return NextResponse.json([]);
+
+      const { data: ownedJobs } = await supabaseAdmin
+        .from('jobs')
         .select('id')
-        .eq('uuid', recruiterId)
-        .maybeSingle();
+        .eq('recruiter_pk', recNumericId);
 
-      if (rec) {
-        const { data: jobs } = await supabaseAdmin
-          .from('jobs')
-          .select('id')
-          .eq('recruiter_pk', rec.id);
-
-        if (jobs && jobs.length > 0) {
-          const jobPks = jobs.map((j: any) => j.id);
-          query = query.in('job_pk', jobPks);
+      if (!ownedJobs || ownedJobs.length === 0) {
+        return NextResponse.json([]);
+      }
+      const allowedJobPks = ownedJobs.map((j: any) => j.id);
+      query = query.in('job_pk', allowedJobPks);
+    } 
+    // Scoping for Admins: Can filter by recruiterId or userId if provided, or view all
+    else if (isAdmin) {
+      if (recruiterId) {
+        const { data: rec } = await supabaseAdmin.from('recruiters').select('id').eq('uuid', recruiterId).maybeSingle();
+        if (rec) {
+          const { data: jobs } = await supabaseAdmin.from('jobs').select('id').eq('recruiter_pk', rec.id);
+          if (jobs && jobs.length > 0) {
+            query = query.in('job_pk', jobs.map((j: any) => j.id));
+          } else {
+            return NextResponse.json([]);
+          }
         } else {
           return NextResponse.json([]);
         }
-      } else {
-        return NextResponse.json([]);
       }
-    }
 
-    if (userId) {
-      const isNumericUser = /^\d+$/.test(userId);
-      if (isNumericUser) {
-        query = query.eq('user_pk', parseInt(userId));
-      } else if (userId.includes('-')) {
-        const { data: u } = await supabaseAdmin.from('jobseekers').select('id').eq('uuid', userId).maybeSingle();
-        if (u) {
-          query = query.eq('user_pk', u.id);
-        } else {
-          const { data: rec } = await supabaseAdmin.from('recruiters').select('id').eq('uuid', userId).maybeSingle();
-          if (rec) {
-            const { data: jobs } = await supabaseAdmin.from('jobs').select('id').eq('recruiter_pk', rec.id);
-            if (jobs && jobs.length > 0) {
-              const jobPks = jobs.map((j: any) => j.id);
-              query = query.in('job_pk', jobPks);
-            } else {
-              return NextResponse.json([]);
-            }
+      if (userId) {
+        const isNumericUser = /^\d+$/.test(userId);
+        if (isNumericUser) {
+          query = query.eq('user_pk', parseInt(userId));
+        } else if (userId.includes('-')) {
+          const { data: u } = await supabaseAdmin.from('jobseekers').select('id').eq('uuid', userId).maybeSingle();
+          if (u) {
+            query = query.eq('user_pk', u.id);
           } else {
             return NextResponse.json([]);
           }
         }
-      } else {
-        return NextResponse.json([]);
       }
     }
     if (jobId) {
@@ -253,17 +272,23 @@ export async function GET(request: Request) {
     return NextResponse.json(applications);
 
   } catch (e: any) {
-    console.error('[API_APPLICATIONS_GET] Error:', e);
-    return NextResponse.json({ error: 'Failed to fetch applications', details: e.message }, { status: 500 });
+    return safeErrorResponse(e, 'Failed to fetch applications');
   }
 }
 
 export async function POST(request: Request) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { jobId, userId } = await request.json();
         
         if (!jobId || !userId) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        if (!isOwnerOrAdmin(authUser!, userId)) {
+            return NextResponse.json({ error: 'Forbidden: Cannot submit application on behalf of another user.' }, { status: 403 });
         }
 
         // 1. Check job validity and resolve internal job_pk
@@ -346,7 +371,6 @@ export async function POST(request: Request) {
         return NextResponse.json(createdApp, { status: 201 });
 
     } catch (e: any) {
-        console.error('[API_APPLICATIONS_POST] Error:', e);
-        return NextResponse.json({ error: 'Failed to submit application', details: e.message }, { status: 500 });
+        return safeErrorResponse(e, 'Failed to submit application');
     }
 }

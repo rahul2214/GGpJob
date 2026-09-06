@@ -1,5 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAdmin } from '@/lib/auth-server';
+import { safeErrorResponse } from '@/lib/security';
 
 // Decode HTML entities in text & descriptions
 function decodeHtmlEntities(str?: string): string {
@@ -107,6 +109,15 @@ async function scrapePublicJobs(): Promise<any[]> {
 
 export async function POST(request: NextRequest) {
   try {
+    const authHeader = request.headers.get('authorization');
+    const cronSecret = process.env.CRON_SECRET;
+    const isCronAuthorized = Boolean(cronSecret && authHeader === `Bearer ${cronSecret}`);
+
+    if (!isCronAuthorized) {
+      const { user: adminUser, errorResponse } = await requireAdmin(request);
+      if (errorResponse) return errorResponse;
+    }
+
     const scraped = await scrapePublicJobs();
 
     if (scraped.length === 0) {
@@ -190,8 +201,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
 
   } catch (err: any) {
-    console.error('[API_JOBS_SCRAPE_ERROR]', err);
-    return NextResponse.json({ error: err.message || 'Scraping failed' }, { status: 500 });
+    return safeErrorResponse(err, 'Job scraping failed');
   }
 }
 

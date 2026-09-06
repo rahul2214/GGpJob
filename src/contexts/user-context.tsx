@@ -92,9 +92,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, [user, loading, pathname, router]);
 
-  const fetchUserProfile = useCallback(async (uid: string): Promise<User | null> => {
+  const fetchUserProfile = useCallback(async (uid: string, tokenOverride?: string): Promise<User | null> => {
     try {
-      const res = await fetch(`/api/users?uid=${uid}`, { cache: 'no-store' });
+      let token = tokenOverride;
+      if (!token) {
+        const { data: { session } } = await supabase.auth.getSession();
+        token = session?.access_token;
+      }
+
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`/api/users?uid=${uid}`, { headers, cache: 'no-store' });
       if (res.ok) {
         const u = await res.json();
         if (u) {
@@ -112,7 +123,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const refreshUser = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      const updatedProfile = await fetchUserProfile(session.user.id);
+      const updatedProfile = await fetchUserProfile(session.user.id, session.access_token);
       if (updatedProfile) setUserState(updatedProfile);
     }
   }, [fetchUserProfile]);
@@ -163,6 +174,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
       const isInitial = event === 'INITIAL_SESSION';
       const isSignEvent = event === 'SIGNED_IN' || event === 'SIGNED_OUT';
       
+      // Sync cookie so all fetch requests and SSR carry the session token
+      if (typeof document !== 'undefined') {
+        if (session?.access_token) {
+          document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+        } else if (event === 'SIGNED_OUT') {
+          document.cookie = `sb-access-token=; path=/; max-age=0; SameSite=Lax`;
+        }
+      }
+
       // Only set loading for initial mount or if we're explicitly signing in/out and don't have a user yet
       // This prevents the "refresh" flicker on mobile during background TOKEN_REFRESHED events
       if (isInitial || (isSignEvent && !currentUserRef.current)) {
@@ -170,7 +190,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       }
 
       if (session?.user) {
-        const userProfile = await fetchUserProfile(session.user.id);
+        const userProfile = await fetchUserProfile(session.user.id, session.access_token);
         
         // Stability check using ref to ensure comparison against latest state
         if (JSON.stringify(userProfile) !== JSON.stringify(currentUserRef.current)) {

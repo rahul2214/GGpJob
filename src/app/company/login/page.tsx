@@ -113,7 +113,14 @@ export default function CompanyLoginPage() {
       }
 
       if (authData.user) {
-        const res = await fetch(`/api/users?uid=${authData.user.id}`);
+        const headers: Record<string, string> = {};
+        if (authData.session?.access_token) {
+          headers['Authorization'] = `Bearer ${authData.session.access_token}`;
+          if (typeof document !== 'undefined') {
+            document.cookie = `sb-access-token=${authData.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+          }
+        }
+        const res = await fetch(`/api/users?uid=${authData.user.id}`, { headers });
         if (!res.ok) {
           await supabase.auth.signOut();
           toast({ title: "Access Denied", description: "Company profile not found in Supabase.", variant: "destructive" });

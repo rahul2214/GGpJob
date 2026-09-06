@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import type { User } from '@/lib/types';
 import { resolveResumeUrl } from '@/lib/resolve-resume';
+import { requireAdmin, getAuthenticatedUser, isOwnerOrAdmin } from '@/lib/auth-server';
+import { safeErrorResponse } from '@/lib/security';
 
 // GET all users OR a specific user by UID
 export async function GET(request: Request) {
@@ -10,6 +12,11 @@ export async function GET(request: Request) {
     const uid = searchParams.get('uid');
 
     if (uid) {
+        const requester = await getAuthenticatedUser(request);
+        if (requester && !isOwnerOrAdmin(requester, uid)) {
+            return NextResponse.json({ error: 'Forbidden: Access denied to view this profile.' }, { status: 403 });
+        }
+
         // 1-4. Search all role tables in PARALLEL to avoid sequential timeout
         const [
             { data: jobseeker, error: jobseekerError },
@@ -113,12 +120,23 @@ export async function GET(request: Request) {
                     .then(() => {});
             }
 
+            let userPhone = jobseeker.phone;
+            if (!userPhone && jobseeker.uuid) {
+                try {
+                    const { data: authUserData } = await supabaseAdmin.auth.admin.getUserById(jobseeker.uuid);
+                    userPhone = authUserData?.user?.phone || authUserData?.user?.user_metadata?.phone || null;
+                    if (userPhone) {
+                        supabaseAdmin.from('jobseekers').update({ phone: userPhone }).eq('id', jobseeker.id).then();
+                    }
+                } catch (err) {}
+            }
+
             const user: any = {
                 id: jobseeker.id,
                 uuid: jobseeker.uuid,
                 name: jobseeker.name,
                 email: jobseeker.email,
-                phone: jobseeker.phone,
+                phone: userPhone,
                 role: (jobseeker as any).roles?.name || jobseeker.role || 'Job Seeker',
                 roleId: jobseeker.role_id,
                 headline: jobseeker.headline,
@@ -250,6 +268,7 @@ export async function GET(request: Request) {
                 },
                 trustScore: jobseeker.trust_score ?? 100,
             };
+
             return NextResponse.json(user);
         }
 
@@ -360,7 +379,7 @@ export async function GET(request: Request) {
                     name: name,
                     email: authUser.email,
                     role_id: roleId,
-                    phone: metadata?.phone || '',
+                    phone: metadata?.phone || authUser.phone || '',
                     ...(targetTable === 'jobseekers' ? { 
                         subscription_credits: 2,
                         subscription_allowance: 2
@@ -395,7 +414,10 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'User profile not found.' }, { status: 404 });
     }
 
-    // Admin view: get all users
+    // Admin view: get all users (Strictly protected for Administrators)
+    const { user: adminUser, errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     // Admin view: get all users across ALL role tables in parallel
     const [
         { data: seekers, error: seekersErr },
@@ -448,8 +470,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(resolvedUsers);
   } catch (e: any) {
-    console.error("[API_USERS_GET] Error:", e.message);
-    return NextResponse.json({ error: 'Failed to fetch users', details: e.message }, { status: 500 });
+    return safeErrorResponse(e, 'Failed to fetch users');
   }
 }
 

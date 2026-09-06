@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireSuperAdmin } from '@/lib/auth-server';
+import { safeErrorResponse } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,8 +9,11 @@ export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const isCronAuthorized = Boolean(cronSecret && authHeader === `Bearer ${cronSecret}`);
+
+    if (!isCronAuthorized) {
+      const { user: adminUser, errorResponse } = await requireSuperAdmin(request);
+      if (errorResponse) return errorResponse;
     }
 
     const nowIso = new Date().toISOString();
@@ -80,7 +85,6 @@ export async function GET(request: Request) {
       processedCount,
     });
   } catch (error: any) {
-    console.error('[CRON_PERMANENT_DELETE] Exception:', error);
-    return NextResponse.json({ error: 'Failed to run permanent delete cron job', details: error.message }, { status: 500 });
+    return safeErrorResponse(error, 'Failed to run permanent delete cron job');
   }
 }
