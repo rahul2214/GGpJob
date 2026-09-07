@@ -6,9 +6,9 @@ import { sanitizeRichText, sanitizeInlineMarkup } from '@/lib/sanitize-html';
  * Stored-XSS regression tests.
  *
  * Job and company descriptions are rendered with dangerouslySetInnerHTML in
- * src/app/jobs/[id]/job-details-client.tsx after being passed through
- * DOMPurify. These assert that the sanitiser actually neutralises the payloads
- * a recruiter could put into a job description.
+ * src/app/jobs/[id]/job-details-client.tsx after being passed through the
+ * sanitiser. These assert that it actually neutralises the payloads a
+ * recruiter could put into a job description.
  */
 describe('HTML sanitisation of recruiter-supplied descriptions', () => {
   const payloads = [
