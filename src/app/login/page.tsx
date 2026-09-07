@@ -130,7 +130,10 @@ export default function LoginPage() {
         if (authData.session?.access_token) {
           headers['Authorization'] = `Bearer ${authData.session.access_token}`;
           if (typeof document !== 'undefined') {
-            document.cookie = `sb-access-token=${authData.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+            // `Secure` is added whenever the page is served over TLS so the session
+            // token is never transmitted on a plaintext connection.
+            const cookieSecure = window.location.protocol === 'https:' ? '; Secure' : '';
+            document.cookie = `sb-access-token=${authData.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax${cookieSecure}`;
           }
         }
         const res = await fetch(`/api/users?uid=${authData.user.id}`, { headers });

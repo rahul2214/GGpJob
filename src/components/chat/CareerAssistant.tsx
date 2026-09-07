@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUser } from "@/contexts/user-context";
 import { cn } from "@/lib/utils";
-import DOMPurify from 'isomorphic-dompurify';
+import { sanitizeInlineMarkup } from '@/lib/sanitize-html';
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -204,7 +204,7 @@ export default function CareerAssistant() {
     html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
     // Inline code
     html = html.replace(/`(.*?)`/g, '<code class="bg-slate-100 text-pink-600 px-1 py-0.5 rounded font-mono text-xs border">$1</code>');
-    return DOMPurify.sanitize(html, { ALLOWED_TAGS: ['strong', 'code', 'a', 'b', 'i', 'em'], ALLOWED_ATTR: ['href', 'class', 'target'] });
+    return sanitizeInlineMarkup(html);
   };
 
   const renderMarkdown = (text: string) => {

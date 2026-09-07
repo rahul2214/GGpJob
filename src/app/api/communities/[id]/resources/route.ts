@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 // GET all resources for a community
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -24,12 +25,20 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 // POST create learning resource (restricted to joined community members)
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { id } = params;
     const body = await request.json();
     const { title, description, resourceType, url, creatorUuid } = body;
 
     if (!title || !resourceType || !creatorUuid) {
       return NextResponse.json({ error: 'Title, Resource Type, and Creator UUID are required' }, { status: 400 });
+    }
+
+    // The resource is contributed by the caller, not a body-supplied uuid.
+    if (!isOwnerOrAdmin(authUser!, creatorUuid)) {
+      return NextResponse.json({ error: 'Forbidden: You can only contribute as yourself.' }, { status: 403 });
     }
 
     // Verify creator is member (jobseeker)

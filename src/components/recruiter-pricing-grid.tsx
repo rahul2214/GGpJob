@@ -8,8 +8,8 @@ import { CheckCircle2, Lock, ArrowRight, LoaderCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { useUser } from "@/contexts/user-context";
 import { formatPrice, convertPrice } from "@/utils/currency";
+import { useBillingCurrency } from "@/hooks/use-billing-currency";
 
 interface RecruiterPricingGridProps {
   onPlanSelect?: (plan: any) => void;
@@ -19,7 +19,8 @@ interface RecruiterPricingGridProps {
 }
 
 export default function RecruiterPricingGrid({ onPlanSelect, isMarketing = false, processingId = null, disabled = false }: RecruiterPricingGridProps) {
-  const { currency, exchangeRates } = useUser();
+  // Plans are always priced in the billing currency: INR or USD.
+  const { billingCurrency: currency, exchangeRates } = useBillingCurrency();
   const [plans, setPlans] = useState<any[]>(RECRUITER_PLANS);
   const [loadingPrices, setLoadingPrices] = useState(true);
 

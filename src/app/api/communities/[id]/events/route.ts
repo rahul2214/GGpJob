@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 // GET all approved events for a community (Admins get unapproved as well)
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -87,12 +88,21 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 // POST create a community event (Moderator/Admin can create directly, others are pending approval)
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { id } = params;
     const body = await request.json();
     const { title, description, eventType, startTime, timezone, meetingLink, speakers, creatorUuid } = body;
 
     if (!title || !eventType || !startTime || !creatorUuid) {
       return NextResponse.json({ error: 'Title, Event Type, Start Time, and Creator are required' }, { status: 400 });
+    }
+
+    // The event creator is the caller. Without this an authenticated user could
+    // pass a moderator's uuid and bypass the role check below.
+    if (!isOwnerOrAdmin(authUser!, creatorUuid)) {
+      return NextResponse.json({ error: 'Forbidden: You can only create events as yourself.' }, { status: 403 });
     }
 
     // Check user membership role

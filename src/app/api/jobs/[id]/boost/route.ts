@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { id } = params;
     const body = await request.json();
     const { employeeId } = body; // This is employee's uuid string from client
@@ -26,12 +30,25 @@ export async function POST(request: Request, { params }: { params: { id: string 
     // 2. Fetch employee profile (Lookup by uuid)
     const { data: employee, error: empError } = await supabaseAdmin
       .from('employees')
-      .select('id, credits')
+      .select('id, uuid, email, credits')
       .eq('uuid', employeeId)
       .single();
 
     if (empError || !employee) {
       return NextResponse.json({ error: 'Employee profile not found' }, { status: 404 });
+    }
+
+    // The employee id arrives in the request body, so bind it to the verified
+    // session before spending that account's credits.
+    const isAdminCaller =
+      authUser!.role === 'Admin' || authUser!.role === 'Super Admin' || Boolean(authUser!.isSuperAdmin);
+    const ownsEmployeeProfile =
+      isAdminCaller ||
+      isOwnerOrAdmin(authUser!, employee.uuid) ||
+      (Boolean(employee.email) && employee.email === authUser!.email);
+
+    if (!ownsEmployeeProfile) {
+      return NextResponse.json({ error: 'Forbidden: Cannot spend credits from another account.' }, { status: 403 });
     }
 
     // 3. Ensure the job belongs to this employee
@@ -57,22 +74,40 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const originalPlan = job.plan_type_at_posting || 'free';
     const newPlan = originalPlan.endsWith('_boosted') ? originalPlan : `${originalPlan}_boosted`;
 
-    const [
-      { error: updateJobError },
-      { error: updateEmpError }
-    ] = await Promise.all([
-      supabaseAdmin
-        .from('jobs')
-        .update({ plan_type_at_posting: newPlan })
-        .eq('id', job.id),
-      supabaseAdmin
-        .from('employees')
-        .update({ credits: currentBalance - boostCost })
-        .eq('id', employee.id)
-    ]);
+    // Deduct first, with the balance we read as an optimistic lock. If a
+    // concurrent boost already spent the credits the row will not match and no
+    // second boost is granted.
+    const { data: debited, error: updateEmpError } = await supabaseAdmin
+      .from('employees')
+      .update({ credits: currentBalance - boostCost })
+      .eq('id', employee.id)
+      .eq('credits', currentBalance)
+      .select('id');
 
-    if (updateJobError || updateEmpError) {
-      console.error('[API_JOB_BOOST] Update error:', { updateJobError, updateEmpError });
+    if (updateEmpError) {
+      console.error('[API_JOB_BOOST] Credit deduction error:', updateEmpError);
+      return NextResponse.json({ error: 'Failed to complete boosting transaction' }, { status: 500 });
+    }
+
+    if (!debited || debited.length === 0) {
+      return NextResponse.json(
+        { error: 'Your credit balance changed while the boost was being processed. Please retry.' },
+        { status: 409 }
+      );
+    }
+
+    const { error: updateJobError } = await supabaseAdmin
+      .from('jobs')
+      .update({ plan_type_at_posting: newPlan })
+      .eq('id', job.id);
+
+    if (updateJobError) {
+      // Refund so a failed boost never silently consumes credits.
+      await supabaseAdmin
+        .from('employees')
+        .update({ credits: currentBalance })
+        .eq('id', employee.id);
+      console.error('[API_JOB_BOOST] Update error:', updateJobError);
       return NextResponse.json({ error: 'Failed to complete boosting transaction' }, { status: 500 });
     }
 

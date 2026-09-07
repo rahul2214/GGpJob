@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { encrypt, decrypt } from '@/lib/encryption';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 // GET all comments for a post
 export async function GET(request: NextRequest, { params }: { params: { postId: string } }) {
@@ -79,12 +80,20 @@ export async function GET(request: NextRequest, { params }: { params: { postId: 
 // POST add a comment or reply to a post
 export async function POST(request: NextRequest, { params }: { params: { postId: string } }) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { postId } = params;
     const body = await request.json();
     const { content, authorUuid, parentId } = body;
 
     if (!content || !authorUuid) {
       return NextResponse.json({ error: 'Content and Author UUID are required' }, { status: 400 });
+    }
+
+    // The comment author is the caller, not an id supplied in the body.
+    if (!isOwnerOrAdmin(authUser!, authorUuid)) {
+      return NextResponse.json({ error: 'Forbidden: You can only comment as yourself.' }, { status: 403 });
     }
 
     // Resolve jobseeker int8 id from the provided UUID
@@ -125,11 +134,19 @@ export async function POST(request: NextRequest, { params }: { params: { postId:
 // PUT mark comment as accepted answer or edit comment
 export async function PUT(request: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const body = await request.json();
     const { commentId, isAccepted, content, userUuid } = body;
 
     if (!commentId || !userUuid) {
       return NextResponse.json({ error: 'Comment ID and User UUID are required' }, { status: 400 });
+    }
+
+    // Authorise against the caller's verified identity, not the body value.
+    if (!isOwnerOrAdmin(authUser!, userUuid)) {
+      return NextResponse.json({ error: 'Forbidden: You can only modify comments as yourself.' }, { status: 403 });
     }
 
     // Resolve requesting user's jobseeker id
@@ -210,12 +227,20 @@ export async function PUT(request: NextRequest) {
 // DELETE a comment (Author, Post Author, or Admin/Moderator only)
 export async function DELETE(request: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { searchParams } = new URL(request.url);
     const commentId = searchParams.get('commentId');
     const userUuid = searchParams.get('userUuid');
 
     if (!commentId || !userUuid) {
       return NextResponse.json({ error: 'Comment ID and User UUID are required' }, { status: 400 });
+    }
+
+    // Authorise against the caller's verified identity, not the query value.
+    if (!isOwnerOrAdmin(authUser!, userUuid)) {
+      return NextResponse.json({ error: 'Forbidden: You can only modify comments as yourself.' }, { status: 403 });
     }
 
     // Resolve requesting user's jobseeker id

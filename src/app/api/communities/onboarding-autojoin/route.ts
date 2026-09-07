@@ -1,13 +1,22 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 // Batch subscribe users to relevant communities during onboarding
 export async function POST(request: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { userUuid, skills, countries, interests, goals } = await request.json();
 
     if (!userUuid) {
       return NextResponse.json({ error: 'User UUID is required' }, { status: 400 });
+    }
+
+    // Onboarding acts on the caller's own account only.
+    if (!isOwnerOrAdmin(authUser!, userUuid)) {
+      return NextResponse.json({ error: 'Forbidden: You can only onboard your own account.' }, { status: 403 });
     }
 
     // 1. Fetch all communities to match against

@@ -1,16 +1,24 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getSubscriptionInfo } from '@/lib/subscription';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 // GET /api/subscription/check?recruiterId=<uuid>
 // Returns subscription status for a recruiter
 export async function GET(request: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { searchParams } = request.nextUrl;
     const recruiterId = searchParams.get('recruiterId');
 
     if (!recruiterId) {
       return NextResponse.json({ error: 'recruiterId is required' }, { status: 400 });
+    }
+
+    if (!isOwnerOrAdmin(authUser!, recruiterId)) {
+      return NextResponse.json({ error: 'Forbidden: Cannot read another account subscription.' }, { status: 403 });
     }
 
     let { data: recruiter, error } = await supabaseAdmin

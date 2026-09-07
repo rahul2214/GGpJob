@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, requireAdmin, isOwnerOrAdmin } from '@/lib/auth-server';
 
 // GET single community details
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -75,25 +76,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 // PUT edit community (Admin only)
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    // Editing a community is administrator-only. Authorisation comes from the
+    // caller's verified token, not a caller-supplied creatorUuid.
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const { id } = params;
     const body = await request.json();
-    const { name, description, category, icon, creatorUuid } = body;
-
-    // Verify creator is admin
-    if (creatorUuid) {
-      const { data: seeker } = await supabaseAdmin
-        .from('jobseekers')
-        .select('role')
-        .eq('uuid', creatorUuid)
-        .maybeSingle();
-
-      const userRole = seeker?.role;
-      if (userRole !== 'Admin' && userRole !== 'Super Admin') {
-        return NextResponse.json({ error: 'Restricted to administrators.' }, { status: 403 });
-      }
-    } else {
-      return NextResponse.json({ error: 'Authorized identity required.' }, { status: 401 });
-    }
+    const { name, description, category, icon } = body;
 
     const { data: updated, error } = await supabaseAdmin
       .from('communities')
@@ -114,25 +104,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 // DELETE community (Admin only)
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    // Deleting a community is administrator-only, proven from the caller's
+    // verified token rather than a caller-supplied adminUuid.
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const { id } = params;
-    const { searchParams } = new URL(request.url);
-    const adminUuid = searchParams.get('adminUuid');
-
-    // Verify creator is admin
-    if (adminUuid) {
-      const { data: seeker } = await supabaseAdmin
-        .from('jobseekers')
-        .select('role')
-        .eq('uuid', adminUuid)
-        .maybeSingle();
-
-      const userRole = seeker?.role;
-      if (userRole !== 'Admin' && userRole !== 'Super Admin') {
-        return NextResponse.json({ error: 'Restricted to administrators.' }, { status: 403 });
-      }
-    } else {
-      return NextResponse.json({ error: 'Authorized identity required.' }, { status: 401 });
-    }
 
     const { error } = await supabaseAdmin
       .from('communities')

@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkAdmin } from '@/lib/check-admin';
+import { requireAdmin } from '@/lib/auth-server';
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
@@ -40,6 +44,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 

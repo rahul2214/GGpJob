@@ -107,3 +107,20 @@ export function convertPrice(amountUSD: number, targetCurrency: string, rates: R
   if (!rate) return amountUSD;
   return amountUSD * rate;
 }
+
+/**
+ * Checkout billing is settled in exactly two currencies:
+ *  - INR  -> Razorpay
+ *  - USD  -> PayPal (used for every non-INR profile currency)
+ */
+export type BillingCurrency = 'INR' | 'USD';
+
+export const BILLING_CURRENCY_CODES: BillingCurrency[] = ['INR', 'USD'];
+
+export function getBillingCurrency(preferredCurrency?: string | null): BillingCurrency {
+  return (preferredCurrency || '').toUpperCase() === 'INR' ? 'INR' : 'USD';
+}
+
+export function getPaymentGateway(billingCurrency?: string | null): 'razorpay' | 'paypal' {
+  return getBillingCurrency(billingCurrency) === 'INR' ? 'razorpay' : 'paypal';
+}

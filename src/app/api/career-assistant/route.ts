@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { requireAuth, isOwnerOrAdmin } from "@/lib/auth-server";
 
 export const dynamic = "force-dynamic";
 
@@ -26,8 +27,20 @@ function getJobIdFromHistory(history: any[]) {
 
 export async function POST(req: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(req);
+    if (errorResponse) return errorResponse;
+
     const body = await req.json();
     const { userId, message, pathname, jobContext, action, jobId, history } = body;
+
+    // The assistant reads the profile and can submit applications, so the
+    // caller must be acting for their own account.
+    if (userId && !isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json(
+        { error: "Forbidden: Cannot act on behalf of another user." },
+        { status: 403 }
+      );
+    }
 
     const apiKey = process.env.GROQ_API_KEY || process.env.GROK_API_KEY;
     if (!apiKey) {
@@ -154,12 +167,20 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      const origin = req.nextUrl.origin;
+      // `req.nextUrl.origin` follows the Host header, which a caller controls,
+      // so the internal call is addressed using the configured application URL
+      // instead. The caller's credentials are forwarded so /api/applications can
+      // apply its own authorisation check.
+      const origin = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
+      const forwardedAuth = req.headers.get("authorization");
+      const forwardedCookie = req.headers.get("cookie");
       try {
         const appRes = await fetch(`${origin}/api/applications`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(forwardedAuth ? { authorization: forwardedAuth } : {}),
+            ...(forwardedCookie ? { cookie: forwardedCookie } : {}),
           },
           body: JSON.stringify({
             jobId: activeJobId,

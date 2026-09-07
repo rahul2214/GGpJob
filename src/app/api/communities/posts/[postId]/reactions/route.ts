@@ -1,14 +1,23 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 // POST toggle a reaction on a post or comment
 export async function POST(request: NextRequest, { params }: { params: { postId: string } }) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { postId } = params;
     const { userUuid, commentId, reactionType } = await request.json(); // reactionType: like, celebrate, insightful, helpful, love, funny
 
     if (!userUuid || !reactionType) {
       return NextResponse.json({ error: 'User UUID and Reaction Type are required' }, { status: 400 });
+    }
+
+    // A reaction is recorded as the caller, not as a body-supplied uuid.
+    if (!isOwnerOrAdmin(authUser!, userUuid)) {
+      return NextResponse.json({ error: 'Forbidden: You can only react as yourself.' }, { status: 403 });
     }
 
     // Toggle reaction logic

@@ -1,24 +1,29 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth } from '@/lib/auth-server';
+import { getApplicationAccess } from '@/lib/authz';
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { id } = params;
-    
+
     if (!id) {
       return NextResponse.json({ error: 'Application ID is required' }, { status: 400 });
     }
-    
-    // 0. Resolve the numeric PK if a UUID is provided
-    let targetPk = id;
-    if (id.includes('-')) {
-        const { data: resolvedApp } = await supabaseAdmin
-            .from('applications')
-            .select('id')
-            .eq('uuid', id)
-            .maybeSingle();
-        if (resolvedApp) targetPk = resolvedApp.id.toString();
+
+    // 0. Resolve the application and confirm the caller posted the job. Only the
+    // job owner viewing a candidate can move the application to "Profile Viewed".
+    const access = await getApplicationAccess(authUser!, id);
+    if (!access) {
+      return NextResponse.json({ error: 'Application not found' }, { status: 404 });
     }
+    if (!access.isJobOwner && !access.isAdmin) {
+      return NextResponse.json({ error: 'Forbidden: You do not have access to this application.' }, { status: 403 });
+    }
+    const targetPk = access.applicationPk;
 
     // 1. Check current status to avoid downgrading
     const { data: currentApp } = await supabaseAdmin
@@ -34,7 +39,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     // 2. Update status only if it was 'Applied' (1)
     const { data: app, error: updateError } = await supabaseAdmin
       .from('applications')
-      .update({ 
+      .update({
         status_id: 2,
         updated_at: new Date().toISOString(),
       })

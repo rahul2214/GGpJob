@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { resolveResumeUrl } from '@/lib/resolve-resume';
 import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
+import { safeFetch } from '@/lib/ssrf-guard';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
@@ -78,7 +79,9 @@ export async function POST(request: Request) {
             try {
                 const resolvedUrl = await resolveResumeUrl(userData.resume_url);
                 if (resolvedUrl) {
-                    const res = await fetch(resolvedUrl);
+                    // resume_url is user-settable, so the download is screened
+                    // against private and metadata address ranges.
+                    const res = await safeFetch(resolvedUrl, { maxBytes: 5 * 1024 * 1024 });
                     if (res.ok) {
                         const buffer = Buffer.from(await res.arrayBuffer());
                         fs.writeFileSync(customResumePath, buffer);

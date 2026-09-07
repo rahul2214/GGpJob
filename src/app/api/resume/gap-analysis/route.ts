@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(req);
+    if (errorResponse) return errorResponse;
+
     const body = await req.json()
     const { resumeData, jobDescription } = body
 

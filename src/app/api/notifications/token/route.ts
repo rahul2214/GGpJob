@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 export async function POST(request: Request) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { userId, token, platform } = await request.json();
+    if (userId && !isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json({ error: 'Forbidden: Cannot access another user account.' }, { status: 403 });
+    }
+
 
     if (!userId || !token || !platform) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });

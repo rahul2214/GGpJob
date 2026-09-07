@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { deleteFromR2 } from '@/lib/r2';
 import { resolveResumeUrl } from '@/lib/resolve-resume';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 /**
  * Update resume URL for a jobseeker.
@@ -9,11 +10,25 @@ import { resolveResumeUrl } from '@/lib/resolve-resume';
  */
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id: userId } = params;
+
+        if (!isOwnerOrAdmin(authUser!, userId)) {
+            return NextResponse.json({ error: 'Forbidden: Cannot modify another user profile.' }, { status: 403 });
+        }
+
         let { resumeUrl } = await request.json();
-        
-        if (!resumeUrl) {
+
+        if (!resumeUrl || typeof resumeUrl !== 'string') {
             return NextResponse.json({ error: 'Resume URL is required' }, { status: 400 });
+        }
+
+        // Only storage URIs this application issues, or https links, may be stored.
+        // This stops a caller pointing the profile at javascript:/data: URLs.
+        if (!resumeUrl.startsWith('r2://') && !resumeUrl.startsWith('https://')) {
+            return NextResponse.json({ error: 'Resume URL must be an https:// or r2:// location.' }, { status: 400 });
         }
 
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);

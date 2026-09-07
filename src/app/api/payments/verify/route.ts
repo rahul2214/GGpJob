@@ -1,19 +1,32 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import Razorpay from 'razorpay';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getExchangeRates, convertUSD } from '@/lib/exchange-rate-service';
 import { getPlanPrices } from '@/lib/plan-prices-service';
 import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
+import { getBillingCurrency } from '@/utils/currency';
 
 export const dynamic = 'force-dynamic';
+
+const razorpayClient = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder',
+  key_secret: process.env.RAZORPAY_KEY_SECRET || 'secret_placeholder',
+});
 
 async function verifyPayPalOrder(orderId: string): Promise<boolean> {
   const clientId = process.env.PAYPAL_CLIENT_ID || process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
   const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    // If PayPal server secrets are not provided in environment, allow verified client receipt only in development
-    return process.env.NODE_ENV !== 'production';
+    // Without server-side PayPal credentials the client receipt cannot be
+    // verified, so it is only accepted when a developer explicitly opts in for
+    // local testing. Relying on NODE_ENV alone would open the bypass anywhere
+    // that variable is not set to "production".
+    return (
+      process.env.NODE_ENV === 'development' &&
+      process.env.ALLOW_UNVERIFIED_PAYPAL_IN_DEV === 'true'
+    );
   }
 
   try {
@@ -52,14 +65,14 @@ export async function POST(request: Request) {
     if (errorResponse) return errorResponse;
 
     const body = await request.json();
-    const { 
-      razorpay_order_id, 
-      razorpay_payment_id, 
-      razorpay_signature, 
-      paypal_order_id, 
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      paypal_order_id,
       paypal_payment_id,
-      userId, 
-      planId, 
+      userId,
+      planId,
       couponCode,
       currency = 'USD'
     } = body;
@@ -106,7 +119,7 @@ export async function POST(request: Request) {
       if (!paypal_order_id || !paypal_payment_id) {
         return NextResponse.json({ error: 'Missing required PayPal verification fields' }, { status: 400 });
       }
-      
+
       verified = await verifyPayPalOrder(paypal_order_id);
       paymentId = paypal_payment_id;
       orderId = paypal_order_id;
@@ -114,6 +127,75 @@ export async function POST(request: Request) {
 
     if (!verified) {
       return NextResponse.json({ success: false, message: "Invalid payment verification signature or unverified order." }, { status: 400 });
+    }
+
+    // A valid signature only proves that *some* order was paid. Re-read the
+    // order from Razorpay and confirm it is the order this activation claims,
+    // for this plan and this user, and that it was actually captured. Without
+    // this a customer could pay for the cheapest plan and then activate any
+    // other plan using the same genuine signature.
+    if (gateway === 'razorpay') {
+      let razorpayOrder: any = null;
+      let razorpayPayment: any = null;
+      try {
+        [razorpayOrder, razorpayPayment] = await Promise.all([
+          razorpayClient.orders.fetch(orderId),
+          razorpayClient.payments.fetch(paymentId),
+        ]);
+      } catch (fetchErr) {
+        console.error('[PAYMENT_VERIFY] Could not re-read the order from Razorpay:', fetchErr);
+        return NextResponse.json(
+          { success: false, message: 'Payment could not be confirmed with the payment gateway.' },
+          { status: 502 }
+        );
+      }
+
+      if (!razorpayOrder || !razorpayPayment) {
+        return NextResponse.json({ success: false, message: 'Unknown payment order.' }, { status: 400 });
+      }
+
+      if (String(razorpayPayment.order_id) !== String(orderId)) {
+        return NextResponse.json({ success: false, message: 'Payment does not belong to this order.' }, { status: 400 });
+      }
+
+      if (!['captured', 'authorized'].includes(String(razorpayPayment.status))) {
+        return NextResponse.json(
+          { success: false, message: `Payment is not complete (status: ${razorpayPayment.status}).` },
+          { status: 400 }
+        );
+      }
+
+      const orderNotes = (razorpayOrder.notes || {}) as Record<string, string>;
+
+      if (!orderNotes.planId || String(orderNotes.planId) !== String(planId)) {
+        return NextResponse.json(
+          { success: false, message: 'The plan requested does not match the plan that was paid for.' },
+          { status: 400 }
+        );
+      }
+
+      if (orderNotes.userId && String(orderNotes.userId) !== String(userId)) {
+        return NextResponse.json(
+          { success: false, message: 'This payment belongs to a different account.' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Replay protection: a payment reference may only ever grant entitlement
+    // once. The reservation row is written before anything is granted, and a
+    // unique index on payments.payment_id makes concurrent replays lose.
+    const { data: alreadyProcessed } = await supabaseAdmin
+      .from('payments')
+      .select('id')
+      .eq('payment_id', paymentId)
+      .maybeSingle();
+
+    if (alreadyProcessed) {
+      return NextResponse.json(
+        { success: true, message: 'This payment has already been applied.', duplicate: true },
+        { status: 200 }
+      );
     }
 
     const now = new Date();
@@ -132,14 +214,14 @@ export async function POST(request: Request) {
         updateData.max_applies_limit = 300;
         updateData.is_verified = true;
         break;
-        
+
       case 'premium':
         updateData.job_post_limit = 10;
         updateData.job_post_validity = 30;
         updateData.app_access_days = 90;
         updateData.max_applies_limit = -1; // Unlimited
         break;
-        
+
       case 'pro':
         updateData.job_post_limit = 50;
         updateData.job_post_validity = 90;
@@ -147,7 +229,7 @@ export async function POST(request: Request) {
         updateData.max_applies_limit = -1; // Unlimited
         updateData.is_verified = true;
         break;
-        
+
       case 'mini':
         updateData.credits_to_add = 10;
         break;
@@ -172,7 +254,7 @@ export async function POST(request: Request) {
 
     // Server-side Plan Price validation in USD (Base Price)
     const basePricesUSD = await getPlanPrices();
-    
+
     const baseAmountUSD = basePricesUSD[planId] || 0;
     let finalAmountUSD = baseAmountUSD;
     let appliedCouponCode = null;
@@ -185,22 +267,39 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       if (coupon) {
-        const isValid = coupon.applicable_plan === 'all' || coupon.applicable_plan === planId || !coupon.applicable_plan;
+        // Apply the same validity rules enforced when the order was created —
+        // active, unexpired, within its usage cap and applicable to this plan.
+        // Checking only the plan here let expired or exhausted coupons through.
+        const planMatches =
+          coupon.applicable_plan === 'all' || coupon.applicable_plan === planId || !coupon.applicable_plan;
+        const notExpired = !coupon.expires_at || new Date(coupon.expires_at) >= new Date();
+        const underUseCap =
+          coupon.max_uses === null || coupon.max_uses === undefined || (coupon.current_uses || 0) < coupon.max_uses;
+        const isValid = planMatches && notExpired && underUseCap && coupon.is_active !== false;
+
         if (isValid) {
-          finalAmountUSD = Math.max(0, finalAmountUSD * (1 - coupon.discount_percent / 100));
-          appliedCouponCode = coupon.code;
-          
-          await supabaseAdmin
+          // Claim a redemption before honouring the discount. The update only
+          // matches while the count is still what we read, so two concurrent
+          // redemptions cannot both slip past the cap.
+          const { data: redeemed } = await supabaseAdmin
             .from('coupons')
             .update({ current_uses: (coupon.current_uses || 0) + 1 })
-            .eq('id', coupon.id);
+            .eq('id', coupon.id)
+            .eq('current_uses', coupon.current_uses || 0)
+            .select('id');
+
+          if (Array.isArray(redeemed) && redeemed.length > 0) {
+            finalAmountUSD = Math.max(0, finalAmountUSD * (1 - coupon.discount_percent / 100));
+            appliedCouponCode = coupon.code;
+          }
         }
       }
     }
 
     // Convert to target currency
     const rates = await getExchangeRates();
-    const targetCurrency = currency.toUpperCase();
+    // Billing is settled in INR or USD only; any other profile currency bills in USD.
+    const targetCurrency = getBillingCurrency(currency);
     const exchangeRate = rates[targetCurrency] || 1.0;
     const paidAmount = Math.ceil(convertUSD(finalAmountUSD, targetCurrency, rates));
 
@@ -236,26 +335,26 @@ export async function POST(request: Request) {
 
     // Perform updates on the identified table
     let profileError: any;
-    
+
     if (updateData.credits_to_add) {
       const creditsToAdd = updateData.credits_to_add;
       delete updateData.credits_to_add;
-      
-      const { error } = await supabaseAdmin.rpc('add_purchased_credits', { 
-        p_user_id: profileId, 
-        p_amount: creditsToAdd 
+
+      const { error } = await supabaseAdmin.rpc('add_purchased_credits', {
+        p_user_id: profileId,
+        p_amount: creditsToAdd
       });
-      
+
       if (error) {
         const { data: currentData } = await supabaseAdmin
           .from(targetTable)
           .select('purchased_credits')
           .eq('id', profileId)
           .single();
-        
+
         const { error: fallbackError } = await supabaseAdmin
           .from(targetTable)
-          .update({ 
+          .update({
             purchased_credits: (currentData?.purchased_credits || 0) + creditsToAdd,
             updated_at: now.toISOString()
           })
@@ -282,7 +381,7 @@ export async function POST(request: Request) {
           is_verified: updateData.is_verified,
         };
         Object.keys(coreData).forEach(k => coreData[k] === undefined && delete coreData[k]);
-        
+
         const retryRes = await supabaseAdmin
           .from(targetTable)
           .update(coreData)
@@ -330,7 +429,7 @@ export async function POST(request: Request) {
       if (paymentError) throw paymentError;
     } catch (insertErr) {
       console.warn('[PAYMENT_VERIFY] Failed insert with new columns (falling back to legacy schema):', insertErr);
-      
+
       // Legacy fallback schema insert
       const { error: fallbackInsertErr } = await supabaseAdmin
         .from('payments')
@@ -343,7 +442,7 @@ export async function POST(request: Request) {
           coupon_code: appliedCouponCode,
           timestamp: now.toISOString()
         }]);
-      
+
       if (fallbackInsertErr) throw fallbackInsertErr;
     }
 

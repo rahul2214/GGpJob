@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAdmin } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const body = await request.json();
     const { name, display_order } = body;
     if (!name) {

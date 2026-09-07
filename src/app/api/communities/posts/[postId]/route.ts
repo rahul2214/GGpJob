@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { encrypt, decrypt } from '@/lib/encryption';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 /** Helper: Find post by numeric ID or UUID */
 async function findPostByIdOrUuid(postId: string) {
@@ -190,6 +191,9 @@ async function checkCanModifyPost(existingPost: any, rawUserIdentifier: string):
 // PUT edit post (Author or Moderator/Admin only)
 export async function PUT(request: NextRequest, { params }: { params: { postId: string } }) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { postId } = params;
     const body = await request.json();
     const { searchParams } = new URL(request.url);
@@ -198,6 +202,13 @@ export async function PUT(request: NextRequest, { params }: { params: { postId: 
 
     if (!rawUserIdentifier) {
       return NextResponse.json({ error: 'User identification (userUuid or userId) is required' }, { status: 400 });
+    }
+
+    // The permission check must run against the caller's *verified* identity,
+    // not an identifier taken from the request. Without this an authenticated
+    // user could pass the author's id and pass checkCanModifyPost.
+    if (!isOwnerOrAdmin(authUser!, rawUserIdentifier)) {
+      return NextResponse.json({ error: 'Forbidden: You can only modify content as yourself.' }, { status: 403 });
     }
 
     // Fetch existing post
@@ -246,12 +257,20 @@ export async function PUT(request: NextRequest, { params }: { params: { postId: 
 // DELETE post (Author or Moderator/Admin only)
 export async function DELETE(request: NextRequest, { params }: { params: { postId: string } }) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { postId } = params;
     const { searchParams } = new URL(request.url);
     const queryUserIdentifier = searchParams.get('userUuid') || searchParams.get('authorUuid') || searchParams.get('userId');
 
     if (!queryUserIdentifier) {
       return NextResponse.json({ error: 'User identification (userUuid or userId) is required' }, { status: 400 });
+    }
+
+    // Authorise against the caller's verified identity, never the query value.
+    if (!isOwnerOrAdmin(authUser!, queryUserIdentifier)) {
+      return NextResponse.json({ error: 'Forbidden: You can only modify content as yourself.' }, { status: 403 });
     }
 
     // Fetch existing post

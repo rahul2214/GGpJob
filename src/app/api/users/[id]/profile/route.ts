@@ -126,7 +126,15 @@ const mapFrontendToDb = (data: any) => {
 // GET handler — public read, no auth required
 export async function GET(request: Request, { params }: { params: { id: string } }) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id: userId } = params;
+
+        if (!isOwnerOrAdmin(authUser!, userId)) {
+            return NextResponse.json({ error: 'Forbidden: Cannot read another user profile.' }, { status: 403 });
+        }
+
         const { searchParams } = new URL(request.url);
         const section = searchParams.get('section');
         

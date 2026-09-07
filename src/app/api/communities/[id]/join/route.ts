@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 /** Resolve auth user UUID → jobseekers.id (int8). Returns null if not a jobseeker. */
 async function resolveJobseekerId(userUuid: string): Promise<number | null> {
@@ -14,11 +15,19 @@ async function resolveJobseekerId(userUuid: string): Promise<number | null> {
 // POST Join Community
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { id } = params; // community id
     const { userUuid } = await request.json();
 
     if (!userUuid) {
       return NextResponse.json({ error: 'User identity is required' }, { status: 400 });
+    }
+
+    // Membership changes act on the caller, not a body-supplied uuid.
+    if (!isOwnerOrAdmin(authUser!, userUuid)) {
+      return NextResponse.json({ error: 'Forbidden: You can only join as yourself.' }, { status: 403 });
     }
 
     const jobseekerId = await resolveJobseekerId(userUuid);
@@ -74,12 +83,20 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 // DELETE Leave Community
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { id } = params;
     const { searchParams } = new URL(request.url);
     const userUuid = searchParams.get('userUuid');
 
     if (!userUuid) {
       return NextResponse.json({ error: 'User identity is required' }, { status: 400 });
+    }
+
+    // Membership changes act on the caller, not a query-supplied uuid.
+    if (!isOwnerOrAdmin(authUser!, userUuid)) {
+      return NextResponse.json({ error: 'Forbidden: You can only leave as yourself.' }, { status: 403 });
     }
 
     const jobseekerId = await resolveJobseekerId(userUuid);

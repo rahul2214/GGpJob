@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 export async function GET(request: Request) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    if (userId && !isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json({ error: 'Forbidden: Cannot access another user account.' }, { status: 403 });
+    }
+
 
     if (!userId) {
         return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -84,11 +92,23 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
+      const { user: authUser, errorResponse } = await requireAuth(request);
+      if (errorResponse) return errorResponse;
+
         const body = await request.json();
         const { userId, message, type, jobId, ...rest } = body;
 
         if (!userId || !message) {
             return NextResponse.json({ error: 'User ID and message are required' }, { status: 400 });
+        }
+
+        // Bound the free-text fields so this endpoint cannot be used to push
+        // large or unbounded attacker content into another user's feed.
+        if (typeof message !== 'string' || message.length > 2000) {
+            return NextResponse.json({ error: 'Message must be text of at most 2000 characters.' }, { status: 400 });
+        }
+        if (type !== undefined && (typeof type !== 'string' || type.length > 64)) {
+            return NextResponse.json({ error: 'Notification type is invalid.' }, { status: 400 });
         }
 
         // 1. Resolve internal numeric PKs
@@ -150,13 +170,33 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
     try {
+      const { user: authUser, errorResponse } = await requireAuth(request);
+      if (errorResponse) return errorResponse;
+
         const body = await request.json();
         const { notificationId, jobPk, userId, type, applicationId } = body;
+
+        // A user may only mark their own notifications as read.
+        const callerIsAdmin = authUser!.role === 'Admin' || authUser!.role === 'Super Admin' || Boolean(authUser!.isSuperAdmin);
+        if (userId && !isOwnerOrAdmin(authUser!, userId)) {
+            return NextResponse.json({ error: "Forbidden: Cannot modify another user's notifications." }, { status: 403 });
+        }
 
         let query = supabaseAdmin.from('notifications').update({ is_read: true });
 
         if (notificationId) {
             query = query.eq('id', notificationId);
+            if (!callerIsAdmin) {
+                // Constrain to the caller's own rows so an arbitrary notification
+                // id cannot be flipped read on another user's behalf.
+                const [{ data: jsSelf }, { data: recSelf }] = await Promise.all([
+                    supabaseAdmin.from('jobseekers').select('id').eq('uuid', authUser!.uuid).maybeSingle(),
+                    supabaseAdmin.from('recruiters').select('id').eq('uuid', authUser!.uuid).maybeSingle()
+                ]);
+                const selfPks = [jsSelf?.id, recSelf?.id].filter(Boolean) as number[];
+                if (selfPks.length === 0) return NextResponse.json({ success: true });
+                query = query.in('user_pk', selfPks);
+            }
         } else if (userId) {
             const [
                 { data: js },

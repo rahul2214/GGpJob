@@ -377,7 +377,18 @@ async function mapProfileToUser(profile: any): Promise<User> {
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id } = params;
+
+        // This returns the full profile including personal details, so it is
+        // restricted to the profile owner or an administrator. Recruiters view
+        // applicants through the application-scoped candidate-profile route.
+        if (!isOwnerOrAdmin(authUser!, id)) {
+            return NextResponse.json({ error: 'Forbidden: Cannot read another user profile.' }, { status: 403 });
+        }
+
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
         const column = isUuid ? 'uuid' : 'id';
         const idValue = isUuid ? id : parseInt(id);

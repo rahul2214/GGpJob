@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 // Helper to map Supabase snake_case job to camelCase Job type
 function mapJobToFrontend(job: any): any {
@@ -142,8 +143,15 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
 
 export async function GET(request: NextRequest) {
     try {
+      const { user: authUser, errorResponse } = await requireAuth(request);
+      if (errorResponse) return errorResponse;
+
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get('userId'); // auth UUID
+        if (userId && !isOwnerOrAdmin(authUser!, userId)) {
+          return NextResponse.json({ error: 'Forbidden: Cannot access another user account.' }, { status: 403 });
+        }
+
         if (!userId) {
             return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
         }
@@ -200,7 +208,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
+      const { user: authUser, errorResponse } = await requireAuth(request);
+      if (errorResponse) return errorResponse;
+
         const { userId, jobId } = await request.json(); // userId = user.uuid, jobId = job.uuid
+        if (userId && !isOwnerOrAdmin(authUser!, userId)) {
+          return NextResponse.json({ error: 'Forbidden: Cannot access another user account.' }, { status: 403 });
+        }
+
         if (!userId || !jobId) {
             return NextResponse.json({ error: 'User ID and Job ID are required' }, { status: 400 });
         }
@@ -240,8 +255,15 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get('userId');
+
+        if (userId && !isOwnerOrAdmin(authUser!, userId)) {
+            return NextResponse.json({ error: 'Forbidden: Cannot access another user account.' }, { status: 403 });
+        }
         const jobId = searchParams.get('jobId');
 
         if (!userId || !jobId) {

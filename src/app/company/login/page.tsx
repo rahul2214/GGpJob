@@ -35,6 +35,8 @@ import { supabase } from "@/lib/supabase-client";
 import { motion } from "framer-motion";
 import RecruiterPricingGrid from "@/components/recruiter-pricing-grid";
 import { CurrencySelector } from "@/components/currency-selector";
+import { BILLING_CURRENCY_CODES } from "@/utils/currency";
+import { useBillingCurrency } from "@/hooks/use-billing-currency";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -53,6 +55,8 @@ export default function CompanyLoginPage() {
   const { toast } = useToast();
   const router = useRouter();
   const { user, loading } = useUser();
+  // Plans are billed in two currencies only: INR (Razorpay) or USD (PayPal).
+  const { billingCurrency, setBillingCurrency } = useBillingCurrency();
   const [showPassword, setShowPassword] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -117,7 +121,10 @@ export default function CompanyLoginPage() {
         if (authData.session?.access_token) {
           headers['Authorization'] = `Bearer ${authData.session.access_token}`;
           if (typeof document !== 'undefined') {
-            document.cookie = `sb-access-token=${authData.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+            // `Secure` is added whenever the page is served over TLS so the session
+            // token is never transmitted on a plaintext connection.
+            const cookieSecure = window.location.protocol === 'https:' ? '; Secure' : '';
+            document.cookie = `sb-access-token=${authData.session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax${cookieSecure}`;
           }
         }
         const res = await fetch(`/api/users?uid=${authData.user.id}`, { headers });
@@ -415,7 +422,11 @@ export default function CompanyLoginPage() {
             <div className="flex justify-end w-full mb-6">
               <div className="flex items-center gap-2 bg-slate-900/80 px-4 py-2 rounded-2xl border border-slate-800">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Currency:</span>
-                <CurrencySelector />
+                <CurrencySelector
+                  options={BILLING_CURRENCY_CODES}
+                  value={billingCurrency}
+                  onChange={setBillingCurrency}
+                />
               </div>
             </div>
 

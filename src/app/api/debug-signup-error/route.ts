@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAdmin } from '@/lib/auth-server';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const { data, error } = await supabaseAdmin
       .from('signup_errors')
       .select('*')

@@ -13,7 +13,8 @@ import { cn } from "@/lib/utils";
 import { RECRUITER_PLANS } from "@/lib/pricing-constants";
 import RecruiterPricingGrid from "@/components/recruiter-pricing-grid";
 import { CurrencySelector } from "@/components/currency-selector";
-import { formatPrice, convertPrice } from "@/utils/currency";
+import { formatPrice, convertPrice, BILLING_CURRENCY_CODES } from "@/utils/currency";
+import { useBillingCurrency } from "@/hooks/use-billing-currency";
 import { PayPalPaymentButton } from "@/components/paypal-payment-button";
 
 declare global {
@@ -23,7 +24,9 @@ declare global {
 }
 
 export default function PaymentPage() {
-  const { user, loading, fetchUserProfile, setUser, currency, exchangeRates } = useUser();
+  const { user, loading, fetchUserProfile, setUser } = useUser();
+  // Checkout runs on two currencies only: INR (Razorpay) or USD (PayPal).
+  const { billingCurrency: currency, setBillingCurrency, gateway, exchangeRates } = useBillingCurrency();
   const router = useRouter();
   const { toast } = useToast();
   const [processing, setProcessing] = useState<string | null>(null);
@@ -182,7 +185,11 @@ export default function PaymentPage() {
         <div className="flex justify-end mb-8">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Currency:</span>
-            <CurrencySelector />
+            <CurrencySelector
+              options={BILLING_CURRENCY_CODES}
+              value={currency}
+              onChange={setBillingCurrency}
+            />
           </div>
         </div>
 
@@ -208,7 +215,7 @@ export default function PaymentPage() {
           <div className="flex items-center gap-3 px-6 py-3 bg-white border border-slate-100 rounded-full shadow-sm">
              <ShieldCheck className="w-5 h-5 text-emerald-600" />
              <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">
-               Secure Payments via {currency.toUpperCase() === 'INR' ? 'Razorpay' : 'PayPal'}
+               Secure Payments via {gateway === 'razorpay' ? 'Razorpay' : 'PayPal'}
              </span>
           </div>
           <p className="text-xs text-slate-400 text-center max-w-lg">
@@ -316,7 +323,7 @@ export default function PaymentPage() {
           )}
 
           <DialogFooter className="mt-6 flex flex-col gap-3 sm:flex-col">
-             {currency.toUpperCase() !== 'INR' ? (
+             {gateway === 'paypal' ? (
                <PayPalPaymentButton
                  amount={
                    appliedCoupon

@@ -177,7 +177,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // Sync cookie so all fetch requests and SSR carry the session token
       if (typeof document !== 'undefined') {
         if (session?.access_token) {
-          document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+          const cookieSecure = window.location.protocol === 'https:' ? '; Secure' : '';
+          document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax${cookieSecure}`;
         } else if (event === 'SIGNED_OUT') {
           document.cookie = `sb-access-token=; path=/; max-age=0; SameSite=Lax`;
         }

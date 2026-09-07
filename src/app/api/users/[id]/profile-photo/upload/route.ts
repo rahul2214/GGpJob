@@ -2,10 +2,20 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { uploadToR2, deleteFromR2 } from '@/lib/r2';
 import { resolveResumeUrl } from '@/lib/resolve-resume';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
+import { validateFileContent, buildStorageKey, IMAGE_FILE_RULES } from '@/lib/upload-validation';
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { id } = params;
+
+        if (!isOwnerOrAdmin(authUser!, id)) {
+            return NextResponse.json({ error: 'Forbidden: Cannot upload to another user profile.' }, { status: 403 });
+        }
+
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
         const idValue = isUuid ? id : parseInt(id, 10);
 
@@ -27,9 +37,18 @@ export async function POST(request: Request, { params }: { params: { id: string 
             return NextResponse.json({ error: 'File size exceeds 2MB limit' }, { status: 400 });
         }
 
-        // 3. Enforce File Type Constraints (Image only)
-        if (!file.type.startsWith('image/')) {
-            return NextResponse.json({ error: 'Only image files are allowed' }, { status: 400 });
+        // 3. Enforce File Type Constraints.
+        // A bare `image/*` Content-Type check would accept image/svg+xml, which
+        // can carry script and would then be served from our storage origin.
+        // The allowlist below is raster-only and is confirmed against the file's
+        // magic bytes rather than the client's claim.
+        if (file.size === 0) {
+            return NextResponse.json({ error: 'The uploaded file is empty' }, { status: 400 });
+        }
+        const photoBuffer = Buffer.from(await file.arrayBuffer());
+        const validation = validateFileContent(photoBuffer, file.name, file.type, IMAGE_FILE_RULES);
+        if (!validation.ok) {
+            return NextResponse.json({ error: validation.error }, { status: 400 });
         }
 
         // 4. Identify user role/table
@@ -51,14 +70,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
             return NextResponse.json({ error: 'User profile not found across active tables' }, { status: 404 });
         }
 
-        // 5. Upload file buffer to R2
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        
-        const fileExt = file.name.split('.').pop() || 'jpg';
-        const key = `avatars/${id}/${Date.now()}.${fileExt}`;
-        
-        const { r2Uri } = await uploadToR2(key, buffer, file.type);
+        // 5. Upload file buffer to R2 under a server-generated key, so a
+        // crafted filename cannot traverse or overwrite another object.
+        const key = buildStorageKey('avatars', id, validation.extension);
+
+        const { r2Uri } = await uploadToR2(key, photoBuffer, validation.contentType);
 
         // 6. Delete old avatar if it exists in R2
         if (existingPhotoUrl && existingPhotoUrl.startsWith('r2://')) {

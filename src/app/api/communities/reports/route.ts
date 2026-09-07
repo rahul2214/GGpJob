@@ -1,26 +1,14 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, requireAdmin, isOwnerOrAdmin } from '@/lib/auth-server';
 
 // GET all reports (Admin only)
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const adminUuid = searchParams.get('adminUuid');
-
-    if (!adminUuid) {
-      return NextResponse.json({ error: 'Identity required' }, { status: 401 });
-    }
-
-    // Verify admin identity
-    const { data: seeker } = await supabaseAdmin
-      .from('jobseekers')
-      .select('role')
-      .eq('uuid', adminUuid)
-      .maybeSingle();
-
-    if (seeker?.role !== 'Admin' && seeker?.role !== 'Super Admin') {
-      return NextResponse.json({ error: 'Permission denied.' }, { status: 403 });
-    }
+    // Reading all reports is administrator-only, proven from the caller's token
+    // rather than a caller-supplied adminUuid (which could name any admin).
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
 
     const { data: reports, error } = await supabaseAdmin
       .from('community_reports')
@@ -39,10 +27,18 @@ export async function GET(request: NextRequest) {
 // POST create an abuse report
 export async function POST(request: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { reporterUuid, postId, commentId, reason, details } = await request.json();
 
     if (!reporterUuid || !reason) {
       return NextResponse.json({ error: 'Reporter UUID and Reason are required' }, { status: 400 });
+    }
+
+    // A report is filed by the caller; the reporter cannot be another user.
+    if (!isOwnerOrAdmin(authUser!, reporterUuid)) {
+      return NextResponse.json({ error: 'Forbidden: You can only report as yourself.' }, { status: 403 });
     }
 
     const insertData: any = {
@@ -76,21 +72,15 @@ export async function POST(request: NextRequest) {
 // PUT resolve or dismiss report (Admin only)
 export async function PUT(request: NextRequest) {
   try {
-    const { reportId, status, adminUuid } = await request.json(); // status: resolved, dismissed
+    // Resolving/dismissing a report is administrator-only, proven from the
+    // caller's verified token rather than a caller-supplied adminUuid.
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
 
-    if (!reportId || !status || !adminUuid) {
-      return NextResponse.json({ error: 'Report ID, Status, and Admin UUID are required' }, { status: 400 });
-    }
+    const { reportId, status } = await request.json(); // status: resolved, dismissed
 
-    // Verify admin identity
-    const { data: seeker } = await supabaseAdmin
-      .from('jobseekers')
-      .select('role')
-      .eq('uuid', adminUuid)
-      .maybeSingle();
-
-    if (seeker?.role !== 'Admin' && seeker?.role !== 'Super Admin') {
-      return NextResponse.json({ error: 'Permission denied.' }, { status: 403 });
+    if (!reportId || !status) {
+      return NextResponse.json({ error: 'Report ID and Status are required' }, { status: 400 });
     }
 
     const { data: updated, error } = await supabaseAdmin

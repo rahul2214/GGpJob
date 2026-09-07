@@ -4,8 +4,12 @@ import { CAMPAIGN_STRUCTURE_CATALOG, renderCRMTemplate } from '@/lib/crm/templat
 import { enqueueTask } from '@/lib/crm/queue-processor';
 import { sendBrevoTransactionalEmail } from '@/lib/crm/brevo-service';
 import type { CampaignType } from '@/lib/crm/types';
+import { requireAdmin } from '@/lib/auth-server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { errorResponse } = await requireAdmin(request);
+  if (errorResponse) return errorResponse;
+
   return NextResponse.json({
     campaigns: CAMPAIGN_STRUCTURE_CATALOG,
   });
@@ -13,6 +17,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const body = await request.json().catch(() => ({}));
     const campaignType: CampaignType = body.campaignType || 'JOB_RECOMMENDATIONS';
     const targetCandidateId = body.candidateId;

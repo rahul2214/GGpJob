@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { encrypt, decrypt } from '@/lib/encryption';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 /** Resolve postType string → post_type_id (bigint) */
 async function resolvePostTypeId(typeName: string): Promise<number> {
@@ -170,12 +171,20 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 // POST create post inside a community
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { id } = params; // community id
     const body = await request.json();
     const { authorUuid, title, content, postType, metadata } = body;
 
     if (!authorUuid || !title || !content || !postType) {
       return NextResponse.json({ error: 'Author, Title, Content, and Post Type are required' }, { status: 400 });
+    }
+
+    // The post author is the caller, not a body-supplied uuid.
+    if (!isOwnerOrAdmin(authUser!, authorUuid)) {
+      return NextResponse.json({ error: 'Forbidden: You can only post as yourself.' }, { status: 403 });
     }
 
     // 1. Resolve jobseeker int8 ID from authorUuid

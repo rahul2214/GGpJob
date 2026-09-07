@@ -2,13 +2,23 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { uploadToR2, deleteFromR2 } from '@/lib/r2';
 import { resolveResumeUrl } from '@/lib/resolve-resume';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
+import { validateFileContent, buildStorageKey, RESUME_FILE_RULES } from '@/lib/upload-validation';
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { id: userId } = params;
+
+    if (!isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json({ error: 'Forbidden: Cannot upload to another user profile.' }, { status: 403 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -19,6 +29,9 @@ export async function POST(
     // 1. Validation
     if (file.size > 2 * 1024 * 1024) {
       return NextResponse.json({ error: 'File size exceeds 2MB limit' }, { status: 400 });
+    }
+    if (file.size === 0) {
+      return NextResponse.json({ error: 'The uploaded file is empty' }, { status: 400 });
     }
 
     console.log(`[API_RESUME_UPLOAD] Starting upload for user: ${userId}`);
@@ -71,14 +84,19 @@ export async function POST(
     const internalId = profileData.id;
     console.log(`[API_RESUME_UPLOAD] Resolved internal profile ID: ${internalId}`);
 
-    // 3. Prepare R2 Key
-    const fileExt = file.name.split('.').pop() || 'pdf';
-    const fileName = `resume-${Date.now()}.${fileExt}`;
-    const key = `resumes/${userId}/${fileName}`;
-
-    // 4. Convert File to Buffer for Upload
+    // 3. Read the file and confirm it really is one of the allowed document
+    // types. The browser-supplied name and Content-Type are not trusted; the
+    // leading magic bytes decide.
     const buffer = Buffer.from(await file.arrayBuffer());
-    const contentType = file.type || 'application/pdf'; // Default to PDF if browser doesn't provide
+    const validation = validateFileContent(buffer, file.name, file.type, RESUME_FILE_RULES);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    // 4. Build a storage key from server-controlled parts only, so a crafted
+    // filename cannot traverse or overwrite another object.
+    const contentType = validation.contentType;
+    const key = buildStorageKey('resumes', internalId, validation.extension);
     console.log(`[API_RESUME_UPLOAD] Final Buffer check. Size: ${buffer.length} bytes, Type: ${contentType}`);
 
     // 5. Upload to R2 (Server-Side Proxy)

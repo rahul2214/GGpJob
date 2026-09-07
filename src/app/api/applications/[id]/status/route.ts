@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { Resend } from 'resend';
 import { requireAuth } from '@/lib/auth-server';
+import { getApplicationAccess } from '@/lib/authz';
 
 // Initialize but handle missing keys gracefully later
 const resend = new Resend(process.env.RESEND_API_KEY || 'missing_key');
@@ -32,16 +33,20 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     const sId = Number(statusId);
 
-    // 0. Resolve numeric PK if UUID provided
-    let targetPk = params.id;
-    if (params.id.includes('-')) {
-        const { data: resolvedApp } = await supabaseAdmin
-            .from('applications')
-            .select('id')
-            .eq('uuid', params.id)
-            .maybeSingle();
-        if (resolvedApp) targetPk = resolvedApp.id.toString();
+    if (!Number.isInteger(sId) || !Object.prototype.hasOwnProperty.call(statusMap, sId)) {
+      return NextResponse.json({ error: 'Unknown status ID' }, { status: 400 });
     }
+
+    // 0. Resolve the application and confirm the caller is a party to it.
+    // Without this, any authenticated user could drive any candidate's pipeline.
+    const access = await getApplicationAccess(authUser!, params.id);
+    if (!access) {
+        return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+    }
+    if (!access.isApplicant && !access.isJobOwner && !access.isAdmin) {
+        return NextResponse.json({ error: 'Forbidden: You do not have access to this application.' }, { status: 403 });
+    }
+    const targetPk = access.applicationPk;
 
     // 0.1 Fetch application data
     const { data: appData } = await supabaseAdmin

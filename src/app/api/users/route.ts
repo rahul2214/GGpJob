@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import type { User } from '@/lib/types';
 import { resolveResumeUrl } from '@/lib/resolve-resume';
-import { requireAdmin, getAuthenticatedUser, isOwnerOrAdmin } from '@/lib/auth-server';
+import { requireAuth, requireAdmin, getAuthenticatedUser, isOwnerOrAdmin } from '@/lib/auth-server';
 import { safeErrorResponse } from '@/lib/security';
 
 // GET all users OR a specific user by UID
@@ -483,10 +483,27 @@ const DISALLOWED_DOMAINS = [
 // POST a new user (create/update profile after signup)
 export async function POST(request: Request) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { id, name, email, role, phone, companyName, companyWebsite, department } = await request.json();
 
     if (!id || !name || !email || !role) {
         return NextResponse.json({ error: 'Missing required fields for profile creation' }, { status: 400 });
+    }
+
+    // A profile may only be created for the caller's own verified auth identity,
+    // so a caller cannot provision a profile under someone else's uid.
+    if (!isOwnerOrAdmin(authUser!, id)) {
+        return NextResponse.json({ error: 'Forbidden: Cannot create a profile for another identity.' }, { status: 403 });
+    }
+
+    // Administrator roles are never self-assignable here; they are provisioned
+    // only via the Super-Admin-gated create-admin route. Without this an
+    // authenticated user could POST role:'Super Admin' and escalate.
+    if ((role === 'Admin' || role === 'Super Admin') &&
+        !(authUser!.role === 'Admin' || authUser!.role === 'Super Admin' || authUser!.isSuperAdmin)) {
+        return NextResponse.json({ error: 'Forbidden: Administrator roles cannot be self-assigned.' }, { status: 403 });
     }
 
     // Identify the correct table and role_id

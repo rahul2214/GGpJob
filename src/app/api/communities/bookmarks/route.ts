@@ -1,15 +1,24 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { decrypt } from '@/lib/encryption';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 // GET bookmarked posts for a user
 export async function GET(request: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
     if (!userId) {
       return NextResponse.json({ error: 'User UUID is required' }, { status: 400 });
+    }
+
+    // Bookmarks are private to their owner.
+    if (!isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json({ error: 'Forbidden: You can only view your own bookmarks.' }, { status: 403 });
     }
 
     const { data: bookmarks, error } = await supabaseAdmin
@@ -49,10 +58,18 @@ export async function GET(request: NextRequest) {
 // POST toggle bookmark status on a post
 export async function POST(request: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { userId, postId } = await request.json();
 
     if (!userId || !postId) {
       return NextResponse.json({ error: 'User UUID and Post ID are required' }, { status: 400 });
+    }
+
+    // A bookmark is created for the caller, not a body-supplied uuid.
+    if (!isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json({ error: 'Forbidden: You can only bookmark as yourself.' }, { status: 403 });
     }
 
     // Check if bookmark exists

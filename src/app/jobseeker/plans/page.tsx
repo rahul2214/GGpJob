@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { cn } from "@/lib/utils";
 import { JOB_SEEKER_PLANS } from "@/lib/pricing-constants";
 import { CurrencySelector } from "@/components/currency-selector";
-import { formatPrice, convertPrice } from "@/utils/currency";
+import { formatPrice, convertPrice, BILLING_CURRENCY_CODES } from "@/utils/currency";
+import { useBillingCurrency } from "@/hooks/use-billing-currency";
 import { PayPalPaymentButton } from "@/components/paypal-payment-button";
 
 declare global {
@@ -23,7 +24,9 @@ declare global {
 }
 
 export default function JobSeekerPlansPage() {
-  const { user, loading, fetchUserProfile, setUser, currency, exchangeRates } = useUser();
+  const { user, loading, fetchUserProfile, setUser } = useUser();
+  // Checkout runs on two currencies only: INR (Razorpay) or USD (PayPal).
+  const { billingCurrency: currency, setBillingCurrency, gateway, exchangeRates } = useBillingCurrency();
   const router = useRouter();
   const { toast } = useToast();
   const [processing, setProcessing] = useState<string | null>(null);
@@ -220,7 +223,11 @@ export default function JobSeekerPlansPage() {
         <div className="flex justify-end mb-8">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Currency:</span>
-            <CurrencySelector />
+            <CurrencySelector
+              options={BILLING_CURRENCY_CODES}
+              value={currency}
+              onChange={setBillingCurrency}
+            />
           </div>
         </div>
 
@@ -465,7 +472,7 @@ export default function JobSeekerPlansPage() {
           )}
 
           <DialogFooter className="mt-6 flex flex-col gap-3 sm:flex-col">
-             {currency.toUpperCase() !== 'INR' ? (
+             {gateway === 'paypal' ? (
                <PayPalPaymentButton
                  amount={
                    appliedCoupon

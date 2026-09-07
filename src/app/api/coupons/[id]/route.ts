@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkAdmin } from '@/lib/check-admin';
+import { requireAdmin } from '@/lib/auth-server';
 
 export async function PUT(request: Request, context: any) {
   try {
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const { params } = context;
     const data = await request.json();
     const { userId, discountPercent, expiresAt, maxUses, applicablePlan, isActive } = data;
@@ -46,6 +50,9 @@ export async function PUT(request: Request, context: any) {
 
 export async function DELETE(request: Request, context: any) {
   try {
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const { params } = context;

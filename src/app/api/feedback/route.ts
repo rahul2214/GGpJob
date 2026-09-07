@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, requireAdmin, isOwnerOrAdmin } from '@/lib/auth-server';
 
 export async function GET(request: Request) {
     try {
+      const { errorResponse } = await requireAdmin(request);
+      if (errorResponse) return errorResponse;
+
         const { data: feedbackData, error } = await supabaseAdmin
             .from('portal_feedback')
             .select(`
@@ -34,10 +38,18 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { userId, rating, feedback } = await request.json();
 
     if (!userId || !rating) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Feedback is attributed to the caller, not a body-supplied id.
+    if (!isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json({ error: 'Forbidden: You can only submit feedback as yourself.' }, { status: 403 });
     }
 
     // 1. Resolve internal numeric PK

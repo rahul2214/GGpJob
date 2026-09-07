@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 export async function POST(request: Request) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const body = await request.json().catch(() => ({}));
     const { referralCode, userUuid } = body;
 
@@ -17,6 +21,15 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'User identifier is required.' },
         { status: 400 }
+      );
+    }
+
+    // The claim credits both parties, so the caller must be the referee. Without
+    // this check anyone could redeem their own code against arbitrary accounts.
+    if (!isOwnerOrAdmin(authUser!, userUuid.trim())) {
+      return NextResponse.json(
+        { error: 'Forbidden: Cannot claim a referral for another account.' },
+        { status: 403 }
       );
     }
 
@@ -86,10 +99,29 @@ export async function POST(request: Request) {
     }
 
     // 6. Check if email is verified in auth.users to award credits now
-    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(referee.uuid);
-    const isEmailConfirmed = Boolean(authUser?.user?.email_confirmed_at);
+    const { data: refereeAuth } = await supabaseAdmin.auth.admin.getUserById(referee.uuid);
+    const isEmailConfirmed = Boolean(refereeAuth?.user?.email_confirmed_at);
 
+    // Claim the reward atomically. The update only matches while the referral is
+    // still unrewarded, so concurrent requests cannot both pass the check and
+    // award credits twice.
+    let rewardClaimed = false;
     if (isEmailConfirmed && !(referee.referral_rewarded ?? referee.metadata?.referral_rewarded)) {
+      const claimIso = new Date().toISOString();
+      const { data: claimedRows } = await supabaseAdmin
+        .from('jobseekers')
+        .update({
+          referral_rewarded: true,
+          referral_rewarded_at: claimIso,
+          updated_at: claimIso,
+        })
+        .eq('id', referee.id)
+        .or('referral_rewarded.is.null,referral_rewarded.eq.false')
+        .select('id');
+      rewardClaimed = Array.isArray(claimedRows) && claimedRows.length > 0;
+    }
+
+    if (rewardClaimed) {
       // 1. Award 2 credits to Referrer
       const { error: rpcError } = await supabaseAdmin.rpc('add_purchased_credits', {
         p_user_id: referrer.id,
@@ -153,16 +185,7 @@ export async function POST(request: Request) {
         }
       ]);
 
-      // 4. Mark referral as rewarded
-      const nowIso = new Date().toISOString();
-      await supabaseAdmin
-        .from('jobseekers')
-        .update({
-          referral_rewarded: true,
-          referral_rewarded_at: nowIso,
-          updated_at: nowIso,
-        })
-        .eq('id', referee.id);
+      // The rewarded flag was already set atomically when the claim was won.
     }
 
     return NextResponse.json({

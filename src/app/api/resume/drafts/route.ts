@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { requireAuth, isOwnerOrAdmin } from "@/lib/auth-server"
 
 export const dynamic = 'force-dynamic';
 
 // GET: Fetch all resume drafts for a user
 export async function GET(req: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(req)
+    if (errorResponse) return errorResponse
+
     const { searchParams } = new URL(req.url)
     const userId = searchParams.get("userId")
 
     if (!userId) {
       return NextResponse.json({ error: "Missing userId parameter" }, { status: 400 })
+    }
+
+    if (!isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json({ error: "Forbidden: Cannot read another user's drafts." }, { status: 403 })
     }
 
     // Resolve UUID to bigint jobseeker id
@@ -58,11 +66,18 @@ export async function GET(req: NextRequest) {
 // POST: Upsert (Create or Update) a resume draft
 export async function POST(req: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(req)
+    if (errorResponse) return errorResponse
+
     const body = await req.json()
     const { userId, title, templateType, resumeData } = body
 
     if (!userId || !resumeData) {
       return NextResponse.json({ error: "Missing required fields: userId and resumeData" }, { status: 400 })
+    }
+
+    if (!isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json({ error: "Forbidden: Cannot modify another user's drafts." }, { status: 403 })
     }
 
     // Resolve UUID to bigint jobseeker id
@@ -115,12 +130,19 @@ export async function POST(req: NextRequest) {
 // DELETE: Delete a resume draft
 export async function DELETE(req: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(req)
+    if (errorResponse) return errorResponse
+
     const { searchParams } = new URL(req.url)
     const id = searchParams.get("id")
     const userId = searchParams.get("userId")
 
     if (!id || !userId) {
       return NextResponse.json({ error: "Missing id or userId parameters" }, { status: 400 })
+    }
+
+    if (!isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json({ error: "Forbidden: Cannot delete another user's drafts." }, { status: 403 })
     }
 
     // Resolve UUID to bigint jobseeker id to verify ownership

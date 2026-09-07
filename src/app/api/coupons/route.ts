@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkAdmin } from '@/lib/check-admin';
+import { requireAdmin } from '@/lib/auth-server';
 
 // Maps Supabase snake_case fields to camelCase for the frontend
 function mapCoupon(c: any) {
@@ -19,6 +20,9 @@ function mapCoupon(c: any) {
 
 export async function GET(request: Request) {
   try {
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
@@ -46,6 +50,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const data = await request.json();
     const { userId, code, discountPercent, expiresAt, maxUses, applicablePlan } = data;
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 /**
  * POST /api/users/[id]/skills
@@ -11,12 +12,28 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { id: userId } = params;
+
+    if (!isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json({ error: 'Forbidden: Cannot modify another user profile.' }, { status: 403 });
+    }
+
     const body = await request.json();
     const skills: { id: string; name: string }[] = body.skills || [];
 
     if (!Array.isArray(skills)) {
       return NextResponse.json({ error: 'Skills array is required.' }, { status: 400 });
+    }
+
+    // Bound the payload so a single request cannot create unlimited skill rows.
+    if (skills.length > 100) {
+      return NextResponse.json({ error: 'A maximum of 100 skills may be saved.' }, { status: 400 });
+    }
+    if (skills.some(s => typeof s?.name === 'string' && s.name.length > 120)) {
+      return NextResponse.json({ error: 'Skill names must be 120 characters or fewer.' }, { status: 400 });
     }
 
     // 1. Get user_pk

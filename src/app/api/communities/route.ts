@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, requireAdmin, isOwnerOrAdmin } from '@/lib/auth-server';
 
 // GET all communities with member counts and user joined status
 export async function GET(request: NextRequest) {
@@ -71,27 +72,17 @@ export async function GET(request: NextRequest) {
 // POST create community (Admin only)
 export async function POST(request: NextRequest) {
   try {
+    // Creating a community is an administrative action. The role is proven from
+    // the caller's verified token via requireAdmin — never from a caller-supplied
+    // creatorUuid, which could name any administrator's uuid.
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const body = await request.json();
-    const { name, description, category, icon, creatorUuid } = body;
+    const { name, description, category, icon } = body;
 
     if (!name || !category) {
       return NextResponse.json({ error: 'Name and Category are required' }, { status: 400 });
-    }
-
-    // Verify creator is admin
-    if (creatorUuid) {
-      const { data: seeker } = await supabaseAdmin
-        .from('jobseekers')
-        .select('role')
-        .eq('uuid', creatorUuid)
-        .maybeSingle();
-
-      const userRole = seeker?.role;
-      if (userRole !== 'Admin' && userRole !== 'Super Admin') {
-        return NextResponse.json({ error: 'Restricted to administrators.' }, { status: 403 });
-      }
-    } else {
-      return NextResponse.json({ error: 'Authorized identity required.' }, { status: 401 });
     }
 
     const { data: newCommunity, error } = await supabaseAdmin

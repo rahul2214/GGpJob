@@ -7,11 +7,23 @@ import {
   validateBrevoApiKey,
 } from '@/lib/crm/brevo-service';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAdmin } from '@/lib/auth-server';
 
 import fs from 'fs';
 import path from 'path';
 
+/**
+ * Values written to .env must not be able to terminate their own `KEY=value`
+ * line, otherwise a caller could append arbitrary environment variables.
+ */
+function isSafeEnvValue(value: string): boolean {
+  return typeof value === 'string' && !/[\r\n\u0000]/.test(value);
+}
+
 function updateEnvFile(key: string, value: string) {
+  if (!isSafeEnvValue(value)) {
+    throw new Error('Refusing to persist a configuration value containing line breaks.');
+  }
   try {
     const envPath = path.join(process.cwd(), '.env');
     if (!fs.existsSync(envPath)) return;
@@ -34,6 +46,9 @@ function updateEnvFile(key: string, value: string) {
 
 export async function GET(request: NextRequest) {
   try {
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const apiKey = getBrevoApiKey();
     const sender = getBrevoSender();
     const isConfigured = isBrevoConfigured();
@@ -55,6 +70,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const body = await request.json();
     const { apiKey, senderEmail, senderName } = body;
 
@@ -65,6 +83,18 @@ export async function POST(request: NextRequest) {
     const cleanKey = apiKey.trim();
     const cleanSenderEmail = senderEmail?.trim() || 'no-reply@jobsdart.in';
     const cleanSenderName = senderName?.trim() || 'JobsDart Careers & AI';
+
+    // These values are persisted into .env, so reject anything that could break
+    // out of its own line, and bound the free-text field.
+    if (![cleanKey, cleanSenderEmail, cleanSenderName].every(isSafeEnvValue)) {
+      return NextResponse.json({ error: 'Configuration values must not contain line breaks.' }, { status: 400 });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanSenderEmail)) {
+      return NextResponse.json({ error: 'Sender email is not a valid address.' }, { status: 400 });
+    }
+    if (cleanSenderName.length > 100) {
+      return NextResponse.json({ error: 'Sender name must be 100 characters or fewer.' }, { status: 400 });
+    }
 
     // Validate Key against Brevo REST API
     const validation = await validateBrevoApiKey(cleanKey);

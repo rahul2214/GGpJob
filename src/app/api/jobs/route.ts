@@ -4,6 +4,7 @@ import type { Job } from '@/lib/types';
 import { getSubscriptionInfo, expiredResponse } from '@/lib/subscription';
 import { intelligentSearchJobs } from '@/lib/intelligent-search';
 import { matchesCountry } from '@/lib/recommendation-engine';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 // Helper to map Supabase snake_case job to camelCase Job type
 function mapJobToFrontend(job: any): any {
@@ -691,12 +692,22 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: Request) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const data = await request.json();
         const { recruiterId, adminId } = data;
         const userId = recruiterId || adminId;
 
         if (!userId) {
             return NextResponse.json({ error: 'Recruiter ID is required' }, { status: 400 });
+        }
+
+        // The posting identity comes from the request body, so bind it to the
+        // verified session. Otherwise anyone could publish listings under any
+        // recruiter's name.
+        if (!isOwnerOrAdmin(authUser!, userId)) {
+            return NextResponse.json({ error: 'Forbidden: Cannot post a job on behalf of another account.' }, { status: 403 });
         }
 
         if (!data.title || !data.description) {

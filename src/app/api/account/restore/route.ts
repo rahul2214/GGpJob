@@ -1,15 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { userId, uuid, id } = await request.json();
     const targetId = userId || uuid || id;
 
     if (!targetId) {
       return NextResponse.json({ error: 'Missing required userId/uuid parameter' }, { status: 400 });
+    }
+
+    // Restoring an account reactivates all of its access, so only the account
+    // holder (who can still authenticate during the grace period) or an
+    // administrator may do it.
+    if (!isOwnerOrAdmin(authUser!, targetId)) {
+      return NextResponse.json({ error: 'Forbidden: Cannot restore another user account.' }, { status: 403 });
     }
 
     const isNumeric = /^\d+$/.test(String(targetId));

@@ -1,8 +1,12 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { getCRMCandidates, runAIRecommendationForCandidate } from '@/lib/crm/candidate-crm';
+import { requireAdmin } from '@/lib/auth-server';
 
 export async function POST(request: NextRequest) {
   try {
+    const { errorResponse } = await requireAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const body = await request.json().catch(() => ({}));
     const targetCandidateId = body.candidateId;
     const targetEmail = body.email;

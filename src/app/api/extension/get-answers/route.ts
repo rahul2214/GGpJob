@@ -1,14 +1,24 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 import path from 'path';
 import fs from 'fs';
 
 export async function POST(request: Request) {
     try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
         const { userId, questions } = await request.json();
 
         if (!userId) {
             return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+        }
+
+        // This route returns the profile's personal details, so the caller must
+        // be the profile owner (or an administrator).
+        if (!isOwnerOrAdmin(authUser!, userId)) {
+            return NextResponse.json({ error: 'Forbidden: Cannot read another user profile.' }, { status: 403 });
         }
         if (!questions || questions.length === 0) {
             return NextResponse.json({ data: {} });

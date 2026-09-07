@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const body = await request.json();
     const { userId, preferredCurrency, preferredCurrencyId, country } = body;
+    if (userId && !isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json({ error: 'Forbidden: Cannot access another user account.' }, { status: 403 });
+    }
+
 
     if (!userId || (!preferredCurrency && !preferredCurrencyId)) {
       return NextResponse.json({ error: 'User ID and Preferred Currency are required' }, { status: 400 });

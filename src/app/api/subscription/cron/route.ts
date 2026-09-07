@@ -1,15 +1,29 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import crypto from 'crypto';
+
+/**
+ * Constant-time comparison of the cron bearer token. Fails closed when
+ * CRON_SECRET is not configured, rather than falling back to a known default.
+ */
+function isAuthorisedCronRequest(authHeader: string | null): boolean {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret || !authHeader) return false;
+
+  const provided = Buffer.from(authHeader);
+  const expected = Buffer.from(`Bearer ${cronSecret}`);
+  if (provided.length !== expected.length) return false;
+  return crypto.timingSafeEqual(provided, expected);
+}
 
 // POST /api/subscription/cron
 // Daily cron job: expire subscriptions, archive jobs after grace period
 // Secured via CRON_SECRET header
 export async function POST(request: NextRequest) {
   try {
-    // Simple auth check for cron
-    const authHeader = request.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET || 'cron-secret-default';
-    if (authHeader !== `Bearer ${cronSecret}`) {
+    // Cron authentication. A missing CRON_SECRET denies the request instead of
+    // falling back to a guessable default.
+    if (!isAuthorisedCronRequest(request.headers.get('authorization'))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { parseResumeDocument } from "@/lib/parse-document"
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
@@ -8,6 +9,9 @@ const GROK_API_URL = "https://api.x.ai/v1/chat/completions"
 
 export async function POST(req: NextRequest) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(req);
+    if (errorResponse) return errorResponse;
+
     const formData = await req.formData()
     const file = formData.get("file") as File | null
 

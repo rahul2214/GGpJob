@@ -14,7 +14,8 @@ import { cn } from "@/lib/utils";
 import { CREDIT_PACKS } from "@/lib/pricing-constants";
 import Link from "next/link";
 import { CurrencySelector } from "@/components/currency-selector";
-import { formatPrice, convertPrice } from "@/utils/currency";
+import { formatPrice, convertPrice, BILLING_CURRENCY_CODES } from "@/utils/currency";
+import { useBillingCurrency } from "@/hooks/use-billing-currency";
 import { PayPalPaymentButton } from "@/components/paypal-payment-button";
 
 declare global {
@@ -24,7 +25,9 @@ declare global {
 }
 
 export default function CreditsPage() {
-  const { user, loading, fetchUserProfile, setUser, currency, exchangeRates } = useUser();
+  const { user, loading, fetchUserProfile, setUser } = useUser();
+  // Checkout runs on two currencies only: INR (Razorpay) or USD (PayPal).
+  const { billingCurrency: currency, setBillingCurrency, gateway, exchangeRates } = useBillingCurrency();
   const router = useRouter();
   const { toast } = useToast();
   const [processing, setProcessing] = useState<string | null>(null);
@@ -192,7 +195,11 @@ export default function CreditsPage() {
           
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Currency:</span>
-            <CurrencySelector />
+            <CurrencySelector
+              options={BILLING_CURRENCY_CODES}
+              value={currency}
+              onChange={setBillingCurrency}
+            />
           </div>
         </div>
 
@@ -388,7 +395,7 @@ export default function CreditsPage() {
           )}
 
           <DialogFooter className="mt-6 flex flex-col gap-3 sm:flex-col">
-             {currency.toUpperCase() !== 'INR' ? (
+             {gateway === 'paypal' ? (
                <PayPalPaymentButton
                  amount={
                    appliedCoupon

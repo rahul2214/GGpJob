@@ -3,6 +3,8 @@ import Razorpay from 'razorpay';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getExchangeRates, convertUSD } from '@/lib/exchange-rate-service';
 import { getPlanPrices } from '@/lib/plan-prices-service';
+import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
+import { getBillingCurrency, getPaymentGateway } from '@/utils/currency';
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder',
@@ -13,10 +15,17 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    const { user: authUser, errorResponse } = await requireAuth(request);
+    if (errorResponse) return errorResponse;
+
     const { userId, planId, amount, couponCode, currency = 'USD' } = await request.json();
 
     if (!userId || !planId || amount === undefined) {
       return NextResponse.json({ error: 'User ID, Plan ID, and Amount are required' }, { status: 400 });
+    }
+
+    if (!isOwnerOrAdmin(authUser!, userId)) {
+      return NextResponse.json({ error: 'Forbidden: Cannot create an order for another user account.' }, { status: 403 });
     }
 
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
@@ -76,7 +85,8 @@ export async function POST(request: Request) {
 
     // Fetch daily exchange rates
     const rates = await getExchangeRates();
-    const targetCurrency = currency.toUpperCase();
+    // Billing is settled in INR or USD only; any other profile currency bills in USD.
+    const targetCurrency = getBillingCurrency(currency);
     const exchangeRate = rates[targetCurrency] || 1.0;
     
     // Convert USD base price to target currency
@@ -89,7 +99,7 @@ export async function POST(request: Request) {
     }
 
     // Determine Gateway
-    const gateway = targetCurrency === 'INR' ? 'razorpay' : 'paypal';
+    const gateway = getPaymentGateway(targetCurrency);
 
     // Handle Free Activation (100% discount)
     if (expectedAmountUSD === 0) {
