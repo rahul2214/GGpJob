@@ -70,11 +70,9 @@ export default function Footer() {
             <h4 className="font-bold text-white mb-4 text-sm uppercase tracking-wider">Resources &amp; Tools</h4>
             <ul className="space-y-2.5 text-sm">
               <li><Link href="/jobs" className="hover:text-violet-400 transition-colors">Browse All Global Jobs</Link></li>
-              <li><Link href="/companies" className="hover:text-violet-400 transition-colors">Explore Top MNC Companies</Link></li>
               <li><Link href="/ats-score" className="hover:text-violet-400 transition-colors">Free ATS Resume Checker</Link></li>
               <li><Link href="/resume-builder" className="hover:text-violet-400 transition-colors">AI Resume Builder Tool</Link></li>
               <li><Link href="/communities" className="hover:text-violet-400 transition-colors">Tech &amp; Career Communities</Link></li>
-              <li><Link href="/pricing" className="hover:text-violet-400 transition-colors">Pricing &amp; Credit Plans</Link></li>
             </ul>
           </div>
 
