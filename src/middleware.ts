@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { containsSuspiciousPayload } from '@/lib/security';
+import { SITE_URL } from '@/lib/site';
 
 // In-memory sliding window rate limiter
 interface RateLimitEntry {
@@ -112,8 +113,40 @@ const BLOCKED_USER_AGENTS = [
   'openvas'
 ];
 
+const CANONICAL_HOST = new URL(SITE_URL).host;
+
+/**
+ * Serving the site on both www and the apex host splits ranking signals and
+ * makes every canonical tag disagree with the URL that was actually requested.
+ * Redirect the non-canonical variant of our own domain to the one that
+ * NEXT_PUBLIC_APP_URL names.
+ *
+ * Deliberately narrow: only the www/apex pair of the canonical host is touched,
+ * so localhost, LAN addresses and preview deployments are never redirected.
+ */
+function canonicalHostRedirect(request: NextRequest): URL | null {
+  const requestHost = request.headers.get('host');
+  if (!requestHost || requestHost === CANONICAL_HOST) return null;
+
+  const apex = CANONICAL_HOST.replace(/^www\./, '');
+  const isOwnDomain = requestHost === apex || requestHost === `www.${apex}`;
+  if (!isOwnDomain) return null;
+
+  const target = new URL(request.nextUrl);
+  target.host = CANONICAL_HOST;
+  target.protocol = 'https:';
+  target.port = '';
+  return target;
+}
+
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+
+  // Canonical host first: everything downstream should see the final URL.
+  const canonicalTarget = canonicalHostRedirect(request);
+  if (canonicalTarget) {
+    return NextResponse.redirect(canonicalTarget, 308);
+  }
 
   // Skip static Next.js assets, images, and public files.
   // API routes are never skipped: a path such as /api/x. contains a dot and

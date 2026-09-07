@@ -3,24 +3,12 @@
 import { useState } from "react";
 import { ChevronDown, HelpCircle } from "lucide-react";
 import { motion, AnimatePresence, type Easing } from "framer-motion";
+import { ATS_FAQS } from "@/lib/seo-content";
 
 export function AtsFaq() {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
-  const faqs = [
-    {
-      q: "What is an ATS score?",
-      a: "An ATS (Applicant Tracking System) score indicates how well your resume matches a job description. Most companies use ATS software to filter applications before a human reviews them. A score above 70% significantly increases your chances of passing the initial screen."
-    },
-    {
-      q: "Is this ATS checker really free?",
-      a: "Yes, your first ATS analysis on JobsDart is completely free. Subsequent analyses cost 1 credit each."
-    },
-    {
-      q: "What file formats does the resume checker support?",
-      a: "Currently supports PDF files up to 2MB. ATS systems work best with text-based PDFs, not scanned images."
-    }
-  ];
+  const faqs = ATS_FAQS;
 
   return (
     <div className="mt-24 border-t border-slate-200/50 dark:border-slate-800/80 pt-16 max-w-4xl mx-auto space-y-8">

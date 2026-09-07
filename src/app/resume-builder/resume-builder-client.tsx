@@ -542,13 +542,23 @@ function normalizeSkills(skills: any): SkillCategory[] {
   return defaultSkills;
 }
 
-export default function ResumeBuilderPage() {
+interface ResumeBuilderPageProps {
+  /**
+   * Server-rendered guess at whether the promo hero should be shown, derived
+   * from the session cookie. Crawlers (no cookie) get the H1 and marketing copy
+   * in the initial HTML; signed-in users never see it flash in.
+   */
+  initialShowPromo?: boolean;
+}
+
+export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBuilderPageProps) {
   const { user, refreshUser, loading } = useUser()
   const router = useRouter()
   const { toast } = useToast()
 
-  // Show promotional material only if user is NOT logged in.
-  const showPromo = !user && !loading;
+  // Show promotional material only if the user is NOT logged in. While the
+  // session is still resolving we keep the server's answer to avoid a flash.
+  const showPromo = user ? false : loading ? initialShowPromo : true;
 
   // Credit & Usage State
   const isFirstTimeResumeBuilder = !(user?.hasUsedResumeBuilder ?? user?.has_used_resume_builder ?? (user as any)?.metadata?.has_used_resume_builder)
@@ -2950,9 +2960,9 @@ export default function ResumeBuilderPage() {
                         {/* Right Main (72% on mobile, 75% on desktop) */}
                         <div className="flex-1 min-w-0 pl-1 sm:pl-2 space-y-2 sm:space-y-4">
                           <div className="pb-1.5 sm:pb-3 border-b-2 border-indigo-600">
-                            <h1 className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 break-words`}>
+                            <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 break-words`}>
                               {name || "Your Name"}
-                            </h1>
+                            </div>
                             {role && (
                               <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider break-words`}>
                                 {role}
@@ -2970,9 +2980,9 @@ export default function ResumeBuilderPage() {
                         <div className="flex flex-row items-center sm:items-start gap-2.5 sm:gap-5 pb-2.5 sm:pb-4 mb-2.5 sm:mb-4 border-b-2 border-blue-900 dark:border-blue-700">
                           {renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
                           <div className="flex-1 min-w-0 text-left space-y-0.5 sm:space-y-1">
-                            <h1 className={`${previewTitleSize} font-black text-blue-900 dark:text-blue-400 tracking-tight break-words`}>
+                            <div className={`${previewTitleSize} font-black text-blue-900 dark:text-blue-400 tracking-tight break-words`}>
                               {name || "Your Name"}
-                            </h1>
+                            </div>
                             {role && (
                               <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider break-words`}>
                                 {role}
@@ -2996,9 +3006,9 @@ export default function ResumeBuilderPage() {
                         <div className="flex flex-row items-center sm:items-start gap-2.5 sm:gap-5 pb-2 mb-2">
                           {renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
                           <div className="flex-1 min-w-0 text-left space-y-0.5 sm:space-y-1">
-                            <h1 className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight break-words`}>
+                            <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight break-words`}>
                               {name || "Your Name"}
-                            </h1>
+                            </div>
                             {role && (
                               <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider break-words`}>
                                 {role}
@@ -3022,9 +3032,9 @@ export default function ResumeBuilderPage() {
                       <div>
                         <div className="flex flex-row items-center justify-between gap-2 pb-2 sm:pb-3 mb-2.5 sm:mb-4 border-b border-slate-200 dark:border-slate-800">
                           <div className="space-y-0.5 sm:space-y-1 text-left flex-1 min-w-0">
-                            <h1 className={`${previewTitleSize} font-bold text-slate-800 dark:text-white tracking-tight break-words`}>
+                            <div className={`${previewTitleSize} font-bold text-slate-800 dark:text-white tracking-tight break-words`}>
                               {name || "Your Name"}
-                            </h1>
+                            </div>
                             {role && (
                               <p className={`${previewHeadlineSize} font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider break-words`}>
                                 {role}
@@ -3047,7 +3057,7 @@ export default function ResumeBuilderPage() {
                       <div>
                         {/* Header */}
                         <div className={`flex flex-col text-left mb-2.5 sm:mb-4`}>
-                          <h1 className={`${previewTitleSize} font-black tracking-tight mb-0.5 sm:mb-1 text-slate-950 dark:text-white break-words`}>{name || "Your Name"}</h1>
+                          <div className={`${previewTitleSize} font-black tracking-tight mb-0.5 sm:mb-1 text-slate-950 dark:text-white break-words`}>{name || "Your Name"}</div>
                           {role && (
                             <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{role}</p>
                           )}
@@ -3075,7 +3085,7 @@ export default function ResumeBuilderPage() {
                         {/* Left Sidebar (30%) */}
                         <div className="w-[30%] sm:w-[30%] shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-4 space-y-2 sm:space-y-4">
                           <div>
-                            <h1 className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 sm:mb-1 break-words`}>{name || "Your Name"}</h1>
+                            <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 sm:mb-1 break-words`}>{name || "Your Name"}</div>
                             {role && (
                               <p className={`${previewHeadlineSize} font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 sm:mb-2 break-words`}>{role}</p>
                             )}
@@ -3103,11 +3113,11 @@ export default function ResumeBuilderPage() {
                       <div>
                         {/* Header */}
                         <div className={`flex flex-col ${previewHeaderAlign} mb-2.5 sm:mb-4`}>
-                          <h1 className={`${previewTitleSize} font-black ${
+                          <div className={`${previewTitleSize} font-black ${
                             isNavy ? "text-blue-900 dark:text-blue-400" :
                             isMinimal ? "text-slate-800 dark:text-white" :
                             "text-slate-950 dark:text-white"
-                          } tracking-tight mb-0.5 sm:mb-1 break-words`}>{name || "Your Name"}</h1>
+                          } tracking-tight mb-0.5 sm:mb-1 break-words`}>{name || "Your Name"}</div>
                           {role && (
                             <p className={`${previewHeadlineSize} font-bold ${
                               isNavy ? "text-blue-900 dark:text-blue-400" :

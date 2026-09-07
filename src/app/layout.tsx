@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { SITE_URL, siteUrl } from '@/lib/site';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import { Suspense } from 'react';
@@ -20,7 +21,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://jobsdart.in'),
+  metadataBase: new URL(SITE_URL),
 
   title: {
     default: 'JobsDart — Find Jobs, Build Your Resume & Grow Your Career',
@@ -69,7 +70,7 @@ export const metadata: Metadata = {
   authors: [
     {
       name: 'JobsDart Team',
-      url: 'https://jobsdart.in',
+      url: SITE_URL,
     },
   ],
 
@@ -83,13 +84,13 @@ export const metadata: Metadata = {
   },
 
   alternates: {
-    canonical: 'https://jobsdart.in',
+    canonical: SITE_URL,
   },
 
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    url: 'https://jobsdart.in',
+    url: SITE_URL,
     siteName: 'JobsDart',
 
     title: 'JobsDart — Find Jobs, Build Your Resume & Grow Your Career',
@@ -99,7 +100,7 @@ export const metadata: Metadata = {
 
     images: [
       {
-        url: 'https://jobsdart.in/og-image.png',
+        url: siteUrl('/og-image.png'),
         width: 1200,
         height: 630,
         alt: 'JobsDart — AI-Powered Global Job Portal',
@@ -115,7 +116,7 @@ export const metadata: Metadata = {
     description:
       'Discover global and remote jobs, build ATS-friendly resumes, check ATS scores, and get AI-powered career recommendations with JobsDart.',
 
-    images: ['https://jobsdart.in/og-image.png'],
+    images: [siteUrl('/og-image.png')],
   },
 
   icons: {
@@ -195,17 +196,20 @@ export default function RootLayout({
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'WebSite',
-              '@id': 'https://jobsdart.in/#website',
+              '@id': `${SITE_URL}/#website`,
 
               name: 'JobsDart',
 
-              url: 'https://jobsdart.in',
+              // Brand queries arrive as one word and two; both must resolve here.
+              alternateName: ['Jobs Dart', 'JobsDart.in', 'Jobs Dart Careers'],
+
+              url: SITE_URL,
 
               description:
                 'AI-powered global job portal for discovering jobs, building resumes, checking ATS scores, and getting personalized career recommendations.',
 
               publisher: {
-                '@id': 'https://jobsdart.in/#organization',
+                '@id': `${SITE_URL}/#organization`,
               },
 
               potentialAction: {
@@ -214,7 +218,7 @@ export default function RootLayout({
                 target: {
                   '@type': 'EntryPoint',
                   urlTemplate:
-                    'https://jobsdart.in/jobs?search={search_term_string}',
+                    `${SITE_URL}/jobs?search={search_term_string}`,
                 },
 
                 'query-input':
@@ -232,15 +236,17 @@ export default function RootLayout({
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'Organization',
-              '@id': 'https://jobsdart.in/#organization',
+              '@id': `${SITE_URL}/#organization`,
 
               name: 'JobsDart',
 
-              url: 'https://jobsdart.in',
+              alternateName: ['Jobs Dart', 'JobsDart.in', 'Jobs Dart Careers'],
+
+              url: SITE_URL,
 
               logo: {
                 '@type': 'ImageObject',
-                url: 'https://jobsdart.in/og-image.png',
+                url: siteUrl('/og-image.png'),
               },
 
               description:
@@ -269,11 +275,11 @@ export default function RootLayout({
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'WebApplication',
-              '@id': 'https://jobsdart.in/#application',
+              '@id': `${SITE_URL}/#application`,
 
               name: 'JobsDart',
 
-              url: 'https://jobsdart.in',
+              url: SITE_URL,
 
               applicationCategory: 'BusinessApplication',
 
@@ -285,7 +291,7 @@ export default function RootLayout({
                 'AI-powered job search and career platform for discovering global jobs, finding remote opportunities, building ATS-friendly resumes, checking ATS scores, and improving career opportunities.',
 
               publisher: {
-                '@id': 'https://jobsdart.in/#organization',
+                '@id': `${SITE_URL}/#organization`,
               },
             }),
           }}

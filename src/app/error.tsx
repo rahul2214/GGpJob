@@ -49,15 +49,7 @@ export default function GlobalError({
 
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 flex flex-col justify-between text-slate-900 dark:text-white px-4 sm:px-6 py-8">
-      {/* Header */}
-      <div className="max-w-4xl w-full mx-auto flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <img src="/logo.png" alt="JobsDart" className="h-7 w-auto object-contain" />
-          <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Jobs<span className="text-indigo-600 dark:text-indigo-400">Dart</span>
-          </span>
-        </Link>
-      </div>
+      
 
       {/* Main Card */}
       <div className="max-w-md w-full mx-auto my-12 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-sm text-center">

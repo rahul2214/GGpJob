@@ -5,13 +5,21 @@ import { AtsChecker } from "@/components/ats-checker";
 import { AtsFaq } from "@/components/ats-faq";
 import { TrendingUp, AlertCircle, FileText, ArrowRight, CheckCircle } from "lucide-react";
 
-export function AtsScoreClient() {
+interface AtsScoreClientProps {
+  /**
+   * Server-rendered guess at whether the promo/SEO content should be shown,
+   * derived from the session cookie. Crawlers (no cookie) get the full
+   * marketing copy in the initial HTML; signed-in users never see it flash in.
+   */
+  initialShowPromo?: boolean;
+}
+
+export function AtsScoreClient({ initialShowPromo = true }: AtsScoreClientProps) {
   const { user, loading } = useUser();
 
-  // Show promotional material only if user is NOT logged in.
-  // During loading/hydration, we default to showing it for SEO-crawlers and to avoid layout flash,
-  // but if a user is explicitly logged in, we immediately hide it.
-  const showPromo = !user && !loading;
+  // Show promotional material only if the user is NOT logged in. While the
+  // session is still resolving we keep the server's answer to avoid a flash.
+  const showPromo = user ? false : loading ? initialShowPromo : true;
 
   return (
     <div className="relative overflow-x-hidden pb-24">
@@ -39,20 +47,7 @@ export function AtsScoreClient() {
               Paste your resume & job description. Our AI scores your ATS compatibility, flags missing keywords, and rewrites your bullet points to stand out.
             </p>
 
-            {/* Feature pills */}
-            <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
-              {[
-                { label: "Instant ATS Score", color: "bg-indigo-500/15 text-indigo-300 border-indigo-400/30" },
-                { label: "Keyword Gap Analysis", color: "bg-purple-500/15 text-purple-300 border-purple-400/30" },
-                { label: "AI Bullet Rewrites", color: "bg-pink-500/15 text-pink-300 border-pink-400/30" },
-                { label: "PDF & Text Support", color: "bg-sky-500/15 text-sky-300 border-sky-400/30" },
-              ].map((f) => (
-                <span key={f.label} className={`flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-full border backdrop-blur-sm ${f.color}`}>
-                  <span className="w-1 h-1 rounded-full bg-current opacity-70" />
-                  {f.label}
-                </span>
-              ))}
-            </div>
+           
 
             {/* Stats row */}
             <div className="flex flex-wrap items-center justify-center gap-8 pt-4">

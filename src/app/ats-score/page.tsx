@@ -1,75 +1,137 @@
+import type { Metadata } from "next"
+import { cookies } from "next/headers"
+import { SITE_URL, siteUrl } from "@/lib/site"
 import { AtsScoreClient } from "./AtsScoreClient"
+import { ATS_FAQS } from "@/lib/seo-content"
 
-export const metadata = {
-  title: "Free AI ATS Resume Checker & Score Optimizer | JobsDart",
-  description: "Scan your resume against any job description for free. Get an instant ATS compatibility score, identify missing keywords, and get AI-optimized bullet points to stand out to recruiters.",
+const PAGE_URL = siteUrl("/ats-score")
+const OG_IMAGE = siteUrl("/og-image.png")
+
+export const metadata: Metadata = {
+  // The root layout appends " | JobsDart" via its title template.
+  title: "Free ATS Resume Checker — Instant ATS Score & Keyword Scan",
+  description:
+    "Check your ATS resume score free in seconds. Paste any job description to scan your CV for missing keywords, get a section-by-section ATS compatibility score, and AI-rewritten bullet points that pass applicant tracking systems.",
   keywords: [
-    "free ats checker",
     "ats resume checker",
-    "resume score scanner",
+    "free ats checker",
+    "ats score checker",
+    "check resume ats score online free",
+    "resume ats scanner",
+    "ats resume checker india",
+    "applicant tracking system checker",
+    "resume checker free",
+    "resume keyword scanner",
+    "job description resume match",
+    "ats compatibility test",
     "ai resume analyzer",
-    "job description match",
-    "ats optimization",
-    "resume keywords match",
-    "cv score",
-    "resume feedback",
-    "jobsdart"
+    "cv ats checker",
+    "resume score check",
+    "ats checker for freshers",
+    "resume optimization tool",
+    "how to pass ats screening",
+    "naukri resume checker",
+    "linkedin resume checker",
+    "ats checker for it jobs",
+    "free cv scanner",
+    "resume feedback tool",
+    "jobsdart ats checker",
   ],
   alternates: {
-    canonical: "https://www.jobsdart.in/ats-score",
+    canonical: PAGE_URL,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
   openGraph: {
-    title: "Free AI ATS Resume Checker & Score Scanner | JobsDart",
-    description: "Optimize your resume for applicant tracking systems. Pasting a job description scans for missing keywords, gives a detailed score, and rewrites bullet points contextually.",
-    url: "https://www.jobsdart.in/ats-score",
+    title: "Free ATS Resume Checker — Instant ATS Score & Keyword Scan | JobsDart",
+    description:
+      "Scan your resume against any job description for free. Get an instant ATS compatibility score, spot missing keywords, and rewrite weak bullet points with AI.",
+    url: PAGE_URL,
     siteName: "JobsDart",
     type: "website",
+    locale: "en_IN",
+    images: [
+      {
+        url: OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "JobsDart free ATS resume checker and score scanner",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Free AI ATS Resume Checker & Score Scanner | JobsDart",
-    description: "Scan your resume against any job description for free. Get an instant ATS compatibility score, identify missing keywords, and get AI-optimized bullet points.",
-  }
+    title: "Free ATS Resume Checker — Instant ATS Score & Keyword Scan",
+    description:
+      "Scan your resume against any job description for free. Instant ATS score, missing keywords, and AI-optimized bullet points.",
+    images: [OG_IMAGE],
+  },
 }
 
 export default function AtsScorePage() {
+  // Rendered server-side so the marketing copy, H1 and FAQ ship in the initial
+  // HTML for crawlers, while signed-in users never see it flash in.
+  const isSignedIn = Boolean(cookies().get("sb-access-token")?.value)
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "JD ATS Resume Checker & Analyzer",
-    "url": "https://www.jobsdart.in/ats-score",
-    "description": "Scan and optimize your resume against a job description with our free AI ATS compatibility score checker.",
+    "@id": `${PAGE_URL}#app`,
+    "name": "JobsDart ATS Resume Checker & Score Analyzer",
+    "url": PAGE_URL,
+    "description":
+      "Scan and optimize your resume against a job description with a free AI ATS compatibility score checker, keyword gap analysis and bullet point rewriting.",
     "applicationCategory": "BusinessApplication",
+    "applicationSubCategory": "Resume Optimization",
     "operatingSystem": "All",
     "browserRequirements": "Requires JavaScript. Requires HTML5.",
+    "inLanguage": "en",
+    "isPartOf": { "@id": `${SITE_URL}/#website` },
+    "publisher": { "@id": `${SITE_URL}/#organization` },
+    "featureList": [
+      "Instant ATS compatibility score out of 100",
+      "Missing keyword detection against any job description",
+      "Section-by-section resume breakdown",
+      "AI-rewritten, quantified bullet points",
+      "PDF resume parsing",
+    ],
     "offers": {
       "@type": "Offer",
       "price": "0.00",
-      "priceCurrency": "INR"
-    }
-  };
+      "priceCurrency": "INR",
+    },
+  }
 
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "What is an ATS score?",
-        "acceptedAnswer": { "@type": "Answer", "text": "An ATS (Applicant Tracking System) score indicates how well your resume matches a job description. Most companies use ATS software to filter applications before a human reviews them. A score above 70% significantly increases your chances of passing the initial screen." }
-      },
-      {
-        "@type": "Question", 
-        "name": "Is this ATS checker really free?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Yes, your first ATS analysis on JobsDart is completely free. Subsequent analyses cost 1 credit each." }
-      },
-      {
-        "@type": "Question",
-        "name": "What file formats does the resume checker support?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Currently supports PDF files up to 2MB. ATS systems work best with text-based PDFs, not scanned images." }
-      }
-    ]
-  };
+    "@id": `${PAGE_URL}#faq`,
+    // Sourced from the same array the visible FAQ renders, so the structured
+    // data can never drift from the on-page answers.
+    "mainEntity": ATS_FAQS.map(faq => ({
+      "@type": "Question",
+      "name": faq.q,
+      "acceptedAnswer": { "@type": "Answer", "text": faq.a },
+    })),
+  }
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE_URL },
+      { "@type": "ListItem", "position": 2, "name": "ATS Resume Checker", "item": PAGE_URL },
+    ],
+  }
 
   return (
     <>
@@ -81,8 +143,12 @@ export default function AtsScorePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
 
-      <AtsScoreClient />
+      <AtsScoreClient initialShowPromo={!isSignedIn} />
     </>
   )
 }

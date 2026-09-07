@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
+import { SITE_URL } from '@/lib/site';
 import JobPortalHome from '@/components/home/JobPortalHome';
 import HomeClientDashboard from '@/components/home/HomeClientDashboard';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://jobsdart.in'),
+  metadataBase: new URL(SITE_URL),
 
   title: {
     default: 'JobsDart — Find Jobs, Build Your Resume & Grow Your Career',
@@ -52,7 +53,7 @@ export const metadata: Metadata = {
   authors: [
     {
       name: 'JobsDart',
-      url: 'https://jobsdart.in',
+      url: SITE_URL,
     },
   ],
 
@@ -78,7 +79,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    url: 'https://jobsdart.in',
+    url: SITE_URL,
     siteName: 'JobsDart',
     title: 'JobsDart — Find Jobs, Build Your Resume & Grow Your Career',
     description:
