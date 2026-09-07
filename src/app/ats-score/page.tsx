@@ -9,12 +9,13 @@ const OG_IMAGE = siteUrl("/og-image.png")
 
 export const metadata: Metadata = {
   // The root layout appends " | JobsDart" via its title template.
-  title: "Free ATS Resume Checker — Instant ATS Score & Keyword Scan",
+  title: "Free AI ATS Resume Checker — Instant ATS Score & Keyword Scan",
   description:
-    "Check your ATS resume score free in seconds. Paste any job description to scan your CV for missing keywords, get a section-by-section ATS compatibility score, and AI-rewritten bullet points that pass applicant tracking systems.",
+    "Check your ATS resume score free in seconds with AI. Paste any job description to scan your CV for missing keywords, get a section-by-section ATS compatibility score, and AI-rewritten bullet points that pass applicant tracking systems.",
   keywords: [
     "ats resume checker",
-    "free ats checker",
+    "free ai ats checker",
+    "free ai ats resume score checker",
     "ats score checker",
     "check resume ats score online free",
     "resume ats scanner",
@@ -52,7 +53,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Free ATS Resume Checker — Instant ATS Score & Keyword Scan | JobsDart",
+    title: "Free AI ATS Resume Checker — Instant ATS Score & Keyword Scan | JobsDart",
     description:
       "Scan your resume against any job description for free. Get an instant ATS compatibility score, spot missing keywords, and rewrite weak bullet points with AI.",
     url: PAGE_URL,
@@ -64,13 +65,13 @@ export const metadata: Metadata = {
         url: OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "JobsDart free ATS resume checker and score scanner",
+        alt: "JobsDart free AI ATS resume checker and score scanner",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Free ATS Resume Checker — Instant ATS Score & Keyword Scan",
+    title: "Free AI ATS Resume Checker — Instant ATS Score & Keyword Scan",
     description:
       "Scan your resume against any job description for free. Instant ATS score, missing keywords, and AI-optimized bullet points.",
     images: [OG_IMAGE],

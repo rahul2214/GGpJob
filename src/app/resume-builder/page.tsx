@@ -9,31 +9,50 @@ const PAGE_URL = siteUrl("/resume-builder")
 const OG_IMAGE = siteUrl("/og-image.png")
 
 export const metadata: Metadata = {
-  // The root layout appends " | JobsDart" via its title template.
-  title: "Free AI Resume Builder — Make an ATS-Friendly Resume Online",
+  // The root layout appends " | JobsDart" via its title template, so this must
+  // stay short enough that the combined string survives SERP truncation.
+  title: "Free AI Resume Builder — ATS-Friendly Resume Maker",
   description:
-    "Build a professional, ATS-friendly resume free in minutes. Pick a parse-safe template, let AI write quantified bullet points, check your ATS score, and download a recruiter-ready PDF under 1MB.",
+    "Build a job-winning resume with our free AI resume builder. Generate ATS-friendly bullet points, pick a recruiter-ready template and download your PDF free.",
   keywords: [
-    "free resume builder",
+    // Head term first, then the AI-specific long tail.
+    "free ai resume builder",
     "ai resume builder",
-    "ats friendly resume builder",
-    "online resume maker",
-    "resume maker online free download pdf",
-    "create resume online free",
-    "free cv maker",
-    "resume builder for freshers",
-    "ats resume template free",
-    "professional resume templates",
+    "ai resume builder free online",
+    "ai resume generator",
+    "ai resume maker",
+    "ai powered resume builder",
     "ai resume writer",
     "ai cv generator",
-    "resume builder india",
+    "free ai cv builder",
+    "make resume with ai",
+    "ai resume bullet point generator",
+    "ai resume template",
+    "smart resume builder",
+    // Generic builder / maker intent.
+    "free resume builder",
+    "online resume maker",
+    "resume builder online free",
+    "create resume online free",
+    "instant resume builder",
+    "free cv maker",
+    "curriculum vitae maker",
+    // ATS and format intent.
+    "ats friendly resume builder",
+    "ats resume builder free",
+    "resume builder with ats score",
+    "ats resume template free",
+    "professional resume templates",
+    "job winning resume templates",
     "best resume format for freshers",
     "one page resume builder",
-    "resume builder with ats score",
+    // Audience and outcome intent.
+    "resume builder for freshers",
+    "resume builder for students",
     "software developer resume builder",
+    "resume maker online free download pdf",
     "download resume pdf free",
-    "job winning resume templates",
-    "curriculum vitae maker",
+    "resume builder india",
     "jobsdart resume builder",
   ],
   alternates: {
@@ -51,9 +70,9 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Free AI Resume Builder — Make an ATS-Friendly Resume Online | JobsDart",
+    title: "Free AI Resume Builder — ATS-Friendly Resume Maker | JobsDart",
     description:
-      "Create a professional, ATS-optimized resume in minutes with a free online AI resume builder. Parse-safe templates, quantified bullet points and PDF export under 1MB.",
+      "Build a job-winning resume with a free AI resume builder. ATS-friendly bullet points, recruiter-ready templates and an instant PDF download.",
     url: PAGE_URL,
     siteName: "JobsDart",
     type: "website",
@@ -69,9 +88,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Free AI Resume Builder — ATS-Friendly Resumes Online",
+    title: "Free AI Resume Builder — ATS-Friendly Resume Maker",
     description:
-      "Build a professional, ATS-optimized resume in minutes. AI bullet points, parse-safe templates and a recruiter-ready PDF download.",
+      "Build a job-winning resume with a free AI resume builder. ATS-friendly bullet points, recruiter-ready templates and an instant PDF download.",
     images: [OG_IMAGE],
   },
 }
