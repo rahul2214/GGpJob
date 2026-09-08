@@ -24,6 +24,7 @@ const staticRoutes: MetadataRoute.Sitemap = [
   { url: `${baseUrl}/blog`, changeFrequency: 'weekly', priority: 0.8 },
   { url: `${baseUrl}/communities`, changeFrequency: 'daily', priority: 0.7 },
   { url: `${baseUrl}/company/login`, changeFrequency: 'monthly', priority: 0.6 },
+  { url: `${baseUrl}/company/signup`, changeFrequency: 'monthly', priority: 0.5 },
   { url: `${baseUrl}/contact`, changeFrequency: 'monthly', priority: 0.5 },
   { url: `${baseUrl}/login`, changeFrequency: 'monthly', priority: 0.5 },
   { url: `${baseUrl}/signup`, changeFrequency: 'monthly', priority: 0.5 },
@@ -72,6 +73,42 @@ async function getJobEntries(): Promise<MetadataRoute.Sitemap> {
   }
 }
 
+/**
+ * Community pages carry real discussion content but the listing navigates with
+ * router.push rather than an anchor, so nothing links to them that a crawler
+ * can follow. The sitemap is currently their only route to discovery.
+ *
+ * The numeric-id form matches the canonical declared in
+ * app/communities/[id]/layout.tsx, so this never advertises the uuid duplicate.
+ */
+async function getCommunityEntries(): Promise<MetadataRoute.Sitemap> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('communities')
+      .select('id, updated_at, created_at')
+      .order('updated_at', { ascending: false })
+      .limit(1000);
+
+    if (error) {
+      console.error('[SITEMAP] Failed to load communities:', error.message);
+      return [];
+    }
+
+    const rows = (data || []) as Array<{ id: number; updated_at: string | null; created_at: string | null }>;
+    return rows
+      .filter(row => row.id != null)
+      .map(row => ({
+        url: `${baseUrl}/communities/${row.id}`,
+        lastModified: new Date(row.updated_at || row.created_at || Date.now()),
+        changeFrequency: 'weekly' as const,
+        priority: 0.6,
+      }));
+  } catch (err) {
+    console.error('[SITEMAP] Unexpected error loading communities:', err);
+    return [];
+  }
+}
+
 /** One indexable landing page per location that currently has live jobs. */
 async function getLocationEntries(lastModified: Date): Promise<MetadataRoute.Sitemap> {
   const facets = await getLocationFacets();
@@ -97,12 +134,17 @@ function getBlogEntries(): MetadataRoute.Sitemap {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
-  const [locations, jobs] = await Promise.all([getLocationEntries(lastModified), getJobEntries()]);
+  const [locations, jobs, communities] = await Promise.all([
+    getLocationEntries(lastModified),
+    getJobEntries(),
+    getCommunityEntries(),
+  ]);
 
   return [
     ...staticRoutes.map(route => ({ ...route, lastModified })),
     ...getBlogEntries(),
     ...locations,
+    ...communities,
     ...jobs,
   ];
 }

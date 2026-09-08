@@ -2,6 +2,7 @@
 
 import { useEffect, useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Search, MessageSquare, Loader2, ArrowRight, UserCheck } from "lucide-react";
 import * as Icons from "lucide-react";
@@ -208,7 +209,6 @@ export default function CommunitiesPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: Math.min(idx * 0.05, 0.3) }}
                 whileHover={{ y: -4 }}
-                onClick={() => router.push(`/communities/${comm.id}`)}
                 className="cursor-pointer group flex flex-col justify-between bg-white/80 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 shadow-sm hover:shadow-[0_20px_40px_rgba(99,102,241,0.05)] transition-all duration-300 relative overflow-hidden"
               >
                 {/* Background light reflex */}
@@ -227,7 +227,9 @@ export default function CommunitiesPage() {
 
                   {/* Title & Description */}
                   <h3 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight mb-2 truncate group-hover:text-[#3525cd] dark:group-hover:text-indigo-400 transition-colors">
-                    {comm.name}
+                    <Link href={`/communities/${comm.id}`} className="after:absolute after:inset-0 after:rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded">
+                      {comm.name}
+                    </Link>
                   </h3>
                   <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold leading-relaxed mb-6 line-clamp-3">
                     {comm.description || "Join the conversation, ask questions, share resources, and network professionally with other members."}
@@ -247,7 +249,7 @@ export default function CommunitiesPage() {
                     disabled={joiningIds.has(comm.id)}
                     onClick={(e) => handleJoinToggle(e, comm)}
                     className={cn(
-                      "rounded-lg font-bold text-[10px] uppercase py-1 px-3.5 h-7",
+                      "relative z-10 rounded-lg font-bold text-[10px] uppercase py-1 px-3.5 h-7",
                       comm.isJoined
                         ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                         : "border-[#3525cd]/50 text-[#3525cd] hover:bg-[#3525cd] hover:text-white dark:border-indigo-500/50 dark:text-indigo-400 dark:hover:bg-indigo-600"

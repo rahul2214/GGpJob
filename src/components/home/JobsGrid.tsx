@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { MapPin, Briefcase, DollarSign, Search, ArrowRight, Building2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -471,8 +472,7 @@ export function JobsGrid() {
                   key={jobId}
                   variants={cardVariants}
                   whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                  className="bg-white dark:bg-white/5 rounded-2xl p-6 flex flex-col gap-4 cursor-pointer group border border-slate-200 dark:border-white/[0.07] hover:border-violet-500/50 shadow-sm transition-all duration-200"
-                  onClick={() => router.push(`/jobs/${jobId}`)}
+                  className="relative bg-white dark:bg-white/5 rounded-2xl p-6 flex flex-col gap-4 cursor-pointer group border border-slate-200 dark:border-white/[0.07] hover:border-violet-500/50 shadow-sm transition-all duration-200"
                 >
                   {/* Top row */}
                   <div className="flex items-start justify-between gap-3">
@@ -495,7 +495,9 @@ export function JobsGrid() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors truncate" title={roleTitle}>
-                          {roleTitle}
+                          <Link href={`/jobs/${jobId}`} className="after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded">
+                            {roleTitle}
+                          </Link>
                         </h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium truncate" title={company}>{company}</p>
                         
