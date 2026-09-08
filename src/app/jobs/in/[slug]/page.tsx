@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { SITE_URL, siteUrl } from '@/lib/site';
 import { getJobsForLocationSlug, getLocationFacets } from '@/lib/job-taxonomy';
-import { JobList, LocationLinks, buildItemListSchema } from '@/components/seo/job-landing';
+import { JobList, LocationLinks, CareerGuideLinks, buildItemListSchema } from '@/components/seo/job-landing';
 
 type Props = { params: { slug: string } };
 
@@ -144,6 +144,7 @@ export default async function LocationJobsPage({ params }: Props) {
         </section>
 
         <LocationLinks facets={facets} currentSlug={facet.slug} />
+        <CareerGuideLinks />
       </div>
     </>
   );

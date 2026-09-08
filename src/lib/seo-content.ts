@@ -25,7 +25,7 @@ export const ATS_FAQS: FaqEntry[] = [
   },
   {
     q: "What file formats does the resume checker support?",
-    a: "Currently supports PDF files up to 2MB. ATS systems work best with text-based PDFs, not scanned images."
+    a: "PDF, DOC and DOCX files up to 5MB are supported. ATS systems work best with text-based PDFs rather than scanned images, so export from your editor instead of scanning a printout."
   },
   {
     q: "How do I check my resume ATS score online?",

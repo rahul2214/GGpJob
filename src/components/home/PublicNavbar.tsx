@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import {  X, Menu, FileText, Briefcase, ScanSearch, Users, ArrowLeft, SlidersHorizontal, LogOut, LayoutDashboard, User as UserIcon } from 'lucide-react';
+import {  X, Menu, FileText, Briefcase, ScanSearch, Users, BookOpen, ArrowLeft, SlidersHorizontal, LogOut, LayoutDashboard, User as UserIcon } from 'lucide-react';
 import { ShareButton } from '@/components/share-button';
 import { SaveJobButton } from '@/components/save-job-button';
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -25,6 +25,7 @@ const navLinks = [
   { href: '/communities', label: 'Communities', icon: Users },
   { href: '/ats-score', label: 'ATS Checker', icon: ScanSearch },
   { href: '/resume-builder', label: 'Resume Builder', icon: FileText },
+  { href: '/blog', label: 'Blog', icon: BookOpen },
 ];
 
 export function PublicNavbar() {

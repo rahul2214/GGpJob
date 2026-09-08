@@ -71,6 +71,7 @@ export default function Footer() {
             <ul className="space-y-2.5 text-sm">
               <li><Link href="/jobs" className="hover:text-violet-400 transition-colors">Browse All Global Jobs</Link></li>
               <li><Link href="/ats-score" className="hover:text-violet-400 transition-colors">Free ATS Resume Checker</Link></li>
+              <li><Link href="/blog" className="hover:text-violet-400 transition-colors">Career Blog &amp; AI Guides</Link></li>
               <li><Link href="/resume-builder" className="hover:text-violet-400 transition-colors">AI Resume Builder Tool</Link></li>
               <li><Link href="/communities" className="hover:text-violet-400 transition-colors">Tech &amp; Career Communities</Link></li>
             </ul>

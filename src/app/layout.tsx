@@ -119,22 +119,11 @@ export const metadata: Metadata = {
     images: [siteUrl('/og-image.png')],
   },
 
+  // Only favicon.ico ships today. The 16x16/32x32 PNGs and apple-touch-icon
+  // were declared but absent from public/, so every page load fired three 404s.
+  // Re-add the entries alongside the files if those sizes are ever produced.
   icons: {
-    icon: [
-      { url: '/favicon.ico' },
-      {
-        url: '/favicon-16x16.png',
-        sizes: '16x16',
-        type: 'image/png',
-      },
-      {
-        url: '/favicon-32x32.png',
-        sizes: '32x32',
-        type: 'image/png',
-      },
-    ],
-
-    apple: '/apple-touch-icon.png',
+    icon: [{ url: '/favicon.ico' }],
   },
 
   robots: {

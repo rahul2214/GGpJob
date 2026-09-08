@@ -3,10 +3,12 @@ import { fontFamily } from "tailwindcss/defaultTheme"
 /** @type {import('tailwindcss').Config} */
 const config = {
   darkMode: ['class'],
+  // NOTE: PostCSS resolves tailwind.config.mjs ahead of tailwind.config.ts, so
+  // THIS is the live config. It previously missed ./src/lib, where shared class
+  // maps live (blog hero tints, category styles) — those classes rendered in the
+  // markup but no rule was ever generated for them. Keep this glob broad.
   content: [
-    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     container: {

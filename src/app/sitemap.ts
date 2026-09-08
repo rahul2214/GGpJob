@@ -2,6 +2,7 @@ import { MetadataRoute } from 'next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { SITE_URL } from '@/lib/site';
 import { getLocationFacets } from '@/lib/job-taxonomy';
+import { getAllPosts } from '@/lib/blog-posts';
 
 // Shared with metadataBase and every canonical tag, so the sitemap can never
 // advertise a different host than the pages themselves claim.
@@ -20,6 +21,7 @@ const staticRoutes: MetadataRoute.Sitemap = [
   { url: `${baseUrl}/jobs/remote`, changeFrequency: 'daily', priority: 0.9 },
   { url: `${baseUrl}/ats-score`, changeFrequency: 'weekly', priority: 0.9 },
   { url: `${baseUrl}/resume-builder`, changeFrequency: 'weekly', priority: 0.9 },
+  { url: `${baseUrl}/blog`, changeFrequency: 'weekly', priority: 0.8 },
   { url: `${baseUrl}/communities`, changeFrequency: 'daily', priority: 0.7 },
   { url: `${baseUrl}/company/login`, changeFrequency: 'monthly', priority: 0.6 },
   { url: `${baseUrl}/contact`, changeFrequency: 'monthly', priority: 0.5 },
@@ -83,9 +85,24 @@ async function getLocationEntries(lastModified: Date): Promise<MetadataRoute.Sit
     }));
 }
 
+/** Blog posts are static content, so their real update dates are used. */
+function getBlogEntries(): MetadataRoute.Sitemap {
+  return getAllPosts().map(post => ({
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: new Date(post.updatedAt),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
   const [locations, jobs] = await Promise.all([getLocationEntries(lastModified), getJobEntries()]);
 
-  return [...staticRoutes.map(route => ({ ...route, lastModified })), ...locations, ...jobs];
+  return [
+    ...staticRoutes.map(route => ({ ...route, lastModified })),
+    ...getBlogEntries(),
+    ...locations,
+    ...jobs,
+  ];
 }

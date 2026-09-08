@@ -9,6 +9,7 @@
 import Link from 'next/link';
 import { MapPin, Briefcase, Building2, Wallet } from 'lucide-react';
 import type { JobSummary, LocationFacet } from '@/lib/job-taxonomy';
+import { getAllPosts } from '@/lib/blog-posts';
 
 function formatSalary(job: JobSummary): string | null {
   if (!job.salaryMin || job.salaryMin <= 0) return null;
@@ -125,6 +126,56 @@ export function LocationLinks({
           </li>
         ))}
       </ul>
+    </nav>
+  );
+}
+
+/**
+ * Server-rendered links into the blog.
+ *
+ * The site-wide footer lives inside DashboardShell, which renders nothing until
+ * its `mounted` effect runs — so footer links are absent from the server HTML
+ * and cannot be relied on as a crawl path. These links are plain server output,
+ * so crawlers reach the guides without executing JavaScript.
+ */
+export function CareerGuideLinks({ limit = 4 }: { limit?: number }) {
+  const posts = getAllPosts().slice(0, limit);
+  if (!posts.length) return null;
+
+  return (
+    <nav
+      aria-label="Career guides"
+      className="mt-12 border-t border-slate-200/60 dark:border-slate-800/60 pt-10"
+    >
+      <h2 className="text-lg font-extrabold text-slate-900 dark:text-white mb-2">
+        Career guides
+      </h2>
+      <p className="text-sm text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
+        Practical writing on AI and hiring — job searching, ATS screening, resumes and interviews.
+      </p>
+      <ul className="grid sm:grid-cols-2 gap-3 list-none p-0">
+        {posts.map(post => (
+          <li key={post.slug}>
+            <Link
+              href={`/blog/${post.slug}`}
+              className="block p-4 rounded-xl border border-slate-200/70 dark:border-slate-800/70 hover:border-indigo-300 transition-colors"
+            >
+              <span className="block font-bold text-sm text-slate-900 dark:text-white leading-snug">
+                {post.heading}
+              </span>
+              <span className="block mt-1 text-xs text-slate-500 dark:text-slate-400">
+                {post.readingMinutes} min read
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <Link
+        href="/blog"
+        className="inline-block mt-4 text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+      >
+        All career guides
+      </Link>
     </nav>
   );
 }

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SITE_URL, siteUrl } from '@/lib/site';
 import { getLocationFacets, getRemoteJobs } from '@/lib/job-taxonomy';
-import { JobList, LocationLinks, buildItemListSchema } from '@/components/seo/job-landing';
+import { JobList, LocationLinks, CareerGuideLinks, buildItemListSchema } from '@/components/seo/job-landing';
 
 export const dynamic = 'force-dynamic';
 
@@ -125,6 +125,7 @@ export default async function RemoteJobsPage() {
         </section>
 
         <LocationLinks facets={facets} />
+        <CareerGuideLinks />
       </div>
     </>
   );

@@ -97,7 +97,7 @@ export function AtsScoreClient({ initialShowPromo = true }: AtsScoreClientProps)
                         <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">82</span>
                       </div>
                       <div>
-                        <h3 className="font-extrabold text-xl text-slate-850 dark:text-slate-100">Overall Match: Strong</h3>
+                        <h3 className="font-extrabold text-xl text-slate-800 dark:text-slate-100">Overall Match: Strong</h3>
                         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5">Your resume matches the core keyword checks for this domain.</p>
                       </div>
                     </div>
@@ -173,7 +173,7 @@ export function AtsScoreClient({ initialShowPromo = true }: AtsScoreClientProps)
                         "Designed and shipped 4 key product features, reducing API database retrieval latency by 28% using custom indexes."
                       </p>
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-850">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
                       <strong>Why it works:</strong> Replacing generic duties with action verbs ("designed", "shipped") and specific metrics (4 features, 28% latency reduction) improves keyword weight for modern ATS.
                     </div>
                   </div>
@@ -186,7 +186,7 @@ export function AtsScoreClient({ initialShowPromo = true }: AtsScoreClientProps)
                   <div className="p-3 bg-blue-50/60 dark:bg-slate-800 rounded-xl text-blue-600 dark:text-blue-400 w-fit">
                     <FileText className="w-5 h-5" />
                   </div>
-                  <h3 className="font-extrabold text-lg text-slate-850 dark:text-slate-100 leading-snug">
+                  <h3 className="font-extrabold text-lg text-slate-800 dark:text-slate-100 leading-snug">
                     ATS Checker for Freshers
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
@@ -198,7 +198,7 @@ export function AtsScoreClient({ initialShowPromo = true }: AtsScoreClientProps)
                   <div className="p-3 bg-indigo-50/60 dark:bg-slate-800 rounded-xl text-indigo-600 dark:text-indigo-400 w-fit">
                     <TrendingUp className="w-5 h-5" />
                   </div>
-                  <h3 className="font-extrabold text-lg text-slate-850 dark:text-slate-100 leading-snug">
+                  <h3 className="font-extrabold text-lg text-slate-800 dark:text-slate-100 leading-snug">
                     ATS Resume Score for Naukri / LinkedIn
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
@@ -210,7 +210,7 @@ export function AtsScoreClient({ initialShowPromo = true }: AtsScoreClientProps)
                   <div className="p-3 bg-purple-50/60 dark:bg-slate-800 rounded-xl text-purple-600 dark:text-purple-400 w-fit">
                     <CheckCircle className="w-5 h-5" />
                   </div>
-                  <h3 className="font-extrabold text-lg text-slate-850 dark:text-slate-100 leading-snug">
+                  <h3 className="font-extrabold text-lg text-slate-800 dark:text-slate-100 leading-snug">
                     Resume Checker for IT Jobs Bangalore
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">

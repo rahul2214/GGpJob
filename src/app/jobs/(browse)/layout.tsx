@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { siteUrl } from '@/lib/site';
 import { getLocationFacets } from '@/lib/job-taxonomy';
-import { LocationLinks } from '@/components/seo/job-landing';
+import { LocationLinks, CareerGuideLinks } from '@/components/seo/job-landing';
 
 const PAGE_URL = siteUrl('/jobs');
 const OG_IMAGE = siteUrl('/og-image.png');
@@ -80,6 +80,7 @@ export default async function JobsBrowseLayout({ children }: { children: React.R
       {children}
       <div className="container max-w-6xl px-4 sm:px-6 pb-16">
         <LocationLinks facets={facets} />
+        <CareerGuideLinks />
       </div>
     </>
   );
