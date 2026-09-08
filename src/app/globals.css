@@ -528,4 +528,14 @@
   display: none;                /* Chrome / Safari / Opera */
 }
 
-
+/*
+ * The public navbar and footer are server-rendered on every page so crawlers
+ * can follow the site's internal links without executing JavaScript. Visitors
+ * who already hold a session get the dashboard shell instead, so hide that
+ * chrome before first paint rather than letting it flash. The attribute is set
+ * by the inline script in app/layout.tsx; if it never runs, the chrome simply
+ * shows briefly, which is the old behaviour.
+ */
+html[data-authed="1"] [data-public-chrome] {
+  display: none;
+}

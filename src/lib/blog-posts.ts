@@ -12,6 +12,8 @@
  * somewhere to convert.
  */
 
+import { AI_POSTS } from './blog-posts-ai';
+
 export interface BlogSection {
   heading: string;
   paragraphs: string[];
@@ -68,7 +70,7 @@ export function heroTint(tint?: HeroTint): string {
   return HERO_TINTS[tint ?? 'slate'];
 }
 
-export const BLOG_POSTS: BlogPost[] = [
+const CORE_POSTS: BlogPost[] = [
   {
     slug: 'how-to-use-ai-for-job-search',
     tint: 'indigo',
@@ -666,6 +668,12 @@ export const BLOG_POSTS: BlogPost[] = [
   },
 ];
 
+/**
+ * Everything that renders on /blog. Split across two modules purely to keep
+ * each file readable — consumers should always use this, not either half.
+ */
+export const BLOG_POSTS: BlogPost[] = [...CORE_POSTS, ...AI_POSTS];
+
 /** Anchor id for a section heading, used by the in-article table of contents. */
 export function sectionId(heading: string): string {
   return heading
@@ -707,6 +715,24 @@ export const CATEGORY_STYLES: Record<string, CategoryStyle> = {
     text: 'text-amber-600 dark:text-amber-400',
     gradient: 'from-amber-500 to-orange-500',
     ring: 'hover:border-amber-300 dark:hover:border-amber-700',
+  },
+  'AI Skills': {
+    pill: 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
+    text: 'text-sky-600 dark:text-sky-400',
+    gradient: 'from-sky-500 to-cyan-500',
+    ring: 'hover:border-sky-300 dark:hover:border-sky-700',
+  },
+  'AGI & Future': {
+    pill: 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300',
+    text: 'text-violet-600 dark:text-violet-400',
+    gradient: 'from-violet-500 to-fuchsia-500',
+    ring: 'hover:border-violet-300 dark:hover:border-violet-700',
+  },
+  'AI & Hiring': {
+    pill: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300',
+    text: 'text-rose-600 dark:text-rose-400',
+    gradient: 'from-rose-500 to-pink-500',
+    ring: 'hover:border-rose-300 dark:hover:border-rose-700',
   },
 };
 

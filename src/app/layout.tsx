@@ -286,6 +286,25 @@ export default function RootLayout({
           }}
         />
 
+        {/*
+          Marks the document before first paint when a session cookie is
+          present, so the server-rendered public chrome (which exists for
+          crawlers) is hidden for signed-in visitors instead of flashing.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                try {
+                  if (/(^|;\s*)sb-access-token=[^;\s]/.test(document.cookie)) {
+                    document.documentElement.setAttribute('data-authed', '1');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+
         {/* Theme Initializer */}
 
         <script

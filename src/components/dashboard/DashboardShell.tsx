@@ -91,19 +91,27 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const showDashboard = isAuthenticated && !isExcluded;
 
 
-  // During SSR or loading, render loading shell
+  // Server render and first client render (mounted is false in both, so there is
+  // no hydration mismatch). This previously returned a bare skeleton, which meant
+  // the navbar and footer — the site's entire internal link graph — never
+  // appeared in the server HTML and were invisible to any crawler that does not
+  // execute JavaScript.
+  //
+  // It now renders the same chrome as the real public layout below, so the
+  // markup is identical and nothing shifts when the swap happens. The
+  // data-public-chrome hook lets a pre-paint script in app/layout.tsx hide it
+  // for visitors who already hold a session, so they go straight to the
+  // dashboard without seeing public chrome flash past.
   if (!mounted || userLoading) {
-    if (pathname === "/") {
-      return (
-        <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950">
-          <main className="min-h-screen">{children}</main>
-        </div>
-      );
-    }
     return (
       <div className="flex flex-col min-h-screen">
-        <div className="h-16 border-b bg-white/80 animate-pulse" />
+        <div data-public-chrome="">
+          <PublicNavbar />
+        </div>
         <main className="flex-1">{children}</main>
+        <div data-public-chrome="">
+          <Footer />
+        </div>
       </div>
     );
   }
