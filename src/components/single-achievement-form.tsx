@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle, CheckCircle2, Trophy, Calendar, FileText } from "lucide-react";
+import { supabase } from "@/lib/supabase-client";
 
 interface SingleAchievementFormProps {
     user: User;
@@ -70,14 +71,16 @@ export function SingleAchievementForm({ user, itemIndex, onSuccess }: SingleAchi
                 updatedAchievements = [...currentAchievements, newAchievementObj];
             }
 
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+            const headers: Record<string, string> = { "Content-Type": "application/json" };
+            if (token) headers["Authorization"] = `Bearer ${token}`;
+
             const targetId = user.uuid || user.id;
             const res = await fetch(`/api/users/${targetId}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
+                headers,
                 body: JSON.stringify({
-                    name: user.name,
-                    email: user.email,
-                    phone: user.phone,
                     role: user.role,
                     achievements: updatedAchievements,
                 }),

@@ -21,6 +21,7 @@ import { useUser } from "@/contexts/user-context";
 import Link from "next/link";
 import { Progress } from "./ui/progress";
 import { onFormInvalid } from "@/lib/form-toast-utils";
+import { supabase } from "@/lib/supabase-client";
 
 const formSchema = z.object({
   resumeFile: z.instanceof(File).optional(),
@@ -71,9 +72,22 @@ export function ResumeForm({ user: initialUser }: ResumeFormProps) {
 
       if (!user.uuid) throw new Error("User ID is missing. Please refresh and try again.");
 
+      const { data: sessionData } = await supabase.auth.getSession();
+      let token = sessionData?.session?.access_token;
+      if (!token) {
+          const { data: refreshData } = await supabase.auth.refreshSession();
+          token = refreshData?.session?.access_token;
+      }
+
+      const headers: Record<string, string> = {};
+      if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+      }
+
       // Upload via Server Proxy to bypass mobile CORS issues
       const response = await fetch(`/api/users/${user.uuid}/resume/upload`, {
           method: "POST",
+          headers,
           body: formData,
       });
 

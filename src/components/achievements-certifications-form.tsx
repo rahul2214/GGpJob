@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, LoaderCircle, CheckCircle2, Trophy, Medal, Calendar, FileText, LinkIcon, Hash } from "lucide-react";
 import { motion } from "framer-motion";
+import { supabase } from "@/lib/supabase-client";
 
 interface AchievementsCertificationsFormProps {
     user: User;
@@ -97,14 +98,16 @@ export function AchievementsCertificationsForm({ user, onSuccess }: Achievements
                 .map((c) => (typeof c === "string" ? { name: c.trim() } : { ...c, name: (c.name || "").trim() }))
                 .filter((c) => c.name);
 
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+            const headers: Record<string, string> = { "Content-Type": "application/json" };
+            if (token) headers["Authorization"] = `Bearer ${token}`;
+
             const targetId = user.uuid || user.id;
             const res = await fetch(`/api/users/${targetId}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
+                headers,
                 body: JSON.stringify({
-                    name: user.name,
-                    email: user.email,
-                    phone: user.phone,
                     role: user.role,
                     achievements: finalAchievements,
                     certifications: finalCertifications,

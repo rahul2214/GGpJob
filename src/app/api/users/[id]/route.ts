@@ -504,33 +504,24 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         if (role === 'Recruiter') table = 'recruiters';
         else if (role === 'Employee') table = 'employees';
         else if (['Admin', 'Super Admin'].includes(role)) table = 'admins';
-
-        if (!name || !email) {
-            const { data: existingRecord } = await supabaseAdmin
-                .from(table)
-                .select('name, email, phone')
-                .eq(column, idValue)
-                .maybeSingle();
-
-            if (existingRecord) {
-                if (!name) name = existingRecord.name;
-                if (!email) email = existingRecord.email;
-                if (phone === undefined) phone = existingRecord.phone;
+        else {
+            const tables = ['jobseekers', 'recruiters', 'employees', 'admins'];
+            for (const t of tables) {
+                const { data } = await supabaseAdmin.from(t).select('id').eq(column, idValue).maybeSingle();
+                if (data) {
+                    table = t;
+                    break;
+                }
             }
         }
 
-        if (!name || !email) {
-            return NextResponse.json({ error: 'Missing required fields: name and email are required.' }, { status: 400 });
-        }
-        
-        // This is a simplified update, focusing on core fields.
-        // For jobseekers, we update more complex fields.
         const updateData: any = {
-            name,
-            email,
-            phone,
             updated_at: new Date().toISOString()
         };
+
+        if (name !== undefined) updateData.name = name;
+        if (email !== undefined) updateData.email = email;
+        if (phone !== undefined) updateData.phone = phone;
 
         if (rest.preferredCurrency !== undefined || rest.preferredCurrencyId !== undefined) {
             let currId = rest.preferredCurrencyId ? Number(rest.preferredCurrencyId) : null;
@@ -546,75 +537,51 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             if (currId) {
                 updateData.preferred_currency_id = currId;
             }
-            delete updateData.preferred_currency;
-            delete updateData.preferredCurrency;
         }
 
         if (table === 'recruiters' || table === 'employees') {
-            // Remove non-existent text location columns for recruiters/employees tables
-            delete updateData.country;
-            delete updateData.state;
-            delete updateData.city;
-            delete updateData.currentCity;
+            const hasLocationUpdate = rest.country !== undefined || rest.state !== undefined || rest.city !== undefined || rest.currentCity !== undefined || rest.countryId !== undefined || rest.stateId !== undefined || rest.cityId !== undefined;
+            if (hasLocationUpdate) {
+                let cId = rest.countryId ? Number(rest.countryId) : null;
+                let sId = rest.stateId ? Number(rest.stateId) : null;
+                let ciId = rest.cityId ? Number(rest.cityId) : null;
 
-            // Resolve foreign keys for location hierarchy
-            let cId = rest.countryId ? Number(rest.countryId) : null;
-            let sId = rest.stateId ? Number(rest.stateId) : null;
-            let ciId = rest.cityId ? Number(rest.cityId) : null;
+                const cleanCountryName = sanitizePostgrestFilter(rest.country ? rest.country.split('(')[0].trim() : '');
+                const cleanStateName = sanitizePostgrestFilter(rest.state ? rest.state.trim() : '');
+                const cleanCityName = sanitizePostgrestFilter(rest.currentCity || rest.city ? (rest.currentCity || rest.city).split('★')[0].trim() : '');
 
-            const cleanCountryName = sanitizePostgrestFilter(rest.country ? rest.country.split('(')[0].trim() : '');
-            const cleanStateName = sanitizePostgrestFilter(rest.state ? rest.state.trim() : '');
-            const cleanCityName = sanitizePostgrestFilter(rest.currentCity || rest.city ? (rest.currentCity || rest.city).split('★')[0].trim() : '');
-
-            // 1. Resolve Country
-            if (cleanCountryName && !cId) {
-                const { data: cObj } = await supabaseAdmin
-                    .from('countries')
-                    .select('id')
-                    .or(`name.ilike.${cleanCountryName},code.ilike.${cleanCountryName}`)
-                    .maybeSingle();
-                if (cObj) cId = cObj.id;
-            }
-
-            // 2. Resolve State
-            if (cleanStateName && cId && !sId) {
-                const { data: sObj } = await supabaseAdmin
-                    .from('states_provinces')
-                    .select('id')
-                    .eq('country_id', cId)
-                    .ilike('name', cleanStateName)
-                    .maybeSingle();
-                if (sObj) sId = sObj.id;
-            }
-
-            // 3. Resolve City
-            if (cleanCityName && sId && !ciId) {
-                const { data: ciObj } = await supabaseAdmin
-                    .from('cities')
-                    .select('id')
-                    .eq('state_province_id', sId)
-                    .ilike('name', cleanCityName)
-                    .maybeSingle();
-                if (ciObj) ciId = ciObj.id;
-            }
-
-            if (cId !== null) updateData.country_id = cId;
-            if (sId !== null) updateData.state_province_id = sId;
-            if (ciId !== null) updateData.city_id = ciId;
-
-            let numericCompanySizeId = null;
-            if (rest.companySizeId) {
-                const isUuid = typeof rest.companySizeId === 'string' && rest.companySizeId.includes('-');
-                if (isUuid) {
-                    const { data: sizeData } = await supabaseAdmin
-                        .from('company_sizes')
+                if (cleanCountryName && !cId) {
+                    const { data: cObj } = await supabaseAdmin
+                        .from('countries')
                         .select('id')
-                        .eq('uuid', rest.companySizeId)
-                        .single();
-                    if (sizeData) numericCompanySizeId = sizeData.id;
-                } else if (rest.companySizeId) {
-                    numericCompanySizeId = parseInt(rest.companySizeId.toString());
+                        .or(`name.ilike.${cleanCountryName},code.ilike.${cleanCountryName}`)
+                        .maybeSingle();
+                    if (cObj) cId = cObj.id;
                 }
+
+                if (cleanStateName && cId && !sId) {
+                    const { data: sObj } = await supabaseAdmin
+                        .from('states_provinces')
+                        .select('id')
+                        .eq('country_id', cId)
+                        .ilike('name', cleanStateName)
+                        .maybeSingle();
+                    if (sObj) sId = sObj.id;
+                }
+
+                if (cleanCityName && sId && !ciId) {
+                    const { data: ciObj } = await supabaseAdmin
+                        .from('cities')
+                        .select('id')
+                        .eq('state_province_id', sId)
+                        .ilike('name', cleanCityName)
+                        .maybeSingle();
+                    if (ciObj) ciId = ciObj.id;
+                }
+
+                if (cId !== null) updateData.country_id = cId;
+                if (sId !== null) updateData.state_province_id = sId;
+                if (ciId !== null) updateData.city_id = ciId;
             }
 
             const formatUrl = (val?: string | null) => {
@@ -623,232 +590,264 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
             };
 
-            Object.assign(updateData, {
-                company_name: rest.companyName,
-                company_website: rest.companyWebsite !== undefined ? formatUrl(rest.companyWebsite) : undefined,
-                ...(rest.companySizeId !== undefined && { company_size_id: numericCompanySizeId }),
-                company_overview: rest.companyOverview,
-                company_address: rest.companyAddress,
-                company_linkedin_url: rest.companyLinkedinUrl !== undefined ? formatUrl(rest.companyLinkedinUrl) : undefined,
-            });
+            if (rest.companyName !== undefined) updateData.company_name = rest.companyName;
+            if (rest.companyWebsite !== undefined) updateData.company_website = formatUrl(rest.companyWebsite);
+            if (rest.companySizeId !== undefined) {
+                let numericCompanySizeId = null;
+                if (rest.companySizeId) {
+                    const isUuid = typeof rest.companySizeId === 'string' && rest.companySizeId.includes('-');
+                    if (isUuid) {
+                        const { data: sizeData } = await supabaseAdmin
+                            .from('company_sizes')
+                            .select('id')
+                            .eq('uuid', rest.companySizeId)
+                            .single();
+                        if (sizeData) numericCompanySizeId = sizeData.id;
+                    } else {
+                        numericCompanySizeId = parseInt(rest.companySizeId.toString());
+                    }
+                }
+                updateData.company_size_id = numericCompanySizeId;
+            }
+            if (rest.companyOverview !== undefined) updateData.company_overview = rest.companyOverview;
+            if (rest.companyAddress !== undefined) updateData.company_address = rest.companyAddress;
+            if (rest.companyLinkedinUrl !== undefined) updateData.company_linkedin_url = formatUrl(rest.companyLinkedinUrl);
         }
 
         if (table === 'jobseekers') {
-            // Resolve foreign keys for location hierarchy
-            let cId = rest.countryId ? Number(rest.countryId) : null;
-            let sId = rest.stateId ? Number(rest.stateId) : null;
-            let ciId = rest.cityId ? Number(rest.cityId) : null;
+            const hasLocationUpdate = rest.currentCity !== undefined || rest.cityId !== undefined || rest.country !== undefined || rest.state !== undefined || rest.countryId !== undefined || rest.stateId !== undefined;
+            if (hasLocationUpdate) {
+                let cId = rest.countryId ? Number(rest.countryId) : null;
+                let sId = rest.stateId ? Number(rest.stateId) : null;
+                let ciId = rest.cityId ? Number(rest.cityId) : null;
 
-            const cleanCountryName = sanitizePostgrestFilter(rest.country ? rest.country.split('(')[0].trim() : '');
-            const cleanStateName = sanitizePostgrestFilter(rest.state ? rest.state.trim() : '');
-            const cleanCityName = sanitizePostgrestFilter(rest.currentCity ? rest.currentCity.split('★')[0].trim() : '');
+                const cleanCountryName = sanitizePostgrestFilter(rest.country ? rest.country.split('(')[0].trim() : '');
+                const cleanStateName = sanitizePostgrestFilter(rest.state ? rest.state.trim() : '');
+                const cleanCityName = sanitizePostgrestFilter(rest.currentCity ? rest.currentCity.split('★')[0].trim() : '');
 
-            // 1. Resolve Country
-            if (cleanCountryName && !cId) {
-                const { data: cObj } = await supabaseAdmin
-                    .from('countries')
-                    .select('id')
-                    .or(`name.ilike.${cleanCountryName},code.ilike.${cleanCountryName}`)
-                    .maybeSingle();
-                if (cObj) cId = cObj.id;
-            }
-
-            // 2. Resolve State (prefer cleanStateName over stale rest.stateId)
-            if (cleanStateName && cId && !sId) {
-                const { data: sObj } = await supabaseAdmin
-                    .from('states_provinces')
-                    .select('id')
-                    .eq('country_id', cId)
-                    .ilike('name', cleanStateName)
-                    .maybeSingle();
-                if (sObj) sId = sObj.id;
-            } else if (cleanStateName && !sId) {
-                const { data: sObj } = await supabaseAdmin
-                    .from('states_provinces')
-                    .select('id, country_id')
-                    .ilike('name', cleanStateName)
-                    .maybeSingle();
-                if (sObj) {
-                    sId = sObj.id;
-                    if (!cId) cId = sObj.country_id;
-                }
-            }
-
-            // 3. Resolve City
-            if (cleanCityName && sId && !ciId) {
-                const { data: ciObj } = await supabaseAdmin
-                    .from('cities')
-                    .select('id')
-                    .eq('state_province_id', sId)
-                    .ilike('name', cleanCityName)
-                    .maybeSingle();
-                if (ciObj) ciId = ciObj.id;
-            } else if (cleanCityName && !ciId) {
-                const { data: ciObj } = await supabaseAdmin
-                    .from('cities')
-                    .select('id, state_province_id')
-                    .ilike('name', cleanCityName)
-                    .maybeSingle();
-                if (ciObj) {
-                    ciId = ciObj.id;
-                    if (!sId) sId = ciObj.state_province_id;
-                }
-            }
-
-            // 4. If City is known, infer state and country if missing
-            if (ciId && (!sId || !cId)) {
-                const { data: cityDetails } = await supabaseAdmin
-                    .from('cities')
-                    .select('id, state_province_id, states_provinces:state_province_id(id, country_id)')
-                    .eq('id', ciId)
-                    .maybeSingle();
-                if (cityDetails) {
-                    if (!sId && cityDetails.state_province_id) sId = cityDetails.state_province_id;
-                    if (!cId && (cityDetails.states_provinces as any)?.country_id) {
-                        cId = (cityDetails.states_provinces as any).country_id;
-                    }
-                }
-            }
-
-            // 5. If State is known, infer country if missing
-            if (sId && !cId) {
-                const { data: stateDetails } = await supabaseAdmin
-                    .from('states_provinces')
-                    .select('id, country_id')
-                    .eq('id', sId)
-                    .maybeSingle();
-                if (stateDetails && stateDetails.country_id) cId = stateDetails.country_id;
-            }
-
-            // 4. Resolve Visa Requirement ID
-            let vReqId = rest.visaRequirementId ? Number(rest.visaRequirementId) : null;
-            const cleanVisaName = sanitizePostgrestFilter(rest.visaRequirement ? rest.visaRequirement.trim() : '');
-
-            if (!vReqId && cleanVisaName) {
-                try {
-                    const { data: vObj } = await supabaseAdmin
-                        .from('visa_requirements')
-                        .select('id, name')
-                        .or(`name.ilike.${cleanVisaName},name.ilike.%${cleanVisaName}%`)
+                if (cleanCountryName && !cId) {
+                    const { data: cObj } = await supabaseAdmin
+                        .from('countries')
+                        .select('id')
+                        .or(`name.ilike.${cleanCountryName},code.ilike.${cleanCountryName}`)
                         .maybeSingle();
-
-                    if (vObj) {
-                        vReqId = vObj.id;
-                    } else {
-                        const lower = cleanVisaName.toLowerCase();
-                        let fallbackQuery = '';
-                        if (lower.includes('no sponsorship') || lower.includes('citizen') || lower.includes('pr')) {
-                            fallbackQuery = 'No Visa Sponsorship Required';
-                        } else if (lower.includes('h1b')) {
-                            fallbackQuery = 'Requires H1B Sponsorship';
-                        } else if (lower.includes('green card')) {
-                            fallbackQuery = 'Requires Green Card / PR';
-                        } else if (lower.includes('student') || lower.includes('opt') || lower.includes('cpt')) {
-                            fallbackQuery = 'Student Visa (OPT / CPT)';
-                        } else if (lower.includes('permit') || lower.includes('visa sponsorship') || lower.includes('sponsorship')) {
-                            fallbackQuery = 'Need Work Permit / Visa Sponsorship';
-                        }
-
-                        if (fallbackQuery) {
-                            const { data: fbObj } = await supabaseAdmin
-                                .from('visa_requirements')
-                                .select('id')
-                                .eq('name', fallbackQuery)
-                                .maybeSingle();
-                            if (fbObj) vReqId = fbObj.id;
-                        }
-                    }
-                } catch (e) {
-                    // Ignore lookup error if visa_requirements table is pending schema sync
+                    if (cObj) cId = cObj.id;
                 }
-            }
 
-            const mergedMetadata = cleanJobseekerMetadata(rest.metadata || {});
-
-            let wpId: number | null = null;
-            if (rest.workplaceTypeId !== undefined && rest.workplaceTypeId !== null && rest.workplaceTypeId !== '') {
-                wpId = Number(rest.workplaceTypeId);
-            } else if (rest.workplace_type_id !== undefined && rest.workplace_type_id !== null && rest.workplace_type_id !== '') {
-                wpId = Number(rest.workplace_type_id);
-            }
-
-            let npId: number | null = null;
-            if (rest.noticePeriodId !== undefined && rest.noticePeriodId !== null && rest.noticePeriodId !== '') {
-                npId = Number(rest.noticePeriodId);
-            } else if (rest.notice_period_id !== undefined && rest.notice_period_id !== null && rest.notice_period_id !== '') {
-                npId = Number(rest.notice_period_id);
-            } else if (rest.noticePeriod && typeof rest.noticePeriod === 'string') {
-                const { data: matchedNp } = await supabaseAdmin
-                    .from('notice_periods')
-                    .select('id')
-                    .ilike('name', rest.noticePeriod.trim())
-                    .maybeSingle();
-                if (matchedNp) npId = matchedNp.id;
-            }
-
-            Object.assign(updateData, {
-                headline: rest.headline,
-                summary: rest.summary,
-                linkedin_url: rest.linkedinUrl,
-                github_url: rest.githubUrl,
-                portfolio_url: rest.portfolioUrl,
-                notification_last_viewed_at: rest.notificationLastViewedAt,
-                work_status: rest.workStatus,
-                experience_years: rest.experienceYears === '' ? null : rest.experienceYears,
-                experience_months: rest.experienceMonths === '' ? null : rest.experienceMonths,
-                current_area: rest.currentArea,
-                annual_salary: rest.annualSalary === '' ? null : rest.annualSalary,
-                expected_salary: rest.expectedSalary === '' ? null : rest.expectedSalary,
-                salary_breakdown: rest.salaryBreakdown,
-                metadata: mergedMetadata,
-                referral_code: rest.referralCode,
-                referral_count: rest.referralCount,
-                ...(rest.has_used_ats_checker !== undefined || rest.hasUsedAtsChecker !== undefined || rest.metadata?.has_used_ats_checker !== undefined
-                    ? { has_used_ats_checker: Boolean(rest.has_used_ats_checker ?? rest.hasUsedAtsChecker ?? rest.metadata?.has_used_ats_checker) }
-                    : {}),
-                ...(rest.has_seen_referral_prompt !== undefined || rest.hasSeenReferralPrompt !== undefined || rest.metadata?.hasSeenReferralPrompt !== undefined || rest.metadata?.has_seen_referral_prompt !== undefined
-                    ? { has_seen_referral_prompt: Boolean(rest.has_seen_referral_prompt ?? rest.hasSeenReferralPrompt ?? rest.metadata?.hasSeenReferralPrompt ?? rest.metadata?.has_seen_referral_prompt) }
-                    : {}),
-                ...(rest.referral_step_dismissed !== undefined || rest.referralStepDismissed !== undefined || rest.metadata?.referralStepDismissed !== undefined || rest.metadata?.referral_step_dismissed !== undefined
-                    ? { referral_step_dismissed: Boolean(rest.referral_step_dismissed ?? rest.referralStepDismissed ?? rest.metadata?.referralStepDismissed ?? rest.metadata?.referral_step_dismissed) }
-                    : {}),
-                ...(rest.has_used_resume_builder !== undefined || rest.hasUsedResumeBuilder !== undefined || rest.metadata?.has_used_resume_builder !== undefined
-                    ? { has_used_resume_builder: Boolean(rest.has_used_resume_builder ?? rest.hasUsedResumeBuilder ?? rest.metadata?.has_used_resume_builder) }
-                    : {}),
-                ...(rest.referral_rewarded !== undefined || rest.referralRewarded !== undefined || rest.metadata?.referral_rewarded !== undefined
-                    ? { referral_rewarded: Boolean(rest.referral_rewarded ?? rest.referralRewarded ?? rest.metadata?.referral_rewarded) }
-                    : {}),
-                ...(rest.referral_rewarded_at !== undefined || rest.referralRewardedAt !== undefined || rest.metadata?.referral_rewarded_at !== undefined
-                    ? { referral_rewarded_at: rest.referral_rewarded_at ?? rest.referralRewardedAt ?? rest.metadata?.referral_rewarded_at }
-                    : {}),
-                ...(wpId !== null ? { workplace_type_id: wpId } : (rest.workplaceTypeId === null || rest.workplace_type_id === null ? { workplace_type_id: null } : {})),
-                ...(npId !== null ? { notice_period_id: npId } : (rest.noticePeriodId === null || rest.notice_period_id === null ? { notice_period_id: null } : {})),
-                ...(vReqId !== null ? { visa_requirement_id: vReqId } : {}),
-                ...(rest.openToRelocate !== undefined && { open_to_relocate: rest.openToRelocate }),
-                ...(rest.openToRelocation !== undefined && { open_to_relocate: rest.openToRelocation }),
-                ...(rest.openWorldwide !== undefined && { open_worldwide: rest.openWorldwide }),
-                ...(rest.currentCity !== undefined || rest.cityId !== undefined || rest.country !== undefined || rest.state !== undefined || rest.countryId !== undefined || rest.stateId !== undefined
-                    ? {
-                        current_city_id: ciId,
-                        current_state_province_id: sId,
-                        current_country_id: cId,
+                if (cleanStateName && cId && !sId) {
+                    const { data: sObj } = await supabaseAdmin
+                        .from('states_provinces')
+                        .select('id')
+                        .eq('country_id', cId)
+                        .ilike('name', cleanStateName)
+                        .maybeSingle();
+                    if (sObj) sId = sObj.id;
+                } else if (cleanStateName && !sId) {
+                    const { data: sObj } = await supabaseAdmin
+                        .from('states_provinces')
+                        .select('id, country_id')
+                        .ilike('name', cleanStateName)
+                        .maybeSingle();
+                    if (sObj) {
+                        sId = sObj.id;
+                        if (!cId) cId = sObj.country_id;
                     }
-                    : {}),
-            });
+                }
 
-            if (rest.referredBy !== undefined) {
-                updateData.referred_by = rest.referredBy ? Number(rest.referredBy) : null;
+                if (cleanCityName && sId && !ciId) {
+                    const { data: ciObj } = await supabaseAdmin
+                        .from('cities')
+                        .select('id')
+                        .eq('state_province_id', sId)
+                        .ilike('name', cleanCityName)
+                        .maybeSingle();
+                    if (ciObj) ciId = ciObj.id;
+                } else if (cleanCityName && !ciId) {
+                    const { data: ciObj } = await supabaseAdmin
+                        .from('cities')
+                        .select('id, state_province_id')
+                        .ilike('name', cleanCityName)
+                        .maybeSingle();
+                    if (ciObj) {
+                        ciId = ciObj.id;
+                        if (!sId) sId = ciObj.state_province_id;
+                    }
+                }
+
+                if (ciId && (!sId || !cId)) {
+                    const { data: cityDetails } = await supabaseAdmin
+                        .from('cities')
+                        .select('id, state_province_id, states_provinces:state_province_id(id, country_id)')
+                        .eq('id', ciId)
+                        .maybeSingle();
+                    if (cityDetails) {
+                        if (!sId && cityDetails.state_province_id) sId = cityDetails.state_province_id;
+                        if (!cId && (cityDetails.states_provinces as any)?.country_id) {
+                            cId = (cityDetails.states_provinces as any).country_id;
+                        }
+                    }
+                }
+
+                if (sId && !cId) {
+                    const { data: stateDetails } = await supabaseAdmin
+                        .from('states_provinces')
+                        .select('id, country_id')
+                        .eq('id', sId)
+                        .maybeSingle();
+                    if (stateDetails && stateDetails.country_id) cId = stateDetails.country_id;
+                }
+
+                updateData.current_city_id = ciId;
+                updateData.current_state_province_id = sId;
+                updateData.current_country_id = cId;
             }
 
-            // Remove non-existent column fields for jobseekers table
-            delete updateData.country;
-            delete updateData.state;
-            delete updateData.current_city;
-            delete updateData.currentCity;
-            delete updateData.preferred_locations;
-            delete updateData.preferredLocations;
-            delete updateData.visa_requirement;
-            delete updateData.visaRequirement;
+            if (rest.visaRequirementId !== undefined || rest.visaRequirement !== undefined) {
+                let vReqId = rest.visaRequirementId ? Number(rest.visaRequirementId) : null;
+                const cleanVisaName = sanitizePostgrestFilter(rest.visaRequirement ? rest.visaRequirement.trim() : '');
+
+                if (!vReqId && cleanVisaName) {
+                    try {
+                        const { data: vObj } = await supabaseAdmin
+                            .from('visa_requirements')
+                            .select('id, name')
+                            .or(`name.ilike.${cleanVisaName},name.ilike.%${cleanVisaName}%`)
+                            .maybeSingle();
+
+                        if (vObj) {
+                            vReqId = vObj.id;
+                        } else {
+                            const lower = cleanVisaName.toLowerCase();
+                            let fallbackQuery = '';
+                            if (lower.includes('no sponsorship') || lower.includes('citizen') || lower.includes('pr')) {
+                                fallbackQuery = 'No Visa Sponsorship Required';
+                            } else if (lower.includes('h1b')) {
+                                fallbackQuery = 'Requires H1B Sponsorship';
+                            } else if (lower.includes('green card')) {
+                                fallbackQuery = 'Requires Green Card / PR';
+                            } else if (lower.includes('student') || lower.includes('opt') || lower.includes('cpt')) {
+                                fallbackQuery = 'Student Visa (OPT / CPT)';
+                            } else if (lower.includes('permit') || lower.includes('visa sponsorship') || lower.includes('sponsorship')) {
+                                fallbackQuery = 'Need Work Permit / Visa Sponsorship';
+                            }
+
+                            if (fallbackQuery) {
+                                const { data: fbObj } = await supabaseAdmin
+                                    .from('visa_requirements')
+                                    .select('id')
+                                    .eq('name', fallbackQuery)
+                                    .maybeSingle();
+                                if (fbObj) vReqId = fbObj.id;
+                            }
+                        }
+                    } catch (e) {}
+                }
+                updateData.visa_requirement_id = vReqId;
+            }
+
+            if (rest.workplaceTypeId !== undefined || rest.workplace_type_id !== undefined) {
+                const rawWp = rest.workplaceTypeId ?? rest.workplace_type_id;
+                updateData.workplace_type_id = (rawWp !== null && rawWp !== '') ? Number(rawWp) : null;
+            }
+
+            if (rest.noticePeriodId !== undefined || rest.notice_period_id !== undefined || rest.noticePeriod !== undefined) {
+                let npId: number | null = null;
+                const rawNp = rest.noticePeriodId ?? rest.notice_period_id;
+                if (rawNp !== undefined && rawNp !== null && rawNp !== '') {
+                    npId = Number(rawNp);
+                } else if (rest.noticePeriod && typeof rest.noticePeriod === 'string') {
+                    const { data: matchedNp } = await supabaseAdmin
+                        .from('notice_periods')
+                        .select('id')
+                        .ilike('name', rest.noticePeriod.trim())
+                        .maybeSingle();
+                    if (matchedNp) npId = matchedNp.id;
+                }
+                updateData.notice_period_id = npId;
+            }
+
+            if (rest.headline !== undefined) updateData.headline = rest.headline;
+            if (rest.summary !== undefined) updateData.summary = rest.summary;
+            if (rest.linkedinUrl !== undefined || rest.linkedin_url !== undefined) updateData.linkedin_url = rest.linkedinUrl ?? rest.linkedin_url;
+            if (rest.githubUrl !== undefined || rest.github_url !== undefined) updateData.github_url = rest.githubUrl ?? rest.github_url;
+            if (rest.portfolioUrl !== undefined || rest.portfolio_url !== undefined) updateData.portfolio_url = rest.portfolioUrl ?? rest.portfolio_url;
+            if (rest.notificationLastViewedAt !== undefined || rest.notification_last_viewed_at !== undefined) updateData.notification_last_viewed_at = rest.notificationLastViewedAt ?? rest.notification_last_viewed_at;
+            if (rest.workStatus !== undefined || rest.work_status !== undefined) updateData.work_status = rest.workStatus ?? rest.work_status;
+            if (rest.experienceYears !== undefined || rest.experience_years !== undefined) {
+                const v = rest.experienceYears ?? rest.experience_years;
+                updateData.experience_years = v === '' ? null : v;
+            }
+            if (rest.experienceMonths !== undefined || rest.experience_months !== undefined) {
+                const v = rest.experienceMonths ?? rest.experience_months;
+                updateData.experience_months = v === '' ? null : v;
+            }
+            if (rest.currentArea !== undefined || rest.current_area !== undefined) updateData.current_area = rest.currentArea ?? rest.current_area;
+            if (rest.annualSalary !== undefined || rest.annual_salary !== undefined) {
+                const v = rest.annualSalary ?? rest.annual_salary;
+                updateData.annual_salary = v === '' ? null : v;
+            }
+            if (rest.expectedSalary !== undefined || rest.expected_salary !== undefined) {
+                const v = rest.expectedSalary ?? rest.expected_salary;
+                updateData.expected_salary = v === '' ? null : v;
+            }
+            if (rest.salaryBreakdown !== undefined || rest.salary_breakdown !== undefined) updateData.salary_breakdown = rest.salaryBreakdown ?? rest.salary_breakdown;
+            if (rest.referralCode !== undefined || rest.referral_code !== undefined) updateData.referral_code = rest.referralCode ?? rest.referral_code;
+            if (rest.referralCount !== undefined || rest.referral_count !== undefined) updateData.referral_count = rest.referralCount ?? rest.referral_count;
+            if (rest.referredBy !== undefined || rest.referred_by !== undefined) {
+                const ref = rest.referredBy ?? rest.referred_by;
+                updateData.referred_by = ref ? Number(ref) : null;
+            }
+
+            if (rest.openToRelocate !== undefined || rest.openToRelocation !== undefined || rest.open_to_relocate !== undefined) {
+                updateData.open_to_relocate = rest.openToRelocate ?? rest.openToRelocation ?? rest.open_to_relocate;
+            }
+            if (rest.openWorldwide !== undefined || rest.open_worldwide !== undefined) {
+                updateData.open_worldwide = rest.openWorldwide ?? rest.open_worldwide;
+            }
+
+            if (rest.has_used_ats_checker !== undefined || rest.hasUsedAtsChecker !== undefined) {
+                updateData.has_used_ats_checker = Boolean(rest.has_used_ats_checker ?? rest.hasUsedAtsChecker);
+            }
+            if (rest.has_seen_referral_prompt !== undefined || rest.hasSeenReferralPrompt !== undefined) {
+                updateData.has_seen_referral_prompt = Boolean(rest.has_seen_referral_prompt ?? rest.hasSeenReferralPrompt);
+            }
+            if (rest.referral_step_dismissed !== undefined || rest.referralStepDismissed !== undefined) {
+                updateData.referral_step_dismissed = Boolean(rest.referral_step_dismissed ?? rest.referralStepDismissed);
+            }
+            if (rest.has_used_resume_builder !== undefined || rest.hasUsedResumeBuilder !== undefined) {
+                updateData.has_used_resume_builder = Boolean(rest.has_used_resume_builder ?? rest.hasUsedResumeBuilder);
+            }
+            if (rest.referral_rewarded !== undefined || rest.referralRewarded !== undefined) {
+                updateData.referral_rewarded = Boolean(rest.referral_rewarded ?? rest.referralRewarded);
+            }
+            if (rest.referral_rewarded_at !== undefined || rest.referralRewardedAt !== undefined) {
+                updateData.referral_rewarded_at = rest.referral_rewarded_at ?? rest.referralRewardedAt;
+            }
+
+            const metaFields = [
+                'education', 'experience', 'projects', 'achievements', 'certifications',
+                'languages', 'skills', 'gender', 'maritalStatus', 'dateOfBirth',
+                'category', 'differentlyAbled', 'militaryExperience', 'careerBreak'
+            ];
+            const hasMetaPass = rest.metadata !== undefined || metaFields.some(k => rest[k] !== undefined);
+            if (hasMetaPass) {
+                const { data: currRecord } = await supabaseAdmin
+                    .from('jobseekers')
+                    .select('metadata')
+                    .eq(column, idValue)
+                    .maybeSingle();
+                const existingMeta = currRecord?.metadata || {};
+                const mergedMeta = { ...existingMeta };
+                if (rest.metadata && typeof rest.metadata === 'object') {
+                    Object.assign(mergedMeta, rest.metadata);
+                }
+                for (const k of metaFields) {
+                    if (rest[k] !== undefined) {
+                        mergedMeta[k] = rest[k];
+                    }
+                }
+                updateData.metadata = cleanJobseekerMetadata(mergedMeta);
+            }
         }
 
         // Clean undefined values from updateData to prevent database update errors/clearing
@@ -1251,215 +1250,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
-    try {
-        const { user: authUser, errorResponse } = await requireAuth(request);
-        if (errorResponse) return errorResponse;
-
-        const { id } = params;
-        if (!isOwnerOrAdmin(authUser!, id)) {
-            return NextResponse.json({ error: 'Forbidden: Access denied to modify this user.' }, { status: 403 });
-        }
-
-        const body = await request.json();
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-        const column = isUuid ? 'uuid' : 'id';
-        const idValue = isUuid ? id : parseInt(id);
-
-        if (!isUuid && isNaN(idValue as number)) {
-            return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
-        }
-
-        // Determine table based on role or by trying tables sequentially (more robust for patch)
-        let table = '';
-        if (body.role === 'Recruiter') table = 'recruiters';
-        else if (body.role === 'Employee') table = 'employees';
-        else if (body.role === 'Job Seeker') table = 'jobseekers';
-        else {
-            // Fallback: try to find the user in any table
-            const tables = ['jobseekers', 'recruiters', 'employees', 'admins'];
-            for (const t of tables) {
-                const { data } = await supabaseAdmin.from(t).select('id').eq(column, idValue).maybeSingle();
-                if (data) {
-                    table = t;
-                    break;
-                }
-            }
-        }
-
-        if (!table) return NextResponse.json({ error: 'User not found' }, { status: 404 });
-
-        // Normalize keys (snake_case)
-        const updateData: any = {};
-        if (body.notificationLastViewedAt) updateData.notification_last_viewed_at = body.notificationLastViewedAt;
-        if (body.name) updateData.name = body.name;
-        if (body.email) updateData.email = body.email;
-        if (body.phone) updateData.phone = body.phone;
-        if (body.metadata && table === 'jobseekers') updateData.metadata = cleanJobseekerMetadata(body.metadata);
-        if (body.referralCode && table === 'jobseekers') updateData.referral_code = body.referralCode;
-        if (body.referredBy && table === 'jobseekers') updateData.referred_by = Number(body.referredBy);
-        if (body.referralCount !== undefined && table === 'jobseekers') updateData.referral_count = body.referralCount;
-        if ((body.hasSeenReferralPrompt !== undefined || body.has_seen_referral_prompt !== undefined) && table === 'jobseekers') {
-            updateData.has_seen_referral_prompt = Boolean(body.has_seen_referral_prompt ?? body.hasSeenReferralPrompt);
-        }
-        if ((body.referralStepDismissed !== undefined || body.referral_step_dismissed !== undefined) && table === 'jobseekers') {
-            updateData.referral_step_dismissed = Boolean(body.referral_step_dismissed ?? body.referralStepDismissed);
-        }
-        if ((body.hasUsedAtsChecker !== undefined || body.has_used_ats_checker !== undefined) && table === 'jobseekers') {
-            updateData.has_used_ats_checker = Boolean(body.has_used_ats_checker ?? body.hasUsedAtsChecker);
-        }
-        if ((body.hasUsedResumeBuilder !== undefined || body.has_used_resume_builder !== undefined) && table === 'jobseekers') {
-            updateData.has_used_resume_builder = Boolean(body.has_used_resume_builder ?? body.hasUsedResumeBuilder);
-        }
-        if ((body.referralRewarded !== undefined || body.referral_rewarded !== undefined) && table === 'jobseekers') {
-            updateData.referral_rewarded = Boolean(body.referral_rewarded ?? body.referralRewarded);
-        }
-        if ((body.referralRewardedAt !== undefined || body.referral_rewarded_at !== undefined) && table === 'jobseekers') {
-            updateData.referral_rewarded_at = body.referral_rewarded_at ?? body.referralRewardedAt;
-        }
-        
-        updateData.updated_at = new Date().toISOString();
-
-        let patchSelect = '*, roles(name)';
-        if (table === 'jobseekers') {
-            patchSelect = `
-                *, 
-                roles(name),
-                education(*),
-                experience(*),
-                projects(*),
-                languages(*),
-                jobseeker_personal_details(*),
-                jobseeker_skills(skills(id, uuid, name)),
-                jobseeker_achievements:jobseeker_achievements!jobseeker_id(*),
-                jobseeker_certifications:jobseeker_certifications!jobseeker_id(*)
-            `;
-        } else if (table === 'recruiters') {
-            patchSelect = '*, roles(name), company_sizes(uuid, name)';
-        } else if (table === 'employees') {
-            patchSelect = '*, roles(name), company_sizes(uuid, name)';
-        }
-
-
-        const { data: profile, error } = await supabaseAdmin
-            .from(table)
-            .update(updateData)
-            .eq(column, idValue)
-            .select(patchSelect)
-            .single();
-
-        if (error) throw error;
-
-        // Sync phone to Supabase Auth (auth.users) if updated
-        const targetUuid = isUuid ? id : (profile?.uuid || (authUser as any)?.uuid || (authUser as any)?.id);
-        if (targetUuid && body.phone !== undefined) {
-            try {
-                const cleanPhone = body.phone ? (body.phone.startsWith('+') ? body.phone : `+91${body.phone.replace(/\D/g, '')}`) : '';
-                const { data: authUserData } = await supabaseAdmin.auth.admin.getUserById(targetUuid);
-                const currentMeta = authUserData?.user?.user_metadata || {};
-
-                const { error: updateAuthErr } = await supabaseAdmin.auth.admin.updateUserById(targetUuid, {
-                    ...(cleanPhone ? { phone: cleanPhone, phone_confirm: true } : { phone: '' }),
-                    user_metadata: {
-                        ...currentMeta,
-                        phone: cleanPhone
-                    }
-                });
-
-                if (updateAuthErr) {
-                    console.warn('[API_USERS_PATCH] Phone column update error in auth.users:', updateAuthErr.message);
-                    await supabaseAdmin.auth.admin.updateUserById(targetUuid, {
-                        user_metadata: {
-                            ...currentMeta,
-                            phone: cleanPhone
-                        }
-                    });
-                }
-            } catch (authErr: any) {
-                console.warn('[API_USERS_PATCH] Non-fatal error syncing phone to auth.users:', authErr?.message || authErr);
-            }
-        }
-
-        if (table === 'jobseekers' && profile) {
-            const userPk = profile.id;
-            if (Array.isArray(body.achievements)) {
-                try {
-                    await supabaseAdmin.from('jobseeker_achievements').delete().eq('jobseeker_id', userPk);
-                    if (body.achievements.length > 0) {
-                        const achievementRows = body.achievements.map((a: any) => {
-                            if (typeof a === 'string') {
-                                return {
-                                    jobseeker_id: userPk,
-                                    title: a.trim(),
-                                    description: null,
-                                    issuer: null,
-                                    date_achieved: null
-                                };
-                            }
-                            return {
-                                jobseeker_id: userPk,
-                                title: (a.title || a.name || '').trim(),
-                                description: a.description || null,
-                                issuer: a.issuer || a.issuingOrganization || null,
-                                date_achieved: normalizeDate(a.dateAchieved || a.issueDate)
-                            };
-                        }).filter((row: any) => row.title);
-
-                        if (achievementRows.length > 0) {
-                            const { error: insErr } = await supabaseAdmin.from('jobseeker_achievements').insert(achievementRows);
-                            if (insErr) console.error("Error inserting jobseeker_achievements:", insErr);
-                        }
-                    }
-                } catch (err) {
-                    console.warn("Could not sync jobseeker_achievements table in PATCH:", err);
-                }
-            }
-
-            if (Array.isArray(body.certifications)) {
-                try {
-                    await supabaseAdmin.from('jobseeker_certifications').delete().eq('jobseeker_id', userPk);
-                    if (body.certifications.length > 0) {
-                        const certificationRows = body.certifications.map((c: any) => {
-                            if (typeof c === 'string') {
-                                return {
-                                    jobseeker_id: userPk,
-                                    name: c.trim(),
-                                    issuing_organization: null,
-                                    issue_date: null,
-                                    expiration_date: null,
-                                    credential_id: null,
-                                    credential_url: null
-                                };
-                            }
-                            return {
-                                jobseeker_id: userPk,
-                                name: (c.name || c.title || '').trim(),
-                                issuing_organization: c.issuingOrganization || c.issuer || null,
-                                issue_date: normalizeDate(c.issueDate || c.dateAchieved),
-                                expiration_date: normalizeDate(c.expirationDate),
-                                credential_id: c.credentialId || null,
-                                credential_url: c.credentialUrl || null
-                            };
-                        }).filter((row: any) => row.name);
-
-                        if (certificationRows.length > 0) {
-                            const { error: insErr } = await supabaseAdmin.from('jobseeker_certifications').insert(certificationRows);
-                            if (insErr) console.error("Error inserting jobseeker_certifications:", insErr);
-                        }
-                    }
-                } catch (err) {
-                    console.warn("Could not sync jobseeker_certifications table in PATCH:", err);
-                }
-            }
-        }
-
-        return NextResponse.json(await mapProfileToUser(profile), { status: 200 });
-
-    } catch (e: any) {
-        console.error(e);
-        return NextResponse.json({ error: 'Failed to update user', details: e.message }, { status: 500 });
-    }
-}
+export const PATCH = PUT;
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
     try {

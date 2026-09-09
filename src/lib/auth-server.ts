@@ -53,11 +53,33 @@ export function extractAuthToken(request: Request): string | null {
   return null;
 }
 
+interface CachedAuthUser {
+  user: AuthenticatedUser;
+  cachedAt: number;
+}
+const authUserCache = new Map<string, CachedAuthUser>();
+const AUTH_CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
+export function invalidateAuthCache(token?: string) {
+  if (token) {
+    authUserCache.delete(token);
+  } else {
+    authUserCache.clear();
+  }
+}
+
 /**
  * Validates request token and resolves the authenticated database user.
  */
 export async function getAuthenticatedUser(request: Request): Promise<AuthenticatedUser | null> {
   const token = extractAuthToken(request);
+
+  if (token) {
+    const cached = authUserCache.get(token);
+    if (cached && (Date.now() - cached.cachedAt < AUTH_CACHE_TTL_MS)) {
+      return cached.user;
+    }
+  }
 
   let email: string | null = null;
   let uid: string | null = null;
@@ -96,6 +118,8 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
   const isNumeric = uid ? /^\d+$/.test(String(uid)) : false;
   const isUuid = uid ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(uid)) : false;
 
+  let resolvedUser: AuthenticatedUser | null = null;
+
   // 3. Resolve user profile from database tables
   // Check admins table
   let adminQuery = supabaseAdmin.from('admins').select('*');
@@ -112,7 +136,7 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
 
   if (adminUser) {
     const isSuper = adminUser.role === 'Super Admin' || adminUser.role_id === 5 || Boolean(adminUser.is_super_admin);
-    return {
+    resolvedUser = {
       id: adminUser.id,
       uuid: adminUser.uuid || uid!,
       email: adminUser.email,
@@ -124,70 +148,89 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
     };
   }
 
-  // Check jobseekers
-  let seekerQuery = supabaseAdmin.from('jobseekers').select('*');
-  if (isNumeric) {
-    seekerQuery = email ? seekerQuery.or(`id.eq.${uid},email.eq.${email}`) : seekerQuery.eq('id', Number(uid));
-  } else if (isUuid) {
-    seekerQuery = email ? seekerQuery.or(`uuid.eq.${uid},email.eq.${email}`) : seekerQuery.eq('uuid', uid);
-  } else if (email) {
-    seekerQuery = seekerQuery.eq('email', email);
-  } else {
-    seekerQuery = seekerQuery.eq('uuid', uid!);
-  }
-  const { data: jobseeker } = await seekerQuery.maybeSingle();
+  if (!resolvedUser) {
+    // Check jobseekers
+    let seekerQuery = supabaseAdmin.from('jobseekers').select('*');
+    if (isNumeric) {
+      seekerQuery = email ? seekerQuery.or(`id.eq.${uid},email.eq.${email}`) : seekerQuery.eq('id', Number(uid));
+    } else if (isUuid) {
+      seekerQuery = email ? seekerQuery.or(`uuid.eq.${uid},email.eq.${email}`) : seekerQuery.eq('uuid', uid);
+    } else if (email) {
+      seekerQuery = seekerQuery.eq('email', email);
+    } else {
+      seekerQuery = seekerQuery.eq('uuid', uid!);
+    }
+    const { data: jobseeker } = await seekerQuery.maybeSingle();
 
-  if (jobseeker) {
-    const isJobseekerAdmin = jobseeker.role_id === 4 || jobseeker.role_id === 5 || jobseeker.role === 'Admin' || jobseeker.role === 'Super Admin' || Boolean(jobseeker.is_super_admin);
-    const isSuper = jobseeker.role_id === 5 || jobseeker.role === 'Super Admin' || Boolean(jobseeker.is_super_admin);
-    return {
-      id: jobseeker.id,
-      uuid: jobseeker.uuid || uid!,
-      email: jobseeker.email,
-      name: jobseeker.name,
-      role: isJobseekerAdmin ? (isSuper ? 'Super Admin' : 'Admin') : 'Job Seeker',
-      roleId: jobseeker.role_id || (isJobseekerAdmin ? (isSuper ? 5 : 4) : 1),
-      table: 'jobseekers',
-      isSuperAdmin: Boolean(isSuper)
+    if (jobseeker) {
+      const isJobseekerAdmin = jobseeker.role_id === 4 || jobseeker.role_id === 5 || jobseeker.role === 'Admin' || jobseeker.role === 'Super Admin' || Boolean(jobseeker.is_super_admin);
+      const isSuper = jobseeker.role_id === 5 || jobseeker.role === 'Super Admin' || Boolean(jobseeker.is_super_admin);
+      resolvedUser = {
+        id: jobseeker.id,
+        uuid: jobseeker.uuid || uid!,
+        email: jobseeker.email,
+        name: jobseeker.name,
+        role: isJobseekerAdmin ? (isSuper ? 'Super Admin' : 'Admin') : 'Job Seeker',
+        roleId: jobseeker.role_id || (isJobseekerAdmin ? (isSuper ? 5 : 4) : 1),
+        table: 'jobseekers',
+        isSuperAdmin: Boolean(isSuper)
+      };
+    }
+  }
+
+  if (!resolvedUser) {
+    // Check recruiters
+    let recruiterQuery = supabaseAdmin.from('recruiters').select('*');
+    if (isNumeric) {
+      recruiterQuery = email ? recruiterQuery.or(`id.eq.${uid},email.eq.${email}`) : recruiterQuery.eq('id', Number(uid));
+    } else if (isUuid) {
+      recruiterQuery = email ? recruiterQuery.or(`uuid.eq.${uid},email.eq.${email}`) : recruiterQuery.eq('uuid', uid);
+    } else if (email) {
+      recruiterQuery = recruiterQuery.eq('email', email);
+    } else {
+      recruiterQuery = recruiterQuery.eq('uuid', uid!);
+    }
+    const { data: recruiter } = await recruiterQuery.maybeSingle();
+
+    if (recruiter) {
+      const isRecruiterAdmin = recruiter.role_id === 4 || recruiter.role_id === 5 || recruiter.role === 'Admin' || recruiter.role === 'Super Admin' || Boolean(recruiter.is_super_admin);
+      const isSuper = recruiter.role_id === 5 || recruiter.role === 'Super Admin' || Boolean(recruiter.is_super_admin);
+      resolvedUser = {
+        id: recruiter.id,
+        uuid: recruiter.uuid || uid!,
+        email: recruiter.email,
+        name: recruiter.name,
+        role: isRecruiterAdmin ? (isSuper ? 'Super Admin' : 'Admin') : 'Recruiter',
+        roleId: recruiter.role_id || (isRecruiterAdmin ? (isSuper ? 5 : 4) : 2),
+        table: 'recruiters',
+        isSuperAdmin: Boolean(isSuper)
+      };
+    }
+  }
+
+  if (!resolvedUser) {
+    // User exists in auth but has no specific role table yet
+    resolvedUser = {
+      id: uid!,
+      uuid: uid!,
+      email: email || '',
+      role: 'Job Seeker',
+      roleId: 1
     };
   }
 
-  // Check recruiters
-  let recruiterQuery = supabaseAdmin.from('recruiters').select('*');
-  if (isNumeric) {
-    recruiterQuery = email ? recruiterQuery.or(`id.eq.${uid},email.eq.${email}`) : recruiterQuery.eq('id', Number(uid));
-  } else if (isUuid) {
-    recruiterQuery = email ? recruiterQuery.or(`uuid.eq.${uid},email.eq.${email}`) : recruiterQuery.eq('uuid', uid);
-  } else if (email) {
-    recruiterQuery = recruiterQuery.eq('email', email);
-  } else {
-    recruiterQuery = recruiterQuery.eq('uuid', uid!);
-  }
-  const { data: recruiter } = await recruiterQuery.maybeSingle();
-
-  if (recruiter) {
-    const isRecruiterAdmin = recruiter.role_id === 4 || recruiter.role_id === 5 || recruiter.role === 'Admin' || recruiter.role === 'Super Admin' || Boolean(recruiter.is_super_admin);
-    const isSuper = recruiter.role_id === 5 || recruiter.role === 'Super Admin' || Boolean(recruiter.is_super_admin);
-    return {
-      id: recruiter.id,
-      uuid: recruiter.uuid || uid!,
-      email: recruiter.email,
-      name: recruiter.name,
-      role: isRecruiterAdmin ? (isSuper ? 'Super Admin' : 'Admin') : 'Recruiter',
-      roleId: recruiter.role_id || (isRecruiterAdmin ? (isSuper ? 5 : 4) : 2),
-      table: 'recruiters',
-      isSuperAdmin: Boolean(isSuper)
-    };
+  // Cache resolved user for 60s
+  if (token && resolvedUser) {
+    if (authUserCache.size > 500) {
+      const now = Date.now();
+      for (const [k, v] of authUserCache.entries()) {
+        if (now - v.cachedAt > AUTH_CACHE_TTL_MS) authUserCache.delete(k);
+      }
+    }
+    authUserCache.set(token, { user: resolvedUser, cachedAt: Date.now() });
   }
 
-  // User exists in auth but has no specific role table yet
-  return {
-    id: uid!,
-    uuid: uid!,
-    email: email || '',
-    role: 'Job Seeker',
-    roleId: 1
-  };
+  return resolvedUser;
 }
 
 /**

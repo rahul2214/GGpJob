@@ -29,6 +29,7 @@ import {
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "../ui/skeleton";
+import { supabase } from "@/lib/supabase-client";
 import { useUser } from "@/contexts/user-context";
 import { ShareButton } from "../share-button";
 import { useSubscription } from "@/hooks/use-subscription";
@@ -96,9 +97,14 @@ export default function RecruiterDashboard({ onlyPostings = false }: RecruiterDa
     const currentStatus = (job.status || "active").toLowerCase();
     const newStatus = currentStatus === "active" ? "closed" : "active";
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       const response = await fetch(`/api/jobs/${job.uuid}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ status: newStatus }),
       });
       if (!response.ok) {
@@ -125,7 +131,12 @@ export default function RecruiterDashboard({ onlyPostings = false }: RecruiterDa
     const uuidToDelete = jobToDelete.uuid;
 
     try {
-      const response = await fetch(`/api/jobs/${uuidToDelete}`, { method: "DELETE" });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const response = await fetch(`/api/jobs/${uuidToDelete}`, { method: "DELETE", headers });
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
         throw new Error(errData.error || "Failed to delete job");

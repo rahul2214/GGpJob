@@ -51,23 +51,37 @@ export async function POST(request: Request, { params }: { params: { id: string 
             return NextResponse.json({ error: validation.error }, { status: 400 });
         }
 
-        // 4. Identify user role/table
-        const [jobseekerRes, recruiterRes] = await Promise.all([
-            supabaseAdmin.from('jobseekers').select('id, profile_photo_url').eq(isUuid ? 'uuid' : 'id', idValue).maybeSingle(),
-            supabaseAdmin.from('recruiters').select('id, profile_photo_url').eq(isUuid ? 'uuid' : 'id', idValue).maybeSingle(),
-        ]);
+        // 4. Identify user role/table and existing photo
+        let targetTable = authUser?.table || 'jobseekers';
+        let photoColumn = targetTable === 'recruiters' ? 'company_logo' : 'profile_photo_url';
+        let existingPhotoUrl: string | null = null;
 
-        let targetTable = '';
-        let existingPhotoUrl = null;
+        // Try primary table based on authUser (default 'jobseekers')
+        const { data: primaryProfile } = await supabaseAdmin
+            .from(targetTable)
+            .select(`id, ${photoColumn}`)
+            .eq(isUuid ? 'uuid' : 'id', idValue)
+            .maybeSingle();
 
-        if (jobseekerRes.data) {
-            targetTable = 'jobseekers';
-            existingPhotoUrl = jobseekerRes.data.profile_photo_url;
-        } else if (recruiterRes.data) {
-            targetTable = 'recruiters';
-            existingPhotoUrl = recruiterRes.data.profile_photo_url;
+        if (primaryProfile) {
+            existingPhotoUrl = (primaryProfile as any)[photoColumn] || null;
         } else {
-            return NextResponse.json({ error: 'User profile not found across active tables' }, { status: 404 });
+            // Fallback: check the other table
+            const fallbackTable = targetTable === 'jobseekers' ? 'recruiters' : 'jobseekers';
+            const fallbackColumn = fallbackTable === 'recruiters' ? 'company_logo' : 'profile_photo_url';
+            const { data: fallbackProfile } = await supabaseAdmin
+                .from(fallbackTable)
+                .select(`id, ${fallbackColumn}`)
+                .eq(isUuid ? 'uuid' : 'id', idValue)
+                .maybeSingle();
+
+            if (fallbackProfile) {
+                targetTable = fallbackTable;
+                photoColumn = fallbackColumn;
+                existingPhotoUrl = (fallbackProfile as any)[fallbackColumn] || null;
+            } else {
+                return NextResponse.json({ error: 'User profile not found across active tables' }, { status: 404 });
+            }
         }
 
         // 5. Upload file buffer to R2 under a server-generated key, so a
@@ -76,21 +90,22 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
         const { r2Uri } = await uploadToR2(key, photoBuffer, validation.contentType);
 
-        // 6. Delete old avatar if it exists in R2
-        if (existingPhotoUrl && existingPhotoUrl.startsWith('r2://')) {
-            await deleteFromR2(existingPhotoUrl);
+        // 6. Delete old avatar if it exists in R2 (non-blocking)
+        if (existingPhotoUrl && existingPhotoUrl.startsWith('r2://') && existingPhotoUrl !== r2Uri) {
+            deleteFromR2(existingPhotoUrl).catch(err => console.warn('[R2_DELETE_WARNING]', err));
         }
 
         // 7. Update database pointer
         const { error: updateError } = await supabaseAdmin
             .from(targetTable)
             .update({ 
-                profile_photo_url: r2Uri, 
+                [photoColumn]: r2Uri, 
                 updated_at: new Date().toISOString() 
             })
             .eq(isUuid ? 'uuid' : 'id', idValue);
 
         if (updateError) {
+            console.error('[API_PROFILE_PHOTO_UPLOAD_POST] Update Error:', updateError);
             throw updateError;
         }
 
@@ -99,11 +114,94 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
         return NextResponse.json({ 
             message: 'Profile photo uploaded successfully',
-            profilePhotoUrl: resolvedUrl 
+            profilePhotoUrl: resolvedUrl,
+            url: resolvedUrl,
+            r2Uri
         }, { status: 200 });
 
     } catch (e: any) {
         console.error('[API_PROFILE_PHOTO_UPLOAD_POST] Error:', e);
-        return NextResponse.json({ error: 'Failed to upload profile photo', details: e.message }, { status: 500 });
+        const details = e?.message || e?.details || e?.name || (typeof e === 'object' ? JSON.stringify(e) : String(e));
+        return NextResponse.json({ error: 'Failed to upload profile photo', details }, { status: 500 });
+    }
+}
+
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+    try {
+        const { user: authUser, errorResponse } = await requireAuth(request);
+        if (errorResponse) return errorResponse;
+
+        const { id } = params;
+
+        if (!isOwnerOrAdmin(authUser!, id)) {
+            return NextResponse.json({ error: 'Forbidden: Cannot modify another user profile.' }, { status: 403 });
+        }
+
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        const idValue = isUuid ? id : parseInt(id, 10);
+
+        if (!isUuid && isNaN(idValue as number)) {
+            return NextResponse.json({ error: 'Invalid User ID format' }, { status: 400 });
+        }
+
+        let targetTable = authUser?.table || 'jobseekers';
+        let photoColumn = targetTable === 'recruiters' ? 'company_logo' : 'profile_photo_url';
+        let existingPhotoUrl: string | null = null;
+
+        // Fetch existing photo
+        const { data: primaryProfile } = await supabaseAdmin
+            .from(targetTable)
+            .select(`id, ${photoColumn}`)
+            .eq(isUuid ? 'uuid' : 'id', idValue)
+            .maybeSingle();
+
+        if (primaryProfile) {
+            existingPhotoUrl = (primaryProfile as any)[photoColumn] || null;
+        } else {
+            const fallbackTable = targetTable === 'jobseekers' ? 'recruiters' : 'jobseekers';
+            const fallbackColumn = fallbackTable === 'recruiters' ? 'company_logo' : 'profile_photo_url';
+            const { data: fallbackProfile } = await supabaseAdmin
+                .from(fallbackTable)
+                .select(`id, ${fallbackColumn}`)
+                .eq(isUuid ? 'uuid' : 'id', idValue)
+                .maybeSingle();
+
+            if (fallbackProfile) {
+                targetTable = fallbackTable;
+                photoColumn = fallbackColumn;
+                existingPhotoUrl = (fallbackProfile as any)[fallbackColumn] || null;
+            } else {
+                return NextResponse.json({ error: 'User profile not found across active tables' }, { status: 404 });
+            }
+        }
+
+        // Delete from R2 if stored there (non-blocking)
+        if (existingPhotoUrl && existingPhotoUrl.startsWith('r2://')) {
+            deleteFromR2(existingPhotoUrl).catch(err => console.warn('[R2_DELETE_WARNING]', err));
+        }
+
+        // Set column to null in DB
+        const { error: updateError } = await supabaseAdmin
+            .from(targetTable)
+            .update({
+                [photoColumn]: null,
+                updated_at: new Date().toISOString()
+            })
+            .eq(isUuid ? 'uuid' : 'id', idValue);
+
+        if (updateError) {
+            console.error('[API_PROFILE_PHOTO_DELETE] Update Error:', updateError);
+            throw updateError;
+        }
+
+        return NextResponse.json({
+            message: 'Profile photo deleted successfully',
+            profilePhotoUrl: null
+        }, { status: 200 });
+
+    } catch (e: any) {
+        console.error('[API_PROFILE_PHOTO_DELETE] Error:', e);
+        const details = e?.message || e?.details || e?.name || (typeof e === 'object' ? JSON.stringify(e) : String(e));
+        return NextResponse.json({ error: 'Failed to delete profile photo', details }, { status: 500 });
     }
 }

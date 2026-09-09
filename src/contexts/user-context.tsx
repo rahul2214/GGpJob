@@ -34,7 +34,33 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    // 1. Detect Country and fetch exchange rates
+    // 1. Try to read from sessionStorage first to avoid redundant API calls during the session
+    try {
+      const cached = sessionStorage.getItem('jobsdart_currency_cache');
+      if (cached) {
+        const data = JSON.parse(cached);
+        if (data && data.rates) {
+          setExchangeRates(data.rates);
+        }
+        if (data && data.country) {
+          setDetectedCountry(data.country);
+        }
+
+        const savedLocal = localStorage.getItem('jobsdart_currency');
+        if (savedLocal) {
+          setCurrencyState(savedLocal.toUpperCase());
+        } else if (user?.preferredCurrency) {
+          setCurrencyState((user.preferredCurrency as string).toUpperCase());
+        } else if (data && data.currency) {
+          setCurrencyState(data.currency.toUpperCase());
+        }
+        return; // Session cache hit — skip network fetch
+      }
+    } catch (e) {
+      // sessionStorage unavailable or parse error; proceed to fetch
+    }
+
+    // 2. Detect Country and fetch exchange rates if not cached in current session
     fetch('/api/currency/detect')
       .then(r => r.json())
       .then(data => {
@@ -44,8 +70,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (data && data.country) {
           setDetectedCountry(data.country);
         }
+
+        try {
+          sessionStorage.setItem('jobsdart_currency_cache', JSON.stringify(data));
+        } catch (e) {
+          // ignore quota or storage errors
+        }
         
-        // 2. Set preferred currency based on priority: localstorage > user profile > detected geo
+        // Set preferred currency based on priority: localstorage > user profile > detected geo
         const savedLocal = localStorage.getItem('jobsdart_currency');
         if (savedLocal) {
           setCurrencyState(savedLocal.toUpperCase());

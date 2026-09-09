@@ -7,6 +7,7 @@ import { ChangePasswordForm } from "@/components/change-password-form";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
+import { supabase } from "@/lib/supabase-client";
 import { ProfileSections } from "@/components/profile-sections";
 import { ResumeForm } from "@/components/resume-form";
 import { SummaryForm } from "@/components/summary-form";
@@ -20,6 +21,16 @@ import { cn } from "@/lib/utils";
 import { CurrencySelector } from "@/components/currency-selector";
 
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function ProfilePage() {
     const { user, loading, refreshUser } = useUser();
@@ -28,6 +39,8 @@ export default function ProfilePage() {
     const isMobile = useIsMobile();
     const [activeTab, setActiveTab] = useState<'overview' | 'professional' | 'details' | 'security' | 'edit-details'>('overview');
     const [isUploading, setIsUploading] = useState(false);
+    const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
+    const [showDeletePhotoDialog, setShowDeletePhotoDialog] = useState(false);
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -57,8 +70,21 @@ export default function ProfilePage() {
             const formData = new FormData();
             formData.append("file", file);
 
+            const { data: sessionData } = await supabase.auth.getSession();
+            let token = sessionData?.session?.access_token;
+            if (!token) {
+                const { data: refreshData } = await supabase.auth.refreshSession();
+                token = refreshData?.session?.access_token;
+            }
+
+            const headers: Record<string, string> = {};
+            if (token) {
+                headers["Authorization"] = `Bearer ${token}`;
+            }
+
             const res = await fetch(`/api/users/${user.uuid}/profile-photo/upload`, {
                 method: "POST",
+                headers,
                 body: formData,
             });
 
@@ -81,6 +107,50 @@ export default function ProfilePage() {
             });
         } finally {
             setIsUploading(false);
+        }
+    };
+
+    const handleDeletePhoto = async () => {
+        if (!user) return;
+        try {
+            setIsDeletingPhoto(true);
+            const { data: sessionData } = await supabase.auth.getSession();
+            let token = sessionData?.session?.access_token;
+            if (!token) {
+                const { data: refreshData } = await supabase.auth.refreshSession();
+                token = refreshData?.session?.access_token;
+            }
+
+            const headers: Record<string, string> = {};
+            if (token) {
+                headers["Authorization"] = `Bearer ${token}`;
+            }
+
+            const res = await fetch(`/api/users/${user.uuid}/profile-photo`, {
+                method: "DELETE",
+                headers,
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.error || errorData.details || "Failed to delete photo");
+            }
+
+            await refreshUser();
+            setShowDeletePhotoDialog(false);
+            toast({
+                title: "Profile Photo Removed",
+                description: "Your profile photo has been successfully deleted.",
+            });
+        } catch (error: any) {
+            console.error("Delete photo error:", error);
+            toast({
+                title: "Delete Error",
+                description: error.message || "An error occurred while deleting your photo.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsDeletingPhoto(false);
         }
     };
 
@@ -162,35 +232,87 @@ export default function ProfilePage() {
                                                 </span>
                                             </div>
                                         )}
-                                        {/* Upload Overlay */}
-                                        {user.role === 'Job Seeker' && (
-                                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer rounded-2xl text-white">
-                                                {isUploading ? (
-                                                    <Loader2 className="w-6 h-6 animate-spin" />
+                                        {/* Actions Overlay (Hover) */}
+                                        {(user.role === 'Job Seeker' || user.role === 'Recruiter') && (
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center gap-2 rounded-2xl p-1 z-10">
+                                                {isUploading || isDeletingPhoto ? (
+                                                    <Loader2 className="w-6 h-6 animate-spin text-white" />
                                                 ) : (
                                                     <>
-                                                        <Camera className="w-5 h-5 mb-0.5" />
-                                                        <span className="text-[10px] font-bold">Edit</span>
+                                                        <label 
+                                                            title="Change photo"
+                                                            className="p-1.5 bg-white/20 hover:bg-white/30 text-white rounded-xl cursor-pointer transition-all flex flex-col items-center justify-center"
+                                                        >
+                                                            <Camera className="w-4 h-4" />
+                                                            <span className="text-[9px] font-semibold mt-0.5">Edit</span>
+                                                            <input 
+                                                                type="file" 
+                                                                accept="image/*" 
+                                                                onChange={handlePhotoUpload} 
+                                                                disabled={isUploading || isDeletingPhoto} 
+                                                                className="hidden" 
+                                                            />
+                                                        </label>
+                                                        {user.profilePhotoUrl && (
+                                                            <button
+                                                                type="button"
+                                                                title="Delete photo"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    setShowDeletePhotoDialog(true);
+                                                                }}
+                                                                disabled={isUploading || isDeletingPhoto}
+                                                                className="p-1.5 bg-rose-500/80 hover:bg-rose-600 text-white rounded-xl cursor-pointer transition-all flex flex-col items-center justify-center"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                                <span className="text-[9px] font-semibold mt-0.5">Delete</span>
+                                                            </button>
+                                                        )}
                                                     </>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Corner Badges */}
+                                    {(user.role === 'Job Seeker' || user.role === 'Recruiter') && (
+                                        <>
+                                            {/* Edit Badge (Bottom Right) */}
+                                            <label 
+                                                title="Change photo"
+                                                className="absolute -bottom-1 -right-1 bg-white border border-slate-200 shadow-md rounded-full p-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 active:scale-95 cursor-pointer z-20 flex items-center justify-center transition-all"
+                                            >
+                                                {isUploading ? (
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                ) : (
+                                                    <Camera className="w-3.5 h-3.5" />
                                                 )}
                                                 <input 
                                                     type="file" 
                                                     accept="image/*" 
                                                     onChange={handlePhotoUpload} 
-                                                    disabled={isUploading} 
+                                                    disabled={isUploading || isDeletingPhoto} 
                                                     className="hidden" 
                                                 />
                                             </label>
-                                        )}
-                                    </div>
-                                    {user.role === 'Job Seeker' && (
-                                        <div className="absolute -bottom-1 -right-1 bg-white border border-slate-200 shadow-md rounded-full p-1.5 text-indigo-600 pointer-events-none z-10 flex items-center justify-center">
-                                            {isUploading ? (
-                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                            ) : (
-                                                <Camera className="w-3.5 h-3.5" />
+
+                                            {/* Delete Badge (Top Right) - Only visible if photo exists */}
+                                            {user.profilePhotoUrl && (
+                                                <button
+                                                    type="button"
+                                                    title="Delete photo"
+                                                    onClick={() => setShowDeletePhotoDialog(true)}
+                                                    disabled={isUploading || isDeletingPhoto}
+                                                    className="absolute -top-1 -right-1 bg-white border border-rose-200 shadow-md rounded-full p-1.5 text-rose-500 hover:text-rose-600 hover:bg-rose-50 active:scale-95 cursor-pointer z-20 flex items-center justify-center transition-all"
+                                                >
+                                                    {isDeletingPhoto ? (
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : (
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    )}
+                                                </button>
                                             )}
-                                        </div>
+                                        </>
                                     )}
                                 </div>
 
@@ -215,7 +337,14 @@ export default function ProfilePage() {
                                     {(user.workplaceType || (user as any).workplaceTypeId) && (
                                         <div className="flex items-center justify-center gap-1.5 text-slate-600 pt-0.5">
                                             <Briefcase className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                                            <span className="font-bold text-slate-700">{user.workplaceType}</span>
+                                            <span className="font-bold text-slate-700">
+                                                {user.workplaceType || 
+                                                 ((user as any).workplaceTypeId === 1 ? 'Remote' : 
+                                                  (user as any).workplaceTypeId === 2 ? 'On-site' : 
+                                                  (user as any).workplaceTypeId === 3 ? 'Hybrid' : 
+                                                  (user as any).workplaceTypeId === 4 ? 'Flexible / Any' : null) || 
+                                                 ''}
+                                            </span>
                                         </div>
                                     )}
                                 </div>
@@ -499,6 +628,48 @@ export default function ProfilePage() {
 
                 </div>
             </div>
+
+            {/* Delete Profile Photo Confirmation Dialog */}
+            <AlertDialog open={showDeletePhotoDialog} onOpenChange={setShowDeletePhotoDialog}>
+                <AlertDialogContent className="max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-100">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2.5 text-rose-600 text-lg font-bold">
+                            <div className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center">
+                                <Trash2 className="w-5 h-5 text-rose-600" />
+                            </div>
+                            Delete Profile Photo?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-slate-500 text-sm mt-2 leading-relaxed">
+                            Are you sure you want to remove your profile picture? Your profile will revert to displaying your initials.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="mt-6 gap-2">
+                        <AlertDialogCancel 
+                            disabled={isDeletingPhoto} 
+                            className="rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50"
+                        >
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleDeletePhoto();
+                            }} 
+                            disabled={isDeletingPhoto}
+                            className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl gap-2 font-semibold shadow-sm transition-all"
+                        >
+                            {isDeletingPhoto ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                "Delete Photo"
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

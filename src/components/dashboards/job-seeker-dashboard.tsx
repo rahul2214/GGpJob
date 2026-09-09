@@ -1,44 +1,15 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import JobCard from "../job-card";
+import { useState } from "react";
 import { Button } from "../ui/button";
-import { Zap, CheckCircle, MessageSquare, Trophy, Clock, Coins, Sparkles, Gift, Copy, Share2 } from "lucide-react";
+import { Zap, CheckCircle, Sparkles, Gift, Copy, Share2 } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Link from "next/link";
-import { Skeleton } from "../ui/skeleton";
-import { Badge } from "../ui/badge";
 import { ProfileStrength } from "../profile-strength";
 import { useRouter } from "next/navigation";
-import { useDashboardJobs, useApplications } from "@/hooks/use-jobs";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import RecommendationSections from "../home/RecommendationSections";
-
-// Job Card loading skeleton placeholder
-const JobCardSkeleton = () => (
-  <div className="border border-slate-100 rounded-xl p-5 bg-white space-y-4 shadow-sm animate-pulse">
-    <div className="flex justify-between items-start">
-      <div className="space-y-2 flex-1">
-        <Skeleton className="h-5 w-4/5 rounded-md" />
-        <Skeleton className="h-4 w-1/3 rounded-md" />
-      </div>
-      <Skeleton className="h-6 w-16 rounded-full" />
-    </div>
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2">
-        <Skeleton className="h-4 w-3/4 rounded-md" />
-        <Skeleton className="h-4 w-2/3 rounded-md" />
-      </div>
-      <Skeleton className="h-4 w-1/2 rounded-md" />
-    </div>
-    <div className="border-t border-slate-50 pt-4 flex justify-between items-center">
-      <Skeleton className="h-4 w-24 rounded-md" />
-      <Skeleton className="h-6 w-16 rounded-md" />
-    </div>
-  </div>
-);
 
 export default function JobSeekerDashboard() {
   const { user, refreshUser } = useUser();
@@ -80,90 +51,7 @@ export default function JobSeekerDashboard() {
     }
   };
 
-  const { applications: userApplications, mutateApplications } = useApplications(
-    user ? { userId: user.uuid, requesterId: user.uuid } : undefined
-  );
-
-  const { data: jobData, isLoading, isError } = useDashboardJobs(
-    user ? { dashboard: "true", userId: user.uuid } : undefined
-  );
-
-  const handleVerifyAction = async (appId: string, action: 'confirm' | 'dispute') => {
-    try {
-        const response = await fetch(`/api/applications/${appId}/verify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action })
-        });
-        if (!response.ok) throw new Error('Failed to update verification status');
-        toast({ title: action === 'confirm' ? "Hiring Confirmed!" : "Dispute Submitted" });
-        mutateApplications();
-    } catch (error: any) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
-    }
-  };
-
-  const actionRequiredItems = useMemo(() => {
-    if (!userApplications) return [];
-    const items: any[] = [];
-    
-    // Verifications
-    userApplications.filter(app => app.verificationStatus === 'pending' || app.verificationStatus === 'pending_jobseeker').forEach(app => {
-      items.push({
-        id: `verify-${app.id}`,
-        priority: 1,
-        title: "Verify Your Hiring",
-        description: `Confirm hiring at ${app.companyName}`,
-        actionLabel: "Confirm Hire",
-        icon: CheckCircle,
-        color: "emerald",
-        onAction: () => handleVerifyAction(app.id.toString(), 'confirm'),
-        appId: app.id
-      });
-    });
-
-    // Chat
-    userApplications.filter(app => app.unreadChatCount > 0).forEach(app => {
-      items.push({
-        id: `chat-${app.id}`,
-        priority: 2,
-        title: "New Message",
-        description: `Unread messages for ${app.jobTitle}`,
-        actionLabel: "Open Chat",
-        href: `/applications?chat=${app.id}`,
-        icon: MessageSquare,
-        color: "indigo",
-        appId: app.id
-      });
-    });
-
- 
-
-    // Credits
-    const totalCredits = ((user as any).subscriptionCredits || 0) + ((user as any).purchasedCredits || 0);
-    if (user && totalCredits < 2) {
-      items.push({
-        id: "low-credits",
-        priority: 0,
-        title: totalCredits === 0 ? "Out of Credits" : "Low Credit Balance",
-        description: totalCredits === 0 
-          ? "You need credits to unlock referrals and continue conversations." 
-          : "Your credit balance is low. Upgrade your plan to avoid interruptions.",
-        actionLabel: "Top Up Now",
-        href: "/jobseeker/credits",
-        icon: Coins,
-        color: "rose"
-      });
-    }
-
-    return items.sort((a, b) => a.priority - b.priority);
-  }, [userApplications, user]);
-
-  const recommendedJobs = useMemo(() => jobData?.recommended?.slice(0, 5) || [], [jobData]);
   const firstName = user?.name?.split(" ")[0] || "User";
-
-  // Safeguard for Action Required Item
-  const topActionItem = actionRequiredItems[0];
   
 
   return (

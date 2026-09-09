@@ -186,12 +186,15 @@ export default function OnboardingPage() {
                         referralStepDismissed: true,
                         referral_step_dismissed: true,
                     });
+                    const { data: sessionData } = await supabase.auth.getSession();
+                    const token = sessionData?.session?.access_token;
+                    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+
                     const res = await fetch(`/api/users/${targetId}`, {
                         method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers,
                         body: JSON.stringify({
-                            name: user.name,
-                            email: user.email,
                             role: user.role || 'Job Seeker',
                             hasSeenReferralPrompt: true,
                             has_seen_referral_prompt: true,

@@ -21,6 +21,7 @@ import { useUser } from "@/contexts/user-context";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { onFormInvalid } from "@/lib/form-toast-utils";
+import { supabase } from "@/lib/supabase-client";
 
 const countWords = (str: string) => {
   return str.trim().split(/\s+/).filter(Boolean).length;
@@ -67,10 +68,15 @@ export function SummaryForm({ user }: SummaryFormProps) {
 
   const onSubmit = async (data: SummaryFormValues) => {
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       const response = await fetch(`/api/users/${user.uuid}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...user, summary: data.summary }),
+        headers,
+        body: JSON.stringify({ summary: data.summary, role: user.role }),
       });
 
       if (!response.ok) {

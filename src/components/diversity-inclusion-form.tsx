@@ -19,6 +19,7 @@ import { User } from "@/lib/types";
 import { useUser } from "@/contexts/user-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { onFormInvalid } from "@/lib/form-toast-utils";
+import { supabase } from "@/lib/supabase-client";
 import { useEffect } from "react";
 
 const formSchema = z.object({
@@ -60,10 +61,39 @@ export function DiversityInclusionForm({ user }: DiversityInclusionFormProps) {
 
   const onSubmit = async (data: DiversityInclusionFormValues) => {
     try {
+      const deltaPayload: Record<string, any> = {
+        role: user.role,
+      };
+
+      let hasChanges = false;
+      for (const [key, newVal] of Object.entries(data)) {
+        const currentVal = (user as any)[key];
+        const normCurrent = (currentVal === undefined || currentVal === '' || currentVal === null) ? null : String(currentVal).trim();
+        const normNew = (newVal === undefined || newVal === '' || newVal === null) ? null : String(newVal).trim();
+
+        if (normCurrent !== normNew) {
+          deltaPayload[key] = newVal;
+          hasChanges = true;
+        }
+      }
+
+      if (!hasChanges) {
+        toast({
+          title: "No Changes Detected",
+          description: "Your diversity and inclusion information is already up to date.",
+        });
+        return;
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       const response = await fetch(`/api/users/${user.uuid}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...user, ...data }),
+        headers,
+        body: JSON.stringify(deltaPayload),
       });
 
       if (!response.ok) {

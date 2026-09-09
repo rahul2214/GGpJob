@@ -53,10 +53,11 @@ export function useDashboardJobs(params?: Record<string, any>) {
 }
 
 
-export function useApplications(params?: Record<string, any>) {
-  const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
+export function useApplications(params?: Record<string, any> | null) {
+  const shouldFetch = Boolean(params && Object.keys(params).length > 0 && (params.userId || params.jobId || params.recruiterId));
+  const queryString = shouldFetch && params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
   const { data, error, isLoading, mutate } = useSWR<any[]>(
-      `/applications${queryString}`, 
+      shouldFetch ? `/applications${queryString}` : null, 
       fetcher,
       {
           revalidateOnFocus: false,
@@ -66,7 +67,7 @@ export function useApplications(params?: Record<string, any>) {
 
   return {
       applications: data || [],
-      isLoading,
+      isLoading: !shouldFetch ? true : isLoading,
       isError: error,
       mutateApplications: mutate,
   };
@@ -91,9 +92,29 @@ export function useNotifications(userId?: string, options: { skip?: boolean } = 
         const fetchInitialNotifications = async () => {
             if (!userId) return;
             try {
-                const res = await fetch(`/api/notifications?userId=${userId}`);
+                const { data: sessionData } = await supabase.auth.getSession();
+                let token = sessionData?.session?.access_token;
+                if (!token) {
+                    const { data: refreshData } = await supabase.auth.refreshSession();
+                    token = refreshData?.session?.access_token;
+                }
+
+                const headers: Record<string, string> = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const res = await fetch(`/api/notifications?userId=${userId}`, { headers });
+                if (!res.ok) {
+                    if (res.status === 401) {
+                        setNotifications([]);
+                        setIsLoading(false);
+                        return;
+                    }
+                    throw new Error(`Failed to fetch notifications: ${res.statusText}`);
+                }
                 const data = await res.json();
-                setNotifications(data);
+                setNotifications(Array.isArray(data) ? data : []);
                 setIsLoading(false);
                 
                 // 2. Setup Real-time Subscription for all resolved PKs

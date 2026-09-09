@@ -100,7 +100,7 @@ function renderCompanyLogo(job: Job, sizeClass: string = "w-20 h-20 text-3xl") {
 }
 
 function JobDetailsContent() {
-    const { user, currency, exchangeRates } = useUser();
+    const { user } = useUser();
     const { toast } = useToast();
     const router = useRouter();
     const [job, setJob] = useState<Job | null>(null);

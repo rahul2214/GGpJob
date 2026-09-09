@@ -24,6 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { onFormInvalid } from "@/lib/form-toast-utils";
+import { supabase } from "@/lib/supabase-client";
 
 const formSchema = z.object({
   gender: z.string().min(1, "Please select gender."),
@@ -72,10 +73,39 @@ export function PersonalDetailsForm({ user }: PersonalDetailsFormProps) {
 
   const onSubmit = async (data: PersonalDetailsFormValues) => {
     try {
+      const deltaPayload: Record<string, any> = {
+        role: user.role,
+      };
+
+      let hasChanges = false;
+      for (const [key, newVal] of Object.entries(data)) {
+        const currentVal = (user as any)[key];
+        const normCurrent = (currentVal === undefined || currentVal === '' || currentVal === null) ? null : String(currentVal).trim();
+        const normNew = (newVal === undefined || newVal === '' || newVal === null) ? null : String(newVal).trim();
+
+        if (normCurrent !== normNew) {
+          deltaPayload[key] = newVal;
+          hasChanges = true;
+        }
+      }
+
+      if (!hasChanges) {
+        toast({
+          title: "No Changes Detected",
+          description: "Your personal details are already up to date.",
+        });
+        return;
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       const response = await fetch(`/api/users/${user.uuid}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...user, ...data }),
+        headers,
+        body: JSON.stringify(deltaPayload),
       });
 
       if (!response.ok) {

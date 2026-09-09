@@ -327,47 +327,65 @@ export async function PUT(request: Request, { params }: { params: { id: string }
           }
         };
 
-        const jobTypePk = await safeResolveMetadata('job_types', body.jobTypeId);
-        const workplaceTypePk = await safeResolveMetadata('workplace_types', body.workplaceTypeId);
-        
-        const companySizeToResolve = body.companySizeId || (user?.company_size_id);
-        const companySizePk = await safeResolveMetadata('company_sizes', companySizeToResolve);
-
-        const locationPks = await safeResolveMetadata('locations', body.locationIds);
-        const skillPks = await safeResolveMetadata('skills', body.skillIds);
-        const benefitPks = await safeResolveMetadata('benefits', body.benefitIds);
-
-        let currencyPk = await safeResolveMetadata('currencies', body.currencyId || body.currency_id);
-        if (!currencyPk && (body.salaryCurrency || body.salary_currency)) {
-            const codeToFind = String(body.salaryCurrency || body.salary_currency).toUpperCase();
-            const { data: curr } = await supabaseAdmin.from('currencies').select('id').eq('code', codeToFind).maybeSingle();
-            if (curr) currencyPk = curr.id;
-        }
-
         const dataToUpdate: any = {
-            title: body.title,
-            job_id: body.jobId || null,
-            description: body.description,
-            company_name: body.companyName || user?.company_name || null,
-            company_logo: body.companyLogo || user?.company_logo || null,
-            job_type_pk: jobTypePk,
-            workplace_type_pk: workplaceTypePk,
-            salary_min_usd_cents: body.salaryMin ?? body.salary_min ?? null,
-            salary_max_usd_cents: body.salaryMax ?? body.salary_max ?? null,
-            currency_id: currencyPk || undefined,
-            visa_sponsorship: body.visaSponsorship !== undefined ? !!body.visaSponsorship : (body.visa_sponsorship !== undefined ? !!body.visa_sponsorship : undefined),
-            experience_min: typeof body.minExperience === 'number' ? body.minExperience : 0,
-            experience_max: typeof body.maxExperience === 'number' ? body.maxExperience : 0,
-            vacancies: body.vacancies || 1,
-            sections: body.sections || [],
-            status: body.status || 'active',
-            company_size_id: companySizePk,
-            company_linkedin_url: body.companyLinkedinUrl || user?.company_linkedin_url || null,
-            company_overview: body.companyOverview || user?.company_overview || null,
-            company_website: body.companyWebsite || user?.company_website || null,
-            address: body.address || user?.company_address || null,
             updated_at: new Date().toISOString()
         };
+
+        if (body.title !== undefined) dataToUpdate.title = body.title;
+        if (body.jobId !== undefined || body.job_id !== undefined) dataToUpdate.job_id = body.jobId ?? body.job_id ?? null;
+        if (body.description !== undefined) dataToUpdate.description = body.description;
+        if (body.companyName !== undefined) dataToUpdate.company_name = body.companyName;
+        if (body.companyLogo !== undefined) dataToUpdate.company_logo = body.companyLogo;
+
+        if (body.jobTypeId !== undefined || body.job_type_id !== undefined) {
+            dataToUpdate.job_type_pk = await safeResolveMetadata('job_types', body.jobTypeId ?? body.job_type_id);
+        }
+
+        if (body.workplaceTypeId !== undefined || body.workplace_type_id !== undefined) {
+            dataToUpdate.workplace_type_pk = await safeResolveMetadata('workplace_types', body.workplaceTypeId ?? body.workplace_type_id);
+        }
+
+        if (body.companySizeId !== undefined || body.company_size_id !== undefined) {
+            dataToUpdate.company_size_id = await safeResolveMetadata('company_sizes', body.companySizeId ?? body.company_size_id);
+        }
+
+        if (body.salaryMin !== undefined || body.salary_min !== undefined) {
+            dataToUpdate.salary_min_usd_cents = body.salaryMin ?? body.salary_min ?? null;
+        }
+
+        if (body.salaryMax !== undefined || body.salary_max !== undefined) {
+            dataToUpdate.salary_max_usd_cents = body.salaryMax ?? body.salary_max ?? null;
+        }
+
+        if (body.currencyId !== undefined || body.currency_id !== undefined || body.salaryCurrency !== undefined || body.salary_currency !== undefined) {
+            let currencyPk = await safeResolveMetadata('currencies', body.currencyId ?? body.currency_id);
+            if (!currencyPk && (body.salaryCurrency || body.salary_currency)) {
+                const codeToFind = String(body.salaryCurrency || body.salary_currency).toUpperCase();
+                const { data: curr } = await supabaseAdmin.from('currencies').select('id').eq('code', codeToFind).maybeSingle();
+                if (curr) currencyPk = curr.id;
+            }
+            dataToUpdate.currency_id = currencyPk || null;
+        }
+
+        if (body.visaSponsorship !== undefined || body.visa_sponsorship !== undefined) {
+            dataToUpdate.visa_sponsorship = Boolean(body.visaSponsorship ?? body.visa_sponsorship);
+        }
+
+        if (body.minExperience !== undefined || body.min_experience !== undefined) {
+            dataToUpdate.experience_min = Number(body.minExperience ?? body.min_experience ?? 0);
+        }
+
+        if (body.maxExperience !== undefined || body.max_experience !== undefined) {
+            dataToUpdate.experience_max = Number(body.maxExperience ?? body.max_experience ?? 0);
+        }
+
+        if (body.vacancies !== undefined) dataToUpdate.vacancies = body.vacancies;
+        if (body.sections !== undefined) dataToUpdate.sections = body.sections;
+        if (body.status !== undefined) dataToUpdate.status = body.status;
+        if (body.companyLinkedinUrl !== undefined) dataToUpdate.company_linkedin_url = body.companyLinkedinUrl;
+        if (body.companyOverview !== undefined) dataToUpdate.company_overview = body.companyOverview;
+        if (body.companyWebsite !== undefined) dataToUpdate.company_website = body.companyWebsite;
+        if (body.address !== undefined) dataToUpdate.address = body.address;
 
         // Remove undefined fields
         Object.keys(dataToUpdate).forEach(key => dataToUpdate[key] === undefined && delete dataToUpdate[key]);
@@ -397,44 +415,55 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
         if (error) throw error;
 
-        // Update relational join tables: job_skills, job_benefits, job_locations
+        // Update relational join tables: only if explicitly provided in body
         if (updatedJob?.id) {
             const numericJobId = updatedJob.id;
-            const sPks = Array.isArray(skillPks) ? skillPks : (skillPks ? [skillPks] : []);
-            const bPks = Array.isArray(benefitPks) ? benefitPks : (benefitPks ? [benefitPks] : []);
-            const lPks = Array.isArray(locationPks) ? locationPks : (locationPks ? [locationPks] : []);
 
-            if (sPks.length > 0) {
+            if (body.skillIds !== undefined) {
+                const skillPks = await safeResolveMetadata('skills', body.skillIds);
+                const sPks = Array.isArray(skillPks) ? skillPks : (skillPks ? [skillPks] : []);
                 try {
                     await supabaseAdmin.from('job_skills').delete().eq('job_pk', numericJobId);
-                    const skillInserts = sPks.map((spk: number) => ({ job_pk: numericJobId, skill_pk: spk }));
-                    await supabaseAdmin.from('job_skills').insert(skillInserts);
+                    if (sPks.length > 0) {
+                        const skillInserts = sPks.map((spk: number) => ({ job_pk: numericJobId, skill_pk: spk }));
+                        await supabaseAdmin.from('job_skills').insert(skillInserts);
+                    }
                 } catch (e) {}
             }
-            if (bPks.length > 0) {
+
+            if (body.benefitIds !== undefined) {
+                const benefitPks = await safeResolveMetadata('benefits', body.benefitIds);
+                const bPks = Array.isArray(benefitPks) ? benefitPks : (benefitPks ? [benefitPks] : []);
                 try {
                     await supabaseAdmin.from('job_benefits').delete().eq('job_pk', numericJobId);
-                    const benefitInserts = bPks.map((bpk: number) => ({ job_pk: numericJobId, benefit_pk: bpk }));
-                    await supabaseAdmin.from('job_benefits').insert(benefitInserts);
+                    if (bPks.length > 0) {
+                        const benefitInserts = bPks.map((bpk: number) => ({ job_pk: numericJobId, benefit_pk: bpk }));
+                        await supabaseAdmin.from('job_benefits').insert(benefitInserts);
+                    }
                 } catch (e) {}
             }
-            const locList = Array.isArray(body.locations) && body.locations.length > 0
-                ? body.locations
-                : [{ countryId: body.countryId, stateId: body.stateId, cityId: body.cityId }];
 
-            const locInserts = locList.map((loc: any, idx: number) => ({
-                job_id: numericJobId,
-                country_id: loc.countryId ? Number(loc.countryId) : (body.countryId ? Number(body.countryId) : 1),
-                state_province_id: loc.stateId ? Number(loc.stateId) : null,
-                city_id: loc.cityId ? Number(loc.cityId) : null,
-                is_primary: idx === 0
-            })).filter((loc: any) => loc.country_id || loc.city_id || loc.state_province_id);
+            if (body.locations !== undefined || body.locationIds !== undefined || body.countryId !== undefined) {
+                const locList = Array.isArray(body.locations) && body.locations.length > 0
+                    ? body.locations
+                    : (body.countryId || body.cityId ? [{ countryId: body.countryId, stateId: body.stateId, cityId: body.cityId }] : []);
 
-            if (locInserts.length > 0) {
-                try {
-                    await supabaseAdmin.from('job_locations').delete().eq('job_id', numericJobId);
-                    await supabaseAdmin.from('job_locations').insert(locInserts);
-                } catch (e) {}
+                if (locList.length > 0) {
+                    const locInserts = locList.map((loc: any, idx: number) => ({
+                        job_id: numericJobId,
+                        country_id: loc.countryId ? Number(loc.countryId) : 1,
+                        state_province_id: loc.stateId ? Number(loc.stateId) : null,
+                        city_id: loc.cityId ? Number(loc.cityId) : null,
+                        is_primary: idx === 0
+                    })).filter((loc: any) => loc.country_id || loc.city_id || loc.state_province_id);
+
+                    if (locInserts.length > 0) {
+                        try {
+                            await supabaseAdmin.from('job_locations').delete().eq('job_id', numericJobId);
+                            await supabaseAdmin.from('job_locations').insert(locInserts);
+                        } catch (e) {}
+                    }
+                }
             }
         }
         
@@ -444,6 +473,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         return safeErrorResponse(e, 'Failed to update job');
     }
 }
+
+export const PATCH = PUT;
 
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {

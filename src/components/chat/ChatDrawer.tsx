@@ -85,9 +85,16 @@ export function ChatDrawer({ applicationId, isOpen, onClose, onMessageRead }: Ch
 
                 // Mark notifications as read
                 if (user?.uuid) {
+                    const { data: sessionData } = await supabase.auth.getSession();
+                    const token = sessionData?.session?.access_token;
+                    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+
                     fetch('/api/notifications', {
                         method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers,
                         body: JSON.stringify({
                             applicationId: applicationId,
                             userId: user.uuid

@@ -24,6 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { onFormInvalid } from "@/lib/form-toast-utils";
+import { supabase } from "@/lib/supabase-client";
 
 const formSchema = z.object({
   gender: z.string().min(1, "Please select gender."),
@@ -80,12 +81,40 @@ export function PersonalInfoFormCombined({ user, onSuccess }: PersonalInfoFormCo
 
   const onSubmit = async (values: PersonalInfoFormValues) => {
     try {
-      // We can use either the general user update endpoint or the section-specific one.
-      // Since we want to update the local context as well, the general one is easier for now.
+      const deltaPayload: Record<string, any> = {
+        role: user.role,
+      };
+
+      let hasChanges = false;
+      for (const [key, newVal] of Object.entries(values)) {
+        const currentVal = (user as any)[key];
+        const normCurrent = (currentVal === undefined || currentVal === '' || currentVal === null) ? null : String(currentVal).trim();
+        const normNew = (newVal === undefined || newVal === '' || newVal === null) ? null : String(newVal).trim();
+
+        if (normCurrent !== normNew) {
+          deltaPayload[key] = newVal;
+          hasChanges = true;
+        }
+      }
+
+      if (!hasChanges) {
+        toast({
+          title: "No Changes Detected",
+          description: "Your personal and diversity details are already up to date.",
+        });
+        if (onSuccess) onSuccess();
+        return;
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       const response = await fetch(`/api/users/${user.uuid}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...user, ...values }),
+        headers,
+        body: JSON.stringify(deltaPayload),
       });
 
       if (!response.ok) {
@@ -94,7 +123,7 @@ export function PersonalInfoFormCombined({ user, onSuccess }: PersonalInfoFormCo
       }
       
       const updatedUser = await response.json();
-      setUser(updatedUser);
+      setUser({ ...user, ...updatedUser });
 
       toast({
         title: "Profile Updated!",

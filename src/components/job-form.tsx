@@ -29,6 +29,7 @@ import { useUser } from "@/contexts/user-context";
 import { MultiSelectFilter } from "./multi-select-filter";
 import { SUPPORTED_CURRENCIES } from "@/utils/currency";
 import { onFormInvalid } from "@/lib/form-toast-utils";
+import { supabase } from "@/lib/supabase-client";
 
 // ─── Schema ────────────────────────────────────────────────────────────────
 
@@ -465,45 +466,127 @@ export function JobForm({ job }: JobFormProps) {
       const method = job ? 'PUT' : 'POST';
       
       const primaryLoc = data.locations?.[0] || {};
-      const payload = {
-        ...data,
-        jobId: data.jobId,
-        title: data.jobTitle,
-        description: data.jobDescription,
-        locations: data.locations || [],
-        countryId: primaryLoc.countryId || data.countryId || null,
-        stateId: primaryLoc.stateId || data.stateId || null,
-        cityId: primaryLoc.cityId || data.cityId || null,
-        country: primaryLoc.country || data.country || "",
-        state: primaryLoc.state || data.state || "",
-        city: primaryLoc.city || data.city || "",
-        remoteType: data.remoteType,
-        salaryCurrency: data.salaryCurrency,
-        industry: data.industry,
-        jobFunction: data.jobFunction,
-        visaSponsorship: data.visaSponsorship,
-        workAuthorizationRequirement: data.workAuthorizationRequirement || [],
-        languages: data.languages || [],
-        companyVerification: data.companyVerification,
-        companyRating: data.companyRating,
-        isReferral: false,
-        recruiterId: user.role === 'Recruiter' ? user.uuid : undefined,
-        adminId: (user.role === 'Admin' || user.role === 'Super Admin') ? user.uuid : undefined,
-        postedAt: job?.postedAt || new Date().toISOString(),
-        sections: data.sections?.map(s => ({ title: s.title, items: s.items.map(i => i.value) })) || [],
-        benefitIds: data.benefitIds || [],
-        skillIds: data.skillIds || [],
-        companyOverview: data.companyOverview,
-        companyWebsite: data.companyWebsite,
-        companySizeId: data.companySizeId === '' ? null : data.companySizeId,
-        companyLinkedinUrl: data.companyLinkedinUrl,
-        address: data.address,
-      };
+      let finalBody: Record<string, any> = {};
+
+      if (job) {
+        // Delta computation: only include fields that differ from original `job`
+        const norm = (v: any) => (v === undefined || v === null || v === '' ? null : String(v).trim());
+        const normNum = (v: any) => (v === undefined || v === null || v === '' ? null : Number(v));
+
+        if (norm(data.jobTitle) !== norm(job.title)) finalBody.title = data.jobTitle;
+        if (norm(data.jobId) !== norm(job.jobId)) finalBody.jobId = data.jobId;
+        if (norm(data.jobDescription) !== norm(job.description)) finalBody.description = data.jobDescription;
+        if (norm(data.companyName) !== norm(job.companyName)) finalBody.companyName = data.companyName;
+        if (norm(data.jobTypeId) !== norm(job.jobTypeId)) finalBody.jobTypeId = data.jobTypeId;
+        if (norm(data.workplaceTypeId) !== norm(job.workplaceTypeId)) finalBody.workplaceTypeId = data.workplaceTypeId;
+        if (norm(data.companySizeId) !== norm(job.companySizeId)) finalBody.companySizeId = data.companySizeId === '' ? null : data.companySizeId;
+        if (normNum(data.salaryMin) !== normNum(job.salaryMin)) finalBody.salaryMin = data.salaryMin;
+        if (normNum(data.salaryMax) !== normNum(job.salaryMax)) finalBody.salaryMax = data.salaryMax;
+        if (norm(data.salaryCurrency) !== norm(job.salaryCurrency || job.currency)) finalBody.salaryCurrency = data.salaryCurrency;
+        if (normNum(data.minExperience) !== normNum(job.minExperience)) finalBody.minExperience = data.minExperience;
+        if (normNum(data.maxExperience) !== normNum(job.maxExperience)) finalBody.maxExperience = data.maxExperience;
+        if (normNum(data.vacancies) !== normNum(job.vacancies)) finalBody.vacancies = data.vacancies;
+        if (norm(data.remoteType) !== norm(job.remoteType)) finalBody.remoteType = data.remoteType;
+        if (Boolean(data.visaSponsorship) !== Boolean(job.visaSponsorship ?? (job as any).visa_sponsorship)) {
+          finalBody.visaSponsorship = data.visaSponsorship;
+        }
+        if (norm(data.companyOverview) !== norm((job as any).companyOverview)) finalBody.companyOverview = data.companyOverview;
+        if (norm(data.companyWebsite) !== norm((job as any).companyWebsite)) finalBody.companyWebsite = data.companyWebsite;
+        if (norm(data.companyLinkedinUrl) !== norm(job.companyLinkedinUrl)) finalBody.companyLinkedinUrl = data.companyLinkedinUrl;
+        if (norm(data.address) !== norm((job as any).address)) finalBody.address = data.address;
+
+        // Compare skillIds
+        const origSkills = [...(job.skillIds || [])].sort().join(',');
+        const newSkills = [...(data.skillIds || [])].sort().join(',');
+        if (origSkills !== newSkills) finalBody.skillIds = data.skillIds || [];
+
+        // Compare benefitIds
+        const origBenefits = [...(job.benefitIds || [])].sort().join(',');
+        const newBenefits = [...(data.benefitIds || [])].sort().join(',');
+        if (origBenefits !== newBenefits) finalBody.benefitIds = data.benefitIds || [];
+
+        // Compare locations
+        const oldLocs = (job as any).jobLocations || [];
+        const normLocs = (locs: any[]) => JSON.stringify(locs.map(l => ({
+          countryId: l.countryId || null,
+          stateId: l.stateId || null,
+          cityId: l.cityId || null,
+          country: (l.country || '').trim(),
+          state: (l.state || '').trim(),
+          city: (l.city || '').trim(),
+        })));
+        if (normLocs(data.locations || []) !== normLocs(oldLocs)) {
+          finalBody.locations = data.locations || [];
+          finalBody.countryId = primaryLoc.countryId || data.countryId || null;
+          finalBody.stateId = primaryLoc.stateId || data.stateId || null;
+          finalBody.cityId = primaryLoc.cityId || data.cityId || null;
+          finalBody.country = primaryLoc.country || data.country || "";
+          finalBody.state = primaryLoc.state || data.state || "";
+          finalBody.city = primaryLoc.city || data.city || "";
+        }
+
+        // Compare sections
+        const formattedNewSections = data.sections?.map((s: any) => ({ title: s.title, items: s.items.map((i: any) => i.value) })) || [];
+        const oldSections = job.sections || [];
+        if (JSON.stringify(formattedNewSections) !== JSON.stringify(oldSections)) {
+          finalBody.sections = formattedNewSections;
+        }
+
+        if (Object.keys(finalBody).length === 0) {
+          toast({
+            title: "No Changes Detected",
+            description: "The job posting is already up to date.",
+          });
+          router.push('/');
+          return;
+        }
+      } else {
+        // Creation payload
+        finalBody = {
+          ...data,
+          jobId: data.jobId,
+          title: data.jobTitle,
+          description: data.jobDescription,
+          locations: data.locations || [],
+          countryId: primaryLoc.countryId || data.countryId || null,
+          stateId: primaryLoc.stateId || data.stateId || null,
+          cityId: primaryLoc.cityId || data.cityId || null,
+          country: primaryLoc.country || data.country || "",
+          state: primaryLoc.state || data.state || "",
+          city: primaryLoc.city || data.city || "",
+          remoteType: data.remoteType,
+          salaryCurrency: data.salaryCurrency,
+          industry: data.industry,
+          jobFunction: data.jobFunction,
+          visaSponsorship: data.visaSponsorship,
+          workAuthorizationRequirement: data.workAuthorizationRequirement || [],
+          languages: data.languages || [],
+          companyVerification: data.companyVerification,
+          companyRating: data.companyRating,
+          isReferral: false,
+          recruiterId: user.role === 'Recruiter' ? user.uuid : undefined,
+          adminId: (user.role === 'Admin' || user.role === 'Super Admin') ? user.uuid : undefined,
+          postedAt: new Date().toISOString(),
+          sections: data.sections?.map((s: any) => ({ title: s.title, items: s.items.map((i: any) => i.value) })) || [],
+          benefitIds: data.benefitIds || [],
+          skillIds: data.skillIds || [],
+          companyOverview: data.companyOverview,
+          companyWebsite: data.companyWebsite,
+          companySizeId: data.companySizeId === '' ? null : data.companySizeId,
+          companyLinkedinUrl: data.companyLinkedinUrl,
+          address: data.address,
+        };
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        headers,
+        body: JSON.stringify(finalBody),
       });
 
       if (!response.ok) {

@@ -37,8 +37,8 @@ export const RESUME_FILE_RULES: Record<string, FileTypeRule> = {
 
 export const IMAGE_FILE_RULES: Record<string, FileTypeRule> = {
   jpeg: {
-    extensions: ['jpg', 'jpeg'],
-    mimeTypes: ['image/jpeg'],
+    extensions: ['jpg', 'jpeg', 'jfif'],
+    mimeTypes: ['image/jpeg', 'image/pjpeg'],
     magic: [[0xff, 0xd8, 0xff]],
   },
   png: {

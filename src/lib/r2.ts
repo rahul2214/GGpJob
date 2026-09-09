@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID?.trim();
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID?.trim();
@@ -12,6 +13,10 @@ const r2Client = new S3Client({
   region: "auto",
   endpoint: R2_ENDPOINT,
   forcePathStyle: true, // Reverted to true for account-specific R2 endpoints
+  requestHandler: new NodeHttpHandler({
+    connectionTimeout: 10000,
+    requestTimeout: 30000,
+  }),
   credentials: {
     accessKeyId: R2_ACCESS_KEY_ID || "",
     secretAccessKey: R2_SECRET_ACCESS_KEY || "",

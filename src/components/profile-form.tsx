@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { useUser } from "@/contexts/user-context";
 import { supabase } from "@/lib/supabase-client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "next/navigation";
 import { User, CompanySize, VisaRequirement, NoticePeriod } from "@/lib/types";
@@ -34,31 +34,46 @@ import { onFormInvalid } from "@/lib/form-toast-utils";
 function SearchableCombobox({
   options,
   value,
+  displayLabel,
   onSelect,
   placeholder,
   disabled = false,
   emptyText = "No results found.",
-  className = ""
+  className = "",
+  onOpen,
+  isLoading = false,
 }: {
   options: { id: number; name: string }[];
   value?: string | number | null;
+  displayLabel?: string | null;
   onSelect: (option: { id: number; name: string }) => void;
   placeholder: string;
   disabled?: boolean;
   emptyText?: string;
   className?: string;
+  onOpen?: () => void;
+  isLoading?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
 
   const selectedOption = options.find(
-    (o) => o.id === Number(value) || o.name.toLowerCase() === String(value || '').toLowerCase()
+    (o) => (value !== undefined && value !== null && value !== '' && o.id === Number(value)) ||
+           (displayLabel && o.name.toLowerCase() === displayLabel.toLowerCase()) ||
+           (value && isNaN(Number(value)) && o.name.toLowerCase() === String(value).toLowerCase())
   );
 
-  const displayValue = selectedOption ? selectedOption.name : (value ? String(value) : "");
+  const displayValue = selectedOption
+    ? selectedOption.name
+    : (displayLabel || (value && isNaN(Number(value)) ? String(value) : ""));
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen);
+      if (isOpen && onOpen) {
+        onOpen();
+      }
+    }}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -75,57 +90,64 @@ function SearchableCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[280px] p-0" align="start">
-        <Command>
-          <CommandInput 
-            placeholder={`Search ${placeholder.toLowerCase()}...`} 
-            value={searchValue}
-            onValueChange={setSearchValue}
-          />
-          <CommandList className="max-h-60 overflow-y-auto">
-            <CommandEmpty className="p-2 text-center text-xs text-slate-500">
-              <p>{emptyText}</p>
-              {searchValue.trim() && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="mt-2 text-indigo-600 hover:text-indigo-700 text-xs w-full"
-                  onClick={() => {
-                    onSelect({ id: 0, name: searchValue.trim() });
-                    setOpen(false);
-                    setSearchValue("");
-                  }}
-                >
-                  Use "{searchValue.trim()}"
-                </Button>
-              )}
-            </CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => {
-                const isSelected = selectedOption?.id === option.id || selectedOption?.name.toLowerCase() === option.name.toLowerCase();
-                return (
-                  <CommandItem
-                    key={option.id}
-                    value={option.name}
-                    onSelect={() => {
-                      onSelect(option);
+        {isLoading ? (
+          <div className="flex items-center justify-center p-6 text-slate-500 gap-2 text-xs">
+            <LoaderCircle className="w-4 h-4 animate-spin text-indigo-600" />
+            <span>Loading options...</span>
+          </div>
+        ) : (
+          <Command>
+            <CommandInput 
+              placeholder={`Search ${placeholder.toLowerCase()}...`} 
+              value={searchValue}
+              onValueChange={setSearchValue}
+            />
+            <CommandList className="max-h-60 overflow-y-auto">
+              <CommandEmpty className="p-2 text-center text-xs text-slate-500">
+                <p>{emptyText}</p>
+                {searchValue.trim() && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 text-indigo-600 hover:text-indigo-700 text-xs w-full"
+                    onClick={() => {
+                      onSelect({ id: 0, name: searchValue.trim() });
                       setOpen(false);
                       setSearchValue("");
                     }}
                   >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4 text-indigo-600",
-                        isSelected ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {option.name}
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+                    Use "{searchValue.trim()}"
+                  </Button>
+                )}
+              </CommandEmpty>
+              <CommandGroup>
+                {options.map((option) => {
+                  const isSelected = selectedOption?.id === option.id || selectedOption?.name.toLowerCase() === option.name.toLowerCase();
+                  return (
+                    <CommandItem
+                      key={option.id}
+                      value={option.name}
+                      onSelect={() => {
+                        onSelect(option);
+                        setOpen(false);
+                        setSearchValue("");
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4 text-indigo-600",
+                          isSelected ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {option.name}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        )}
       </PopoverContent>
     </Popover>
   );
@@ -256,72 +278,195 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
     const [dbStates, setDbStates] = useState<{ id: number; name: string }[]>([]);
     const [dbCities, setDbCities] = useState<{ id: number; name: string }[]>([]);
 
-    useEffect(() => {
-        fetch('/api/geo?type=countries')
-            .then(res => res.json())
-            .then(data => {
-                if (Array.isArray(data)) setDbCountries(data);
-            })
-            .catch(err => console.error("Failed to load countries", err));
-    }, []);
+    // Lazy loading flags
+    const [isLoadingCountries, setIsLoadingCountries] = useState(false);
+    const [isLoadingStates, setIsLoadingStates] = useState(false);
+    const [isLoadingCities, setIsLoadingCities] = useState(false);
+    const [isLoadingCompanySizes, setIsLoadingCompanySizes] = useState(false);
+    const [isLoadingVisaRequirements, setIsLoadingVisaRequirements] = useState(false);
+    const [isLoadingWorkplaceTypes, setIsLoadingWorkplaceTypes] = useState(false);
+    const [isLoadingNoticePeriods, setIsLoadingNoticePeriods] = useState(false);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [sizesRes, visaRes, workplaceRes, noticeRes] = await Promise.all([
-                    fetch('/api/company-sizes'),
-                    fetch('/api/visa-requirements'),
-                    fetch('/api/workplace-types'),
-                    fetch('/api/notice-periods')
-                ]);
-                setCompanySizes(await sizesRes.json());
-                setVisaRequirements(await visaRes.json());
-                const wpData = await workplaceRes.json();
-                if (Array.isArray(wpData)) setWorkplaceTypes(wpData);
-                const npData = await noticeRes.json();
-                if (Array.isArray(npData)) setNoticePeriods(npData);
-            } catch (error) {
-                console.error("Failed to fetch form data", error);
+    const lastFetchedCountryIdRef = useRef<number | null>(null);
+    const lastFetchedStateIdRef = useRef<number | null>(null);
+
+    // On-demand fetch handlers (only called when user interacts with dropdowns)
+    const fetchCountries = async () => {
+        if (dbCountries.length > 0 || isLoadingCountries) return;
+        setIsLoadingCountries(true);
+        try {
+            const res = await fetch('/api/geo?type=countries');
+            const data = await res.json();
+            if (Array.isArray(data)) setDbCountries(data);
+        } catch (err) {
+            console.error("Failed to load countries", err);
+        } finally {
+            setIsLoadingCountries(false);
+        }
+    };
+
+    const fetchStates = async (countryIdOverride?: number | null) => {
+        let activeCountryId = countryIdOverride ?? form.getValues("countryId");
+        const selectedCountryName = form.getValues("country");
+
+        if (!activeCountryId && selectedCountryName) {
+            if (dbCountries.length === 0) {
+                try {
+                    const res = await fetch('/api/geo?type=countries');
+                    const data = await res.json();
+                    if (Array.isArray(data)) {
+                        setDbCountries(data);
+                        const found = data.find(c => c.name.toLowerCase() === selectedCountryName.toLowerCase());
+                        if (found) {
+                            activeCountryId = found.id;
+                            form.setValue("countryId", found.id);
+                        }
+                    }
+                } catch (e) {}
+            } else {
+                const found = dbCountries.find(c => c.name.toLowerCase() === selectedCountryName.toLowerCase());
+                if (found) {
+                    activeCountryId = found.id;
+                    form.setValue("countryId", found.id);
+                }
             }
         }
-        fetchData();
-    }, []);
+
+        if (!activeCountryId) return;
+        if (dbStates.length > 0 && lastFetchedCountryIdRef.current === activeCountryId) return;
+
+        setIsLoadingStates(true);
+        try {
+            lastFetchedCountryIdRef.current = activeCountryId;
+            const res = await fetch(`/api/geo?type=states&countryId=${activeCountryId}`);
+            const data = await res.json();
+            if (Array.isArray(data)) setDbStates(data);
+        } catch (err) {
+            console.error("Failed to load states", err);
+        } finally {
+            setIsLoadingStates(false);
+        }
+    };
+
+    const fetchCities = async (stateIdOverride?: number | null) => {
+        let activeStateId = stateIdOverride ?? form.getValues("stateId");
+        const selectedStateName = form.getValues("state");
+
+        if (!activeStateId && selectedStateName) {
+            const found = dbStates.find(s => s.name.toLowerCase() === selectedStateName.toLowerCase());
+            if (found) {
+                activeStateId = found.id;
+                form.setValue("stateId", found.id);
+            }
+        }
+
+        if (!activeStateId) return;
+        if (dbCities.length > 0 && lastFetchedStateIdRef.current === activeStateId) return;
+
+        setIsLoadingCities(true);
+        try {
+            lastFetchedStateIdRef.current = activeStateId;
+            const res = await fetch(`/api/geo?type=cities&stateId=${activeStateId}`);
+            const data = await res.json();
+            if (Array.isArray(data)) setDbCities(data);
+        } catch (err) {
+            console.error("Failed to load cities", err);
+        } finally {
+            setIsLoadingCities(false);
+        }
+    };
+
+    const fetchCompanySizes = async () => {
+        if (companySizes.length > 0 || isLoadingCompanySizes) return;
+        setIsLoadingCompanySizes(true);
+        try {
+            const res = await fetch('/api/company-sizes');
+            const data = await res.json();
+            if (Array.isArray(data)) setCompanySizes(data);
+        } catch (err) {
+            console.error("Failed to load company sizes", err);
+        } finally {
+            setIsLoadingCompanySizes(false);
+        }
+    };
+
+    const fetchVisaRequirements = async () => {
+        if (visaRequirements.length > 0 || isLoadingVisaRequirements) return;
+        setIsLoadingVisaRequirements(true);
+        try {
+            const res = await fetch('/api/visa-requirements');
+            const data = await res.json();
+            if (Array.isArray(data)) setVisaRequirements(data);
+        } catch (err) {
+            console.error("Failed to load visa requirements", err);
+        } finally {
+            setIsLoadingVisaRequirements(false);
+        }
+    };
+
+    const fetchWorkplaceTypes = async () => {
+        if (workplaceTypes.length > 0 || isLoadingWorkplaceTypes) return;
+        setIsLoadingWorkplaceTypes(true);
+        try {
+            const res = await fetch('/api/workplace-types');
+            const data = await res.json();
+            if (Array.isArray(data)) setWorkplaceTypes(data);
+        } catch (err) {
+            console.error("Failed to load workplace types", err);
+        } finally {
+            setIsLoadingWorkplaceTypes(false);
+        }
+    };
+
+    const fetchNoticePeriods = async () => {
+        if (noticePeriods.length > 0 || isLoadingNoticePeriods) return;
+        setIsLoadingNoticePeriods(true);
+        try {
+            const res = await fetch('/api/notice-periods');
+            const data = await res.json();
+            if (Array.isArray(data)) setNoticePeriods(data);
+        } catch (err) {
+            console.error("Failed to load notice periods", err);
+        } finally {
+            setIsLoadingNoticePeriods(false);
+        }
+    };
 
     const form = useForm<ProfileFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            name: user.name,
-            email: user.email,
+            name: user.name || "",
+            email: user.email || "",
             phone: initialPhone.phoneDigits,
             country: user.country || "",
-            countryId: (user as any).countryId || null,
+            countryId: (user as any).countryId ?? null,
             state: user.state || "",
-            stateId: (user as any).stateId || null,
+            stateId: (user as any).stateId ?? null,
             headline: user.headline || "",
             linkedinUrl: user.linkedinUrl || "",
             githubUrl: user.githubUrl || "",
             portfolioUrl: user.portfolioUrl || "",
             workStatus: user.workStatus as any,
-            experienceYears: user.experienceYears || "" as any,
-            experienceMonths: user.experienceMonths || "" as any,
+            experienceYears: (user.experienceYears !== null && user.experienceYears !== undefined) ? user.experienceYears : "" as any,
+            experienceMonths: (user.experienceMonths !== null && user.experienceMonths !== undefined) ? user.experienceMonths : "" as any,
             currentCity: user.currentCity || "",
-            cityId: (user as any).cityId || null,
+            cityId: (user as any).cityId ?? null,
             currentArea: user.currentArea || "",
-            annualSalary: user.annualSalary || "" as any,
-            expectedSalary: user.expectedSalary || "" as any,
+            annualSalary: (user.annualSalary !== null && user.annualSalary !== undefined) ? user.annualSalary : "" as any,
+            expectedSalary: (user.expectedSalary !== null && user.expectedSalary !== undefined) ? user.expectedSalary : "" as any,
             salaryBreakdown: user.salaryBreakdown || "" as any,
             noticePeriod: user.noticePeriod || "" as any,
             noticePeriodId: (user as any).noticePeriodId || (user as any).notice_period_id || null,
             companyName: user.companyName || "",
             companyWebsite: user.companyWebsite || "",
-            companySizeId: user.companySizeId || "",
+            companySizeId: user.companySizeId ? String(user.companySizeId) : "",
             companyOverview: user.companyOverview || "",
             companyAddress: user.companyAddress || "",
             companyLinkedinUrl: user.companyLinkedinUrl || "",
             preferredLocations: user.preferredLocations || [],
             preferredJobTitles: user.preferredJobTitles || [],
-            preferredSalaryMin: user.preferredSalaryMin || "" as any,
-            preferredSalaryMax: user.preferredSalaryMax || "" as any,
+            preferredSalaryMin: (user.preferredSalaryMin !== null && user.preferredSalaryMin !== undefined) ? user.preferredSalaryMin : "" as any,
+            preferredSalaryMax: (user.preferredSalaryMax !== null && user.preferredSalaryMax !== undefined) ? user.preferredSalaryMax : "" as any,
             preferredCurrency: user.preferredCurrency || "INR",
             remotePreference: user.remotePreference || "any",
             employmentTypes: user.employmentTypes || [],
@@ -330,6 +475,7 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
             openWorldwide: user.openWorldwide ?? false,
             workAuthorization: user.workAuthorization || [],
             visaRequirement: user.visaRequirement || "",
+            visaRequirementId: (user as any).visaRequirementId || (user as any).visa_requirement_id || null,
             workplaceTypeId: (user as any).workplaceTypeId || (user as any).workplace_type_id || null,
             preferredLanguages: user.preferredLanguages || [],
         },
@@ -337,56 +483,6 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
 
     const { reset, watch, formState: { errors, isSubmitting } } = form;
     const workStatus = watch('workStatus');
-
-    // Fetch states whenever selected country changes
-    const selectedCountryName = watch("country");
-    const selectedCountryId = watch("countryId");
-
-    useEffect(() => {
-        let activeCountryId = selectedCountryId;
-        if (!activeCountryId && selectedCountryName && dbCountries.length > 0) {
-            const found = dbCountries.find(c => c.name.toLowerCase() === selectedCountryName.toLowerCase());
-            if (found) {
-                activeCountryId = found.id;
-                form.setValue("countryId", found.id);
-            }
-        }
-        if (activeCountryId) {
-            fetch(`/api/geo?type=states&countryId=${activeCountryId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (Array.isArray(data)) setDbStates(data);
-                })
-                .catch(err => console.error("Failed to load states", err));
-        } else {
-            setDbStates([]);
-        }
-    }, [selectedCountryId, selectedCountryName, dbCountries, form]);
-
-    // Fetch cities whenever selected state changes
-    const selectedStateName = watch("state");
-    const selectedStateId = watch("stateId");
-
-    useEffect(() => {
-        let activeStateId = selectedStateId;
-        if (!activeStateId && selectedStateName && dbStates.length > 0) {
-            const found = dbStates.find(s => s.name.toLowerCase() === selectedStateName.toLowerCase());
-            if (found) {
-                activeStateId = found.id;
-                form.setValue("stateId", found.id);
-            }
-        }
-        if (activeStateId) {
-            fetch(`/api/geo?type=cities&stateId=${activeStateId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (Array.isArray(data)) setDbCities(data);
-                })
-                .catch(err => console.error("Failed to load cities", err));
-        } else {
-            setDbCities([]);
-        }
-    }, [selectedStateId, selectedStateName, dbStates, form]);
 
     // Debug: Log form errors to console if validation fails
     useEffect(() => {
@@ -399,25 +495,25 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
         const { countryCode: code, phoneDigits } = parsePhoneNumber(user.phone);
         setCountryCode(code);
         reset({
-            name: user.name,
-            email: user.email,
+            name: user.name || "",
+            email: user.email || "",
             phone: phoneDigits,
             country: user.country || "",
-            countryId: (user as any).countryId || null,
+            countryId: (user as any).countryId ?? null,
             state: user.state || "",
-            stateId: (user as any).stateId || null,
+            stateId: (user as any).stateId ?? null,
             headline: user.headline || "",
             linkedinUrl: user.linkedinUrl || "",
             githubUrl: user.githubUrl || "",
             portfolioUrl: user.portfolioUrl || "",
             workStatus: user.workStatus as any,
-            experienceYears: user.experienceYears || "" as any,
-            experienceMonths: user.experienceMonths || "" as any,
+            experienceYears: (user.experienceYears !== null && user.experienceYears !== undefined) ? user.experienceYears : "" as any,
+            experienceMonths: (user.experienceMonths !== null && user.experienceMonths !== undefined) ? user.experienceMonths : "" as any,
             currentCity: user.currentCity || "",
-            cityId: (user as any).cityId || null,
+            cityId: (user as any).cityId ?? null,
             currentArea: user.currentArea || "",
-            annualSalary: user.annualSalary || "" as any,
-            expectedSalary: user.expectedSalary || "" as any,
+            annualSalary: (user.annualSalary !== null && user.annualSalary !== undefined) ? user.annualSalary : "" as any,
+            expectedSalary: (user.expectedSalary !== null && user.expectedSalary !== undefined) ? user.expectedSalary : "" as any,
             salaryBreakdown: user.salaryBreakdown || "" as any,
             noticePeriod: user.noticePeriod || "" as any,
             noticePeriodId: (user as any).noticePeriodId || (user as any).notice_period_id || null,
@@ -429,8 +525,8 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
             companyLinkedinUrl: user.companyLinkedinUrl || "",
             preferredLocations: user.preferredLocations || [],
             preferredJobTitles: user.preferredJobTitles || [],
-            preferredSalaryMin: user.preferredSalaryMin || "" as any,
-            preferredSalaryMax: user.preferredSalaryMax || "" as any,
+            preferredSalaryMin: (user.preferredSalaryMin !== null && user.preferredSalaryMin !== undefined) ? user.preferredSalaryMin : "" as any,
+            preferredSalaryMax: (user.preferredSalaryMax !== null && user.preferredSalaryMax !== undefined) ? user.preferredSalaryMax : "" as any,
             preferredCurrency: user.preferredCurrency || "INR",
             remotePreference: user.remotePreference || "any",
             employmentTypes: user.employmentTypes || [],
@@ -439,6 +535,7 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
             openWorldwide: user.openWorldwide ?? false,
             workAuthorization: user.workAuthorization || [],
             visaRequirement: user.visaRequirement || "",
+            visaRequirementId: (user as any).visaRequirementId || (user as any).visa_requirement_id || null,
             workplaceTypeId: (user as any).workplaceTypeId || (user as any).workplace_type_id || null,
             preferredLanguages: user.preferredLanguages || [],
         });
@@ -481,11 +578,36 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                 headers["Authorization"] = `Bearer ${token}`;
             }
 
-            const { countryId, stateId, cityId, visaRequirementId, workplaceTypeId, noticePeriodId, ...userClean } = user as any;
+            // Diff against current user to send ONLY values changed in the UI
+            const deltaPayload: Record<string, any> = {
+                role: user.role
+            };
+
+            let hasChanges = false;
+            for (const [key, newVal] of Object.entries(cleanedData)) {
+                const currentVal = (user as any)[key];
+                const normCurrent = (currentVal === undefined || currentVal === '' || currentVal === null) ? null : String(currentVal).trim();
+                const normNew = (newVal === undefined || newVal === '' || newVal === null) ? null : String(newVal).trim();
+                
+                if (normCurrent !== normNew) {
+                    deltaPayload[key] = newVal;
+                    hasChanges = true;
+                }
+            }
+
+            if (!hasChanges) {
+                toast({
+                    title: "No Changes Detected",
+                    description: "Your profile is already up to date.",
+                });
+                if (isEditingPage) router.push('/profile');
+                return;
+            }
+
             const response = await fetch(`/api/users/${user.uuid}`, {
                 method: "PUT",
                 headers,
-                body: JSON.stringify({ ...userClean, ...cleanedData }),
+                body: JSON.stringify(deltaPayload),
             });
 
             if (!response.ok) {
@@ -561,7 +683,15 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                             <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
                                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Notice Period</span>
                                 <span className="text-sm text-slate-800 font-medium">
-                                    {noticePeriods.find(np => np.id === (user as any).noticePeriodId || np.id === (user as any).notice_period_id)?.name || user.noticePeriod || "Not specified"}
+                                    {noticePeriods.find(np => np.id === (user as any).noticePeriodId || np.id === (user as any).notice_period_id)?.name || 
+                                     user.noticePeriod || 
+                                     ((user as any).noticePeriodId === 1 || (user as any).notice_period_id === 1 ? 'Immediate / Available Now' : 
+                                      (user as any).noticePeriodId === 2 || (user as any).notice_period_id === 2 ? '15 Days or less' : 
+                                      (user as any).noticePeriodId === 3 || (user as any).notice_period_id === 3 ? '1 Month' : 
+                                      (user as any).noticePeriodId === 4 || (user as any).notice_period_id === 4 ? '2 Months' : 
+                                      (user as any).noticePeriodId === 5 || (user as any).notice_period_id === 5 ? '3 Months' : 
+                                      (user as any).noticePeriodId === 6 || (user as any).notice_period_id === 6 ? 'Serving Notice Period' : null) || 
+                                     "Not specified"}
                                 </span>
                             </div>
                             <div className="flex flex-col gap-1.5 border-b border-slate-100 pb-3">
@@ -588,7 +718,13 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                             <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
                                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Work Preference</span>
                                 <span className="text-sm text-slate-800 font-medium">
-                                    {workplaceTypes.find(wt => wt.id === (user as any).workplaceTypeId || wt.id === (user as any).workplace_type_id)?.name || user.workplaceType || (user.remotePreference ? user.remotePreference.toUpperCase() : "Not specified")}
+                                    {workplaceTypes.find(wt => wt.id === (user as any).workplaceTypeId || wt.id === (user as any).workplace_type_id)?.name || 
+                                     user.workplaceType || 
+                                     ((user as any).workplaceTypeId === 1 || (user as any).workplace_type_id === 1 ? 'Remote' : 
+                                      (user as any).workplaceTypeId === 2 || (user as any).workplace_type_id === 2 ? 'On-site' : 
+                                      (user as any).workplaceTypeId === 3 || (user as any).workplace_type_id === 3 ? 'Hybrid' : 
+                                      (user as any).workplaceTypeId === 4 || (user as any).workplace_type_id === 4 ? 'Flexible / Any' : null) || 
+                                     (user.remotePreference ? user.remotePreference.toUpperCase() : "Not specified")}
                                 </span>
                             </div>
                             <div className="flex flex-col gap-1 border-b border-slate-100 pb-3">
@@ -684,8 +820,11 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                             <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Country</label>
                             <SearchableCombobox
                                 options={dbCountries}
-                                value={form.watch("countryId") || form.watch("country")}
+                                value={form.watch("countryId")}
+                                displayLabel={form.watch("country") || user.country}
                                 placeholder="Select Country"
+                                onOpen={fetchCountries}
+                                isLoading={isLoadingCountries}
                                 onSelect={(c) => {
                                     form.setValue("country", c.name);
                                     form.setValue("countryId", c.id || null);
@@ -693,6 +832,10 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                                     form.setValue("stateId", null);
                                     form.setValue("currentCity", "");
                                     form.setValue("cityId", null);
+                                    setDbStates([]);
+                                    setDbCities([]);
+                                    lastFetchedCountryIdRef.current = null;
+                                    lastFetchedStateIdRef.current = null;
                                 }}
                             />
                         </div>
@@ -702,15 +845,20 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                             <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">State / Province</label>
                             <SearchableCombobox
                                 options={dbStates}
-                                value={form.watch("stateId") || form.watch("state")}
+                                value={form.watch("stateId")}
+                                displayLabel={form.watch("state") || user.state}
                                 placeholder="Select State"
                                 disabled={!form.watch("country") && !form.watch("countryId")}
                                 emptyText={(!form.watch("country") && !form.watch("countryId")) ? "Select a country first" : "No states found."}
+                                onOpen={fetchStates}
+                                isLoading={isLoadingStates}
                                 onSelect={(s) => {
                                     form.setValue("state", s.name);
                                     form.setValue("stateId", s.id || null);
                                     form.setValue("currentCity", "");
                                     form.setValue("cityId", null);
+                                    setDbCities([]);
+                                    lastFetchedStateIdRef.current = null;
                                 }}
                             />
                         </div>
@@ -720,10 +868,13 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                             <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">City / Metro</label>
                             <SearchableCombobox
                                 options={dbCities}
-                                value={form.watch("cityId") || form.watch("currentCity")}
+                                value={form.watch("cityId")}
+                                displayLabel={form.watch("currentCity") || user.currentCity}
                                 placeholder="Select City"
                                 disabled={!form.watch("state") && !form.watch("stateId")}
                                 emptyText={(!form.watch("state") && !form.watch("stateId")) ? "Select a state first" : "No cities found."}
+                                onOpen={fetchCities}
+                                isLoading={isLoadingCities}
                                 onSelect={(ci) => {
                                     form.setValue("currentCity", ci.name);
                                     form.setValue("cityId", ci.id || null);
@@ -789,10 +940,20 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                                 name="workplaceTypeId"
                                 render={({ field }) => {
                                     const currentWpId = field.value;
+                                    const currentLabel = workplaceTypes.find(wt => wt.id === currentWpId)?.name ||
+                                        user.workplaceType ||
+                                        (currentWpId === 1 ? 'Remote' : currentWpId === 2 ? 'On-site' : currentWpId === 3 ? 'Hybrid' : currentWpId === 4 ? 'Flexible / Any' : null) ||
+                                        (user.remotePreference ? user.remotePreference.toUpperCase() : "");
+
                                     return (
                                         <FormItem>
                                             <FormLabel className="text-slate-600">Work Preference</FormLabel>
                                             <Select 
+                                                onOpenChange={(isOpen) => {
+                                                    if (isOpen && workplaceTypes.length === 0) {
+                                                        fetchWorkplaceTypes();
+                                                    }
+                                                }}
                                                 onValueChange={(val) => {
                                                     const idNum = val ? Number(val) : null;
                                                     field.onChange(idNum);
@@ -809,15 +970,28 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                                             >
                                                 <FormControl>
                                                     <SelectTrigger>
-                                                        <SelectValue placeholder="Select work preference" />
+                                                        <SelectValue placeholder="Select work preference">
+                                                            {currentLabel || undefined}
+                                                        </SelectValue>
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
+                                                    {isLoadingWorkplaceTypes && (
+                                                        <div className="flex items-center justify-center p-3 text-xs text-slate-400 gap-2">
+                                                            <LoaderCircle className="w-3.5 h-3.5 animate-spin text-indigo-500" />
+                                                            Loading options...
+                                                        </div>
+                                                    )}
                                                     {workplaceTypes.map((wt) => (
                                                         <SelectItem key={wt.id} value={String(wt.id)}>
                                                             {wt.name}
                                                         </SelectItem>
                                                     ))}
+                                                    {workplaceTypes.length === 0 && currentWpId && currentLabel && (
+                                                        <SelectItem value={String(currentWpId)}>
+                                                            {currentLabel}
+                                                        </SelectItem>
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
@@ -830,17 +1004,24 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                                 name="visaRequirement"
                                 render={({ field }) => {
                                     const currentId = form.watch("visaRequirementId");
-                                    const currentName = field.value || "";
+                                    const currentName = field.value || form.watch("visaRequirement") || user.visaRequirement || "";
 
                                     // Match by ID or Name
                                     const activeObj = visaRequirements.find(
-                                        v => (currentId && v.id === currentId) || v.name.toLowerCase() === currentName.toLowerCase()
+                                        v => (currentId && v.id === currentId) || (currentName && v.name.toLowerCase() === currentName.toLowerCase())
                                     );
+                                    const currentLabel = activeObj?.name || currentName || "";
+                                    const selectValue = activeObj ? activeObj.id.toString() : (currentId ? currentId.toString() : (currentName ? currentName : ""));
 
                                     return (
                                         <FormItem>
                                             <FormLabel className="text-slate-600">Visa / Sponsorship Requirement</FormLabel>
                                             <Select 
+                                                onOpenChange={(isOpen) => {
+                                                    if (isOpen && visaRequirements.length === 0) {
+                                                        fetchVisaRequirements();
+                                                    }
+                                                }}
                                                 onValueChange={(val) => {
                                                     const matched = visaRequirements.find(v => v.id.toString() === val || v.name === val);
                                                     const vName = matched ? matched.name : val;
@@ -848,19 +1029,32 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                                                     field.onChange(vName);
                                                     form.setValue("visaRequirementId", vId);
                                                 }} 
-                                                value={activeObj ? activeObj.id.toString() : (currentId ? currentId.toString() : currentName)}
+                                                value={selectValue}
                                             >
                                                 <FormControl>
                                                     <SelectTrigger>
-                                                        <SelectValue placeholder="Select visa status" />
+                                                        <SelectValue placeholder="Select visa status">
+                                                            {currentLabel || undefined}
+                                                        </SelectValue>
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
+                                                    {isLoadingVisaRequirements && (
+                                                        <div className="flex items-center justify-center p-3 text-xs text-slate-400 gap-2">
+                                                            <LoaderCircle className="w-3.5 h-3.5 animate-spin text-indigo-500" />
+                                                            Loading options...
+                                                        </div>
+                                                    )}
                                                     {visaRequirements.map((v) => (
                                                         <SelectItem key={v.id} value={v.id.toString()}>
                                                             {v.name}
                                                         </SelectItem>
                                                     ))}
+                                                    {visaRequirements.length === 0 && selectValue && currentLabel && (
+                                                        <SelectItem value={selectValue}>
+                                                            {currentLabel}
+                                                        </SelectItem>
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
@@ -1057,14 +1251,28 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                                         name="noticePeriodId"
                                         render={({ field }) => {
                                             const currentId = field.value;
-                                            const currentName = form.watch("noticePeriod") || "";
+                                            const currentName = form.watch("noticePeriod") || user.noticePeriod || "";
                                             const activeObj = noticePeriods.find(
                                                 np => (currentId && np.id === Number(currentId)) || (currentName && np.name.toLowerCase() === currentName.toLowerCase())
                                             );
+                                            const currentLabel = activeObj?.name || currentName || 
+                                                (currentId === 1 ? 'Immediate / Available Now' : 
+                                                 currentId === 2 ? '15 Days or less' : 
+                                                 currentId === 3 ? '1 Month' : 
+                                                 currentId === 4 ? '2 Months' : 
+                                                 currentId === 5 ? '3 Months' : 
+                                                 currentId === 6 ? 'Serving Notice Period' : "");
+                                            const selectValue = activeObj ? String(activeObj.id) : (currentId ? String(currentId) : "");
+
                                             return (
                                                 <FormItem>
                                                     <FormLabel className="text-slate-600">Notice Period</FormLabel>
                                                     <Select 
+                                                        onOpenChange={(isOpen) => {
+                                                            if (isOpen && noticePeriods.length === 0) {
+                                                                fetchNoticePeriods();
+                                                            }
+                                                        }}
                                                         onValueChange={(val) => {
                                                             const idNum = val ? Number(val) : null;
                                                             field.onChange(idNum);
@@ -1073,19 +1281,32 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                                                                 form.setValue("noticePeriod", matched.name);
                                                             }
                                                         }} 
-                                                        value={activeObj ? String(activeObj.id) : (currentId ? String(currentId) : "")}
+                                                        value={selectValue}
                                                     >
                                                         <FormControl>
                                                             <SelectTrigger>
-                                                                <SelectValue placeholder="Select notice period" />
+                                                                <SelectValue placeholder="Select notice period">
+                                                                    {currentLabel || undefined}
+                                                                </SelectValue>
                                                             </SelectTrigger>
                                                         </FormControl>
                                                         <SelectContent>
+                                                            {isLoadingNoticePeriods && (
+                                                                <div className="flex items-center justify-center p-3 text-xs text-slate-400 gap-2">
+                                                                    <LoaderCircle className="w-3.5 h-3.5 animate-spin text-indigo-500" />
+                                                                    Loading options...
+                                                                </div>
+                                                            )}
                                                             {noticePeriods.map((np) => (
                                                                 <SelectItem key={np.id} value={String(np.id)}>
                                                                     {np.name}
                                                                 </SelectItem>
                                                             ))}
+                                                            {noticePeriods.length === 0 && selectValue && currentLabel && (
+                                                                <SelectItem value={selectValue}>
+                                                                    {currentLabel}
+                                                                </SelectItem>
+                                                            )}
                                                         </SelectContent>
                                                     </Select>
                                                     <FormMessage />
@@ -1188,27 +1409,58 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                             <FormField
                                 control={form.control}
                                 name="companySizeId"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-slate-600">Company Size</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value || ""}>
-                                            <FormControl>
-                                                <div className="relative">
-                                                    <Users className="absolute left-3 top-3 w-4 h-4 text-slate-400 z-10" />
-                                                    <SelectTrigger className="pl-9">
-                                                        <SelectValue placeholder="Select company size" />
-                                                    </SelectTrigger>
-                                                </div>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {companySizes.map(size => (
-                                                    <SelectItem key={size.uuid} value={size.uuid}>{size.name} Employees</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
+                                render={({ field }) => {
+                                    const currentSizeId = field.value;
+                                    const activeSize = companySizes.find(s => s.uuid === currentSizeId || String(s.id) === String(currentSizeId));
+                                    const currentLabel = activeSize?.name 
+                                        ? `${activeSize.name} Employees` 
+                                        : (user.companySize ? (user.companySize.includes('Employees') ? user.companySize : `${user.companySize} Employees`) : "");
+
+                                    return (
+                                        <FormItem>
+                                            <FormLabel className="text-slate-600">Company Size</FormLabel>
+                                            <Select 
+                                                onOpenChange={(isOpen) => {
+                                                    if (isOpen && companySizes.length === 0) {
+                                                        fetchCompanySizes();
+                                                    }
+                                                }}
+                                                onValueChange={field.onChange} 
+                                                value={currentSizeId || ""}
+                                            >
+                                                <FormControl>
+                                                    <div className="relative">
+                                                        <Users className="absolute left-3 top-3 w-4 h-4 text-slate-400 z-10" />
+                                                        <SelectTrigger className="pl-9">
+                                                            <SelectValue placeholder="Select company size">
+                                                                {currentLabel || undefined}
+                                                            </SelectValue>
+                                                        </SelectTrigger>
+                                                    </div>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {isLoadingCompanySizes && (
+                                                        <div className="flex items-center justify-center p-3 text-xs text-slate-400 gap-2">
+                                                            <LoaderCircle className="w-3.5 h-3.5 animate-spin text-indigo-500" />
+                                                            Loading options...
+                                                        </div>
+                                                    )}
+                                                    {companySizes.map(size => (
+                                                        <SelectItem key={size.uuid || size.id} value={size.uuid || String(size.id)}>
+                                                            {size.name} Employees
+                                                        </SelectItem>
+                                                    ))}
+                                                    {companySizes.length === 0 && currentSizeId && currentLabel && (
+                                                        <SelectItem value={String(currentSizeId)}>
+                                                            {currentLabel}
+                                                        </SelectItem>
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    );
+                                }}
                             />
                         </div>
 
