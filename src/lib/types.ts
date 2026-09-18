@@ -221,6 +221,11 @@ export interface Job {
   // 5. City
   city?: string;
   location?: string;
+  /**
+   * Remote role open to candidates in every country. Stored as a single
+   * `job_locations` row with country_id = -1; see `src/lib/worldwide.ts`.
+   */
+  openToAllCountries?: boolean;
   // 6. Latitude
   latitude?: number;
   // 7. Longitude

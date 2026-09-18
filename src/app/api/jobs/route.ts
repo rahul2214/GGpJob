@@ -5,6 +5,14 @@ import { getSubscriptionInfo, expiredResponse } from '@/lib/subscription';
 import { intelligentSearchJobs } from '@/lib/intelligent-search';
 import { matchesCountry } from '@/lib/recommendation-engine';
 import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
+import {
+    WORLDWIDE_COUNTRY_ID,
+    isWorldwideCountryId,
+    isRemoteWorkplace,
+    normalizeJobLocations,
+    resolveRemoteType,
+    toJobLocationRows,
+} from '@/lib/worldwide';
 
 // Helper to map Supabase snake_case job to camelCase Job type
 function mapJobToFrontend(job: any): any {
@@ -44,6 +52,7 @@ function mapJobToFrontend(job: any): any {
         country: job.country || null,
         state: job.state || null,
         city: job.city || null,
+        openToAllCountries: job.open_to_all_countries === true,
         remoteType: job.remote_type || null,
         employmentType: job.employment_type || null,
         salaryCurrency: job.currencies?.code || job.salary_currency || 'USD',
@@ -108,7 +117,7 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
         allLocationPks.length > 0 ? supabaseAdmin.from('cities').select('id, name').in('id', allLocationPks) : { data: [] },
         allBenefitPks.length > 0 ? supabaseAdmin.from('benefits').select('id, uuid, name').in('id', allBenefitPks) : { data: [] },
         allSkillPks.length > 0 ? supabaseAdmin.from('skills').select('id, uuid, name').in('id', allSkillPks) : { data: [] },
-        jobPks.length > 0 ? supabaseAdmin.from('job_locations').select('job_id, countries:country_id(name), states_provinces:state_province_id(name), cities:city_id(name)').in('job_id', jobPks) : { data: [] },
+        jobPks.length > 0 ? supabaseAdmin.from('job_locations').select('job_id, country_id, countries:country_id(name), states_provinces:state_province_id(name), cities:city_id(name)').in('job_id', jobPks) : { data: [] },
         jobPks.length > 0 ? supabaseAdmin.from('job_skills').select('job_pk, skills:skill_pk(id, uuid, name)').in('job_pk', jobPks) : { data: [] },
         jobPks.length > 0 ? supabaseAdmin.from('job_benefits').select('job_pk, benefits:benefit_pk(id, uuid, name)').in('job_pk', jobPks) : { data: [] }
     ]);
@@ -137,6 +146,7 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
 
     const jobLocMap = new Map<number, string[]>();
     const jobCountryMap = new Map<number, string>();
+    const worldwideJobPks = new Set<number>();
     (jobLocs || []).forEach((jl: any) => {
         const parts = [jl.cities?.name, jl.states_provinces?.name, jl.countries?.name].filter(Boolean);
         if (parts.length > 0) {
@@ -148,6 +158,7 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
         if (jl.countries?.name && !jobCountryMap.has(jl.job_id)) {
             jobCountryMap.set(jl.job_id, jl.countries.name);
         }
+        if (isWorldwideCountryId(jl.country_id)) worldwideJobPks.add(jl.job_id);
     });
 
     const resolved = uniqueInputJobs.map(job => {
@@ -169,6 +180,7 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
         return mapJobToFrontend({
             ...job,
             country: resolvedCountry,
+            open_to_all_countries: worldwideJobPks.has(job.id),
             location_names: locationNames,
             location_uuids: mappedLocations.map((l: any) => l.uuid),
             benefit_names: mappedBenefits.map((b: any) => b.name),
@@ -488,10 +500,11 @@ export async function GET(request: NextRequest) {
         if (countryParams.length > 0) {
             const countryPks = await resolveToPks('countries', countryParams);
             if (countryPks.length > 0) {
+                // Jobs open to all countries are open in the selected one too.
                 const { data: matchedJobLocations } = await supabaseAdmin
                     .from('job_locations')
                     .select('job_id')
-                    .in('country_id', countryPks);
+                    .in('country_id', [...countryPks, WORLDWIDE_COUNTRY_ID]);
                 const jobIds = (matchedJobLocations || []).map((jl: any) => jl.job_id);
                 if (jobIds.length > 0) {
                     query = query.in('id', jobIds);
@@ -623,10 +636,11 @@ export async function GET(request: NextRequest) {
             if (countryParams.length > 0) {
                 const countryPks = await resolveToPks('countries', countryParams);
                 if (countryPks.length > 0) {
+                    // Jobs open to all countries are open in the selected one too.
                     const { data: matchedJobLocations } = await supabaseAdmin
                         .from('job_locations')
                         .select('job_id')
-                        .in('country_id', countryPks);
+                        .in('country_id', [...countryPks, WORLDWIDE_COUNTRY_ID]);
                     const jobIds = (matchedJobLocations || []).map((jl: any) => jl.job_id);
                     if (jobIds.length > 0) {
                         fallbackQuery = fallbackQuery.in('id', jobIds);
@@ -714,12 +728,16 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Job Title and Description are required' }, { status: 400 });
         }
 
-        const hasLocations = !!(data.countryId || data.cityId || data.country || data.city || data.locationIds?.length || data.locationId || data.locations?.length || data.location || data.locationPks?.length);
+        // Resolve the location rows up front: this collapses "open to all
+        // countries" to the single country_id = -1 row and rejects a payload
+        // that cannot be stored, rather than silently defaulting the country.
+        const normalizedLocations = normalizeJobLocations(data);
+        if (normalizedLocations.error) {
+            return NextResponse.json({ error: normalizedLocations.error }, { status: 400 });
+        }
+
         const hasSkills = !!(data.skillIds?.length || data.requiredSkills?.length || data.skills?.length || data.skillPks?.length);
 
-        if (!hasLocations) {
-            return NextResponse.json({ error: 'Location is required for posting a job' }, { status: 400 });
-        }
         if (!hasSkills) {
             return NextResponse.json({ error: 'Required Skills are required for posting a job' }, { status: 400 });
         }
@@ -963,12 +981,32 @@ export async function POST(request: Request) {
         const jobTypePk = await safeResolveMetadata('job_types', data.jobTypePk || data.jobTypeId || data.type || data.jobType);
         const workplaceTypePk = await safeResolveMetadata('workplace_types', data.workplaceTypePk || data.workplaceTypeId || data.workplaceType);
 
+        // "Open to all countries" only makes sense for a remote role — an
+        // on-site or hybrid job has a place people report to.
+        let workplaceTypeName: string | null = null;
+        if (workplaceTypePk) {
+            const { data: wt } = await supabaseAdmin
+                .from('workplace_types')
+                .select('name')
+                .eq('id', workplaceTypePk)
+                .maybeSingle();
+            workplaceTypeName = wt?.name || null;
+        }
+        const isRemoteJob = isRemoteWorkplace(workplaceTypeName, data.remoteType);
+
+        if (normalizedLocations.openToAllCountries && !isRemoteJob) {
+            return NextResponse.json({
+                error: 'Only a remote job can be open to all countries. Set the workplace type to Remote, or pick the countries you are hiring in.',
+            }, { status: 400 });
+        }
+
         // Resolve Company Size
         const companySizeIdToResolve = user.company_size_id || data.companySizeId || data.companySize;
         const companySizePk = await safeResolveMetadata('company_sizes', companySizeIdToResolve);
 
-        // Resolve List fields
-        const locationPks = await safeResolveMetadata('locations', data.locationPks || data.locationIds || (data.locationId ? [data.locationId] : (data.locations || (data.location ? [data.location] : []))));
+        // Resolve List fields. Locations are not resolved here: they come from
+        // normalizeJobLocations above and are written to the job_locations join
+        // table, which is the only place a job's locations live.
         const skillPks = await safeResolveMetadata('skills', data.skillPks || data.skillIds || data.requiredSkills || data.skills);
         const benefitPks = await safeResolveMetadata('benefits', data.benefitPks || data.benefitIds || data.benefits);
 
@@ -1007,6 +1045,9 @@ export async function POST(request: Request) {
             company_logo: data.companyLogo || user.company_logo || null,
             job_type_pk: jobTypePk,
             workplace_type_pk: workplaceTypePk,
+            // Kept in step with the workplace type so the remote_type filter and
+            // the JobPosting markup agree with what the recruiter selected.
+            remote_type: resolveRemoteType(workplaceTypeName, data.remoteType),
             salary_min_usd_cents: typeof data.salaryMin === 'number' ? data.salaryMin : (data.salary_min ?? null),
             salary_max_usd_cents: typeof data.salaryMax === 'number' ? data.salaryMax : (data.salary_max ?? null),
             currency_id: currencyPk || null,
@@ -1078,7 +1119,6 @@ export async function POST(request: Request) {
         if (newJob?.id) {
             const sPks = Array.isArray(skillPks) ? skillPks : (skillPks ? [skillPks] : []);
             const bPks = Array.isArray(benefitPks) ? benefitPks : (benefitPks ? [benefitPks] : []);
-            const lPks = Array.isArray(locationPks) ? locationPks : (locationPks ? [locationPks] : []);
 
             if (sPks.length > 0) {
                 const skillInserts = sPks.map((spk: number) => ({ job_pk: newJob.id, skill_pk: spk }));
@@ -1088,24 +1128,26 @@ export async function POST(request: Request) {
                 const benefitInserts = bPks.map((bpk: number) => ({ job_pk: newJob.id, benefit_pk: bpk }));
                 try { await supabaseAdmin.from('job_benefits').insert(benefitInserts); } catch (e) { }
             }
-            const locList = Array.isArray(data.locations) && data.locations.length > 0
-                ? data.locations
-                : [{ countryId: data.countryId, stateId: data.stateId, cityId: data.cityId }];
-
-            const locInserts = locList.map((loc: any, idx: number) => ({
-                job_id: newJob.id,
-                country_id: loc.countryId ? Number(loc.countryId) : (data.countryId ? Number(data.countryId) : 1),
-                state_province_id: loc.stateId ? Number(loc.stateId) : null,
-                city_id: loc.cityId ? Number(loc.cityId) : null,
-                is_primary: idx === 0
-            })).filter((loc: any) => loc.country_id || loc.city_id || loc.state_province_id);
-
+            const locInserts = toJobLocationRows(newJob.id, normalizedLocations.locations);
             if (locInserts.length > 0) {
-                try { await supabaseAdmin.from('job_locations').insert(locInserts); } catch (e) { }
+                // The job row is useless without its locations, so a failure here
+                // is surfaced rather than swallowed.
+                const { error: locError } = await supabaseAdmin.from('job_locations').insert(locInserts);
+                if (locError) {
+                    console.error('[API_JOBS_POST] Failed to save job locations:', locError);
+                    await supabaseAdmin.from('jobs').delete().eq('id', newJob.id);
+                    return NextResponse.json({
+                        error: 'Failed to save the job locations',
+                        details: locError.message,
+                    }, { status: 500 });
+                }
             }
         }
 
-        const createdJob = mapJobToFrontend(newJob);
+        const createdJob = mapJobToFrontend({
+            ...newJob,
+            open_to_all_countries: normalizedLocations.openToAllCountries,
+        });
 
         return NextResponse.json(createdJob, { status: 201 });
     } catch (e: any) {

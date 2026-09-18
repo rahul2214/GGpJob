@@ -11,6 +11,7 @@
 
 export { SITE_URL } from './site';
 import { SITE_URL } from './site';
+import { WORLDWIDE_COUNTRY_NAME } from './worldwide';
 
 /** schema.org employmentType is an enum; the DB stores free text. */
 const EMPLOYMENT_TYPE_MAP: Record<string, string> = {
@@ -134,8 +135,14 @@ export function buildJobPostingSchema(job: any, canonicalUrl: string, locations?
   if (job.industry) schema.industry = job.industry;
   if (job.job_function) schema.occupationalCategory = job.job_function;
 
+  // "Worldwide" is the sentinel country, not a place anyone can be addressed at,
+  // so such a role carries only jobLocationType/applicantLocationRequirements.
+  const worldwide = places.some(
+    l => (l.country || '').trim().toLowerCase() === WORLDWIDE_COUNTRY_NAME.toLowerCase()
+  );
+
   // Google requires jobLocation, or jobLocationType TELECOMMUTE for remote roles.
-  if (places.length) {
+  if (places.length && !worldwide) {
     const asPlace = (l: JobLocation) => ({
       '@type': 'Place',
       address: {
@@ -148,12 +155,12 @@ export function buildJobPostingSchema(job: any, canonicalUrl: string, locations?
     schema.jobLocation = places.length === 1 ? asPlace(places[0]) : places.map(asPlace);
   }
 
-  if (remote) {
+  if (remote || worldwide) {
     schema.jobLocationType = 'TELECOMMUTE';
     // Required alongside TELECOMMUTE so Google knows who may apply.
     schema.applicantLocationRequirements = {
       '@type': 'Country',
-      name: places[0]?.country || job.country || 'Worldwide',
+      name: worldwide ? WORLDWIDE_COUNTRY_NAME : (places[0]?.country || job.country || WORLDWIDE_COUNTRY_NAME),
     };
   }
 

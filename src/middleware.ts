@@ -79,10 +79,33 @@ function getClientIp(request: NextRequest): string {
   return '127.0.0.1';
 }
 
-function getRateLimitConfig(pathname: string): { limit: number; windowMs: number } {
+/**
+ * Read-only reference lists: skills, benefits, employment and workplace types,
+ * company sizes, and the country/state/city hierarchy.
+ *
+ * They hold no account data, are served from server-side caches, and a single
+ * form load pulls six of them at once while the rest of the page is also
+ * calling the API. Sharing the standard 100/min bucket meant a busy page could
+ * exhaust it and leave a dropdown silently empty, so they get their own.
+ */
+const REFERENCE_DATA_PREFIXES = [
+  '/api/skills',
+  '/api/benefits',
+  '/api/job-types',
+  '/api/workplace-types',
+  '/api/company-sizes',
+  '/api/geo',
+];
+
+function getRateLimitConfig(pathname: string, method: string): { limit: number; windowMs: number } {
   // Strict limits on authentication and payment endpoints
   if (pathname.startsWith('/api/auth/') || pathname.startsWith('/api/payments/')) {
     return { limit: 15, windowMs: 60000 };
+  }
+  // Reading reference data is cheap and public; writing to it is admin-only and
+  // stays on the standard tier below.
+  if (method === 'GET' && REFERENCE_DATA_PREFIXES.some(p => pathname.startsWith(p))) {
+    return { limit: 600, windowMs: 60000 };
   }
   // Moderate limits on computationally heavy AI and generation endpoints
   if (
@@ -187,7 +210,7 @@ export function middleware(request: NextRequest) {
   // 3. Anti-DDoS Rate Limiting
   cleanupRateLimitMap();
   const clientIp = getClientIp(request);
-  const { limit, windowMs } = getRateLimitConfig(pathname);
+  const { limit, windowMs } = getRateLimitConfig(pathname, request.method);
   const rateLimitKey = `${clientIp}:${pathname.startsWith('/api/') ? 'api' : 'page'}:${limit}`;
 
   const now = Date.now();

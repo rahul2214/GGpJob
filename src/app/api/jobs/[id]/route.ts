@@ -3,6 +3,13 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getSubscriptionInfo, expiredResponse } from '@/lib/subscription';
 import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 import { safeErrorResponse } from '@/lib/security';
+import {
+    isWorldwideCountryId,
+    isRemoteWorkplace,
+    normalizeJobLocations,
+    resolveRemoteType,
+    toJobLocationRows,
+} from '@/lib/worldwide';
 
 // Helper to map Supabase snake_case job to camelCase Job type
 async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Promise<any> {
@@ -146,6 +153,7 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
         country: job.country || null,
         state: job.state || null,
         city: job.city || null,
+        openToAllCountries: rawJobLocations.some((l: any) => isWorldwideCountryId(l.countryId)),
         remoteType: job.remote_type || null,
         employmentType: job.employment_type || null,
         salaryCurrency: job.currencies?.code || job.salary_currency || 'USD',
@@ -249,7 +257,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         const isNumericId = /^\d+$/.test(id);
         const { data: job, error: jobError } = await supabaseAdmin
             .from('jobs')
-            .select('id, recruiter_pk')
+            .select('id, recruiter_pk, workplace_type_pk, remote_type')
             .eq(isNumericId ? 'id' : 'uuid', id)
             .single();
         if (jobError || !job) throw new Error('Job not found');
@@ -387,6 +395,56 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         if (body.companyWebsite !== undefined) dataToUpdate.company_website = body.companyWebsite;
         if (body.address !== undefined) dataToUpdate.address = body.address;
 
+        // ── Locations and "open to all countries" ──────────────────────────
+        // An edit is a delta, so both sides of the remote/worldwide pair are
+        // checked against the job as it will be, not just against what changed.
+        const locationsTouched =
+            body.locations !== undefined ||
+            body.locationIds !== undefined ||
+            body.countryId !== undefined ||
+            body.openToAllCountries !== undefined;
+
+        const normalizedLocations = locationsTouched ? normalizeJobLocations(body) : null;
+        if (normalizedLocations?.error) {
+            return NextResponse.json({ error: normalizedLocations.error }, { status: 400 });
+        }
+
+        const workplaceTypeChanged = dataToUpdate.workplace_type_pk !== undefined;
+        const effectiveWorkplacePk = workplaceTypeChanged
+            ? dataToUpdate.workplace_type_pk
+            : job.workplace_type_pk;
+        let effectiveWorkplaceName: string | null = null;
+        if (effectiveWorkplacePk) {
+            const { data: wt } = await supabaseAdmin
+                .from('workplace_types')
+                .select('name')
+                .eq('id', effectiveWorkplacePk)
+                .maybeSingle();
+            effectiveWorkplaceName = wt?.name || null;
+        }
+        const isRemoteJob = isRemoteWorkplace(effectiveWorkplaceName, body.remoteType ?? job.remote_type);
+
+        if (workplaceTypeChanged) {
+            dataToUpdate.remote_type = resolveRemoteType(effectiveWorkplaceName, body.remoteType ?? job.remote_type);
+        }
+
+        let willBeWorldwide = normalizedLocations?.openToAllCountries ?? false;
+        if (!normalizedLocations) {
+            const { data: currentLocs } = await supabaseAdmin
+                .from('job_locations')
+                .select('country_id')
+                .eq('job_id', job.id);
+            willBeWorldwide = (currentLocs || []).some((l: any) => isWorldwideCountryId(l.country_id));
+        }
+
+        if (willBeWorldwide && !isRemoteJob) {
+            return NextResponse.json({
+                error: locationsTouched
+                    ? 'Only a remote job can be open to all countries. Set the workplace type to Remote, or pick the countries you are hiring in.'
+                    : 'This job is open to all countries, which only applies to remote roles. Pick the countries you are hiring in before changing the workplace type.',
+            }, { status: 400 });
+        }
+
         // Remove undefined fields
         Object.keys(dataToUpdate).forEach(key => dataToUpdate[key] === undefined && delete dataToUpdate[key]);
 
@@ -443,26 +501,18 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                 } catch (e) {}
             }
 
-            if (body.locations !== undefined || body.locationIds !== undefined || body.countryId !== undefined) {
-                const locList = Array.isArray(body.locations) && body.locations.length > 0
-                    ? body.locations
-                    : (body.countryId || body.cityId ? [{ countryId: body.countryId, stateId: body.stateId, cityId: body.cityId }] : []);
-
-                if (locList.length > 0) {
-                    const locInserts = locList.map((loc: any, idx: number) => ({
-                        job_id: numericJobId,
-                        country_id: loc.countryId ? Number(loc.countryId) : 1,
-                        state_province_id: loc.stateId ? Number(loc.stateId) : null,
-                        city_id: loc.cityId ? Number(loc.cityId) : null,
-                        is_primary: idx === 0
-                    })).filter((loc: any) => loc.country_id || loc.city_id || loc.state_province_id);
-
-                    if (locInserts.length > 0) {
-                        try {
-                            await supabaseAdmin.from('job_locations').delete().eq('job_id', numericJobId);
-                            await supabaseAdmin.from('job_locations').insert(locInserts);
-                        } catch (e) {}
-                    }
+            if (normalizedLocations && normalizedLocations.locations.length > 0) {
+                const locInserts = toJobLocationRows(numericJobId, normalizedLocations.locations);
+                // Replacing the set: the delete and insert have to both land, or
+                // the job is left with no locations at all.
+                await supabaseAdmin.from('job_locations').delete().eq('job_id', numericJobId);
+                const { error: locError } = await supabaseAdmin.from('job_locations').insert(locInserts);
+                if (locError) {
+                    console.error('[API_JOB_ID_PUT] Failed to save job locations:', locError);
+                    return NextResponse.json({
+                        error: 'Failed to save the job locations',
+                        details: locError.message,
+                    }, { status: 500 });
                 }
             }
         }

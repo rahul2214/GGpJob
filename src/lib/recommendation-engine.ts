@@ -1,4 +1,5 @@
 import type { Job, User } from './types';
+import { isOpenToAllCountries } from './worldwide';
 
 export interface DetailedRecommendationWeights {
   skillsMatch: number;          // 0.25 (25%)
@@ -60,6 +61,12 @@ export const COUNTRY_ALIASES: Record<string, string[]> = {
  */
 export function matchesCountry(job: any, targetCountry?: string | null): boolean {
   if (!targetCountry || !targetCountry.trim()) return true;
+
+  // A job the recruiter opened to all countries is available in every country,
+  // so it matches whoever is asking. This is the single gate the jobseeker-side
+  // country filters share, so handling it here covers all of them.
+  if (isOpenToAllCountries(job)) return true;
+
   const normTarget = targetCountry.trim().toLowerCase();
   const targetVariants = COUNTRY_ALIASES[normTarget] || [normTarget];
 
@@ -156,7 +163,10 @@ export function calculateInternationalJobMatch(
   // 3. Country, State / Province, City Location Match (15%)
   let locationScore = 0;
   const isJobRemote = job.remoteType === 'remote' || job.workplaceType === 'Remote';
-  if (user.openWorldwide && isJobRemote) {
+  if (isOpenToAllCountries(job)) {
+    // Hiring in every country, so it is open where the candidate already is.
+    locationScore = 1.0;
+  } else if (user.openWorldwide && isJobRemote) {
     locationScore = 1.0;
   } else {
     const userCountry = (user.country || '').toLowerCase();

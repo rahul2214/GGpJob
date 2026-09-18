@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray, Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, Briefcase, MapPin, Save, PlusCircle, Trash2, Link as LinkIcon, GripVertical, X, Check, ChevronsUpDown } from "lucide-react";
+import { LoaderCircle, Briefcase, MapPin, Save, PlusCircle, Trash2, Link as LinkIcon, GripVertical, X, Check, ChevronsUpDown, Globe, Building2, FileText, Wallet, ChevronLeft, ChevronRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -30,6 +30,30 @@ import { MultiSelectFilter } from "./multi-select-filter";
 import { SUPPORTED_CURRENCIES } from "@/utils/currency";
 import { onFormInvalid } from "@/lib/form-toast-utils";
 import { supabase } from "@/lib/supabase-client";
+import { WORLDWIDE_LOCATION, isWorldwideCountryId } from "@/lib/worldwide";
+import { JOB_FORM_STEPS, LAST_JOB_FORM_STEP, firstStepWithError } from "@/lib/job-form-steps";
+
+const BLANK_LOCATION = { countryId: null, stateId: null, cityId: null, country: "", state: "", city: "" };
+
+/** The worldwide sentinel row is represented by the toggle, not by the picker. */
+const withoutWorldwide = (locs: any[]) => {
+  const real = (locs || []).filter(l => !isWorldwideCountryId(l?.countryId));
+  return real.length > 0 ? real : [{ ...BLANK_LOCATION }];
+};
+
+// ─── Wizard steps ──────────────────────────────────────────────────────────
+
+/** Icons live here rather than in the shared step data, which stays pure. */
+const STEP_ICONS: Record<string, typeof Briefcase> = {
+  role: Briefcase,
+  company: Building2,
+  location: MapPin,
+  details: FileText,
+  package: Wallet,
+};
+
+const STEPS = JOB_FORM_STEPS;
+const LAST_STEP = LAST_JOB_FORM_STEP;
 
 // ─── Schema ────────────────────────────────────────────────────────────────
 
@@ -213,6 +237,7 @@ export function JobForm({ job }: JobFormProps) {
       state: z.string().optional(),
       city: z.string().optional(),
     })).min(1, "At least one location is required."),
+    openToAllCountries: z.boolean().default(false),
     countryId: z.coerce.number().optional().nullable(),
     stateId: z.coerce.number().optional().nullable(),
     cityId: z.coerce.number().optional().nullable(),
@@ -249,7 +274,15 @@ export function JobForm({ job }: JobFormProps) {
   }).refine(data => data.maxExperience >= data.minExperience, {
       message: "Max experience cannot be less than min experience",
       path: ["maxExperience"]
-  }), [isAdmin]);
+  }).refine(
+      // A location row with no country cannot be stored, so it is caught here
+      // instead of failing at the API. The worldwide toggle replaces the picker.
+      data => data.openToAllCountries || (data.locations || []).every(l => !!l.countryId),
+      {
+        message: "Select a country for every location, or mark the role open to all countries.",
+        path: ["locations"]
+      }
+  ), [isAdmin]);
 
   type JobFormValues = z.infer<typeof formSchema>;
 
@@ -294,32 +327,45 @@ export function JobForm({ job }: JobFormProps) {
 
   useEffect(() => {
     const fetchSelectData = async () => {
-        try {
-            const [jobTypesRes, workplaceTypesRes, companySizesRes] = await Promise.all([
-                fetch('/api/job-types'),
-                fetch('/api/workplace-types'),
-                fetch('/api/company-sizes')
-            ]);
-            
-            setWorkplaceTypes(await workplaceTypesRes.json());
-            setCompanySizes(await companySizesRes.json());
-            
-            const fetchedJobTypes = await jobTypesRes.json();
-            setJobTypes(fetchedJobTypes);
-            
-            const skillsRes = await fetch('/api/skills');
-            if (skillsRes.ok) setMasterSkills(await skillsRes.json());
+        // Each list is loaded independently. They used to run in one await
+        // chain, so a single bad response left every list after it — skills,
+        // benefits, countries — silently empty behind one generic toast.
+        const loadList = async <T,>(label: string, url: string, apply: (rows: T[]) => void) => {
+            // One retry, because a transient hiccup (a rate-limit burst while
+            // the rest of the page is also calling the API) used to leave the
+            // dropdown permanently empty with nothing said about it.
+            for (let attempt = 0; attempt < 2; attempt++) {
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const rows = await res.json();
+                    if (!Array.isArray(rows)) throw new Error('expected a list');
+                    apply(rows);
+                    return null;
+                } catch (e: any) {
+                    console.error(
+                        `[JOB_FORM] Could not load ${label} from ${url} (attempt ${attempt + 1}):`,
+                        e?.message || e
+                    );
+                    if (attempt === 0) await new Promise(r => setTimeout(r, 600));
+                }
+            }
+            return label;
+        };
 
-            const benefitsRes = await fetch('/api/benefits');
-            if (benefitsRes.ok) setMasterBenefits(await benefitsRes.json());
+        const failed = (await Promise.all([
+            loadList<JobType>('employment types', '/api/job-types', setJobTypes),
+            loadList<WorkplaceType>('workplace types', '/api/workplace-types', setWorkplaceTypes),
+            loadList<CompanySize>('company sizes', '/api/company-sizes', setCompanySizes),
+            loadList<MasterSkill>('skills', '/api/skills', setMasterSkills),
+            loadList<{ id: string; name: string }>('benefits', '/api/benefits', setMasterBenefits),
+            loadList<{ id: number; name: string }>('countries', '/api/geo?type=countries', setDbCountries),
+        ])).filter(Boolean);
 
-            const countriesRes = await fetch('/api/geo?type=countries');
-            if (countriesRes.ok) setDbCountries(await countriesRes.json());
-        } catch (error) {
-            console.error("Failed to fetch form select data", error);
+        if (failed.length > 0) {
             toast({
-                title: "Error fetching form data",
-                description: "Could not load all select options. Please try again later.",
+                title: "Some options could not be loaded",
+                description: `Could not load ${failed.join(', ')}. Refresh the page to try again.`,
                 variant: "destructive",
             });
         }
@@ -329,8 +375,13 @@ export function JobForm({ job }: JobFormProps) {
 
 
 
+  const jobIsWorldwide = Boolean(
+    (job as any)?.openToAllCountries ??
+    (job as any)?.jobLocations?.some((l: any) => isWorldwideCountryId(l?.countryId))
+  );
+
   const initialLocations = (job as any)?.jobLocations?.length
-    ? (job as any).jobLocations
+    ? withoutWorldwide((job as any).jobLocations)
     : [{
         countryId: (job as any)?.countryId || null,
         stateId: (job as any)?.stateId || null,
@@ -347,6 +398,7 @@ export function JobForm({ job }: JobFormProps) {
       jobId: job?.jobId || "",
       companyName: job?.companyName || (user?.role === 'Recruiter' ? user.companyName : "") || "",
       locations: initialLocations,
+      openToAllCountries: jobIsWorldwide,
       countryId: (job as any)?.countryId || null,
       stateId: (job as any)?.stateId || null,
       cityId: (job as any)?.cityId || null,
@@ -387,6 +439,26 @@ export function JobForm({ job }: JobFormProps) {
     name: "locations",
   });
 
+  // "Open to all countries" is only offered for a remote role — an on-site or
+  // hybrid job has a place people report to. The API enforces the same rule.
+  const selectedWorkplaceTypeId = form.watch("workplaceTypeId");
+  const openToAllCountries = form.watch("openToAllCountries");
+
+  const isRemoteSelected = useMemo(() => {
+    const selected = workplaceTypes.find(
+      wt => String(wt.uuid || wt.id) === String(selectedWorkplaceTypeId || "")
+    );
+    return String(selected?.name || "").toLowerCase().includes("remote");
+  }, [workplaceTypes, selectedWorkplaceTypeId]);
+
+  // Switching away from Remote drops the toggle, so a hybrid or on-site job can
+  // never be submitted as worldwide.
+  useEffect(() => {
+    if (!isRemoteSelected && form.getValues("openToAllCountries")) {
+      form.setValue("openToAllCountries", false, { shouldValidate: true, shouldDirty: true });
+    }
+  }, [isRemoteSelected, form]);
+
   // Sections field array
   const { fields: sectionFields, append: appendSection, remove: removeSection } = useFieldArray({
     control: form.control,
@@ -397,7 +469,7 @@ export function JobForm({ job }: JobFormProps) {
     if (job) {
       const builtSections = job?.sections?.map((s: any) => ({ title: s.title, items: (s.items || []).map((v: any) => ({ value: v })) }));
       const resetLocations = (job as any)?.jobLocations?.length
-        ? (job as any).jobLocations
+        ? withoutWorldwide((job as any).jobLocations)
         : [{
             countryId: (job as any)?.countryId || null,
             stateId: (job as any)?.stateId || null,
@@ -412,6 +484,7 @@ export function JobForm({ job }: JobFormProps) {
         jobId: job.jobId || "",
         companyName: job.companyName || "",
         locations: resetLocations,
+        openToAllCountries: jobIsWorldwide,
         country: job.country || "",
         state: job.state || "",
         city: job.city || "",
@@ -465,7 +538,11 @@ export function JobForm({ job }: JobFormProps) {
       const url = job ? `/api/jobs/${job.id}` : '/api/jobs';
       const method = job ? 'PUT' : 'POST';
       
-      const primaryLoc = data.locations?.[0] || {};
+      // A worldwide role is stored as the single sentinel location row, so the
+      // country pickers are ignored whenever the toggle is on.
+      const isWorldwide = Boolean(data.openToAllCountries);
+      const effectiveLocations = isWorldwide ? [{ ...WORLDWIDE_LOCATION }] : (data.locations || []);
+      const primaryLoc = effectiveLocations[0] || {};
       let finalBody: Record<string, any> = {};
 
       if (job) {
@@ -505,21 +582,20 @@ export function JobForm({ job }: JobFormProps) {
         const newBenefits = [...(data.benefitIds || [])].sort().join(',');
         if (origBenefits !== newBenefits) finalBody.benefitIds = data.benefitIds || [];
 
-        // Compare locations
+        // Compare locations. Only the ids matter — the names are labels the API
+        // re-resolves — so a changed label alone does not count as an edit.
         const oldLocs = (job as any).jobLocations || [];
         const normLocs = (locs: any[]) => JSON.stringify(locs.map(l => ({
-          countryId: l.countryId || null,
-          stateId: l.stateId || null,
-          cityId: l.cityId || null,
-          country: (l.country || '').trim(),
-          state: (l.state || '').trim(),
-          city: (l.city || '').trim(),
+          countryId: l.countryId ?? null,
+          stateId: l.stateId ?? null,
+          cityId: l.cityId ?? null,
         })));
-        if (normLocs(data.locations || []) !== normLocs(oldLocs)) {
-          finalBody.locations = data.locations || [];
-          finalBody.countryId = primaryLoc.countryId || data.countryId || null;
-          finalBody.stateId = primaryLoc.stateId || data.stateId || null;
-          finalBody.cityId = primaryLoc.cityId || data.cityId || null;
+        if (normLocs(effectiveLocations) !== normLocs(oldLocs) || isWorldwide !== jobIsWorldwide) {
+          finalBody.locations = effectiveLocations;
+          finalBody.openToAllCountries = isWorldwide;
+          finalBody.countryId = primaryLoc.countryId ?? data.countryId ?? null;
+          finalBody.stateId = primaryLoc.stateId ?? data.stateId ?? null;
+          finalBody.cityId = primaryLoc.cityId ?? data.cityId ?? null;
           finalBody.country = primaryLoc.country || data.country || "";
           finalBody.state = primaryLoc.state || data.state || "";
           finalBody.city = primaryLoc.city || data.city || "";
@@ -547,10 +623,11 @@ export function JobForm({ job }: JobFormProps) {
           jobId: data.jobId,
           title: data.jobTitle,
           description: data.jobDescription,
-          locations: data.locations || [],
-          countryId: primaryLoc.countryId || data.countryId || null,
-          stateId: primaryLoc.stateId || data.stateId || null,
-          cityId: primaryLoc.cityId || data.cityId || null,
+          locations: effectiveLocations,
+          openToAllCountries: isWorldwide,
+          countryId: primaryLoc.countryId ?? data.countryId ?? null,
+          stateId: primaryLoc.stateId ?? data.stateId ?? null,
+          cityId: primaryLoc.cityId ?? data.cityId ?? null,
           country: primaryLoc.country || data.country || "",
           state: primaryLoc.state || data.state || "",
           city: primaryLoc.city || data.city || "",
@@ -610,9 +687,132 @@ export function JobForm({ job }: JobFormProps) {
     }
   };
 
+  // ─── Step navigation ─────────────────────────────────────────────────────
+  // Editing starts with every step reachable, since the job already holds the
+  // answers; a new post unlocks them one at a time.
+  const [currentStep, setCurrentStep] = useState(0);
+  const [furthestStep, setFurthestStep] = useState(job ? LAST_STEP : 0);
+  const topRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (job) setFurthestStep(LAST_STEP);
+  }, [job]);
+
+  const isLastStep = currentStep === LAST_STEP;
+  const step = STEPS[currentStep];
+
+  const goToStep = (index: number) => {
+    setCurrentStep(index);
+    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleNext = async () => {
+    // Only this step's fields, so an untouched later step cannot block you.
+    const valid = await form.trigger(STEPS[currentStep].fields as any, { shouldFocus: true });
+    if (!valid) return;
+    const next = Math.min(currentStep + 1, LAST_STEP);
+    setFurthestStep(f => Math.max(f, next));
+    goToStep(next);
+  };
+
+  const handleBack = () => goToStep(Math.max(0, currentStep - 1));
+
+  // A submit that fails validation lands you on the step holding the problem,
+  // rather than on a step with no visible error.
+  const handleInvalid = (errors: Record<string, any>) => {
+    const firstStep = firstStepWithError(Object.keys(errors));
+    if (firstStep !== null && firstStep !== currentStep) {
+      setFurthestStep(f => Math.max(f, firstStep));
+      goToStep(firstStep);
+    }
+    onFormInvalid(errors, toast);
+  };
+
+  // Enter anywhere in the form would otherwise submit a half-filled post, so
+  // it advances a step instead until the last one.
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (!isLastStep) {
+      e.preventDefault();
+      handleNext();
+      return;
+    }
+    form.handleSubmit(onSubmit, handleInvalid)(e);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-4">
+      <form onSubmit={handleFormSubmit} className="space-y-4">
+        <div ref={topRef} className="scroll-mt-24" />
+
+        {/* ── Stepper ────────────────────────────────────────────────── */}
+        <nav aria-label="Job posting steps" className="pb-2">
+          <ol className="flex items-center gap-1 sm:gap-2">
+            {STEPS.map((s, idx) => {
+              const StepIcon = STEP_ICONS[s.id];
+              const isCurrent = idx === currentStep;
+              const isDone = idx < currentStep;
+              const isReachable = idx <= furthestStep;
+
+              return (
+                <li key={s.id} className="flex flex-1 items-center gap-1 sm:gap-2 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => isReachable && goToStep(idx)}
+                    disabled={!isReachable}
+                    aria-current={isCurrent ? "step" : undefined}
+                    className={cn(
+                      "flex items-center gap-2 rounded-full py-1 pl-1 pr-1 sm:pr-3 transition-colors min-w-0",
+                      isReachable ? "cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" : "cursor-not-allowed opacity-60"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors",
+                        isCurrent && "border-primary bg-primary text-primary-foreground",
+                        isDone && "border-primary bg-primary/10 text-primary",
+                        !isCurrent && !isDone && "border-slate-300 text-slate-500 dark:border-slate-700"
+                      )}
+                    >
+                      {isDone ? <Check className="h-4 w-4" /> : <StepIcon className="h-4 w-4" />}
+                    </span>
+                    <span
+                      className={cn(
+                        "truncate text-xs font-semibold sm:text-sm",
+                        isCurrent ? "text-foreground" : "text-muted-foreground",
+                        // Only the active label survives on a narrow screen.
+                        !isCurrent && "hidden sm:inline"
+                      )}
+                    >
+                      {s.title}
+                    </span>
+                  </button>
+                  {idx < LAST_STEP && (
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "h-px flex-1 min-w-2 transition-colors",
+                        idx < currentStep ? "bg-primary" : "bg-slate-200 dark:bg-slate-800"
+                      )}
+                    />
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+
+        <div className="border-b pb-3">
+          <h2 className="text-lg font-semibold">
+            <span className="text-muted-foreground font-normal mr-2 text-sm">
+              Step {currentStep + 1} of {STEPS.length}
+            </span>
+            {step.title}
+          </h2>
+          <p className="text-sm text-muted-foreground">{step.description}</p>
+        </div>
+
+        {/* ── Step 1: Role ───────────────────────────────────────────── */}
+        <div className={cn("space-y-4", currentStep !== 0 && "hidden")}>
         <FormField
           control={form.control}
           name="jobTitle"
@@ -640,6 +840,95 @@ export function JobForm({ job }: JobFormProps) {
           )}
         />
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <FormField
+            control={form.control}
+            name="jobTypeId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Employment Type</FormLabel>
+                <Select onValueChange={field.onChange} value={String(field.value || '')}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select employment type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Array.isArray(jobTypes) && jobTypes.map(jt => <SelectItem key={jt.uuid || jt.id} value={jt.uuid || String(jt.id)}>{jt.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+           <FormField
+            control={form.control}
+            name="workplaceTypeId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Workplace Type</FormLabel>
+                <Select onValueChange={field.onChange} value={String(field.value || '')}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select workplace type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                     {Array.isArray(workplaceTypes) && workplaceTypes.map(wt => <SelectItem key={wt.uuid || wt.id} value={wt.uuid || String(wt.id)}>{wt.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="minExperience"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Min Experience (Years)</FormLabel>
+                <FormControl>
+                  <Input type="number" min="0" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+           <FormField
+            control={form.control}
+            name="maxExperience"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Max Experience (Years)</FormLabel>
+                <FormControl>
+                  <Input type="number" min="0" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="vacancies"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Number of Vacancies</FormLabel>
+                <FormControl>
+                  <Input type="number" min="1" {...field} value={field.value || ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        </div>
+
+        {/* ── Step 2: Company ────────────────────────────────────────── */}
+        <div className={cn("space-y-4", currentStep !== 1 && "hidden")}>
           <div className="space-y-4 border rounded-xl p-6 bg-slate-50/30">
             <h3 className="font-semibold text-lg flex items-center gap-2">
               <Briefcase className="h-5 w-5 text-primary" />
@@ -752,25 +1041,67 @@ export function JobForm({ job }: JobFormProps) {
               )}
             />
           </div>
+        </div>
 
-          {/* Job Location Details */}
+        {/* ── Step 3: Location ───────────────────────────────────────── */}
+        <div className={cn("space-y-4", currentStep !== 2 && "hidden")}>
           <div className="space-y-4 border rounded-xl p-6 bg-slate-50/30">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-lg flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-primary" />
                 Locations
               </h3>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => appendLocation({ countryId: null, stateId: null, cityId: null, country: "", state: "", city: "" })}
-                className="flex items-center gap-1.5 text-xs font-semibold"
-              >
-                <PlusCircle className="w-4 h-4" /> Add Location
-              </Button>
+              {!openToAllCountries && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => appendLocation({ ...BLANK_LOCATION })}
+                  className="flex items-center gap-1.5 text-xs font-semibold"
+                >
+                  <PlusCircle className="w-4 h-4" /> Add Location
+                </Button>
+              )}
             </div>
 
+            {isRemoteSelected && (
+              <FormField
+                control={form.control}
+                name="openToAllCountries"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between gap-4 rounded-xl border bg-white dark:bg-slate-900 p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="flex items-center gap-2 text-sm font-semibold">
+                        <Globe className="h-4 w-4 text-primary" />
+                        Open to all countries
+                      </FormLabel>
+                      <p className="text-xs text-muted-foreground">
+                        Hire from anywhere. Candidates in every country see this role, whatever
+                        country they have set on their profile. Leave this off to hire in
+                        specific countries only.
+                      </p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={!!field.value}
+                        onCheckedChange={field.onChange}
+                        aria-label="Open to all countries"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {openToAllCountries ? (
+              <div className="flex items-start gap-3 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                <Globe className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+                <span>
+                  This role is listed as <span className="font-semibold text-foreground">Worldwide</span>.
+                  Turn the toggle off to pick specific countries instead.
+                </span>
+              </div>
+            ) : (
             <div className="space-y-4">
               {locationFields.map((item, idx) => {
                 const currentCountryId = form.watch(`locations.${idx}.countryId`);
@@ -883,53 +1214,22 @@ export function JobForm({ job }: JobFormProps) {
                 );
               })}
             </div>
-          </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 items-center">
-          <FormField
-            control={form.control}
-            name="salaryCurrency"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Salary Currency</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || "INR"}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent className="max-h-60 overflow-y-auto">
-                    {SUPPORTED_CURRENCIES.map((item) => (
-                      <SelectItem key={item.code} value={item.code}>
-                        {item.flag} {item.code} ({item.symbol})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
             )}
-          />
 
-          <FormField
-            control={form.control}
-            name="visaSponsorship"
-            render={({ field }) => (
-              <FormItem className="flex items-center justify-between rounded-xl p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 mt-2">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-sm font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">Visa Sponsorship</FormLabel>
-                  <p className="text-xs text-slate-500">Enable if work visa sponsorship is offered</p>
-                </div>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="locations"
+              render={() => (
+                <FormItem>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
 
+        {/* ── Step 4: Details ────────────────────────────────────────── */}
+        <div className={cn("space-y-4", currentStep !== 3 && "hidden")}>
         <FormField
           control={form.control}
           name="jobDescription"
@@ -1047,92 +1347,37 @@ export function JobForm({ job }: JobFormProps) {
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-           <FormField
-            control={form.control}
-            name="jobTypeId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Employment Type</FormLabel>
-                <Select onValueChange={field.onChange} value={String(field.value || '')}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select employment type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Array.isArray(jobTypes) && jobTypes.map(jt => <SelectItem key={jt.uuid || jt.id} value={jt.uuid || String(jt.id)}>{jt.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-           <FormField
-            control={form.control}
-            name="workplaceTypeId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Workplace Type</FormLabel>
-                <Select onValueChange={field.onChange} value={String(field.value || '')}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select workplace type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                     {Array.isArray(workplaceTypes) && workplaceTypes.map(wt => <SelectItem key={wt.uuid || wt.id} value={wt.uuid || String(wt.id)}>{wt.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="minExperience"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Min Experience (Years)</FormLabel>
-                <FormControl>
-                  <Input type="number" min="0" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-           <FormField
-            control={form.control}
-            name="maxExperience"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Max Experience (Years)</FormLabel>
-                <FormControl>
-                  <Input type="number" min="0" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="vacancies"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Number of Vacancies</FormLabel>
-                <FormControl>
-                  <Input type="number" min="1" {...field} value={field.value || ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        {/* ── Step 5: Package ────────────────────────────────────────── */}
+        <div className={cn("space-y-4", currentStep !== 4 && "hidden")}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            <FormField
+              control={form.control}
+              name="salaryCurrency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Salary Currency</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || "INR"}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select currency" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="max-h-60 overflow-y-auto">
+                      {SUPPORTED_CURRENCIES.map((item) => (
+                        <SelectItem key={item.code} value={item.code}>
+                          {item.flag} {item.code} ({item.symbol})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -1161,6 +1406,26 @@ export function JobForm({ job }: JobFormProps) {
               )}
             />
           </div>
+
+          <FormField
+            control={form.control}
+            name="visaSponsorship"
+            render={({ field }) => (
+              <FormItem className="flex items-center justify-between rounded-xl p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-sm font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">Visa Sponsorship</FormLabel>
+                  <p className="text-xs text-slate-500">Enable if work visa sponsorship is offered</p>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="jobLink"
@@ -1178,13 +1443,33 @@ export function JobForm({ job }: JobFormProps) {
             )}
           />
         </div>
-        <div className="flex justify-end pt-4">
-           <Button type="submit" disabled={isSubmitting}>
+
+        {/* ── Wizard footer ──────────────────────────────────────────── */}
+        <div className="flex items-center justify-between gap-3 border-t pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleBack}
+            disabled={currentStep === 0 || isSubmitting}
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            Back
+          </Button>
+
+          {isLastStep ? (
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? <LoaderCircle className="animate-spin mr-2 h-4 w-4"/> : (job ? <Save className="mr-2 h-4 w-4" /> : <Briefcase className="mr-2 h-4 w-4" />)}
               {job ? "Save Changes" : "Post Job"}
-          </Button>
+            </Button>
+          ) : (
+            <Button type="button" onClick={handleNext} disabled={isSubmitting}>
+              Next
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          )}
         </div>
       </form>
     </Form>
   );
 }
+
