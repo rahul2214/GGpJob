@@ -728,15 +728,34 @@ export function JobForm({ job }: JobFormProps) {
     onFormInvalid(errors, toast);
   };
 
-  // Enter anywhere in the form would otherwise submit a half-filled post, so
-  // it advances a step instead until the last one.
+  // Posting only ever happens here, from an explicit click on the final button
+  // or Enter on the final step. Nothing else in the form can trigger it.
+  //
+  // The ref, not the isSubmitting state, is what makes a double click safe: two
+  // clicks in the same tick both run before React re-renders the button as
+  // disabled, and each one would create a separate job.
+  const submittingRef = useRef(false);
+
+  const submitNow = () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    void form
+      .handleSubmit(onSubmit, handleInvalid)()
+      .finally(() => {
+        submittingRef.current = false;
+      });
+  };
+
+  // The browser must never post this form itself. Enter anywhere would
+  // otherwise submit a half-filled post, so it advances a step instead until
+  // the last one.
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     if (!isLastStep) {
-      e.preventDefault();
       handleNext();
       return;
     }
-    form.handleSubmit(onSubmit, handleInvalid)(e);
+    submitNow();
   };
 
   return (
@@ -1456,13 +1475,20 @@ export function JobForm({ job }: JobFormProps) {
             Back
           </Button>
 
+          {/*
+            Both buttons are type="button" and the distinct keys stop React from
+            reusing one DOM node as the other. A type="submit" here reached the
+            browser's post-click activation with its type already flipped by the
+            step change, so advancing off the second-to-last step posted the job
+            on its own. Submitting is now only ever an explicit call.
+          */}
           {isLastStep ? (
-            <Button type="submit" disabled={isSubmitting}>
+            <Button key="submit-step" type="button" onClick={submitNow} disabled={isSubmitting}>
               {isSubmitting ? <LoaderCircle className="animate-spin mr-2 h-4 w-4"/> : (job ? <Save className="mr-2 h-4 w-4" /> : <Briefcase className="mr-2 h-4 w-4" />)}
               {job ? "Save Changes" : "Post Job"}
             </Button>
           ) : (
-            <Button type="button" onClick={handleNext} disabled={isSubmitting}>
+            <Button key="next-step" type="button" onClick={handleNext} disabled={isSubmitting}>
               Next
               <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
