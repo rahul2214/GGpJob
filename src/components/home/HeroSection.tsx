@@ -118,7 +118,7 @@ export function HeroSection() {
     const hire = HIRES[hireIdx];
 
     return (
-        <section className="relative bg-white dark:bg-[hsl(220_65%_6%)] pt-16 pb-0 overflow-hidden">
+        <section className="relative bg-white dark:bg-[hsl(220_65%_6%)] pb-0 overflow-hidden">
 
             {/* ── Very subtle noise texture overlay ───────────────────────── */}
             <div
