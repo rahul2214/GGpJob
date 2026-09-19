@@ -142,7 +142,14 @@ export function DashboardShell({ children }: DashboardShellProps) {
           />
 
           {/* Page content with top offset for the topbar */}
-          <main className="flex-1 pt-[65px] h-full overflow-y-auto">
+          {/*
+            This main is the scroll container, and its pt-[65px] already clears
+            the fixed top bar. Sticky children inside it therefore need no extra
+            offset — adding one pushes them down a second time and leaves a strip
+            of content scrolling past above them. Pages read this variable rather
+            than hard-coding a header height they cannot know.
+          */}
+          <main className="flex-1 pt-[65px] h-full overflow-y-auto [--app-sticky-offset:0px]">
             <div className="max-w-screen-2xl mx-auto pb-12">
               {children}
             </div>

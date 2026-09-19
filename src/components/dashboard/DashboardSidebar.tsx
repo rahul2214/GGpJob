@@ -32,6 +32,7 @@ import {
   Database,
   BarChart2,
   Bookmark,
+  BookOpen,
 } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { supabase } from "@/lib/supabase-client";
@@ -46,6 +47,7 @@ const NAV_CONFIG: Record<string, NavSection[]> = {
         { icon: LayoutDashboard, label: "Dashboard", href: "/" },
         { icon: Search, label: "Jobs", href: "/jobs" },
         { icon: MessageSquare, label: "Communities", href: "/communities" },
+        { icon: BookOpen, label: "Blogs", href: "/blog" },
       ],
     },
     {

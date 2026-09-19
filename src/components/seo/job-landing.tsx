@@ -9,7 +9,7 @@
 import Link from 'next/link';
 import { MapPin, Briefcase, Building2, Wallet } from 'lucide-react';
 import type { JobSummary, LocationFacet } from '@/lib/job-taxonomy';
-import { getAllPosts } from '@/lib/blog-posts';
+import { getAllPosts } from '@/lib/blog';
 
 function formatSalary(job: JobSummary): string | null {
   if (!job.salaryMin || job.salaryMin <= 0) return null;

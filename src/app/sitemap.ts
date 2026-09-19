@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { SITE_URL } from '@/lib/site';
 import { getLocationFacets } from '@/lib/job-taxonomy';
-import { getAllPosts } from '@/lib/blog-posts';
+import { getAllPosts, getTotalPages } from '@/lib/blog';
 
 // Shared with metadataBase and every canonical tag, so the sitemap can never
 // advertise a different host than the pages themselves claim.
@@ -132,6 +132,23 @@ function getBlogEntries(): MetadataRoute.Sitemap {
   }));
 }
 
+/**
+ * Pages two onward of the blog index.
+ *
+ * Page one is already in staticRoutes as /blog, and /blog/page/1 does not
+ * exist, so this starts at two. Listing these gives a crawler a direct route to
+ * the deeper pages instead of relying on it following Next links.
+ */
+function getBlogPageEntries(lastModified: Date): MetadataRoute.Sitemap {
+  const total = getTotalPages();
+  return Array.from({ length: Math.max(0, total - 1) }, (_, i) => ({
+    url: `${baseUrl}/blog/page/${i + 2}`,
+    lastModified,
+    changeFrequency: 'weekly' as const,
+    priority: 0.5,
+  }));
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
   const [locations, jobs, communities] = await Promise.all([
@@ -143,6 +160,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...staticRoutes.map(route => ({ ...route, lastModified })),
     ...getBlogEntries(),
+    ...getBlogPageEntries(lastModified),
     ...locations,
     ...communities,
     ...jobs,

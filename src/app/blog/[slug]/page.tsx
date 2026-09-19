@@ -11,7 +11,7 @@ import {
   sectionId,
   categoryStyle,
   heroTint,
-} from '@/lib/blog-posts';
+} from '@/lib/blog';
 
 type Props = { params: { slug: string } };
 
