@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUser } from "@/contexts/user-context";
 import { cn } from "@/lib/utils";
 import { sanitizeInlineMarkup } from '@/lib/sanitize-html';
+import { supabase } from "@/lib/supabase-client";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -100,11 +101,22 @@ export default function CareerAssistant() {
     setIsLoading(true);
 
     try {
+      // The Supabase client keeps the session in localStorage, so no auth
+      // cookie is sent with a plain fetch. Without this header every request
+      // reached the route unauthenticated and was rejected, for every role.
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+      } catch {
+        // Signed out: continue without a token and let the assistant answer
+        // as a guest rather than failing outright.
+      }
+
       const response = await fetch("/api/career-assistant", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           userId: user?.uuid || user?.id || null,
           message: text,

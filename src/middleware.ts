@@ -97,7 +97,29 @@ const REFERENCE_DATA_PREFIXES = [
   '/api/geo',
 ];
 
-function getRateLimitConfig(pathname: string, method: string): { limit: number; windowMs: number } {
+/**
+ * Whether the request carries *some* credential.
+ *
+ * Presence only — validity is the route's job. It is enough to decide which
+ * rate-limit bucket a caller belongs to, and it deliberately avoids importing
+ * the auth helpers, which pull the Supabase admin client into the edge runtime.
+ */
+function hasAuthCredential(request: NextRequest): boolean {
+  const authHeader = request.headers.get('authorization');
+  if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) return true;
+
+  const cookieHeader = request.headers.get('cookie') || '';
+  if (!cookieHeader) return false;
+  return /(?:^|;\s*)(sb-access-token|sb:token|firebase-token|supabase-auth-token|sb-[^=;]*-auth-token)=/.test(
+    cookieHeader
+  );
+}
+
+function getRateLimitConfig(
+  pathname: string,
+  method: string,
+  authenticated: boolean
+): { limit: number; windowMs: number } {
   // Strict limits on authentication and payment endpoints
   if (pathname.startsWith('/api/auth/') || pathname.startsWith('/api/payments/')) {
     return { limit: 15, windowMs: 60000 };
@@ -107,13 +129,21 @@ function getRateLimitConfig(pathname: string, method: string): { limit: number; 
   if (method === 'GET' && REFERENCE_DATA_PREFIXES.some(p => pathname.startsWith(p))) {
     return { limit: 600, windowMs: 60000 };
   }
-  // Moderate limits on computationally heavy AI and generation endpoints
+  // Moderate limits on computationally heavy AI and generation endpoints.
+  //
+  // Inference is billed against a single org-wide token budget, so these are
+  // the one place where one caller can deny service to everyone else rather
+  // than just to themselves. An anonymous caller gets a tighter allowance:
+  // the assistant answers signed-out visitors from public listings only, which
+  // needs a few questions, not twenty a minute.
   if (
     pathname.startsWith('/api/ats-score') ||
     pathname.startsWith('/api/resume/') ||
     pathname.startsWith('/api/career-assistant')
   ) {
-    return { limit: 20, windowMs: 60000 };
+    return authenticated
+      ? { limit: 20, windowMs: 60000 }
+      : { limit: 5, windowMs: 60000 };
   }
   // Standard limits for other API routes
   if (pathname.startsWith('/api/')) {
@@ -210,7 +240,7 @@ export function middleware(request: NextRequest) {
   // 3. Anti-DDoS Rate Limiting
   cleanupRateLimitMap();
   const clientIp = getClientIp(request);
-  const { limit, windowMs } = getRateLimitConfig(pathname, request.method);
+  const { limit, windowMs } = getRateLimitConfig(pathname, request.method, hasAuthCredential(request));
   const rateLimitKey = `${clientIp}:${pathname.startsWith('/api/') ? 'api' : 'page'}:${limit}`;
 
   const now = Date.now();
