@@ -10,6 +10,55 @@ export interface BlogSection {
   heading: string;
   paragraphs: string[];
   bullets?: string[];
+  /**
+   * Optional comparison table. Kept as plain data rather than markdown so the
+   * renderer can emit a real <table> — which is what a crawler needs to read
+   * the comparison, and what a screen reader needs to navigate it.
+   */
+  table?: BlogTable;
+  /**
+   * Optional worked example. Rendered as a visually distinct callout so a
+   * reader scanning for the concrete case can find it without reading the prose.
+   */
+  example?: BlogExample;
+}
+
+export interface BlogTable {
+  /** Describes the table for assistive tech; also rendered as a caption. */
+  caption: string;
+  columns: string[];
+  /** Each row must have the same length as `columns`. */
+  rows: string[][];
+}
+
+export interface BlogExample {
+  title: string;
+  paragraphs: string[];
+}
+
+/**
+ * An outbound link to a primary source.
+ *
+ * These exist to point a reader at the authoritative document rather than at
+ * our summary of it, which is both the honest thing to do and the thing search
+ * engines read as a quality signal. They are curated per post rather than
+ * matched automatically: a wrong internal link is a dead end a crawler
+ * forgives, whereas a wrong outbound link sends a reader somewhere we did not
+ * intend and cannot correct.
+ *
+ * Only official documentation, standards bodies and primary sources belong
+ * here — never a competitor's blog post summarising the same thing. The
+ * allow-list in external-links.ts enforces that.
+ */
+export interface BlogReference {
+  /** The document's own title, not a description of it. */
+  title: string;
+  /** Absolute https URL. Prefer a stable section root over a deep link. */
+  url: string;
+  /** Who publishes it, shown so the reader can judge before clicking. */
+  publisher: string;
+  /** One line on why this source is worth opening. */
+  note?: string;
 }
 
 export interface BlogFaq {
@@ -36,10 +85,36 @@ export interface BlogPost {
    */
   tint?: HeroTint;
   excerpt: string;
+  /**
+   * Three to five one-line conclusions, rendered above the article body.
+   *
+   * These exist for the reader who will not finish the page, and for the
+   * snippet: a short, self-contained, declarative list is what gets lifted into
+   * search results. Each line must stand alone without the surrounding prose.
+   */
+  keyTakeaways?: string[];
   sections: BlogSection[];
   faqs?: BlogFaq[];
   /** Slugs of related posts, rendered as internal links. */
   related?: string[];
+  /**
+   * Outbound links to primary sources, rendered as a "Further reading" block.
+   *
+   * Two to four is the useful range. A long list reads as padding and dilutes
+   * the signal that each one was chosen deliberately.
+   */
+  references?: BlogReference[];
+  /**
+   * Phrases that should link *to this post* when they appear in another post's
+   * body — the anchor text side of the internal link graph.
+   *
+   * Written from the perspective of the linking page, so they are the words an
+   * author would naturally use mid-sentence ('vector database', 'prompt
+   * injection'), not the post's own title. Matching is case-insensitive and on
+   * word boundaries, so keep them specific: a phrase as broad as 'resume' would
+   * hijack every mention across two hundred articles.
+   */
+  anchors?: string[];
 }
 
 /**

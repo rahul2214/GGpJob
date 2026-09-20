@@ -1,19 +1,52 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { Clock, ArrowRight, ArrowLeft, ListOrdered, HelpCircle, CalendarDays } from 'lucide-react';
+import { Clock, ArrowRight, ArrowLeft, ListOrdered, HelpCircle, CalendarDays, Lightbulb, Link2, BookOpen, ExternalLink } from 'lucide-react';
 import { SITE_URL, siteUrl } from '@/lib/site';
 import {
   BLOG_POSTS,
   getPostBySlug,
   getRelatedPosts,
+  getInboundPosts,
   wordCount,
+  estimatedReadingMinutes,
   sectionId,
   categoryStyle,
   heroTint,
+  PostLinker,
+  EXTERNAL_LINK_REL,
+  type LinkedSegment,
 } from '@/lib/blog';
 
 type Props = { params: { slug: string } };
+
+/**
+ * Renders one block of body text with its contextual internal links in place.
+ *
+ * The linker hands back an already-split list of segments, so this only decides
+ * how a linked segment looks. Links are underlined rather than colour-only,
+ * because colour alone is not a reliable signal that something is clickable.
+ */
+function LinkedText({ segments }: { segments: LinkedSegment[] }) {
+  return (
+    <>
+      {segments.map((segment, i) =>
+        segment.href ? (
+          <Link
+            key={i}
+            href={segment.href}
+            title={segment.title}
+            className="font-medium text-indigo-600 dark:text-indigo-400 underline decoration-indigo-300 dark:decoration-indigo-700 underline-offset-2 hover:decoration-indigo-600 dark:hover:decoration-indigo-400 transition-colors"
+          >
+            {segment.text}
+          </Link>
+        ) : (
+          <span key={i}>{segment.text}</span>
+        )
+      )}
+    </>
+  );
+}
 
 /**
  * Every post is known at build time, so prerender them all. Static pages were
@@ -77,7 +110,24 @@ export default function BlogPostPage({ params }: Props) {
 
   const canonical = siteUrl(`/blog/${post.slug}`);
   const related = getRelatedPosts(post);
+  const inbound = getInboundPosts(post);
   const style = categoryStyle(post.category);
+  const minutes = estimatedReadingMinutes(post);
+
+  /*
+    One linker for the whole article: the link budget and the "each destination
+    at most once" rule are page-level, so every block has to go through the same
+    instance. Body first, then FAQ answers, so the budget is spent on the prose
+    a reader actually reaches rather than on the questions at the bottom.
+  */
+  const linker = new PostLinker(BLOG_POSTS, post.slug);
+  const linkedSections = post.sections.map(section => ({
+    section,
+    paragraphs: section.paragraphs.map(p => linker.linkify(p)),
+    bullets: (section.bullets || []).map(b => linker.linkify(b)),
+  }));
+  const linkedFaqs = (post.faqs || []).map(faq => ({ faq, answer: linker.linkify(faq.a) }));
+
   const published = new Date(post.publishedAt).toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'long',
@@ -102,6 +152,19 @@ export default function BlogPostPage({ params }: Props) {
     author: { '@type': 'Organization', name: post.author, url: SITE_URL },
     publisher: { '@id': `${SITE_URL}/#organization` },
     isPartOf: { '@id': `${SITE_URL}/#website` },
+    // Declares the primary sources structurally, not only as links in the body.
+    // Only emitted when the article actually cites something, so the markup
+    // never claims a source the page does not show.
+    ...(post.references?.length
+      ? {
+          citation: post.references.map(ref => ({
+            '@type': 'CreativeWork',
+            name: ref.title,
+            url: ref.url,
+            publisher: { '@type': 'Organization', name: ref.publisher },
+          })),
+        }
+      : {}),
   };
 
   const breadcrumbJsonLd = {
@@ -177,13 +240,45 @@ export default function BlogPostPage({ params }: Props) {
             </time>
             <span className="inline-flex items-center gap-1.5">
               <Clock className="w-4 h-4" />
-              {post.readingMinutes} min read
+              {minutes} min read
             </span>
           </div>
         </div>
       </header>
 
       <article className="container max-w-3xl px-4 sm:px-6 pt-12 pb-24">
+        {/*
+          ── Key takeaways ──
+          Above the table of contents on purpose. It answers the question for
+          the reader who will not scroll, and it is the block most likely to be
+          lifted into a search result, so it has to come before the navigation.
+        */}
+        {post.keyTakeaways && post.keyTakeaways.length > 0 && (
+          <section
+            aria-labelledby="key-takeaways"
+            className="rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-slate-50/80 dark:bg-slate-900/50 p-6 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700"
+            style={{ animationDelay: '200ms', animationFillMode: 'backwards' }}
+          >
+            <h2
+              id="key-takeaways"
+              className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 mb-4"
+            >
+              <Lightbulb className="w-4 h-4" />
+              Key takeaways
+            </h2>
+            <ul className="space-y-2.5 list-none p-0">
+              {post.keyTakeaways.map((point, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className={`mt-2 h-1.5 w-1.5 rounded-full shrink-0 bg-gradient-to-r ${style.gradient}`} />
+                  <span className="text-[15px] text-slate-700 dark:text-slate-300 leading-relaxed">
+                    {point}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {/* ── Table of contents: plain anchors, no JS required ── */}
         <nav
           aria-label="On this page"
@@ -215,7 +310,7 @@ export default function BlogPostPage({ params }: Props) {
 
         {/* ── Body ── */}
         <div className="space-y-12">
-          {post.sections.map((section, idx) => (
+          {linkedSections.map(({ section, paragraphs, bullets }, idx) => (
             <section
               key={section.heading}
               id={sectionId(section.heading)}
@@ -228,26 +323,90 @@ export default function BlogPostPage({ params }: Props) {
               </h2>
 
               <div className="space-y-4 pl-4">
-                {section.paragraphs.map((para, i) => (
+                {paragraphs.map((segments, i) => (
                   <p
                     key={i}
                     className="text-[15px] sm:text-base text-slate-600 dark:text-slate-400 leading-[1.75]"
                   >
-                    {para}
+                    <LinkedText segments={segments} />
                   </p>
                 ))}
 
-                {section.bullets && (
+                {bullets.length > 0 && (
                   <ul className="space-y-2.5 list-none p-0 pt-1">
-                    {section.bullets.map((b, i) => (
+                    {bullets.map((segments, i) => (
                       <li key={i} className="flex items-start gap-3">
                         <span className={`mt-2 h-1.5 w-1.5 rounded-full shrink-0 bg-gradient-to-r ${style.gradient}`} />
                         <span className="text-[15px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                          {b}
+                          <LinkedText segments={segments} />
                         </span>
                       </li>
                     ))}
                   </ul>
+                )}
+
+                {/*
+                  A real <table> rather than a styled grid: the comparison is
+                  content, and a crawler or screen reader needs the row and
+                  column relationship to make sense of it. Scroll container so
+                  a three-column table does not force the page sideways on a
+                  phone.
+                */}
+                {section.table && (
+                  <div className="pt-2 -mx-4 sm:mx-0 overflow-x-auto">
+                    <table className="w-full min-w-[32rem] sm:min-w-0 mx-4 sm:mx-0 border-collapse text-left">
+                      <caption className="sr-only">{section.table.caption}</caption>
+                      <thead>
+                        <tr>
+                          {section.table.columns.map(col => (
+                            <th
+                              key={col}
+                              scope="col"
+                              className="border-b-2 border-slate-200 dark:border-slate-700 py-2.5 pr-4 text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 align-bottom"
+                            >
+                              {col}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {section.table.rows.map((row, r) => (
+                          <tr key={r} className="align-top">
+                            {row.map((cell, c) => (
+                              <td
+                                key={c}
+                                className={`border-b border-slate-100 dark:border-slate-800/70 py-3 pr-4 text-[14px] leading-relaxed ${
+                                  c === 0
+                                    ? 'font-semibold text-slate-800 dark:text-slate-200'
+                                    : 'text-slate-600 dark:text-slate-400'
+                                }`}
+                              >
+                                {cell}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {section.example && (
+                  <aside className="mt-2 rounded-xl border-l-[3px] border-slate-300 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/40 pl-4 pr-4 py-4">
+                    <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
+                      {section.example.title}
+                    </p>
+                    <div className="space-y-3">
+                      {section.example.paragraphs.map((para, i) => (
+                        <p
+                          key={i}
+                          className="text-[14px] text-slate-600 dark:text-slate-400 leading-relaxed"
+                        >
+                          {para}
+                        </p>
+                      ))}
+                    </div>
+                  </aside>
                 )}
               </div>
             </section>
@@ -262,7 +421,7 @@ export default function BlogPostPage({ params }: Props) {
               Frequently asked questions
             </h2>
             <div className="grid gap-3">
-              {post.faqs.map((faq, idx) => (
+              {linkedFaqs.map(({ faq, answer }, idx) => (
                 <div
                   key={faq.q}
                   className="rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200/70 dark:border-slate-800/70 p-5 transition-all duration-300 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm animate-in fade-in slide-in-from-bottom-3 duration-500"
@@ -272,11 +431,61 @@ export default function BlogPostPage({ params }: Props) {
                     {faq.q}
                   </h3>
                   <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                    {faq.a}
+                    <LinkedText segments={answer} />
                   </p>
                 </div>
               ))}
             </div>
+          </section>
+        )}
+
+        {/*
+          ── Further reading ──
+          Outbound links to primary sources. Placed after the FAQ so the page
+          has answered its own question first, and before the conversion block
+          so a reader who wants the specification is not made to scroll past a
+          call to action to reach it.
+        */}
+        {post.references && post.references.length > 0 && (
+          <section
+            aria-labelledby="further-reading"
+            className="mt-16 border-t border-slate-200/60 dark:border-slate-800/60 pt-12"
+          >
+            <h2
+              id="further-reading"
+              className="flex items-center gap-2.5 text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-6"
+            >
+              <BookOpen className={`w-6 h-6 ${style.text}`} />
+              Further reading
+            </h2>
+            <ul className="space-y-3 list-none p-0">
+              {post.references.map(ref => (
+                <li key={ref.url}>
+                  <a
+                    href={ref.url}
+                    target="_blank"
+                    rel={EXTERNAL_LINK_REL}
+                    className="group flex items-start gap-3 rounded-xl border border-slate-200/70 dark:border-slate-800/70 bg-white dark:bg-slate-900/50 p-4 transition-all duration-300 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm"
+                  >
+                    <ExternalLink className="w-4 h-4 mt-1 shrink-0 text-slate-400 transition-colors group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
+                    <span className="min-w-0">
+                      <span className="block font-bold text-[15px] text-slate-900 dark:text-white leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        {ref.title}
+                        <span className="sr-only"> (opens in a new tab)</span>
+                      </span>
+                      <span className="mt-1 block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                        {ref.publisher}
+                      </span>
+                      {ref.note && (
+                        <span className="mt-1.5 block text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                          {ref.note}
+                        </span>
+                      )}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
           </section>
         )}
 
@@ -337,6 +546,37 @@ export default function BlogPostPage({ params }: Props) {
                 );
               })}
             </div>
+          </section>
+        )}
+
+        {/*
+          ── Inbound links ──
+          `related` only points outward, which leaves posts deep in the set with
+          nothing linking back to them. Listing the guides that reference this
+          one closes the loop, so every article is reachable from the articles
+          that discuss it rather than only from the paginated index.
+        */}
+        {inbound.length > 0 && (
+          <section className="mt-12 rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-slate-50/60 dark:bg-slate-900/40 p-6">
+            <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 mb-4">
+              <Link2 className="w-4 h-4" />
+              Referenced in these guides
+            </h2>
+            <ul className="space-y-2 list-none p-0">
+              {inbound.map(ref => (
+                <li key={ref.slug}>
+                  <Link
+                    href={`/blog/${ref.slug}`}
+                    className="group flex items-start gap-2.5 text-[15px] text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  >
+                    <ArrowRight className="w-4 h-4 mt-1 shrink-0 text-slate-300 dark:text-slate-600 transition-transform duration-200 group-hover:translate-x-0.5" />
+                    <span className="font-semibold leading-snug group-hover:underline underline-offset-4">
+                      {ref.heading}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </section>
         )}
 

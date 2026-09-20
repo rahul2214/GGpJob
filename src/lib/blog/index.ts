@@ -461,6 +461,8 @@ export const BLOG_POSTS: BlogPost[] = [
 ];
 
 export * from './types';
+export * from './internal-links';
+export * from './external-links';
 
 /** Anchor id for a section heading, used by the in-article table of contents. */
 export function sectionId(heading: string): string {
@@ -497,13 +499,15 @@ export interface BlogPostSummary {
 }
 
 export function getPostSummaries(): BlogPostSummary[] {
-  return getAllPosts().map(({ slug, heading, excerpt, category, readingMinutes, publishedAt }) => ({
-    slug,
-    heading,
-    excerpt,
-    category,
-    readingMinutes,
-    publishedAt,
+  return getAllPosts().map(post => ({
+    slug: post.slug,
+    heading: post.heading,
+    excerpt: post.excerpt,
+    category: post.category,
+    // Derived rather than copied from the post, so a card never advertises a
+    // reading time the article stopped matching when a section was added.
+    readingMinutes: estimatedReadingMinutes(post),
+    publishedAt: post.publishedAt,
   }));
 }
 
@@ -549,11 +553,56 @@ export function getRelatedPosts(post: BlogPost): BlogPost[] {
     .filter((p): p is BlogPost => Boolean(p));
 }
 
+/**
+ * Posts that point at this one — the other half of the link graph.
+ *
+ * `related` is one-directional: A can name B without B naming A, which leaves
+ * some posts with plenty of outbound links and nothing coming back. Surfacing
+ * the inbound side makes every article reachable from the articles that discuss
+ * it, which is what stops a post two hundred deep in the set becoming an orphan
+ * that crawlers reach only through the paginated index.
+ *
+ * Excludes anything already in the post's own `related` list so the page does
+ * not render the same link twice under two headings.
+ */
+export function getInboundPosts(post: BlogPost, limit = 6): BlogPost[] {
+  const alreadyShown = new Set(post.related || []);
+
+  return BLOG_POSTS.filter(
+    candidate =>
+      candidate.slug !== post.slug &&
+      !alreadyShown.has(candidate.slug) &&
+      (candidate.related || []).includes(post.slug)
+  ).slice(0, limit);
+}
+
 /** Word count drives the reading estimate shown on the index and article pages. */
 export function wordCount(post: BlogPost): number {
   const body = post.sections
-    .flatMap(s => [s.heading, ...s.paragraphs, ...(s.bullets || [])])
+    .flatMap(s => [
+      s.heading,
+      ...s.paragraphs,
+      ...(s.bullets || []),
+      ...(s.table ? [s.table.caption, ...s.table.columns, ...s.table.rows.flat()] : []),
+      ...(s.example ? [s.example.title, ...s.example.paragraphs] : []),
+    ])
     .join(' ');
+  const takeaways = (post.keyTakeaways || []).join(' ');
   const faqs = (post.faqs || []).flatMap(f => [f.q, f.a]).join(' ');
-  return `${post.excerpt} ${body} ${faqs}`.split(/\s+/).filter(Boolean).length;
+  return `${post.excerpt} ${takeaways} ${body} ${faqs}`.split(/\s+/).filter(Boolean).length;
+}
+
+/** Average adult reading speed for this kind of prose, in words per minute. */
+const WORDS_PER_MINUTE = 230;
+
+/**
+ * Reading estimate derived from the text that is actually on the page.
+ *
+ * Posts also carry a hand-written `readingMinutes`, which was accurate when it
+ * was typed and silently stops being accurate the moment a section is added.
+ * Computing it means the number cannot drift away from the article, so the
+ * declared field is only a floor for very short posts.
+ */
+export function estimatedReadingMinutes(post: BlogPost): number {
+  return Math.max(1, Math.round(wordCount(post) / WORDS_PER_MINUTE));
 }

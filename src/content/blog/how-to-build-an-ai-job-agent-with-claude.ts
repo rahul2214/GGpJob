@@ -22,14 +22,23 @@ export const post: BlogPost = {
   author: 'JobsDart Editorial',
   readingMinutes: 9,
   category: 'AI Engineering',
+  anchors: ['job agent with Claude', 'prompt caching'],
   excerpt:
     'The features that change the economics of a job agent are prompt caching and a tool protocol you do not have to reinvent.',
+  keyTakeaways: [
+    'Agent quality tracks tool definitions more closely than it tracks the model.',
+    'A run scoring fifty postings resends the same prefix fifty times — cache it.',
+    'MCP makes tools portable and introduces a real trust boundary at the same time.',
+    'Careful instruction-following improves quality and is not a security control.',
+    'Delimit third-party content, and rely on the reading component having no consequential tool.',
+  ],
   sections: [
     {
       heading: 'Tool use is the loop',
       paragraphs: [
         'Describe the tools, let the model select one, execute it, return the result, repeat. As everywhere, the quality of the agent tracks the quality of the tool definitions far more closely than it tracks the model.',
         'Give each tool a name that states its effect and a description that says when to use it and when not to. Explicit negative guidance — "do not use this to submit an application" — meaningfully reduces inappropriate calls, though it remains guidance rather than a control.',
+        'Return results the model can act on rather than raw payloads. A compact summary per posting with an identifier, plus a separate tool to fetch the full description of one, keeps the context usable where returning forty complete postings does not.',
       ],
     },
     {
@@ -37,19 +46,34 @@ export const post: BlogPost = {
       paragraphs: [
         'A job agent sends the same material repeatedly: the system prompt, the tool definitions, the candidate’s profile. Across a run scoring fifty postings, that is the same large prefix fifty times.',
         'Caching that prefix cuts both cost and latency substantially. The design implication is structural: put the stable content first and the variable content last, so the cacheable portion is as long as possible.',
+        'A single varying token early in the prompt invalidates everything after it, which is why this is a design constraint rather than a configuration setting. A timestamp, a request id or a per-posting note injected into the system prompt quietly defeats the whole mechanism while looking harmless.',
+        'Batch work to stay inside the cache lifetime. Scoring fifty postings in one run is cheap; scoring the same fifty spread across a day is not, because each one arrives after the cached prefix has expired.',
       ],
       bullets: [
         'System prompt and tool definitions first — never varying',
         'Candidate profile next — stable for the whole run',
         'The specific posting last — the only part that changes',
         'Avoid injecting timestamps or ids into the stable prefix',
+        'Batch runs so repeated calls fall inside the cache window',
       ],
+      table: {
+        caption: 'Prompt layout for a scoring run',
+        columns: ['Position', 'Content', 'Varies'],
+        rows: [
+          ['First', 'System prompt', 'Never'],
+          ['Second', 'Tool definitions', 'Never'],
+          ['Third', 'Candidate profile', 'Once per run'],
+          ['Fourth', 'Target and constraints', 'Once per run'],
+          ['Last', 'The posting being scored', 'Every call'],
+        ],
+      },
     },
     {
       heading: 'MCP for portable tools',
       paragraphs: [
         'Rather than wiring tools into one application, expose them through the Model Context Protocol and they become reusable across clients — your own assistant, a user’s general-purpose agent, an internal tool.',
         'The trade is a real trust boundary: once published, you do not control which model calls the server or what else it has connected. Every tool must authorise and validate independently, because you can no longer rely on the caller behaving.',
+        'Split the servers by what they can do. Public job search, private candidate data and anything that submits have different risk profiles, and one server holding all three means one blast radius for the least careful client that ever connects.',
       ],
     },
     {
@@ -57,6 +81,7 @@ export const post: BlogPost = {
       paragraphs: [
         'Where these models are reliably useful is in following detailed constraints about what not to do: do not claim experience absent from the record, do not fill demographic questions, do not submit without confirmation.',
         'Exploit that for quality, and do not mistake it for security. A model that follows instructions well still cannot be the thing that stops a hostile job posting from causing an unwanted action. The tool layer is the control; the instruction is the intent.',
+        'The same reliability makes structured output worth leaning on. Asking for a scored result with per-requirement reasons in a defined shape, and validating it before use, turns a parsing problem into a retry — and gives you something inspectable rather than a paragraph.',
       ],
     },
     {
@@ -64,6 +89,7 @@ export const post: BlogPost = {
       paragraphs: [
         'Job postings and web pages enter the context as third-party text. Wrap them in explicit delimiters, label them as data, and state that instructions inside them are content to be reported rather than followed.',
         'That reduces the success rate of injected instructions and does not eliminate it. Pair it with the only reliable defence: not giving the reading component any tool that could take a consequential action.',
+        'Have it report rather than silently ignore. A posting containing text aimed at an agent is worth surfacing — it tells the candidate something about the employer, and it tells you that your delimiting is being tested in production.',
       ],
     },
   ],
@@ -84,8 +110,30 @@ export const post: BlogPost = {
       q: 'Can strong instruction-following replace security controls?',
       a: 'No. It improves quality, but a hostile posting is stopped by the reading component having no consequential tool — not by an instruction telling it to behave.',
     },
+    {
+      q: 'What quietly defeats prompt caching?',
+      a: 'A single varying token early in the prompt — a timestamp or request id in the system prompt invalidates everything after it while looking harmless.',
+    },
+    {
+      q: 'What should happen when a posting contains an injected instruction?',
+      a: 'Report it rather than silently ignoring it. It tells the candidate something about the employer and tells you your defences are being tested in production.',
+    },
   ],
   related: ['how-to-build-a-job-agent-with-mcp', 'how-to-build-an-ai-job-agent-with-openai', 'ai-job-agents-and-prompt-injection'],
+  references: [
+    {
+      title: 'Model Context Protocol',
+      url: 'https://modelcontextprotocol.io/',
+      publisher: 'Model Context Protocol',
+      note: 'The tool protocol, and the client-server boundary it creates.',
+    },
+    {
+      title: 'OWASP Top 10 for LLM Applications',
+      url: 'https://owasp.org/www-project-top-10-for-large-language-model-applications/',
+      publisher: 'OWASP',
+      note: 'Prompt injection and excessive agency, which tool scope addresses and prompts do not.',
+    },
+  ],
 };
 
 export default post;

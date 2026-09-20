@@ -22,14 +22,23 @@ export const post: BlogPost = {
   author: 'JobsDart Editorial',
   readingMinutes: 8,
   category: 'AI Engineering',
+  anchors: ['jobs matching your resume', 'seniority trap'],
   excerpt:
     'A CV describes where someone has been. Searching from it alone finds more of the same, which is not always what they want.',
+  keyTakeaways: [
+    'Search APIs take queries, so the first job is deriving several good ones from the document.',
+    'Seniority must be derived explicitly and filtered on — similarity cannot see level.',
+    'Query several sources and reconcile by identity rather than URL.',
+    'A CV records history and never intent, so an explicit target has to outweigh it.',
+    'One line of explanation per result changes how the whole list is received.',
+  ],
   sections: [
     {
       heading: 'Derive searches, do not search with the CV',
       paragraphs: [
         'Job search APIs take queries, not documents. The agent’s first task is turning a CV into a small set of good searches — role titles the person could plausibly hold, with the location and seniority constraints attached.',
         'Generate several rather than one. A single canonical title misses the variants employers actually use, and job title vocabulary is inconsistent enough that three or four related searches materially change what is found.',
+        'Include adjacent titles the person has not held. Someone whose CV says backend engineer will find relevant roles advertised as platform engineer or API engineer, and the whole value of deriving queries rather than copying a title is reaching the postings they would never have searched for.',
       ],
       bullets: [
         'Current and adjacent role titles, including common variants',
@@ -37,12 +46,24 @@ export const post: BlogPost = {
         'Location and remote constraints applied as filters',
         'A seniority band, derived and then confirmed',
       ],
+      table: {
+        caption: 'From one CV to a query set',
+        columns: ['Derived from', 'Produces', 'Purpose'],
+        rows: [
+          ['Most recent title', 'Two or three variants', 'Direct matches'],
+          ['Adjacent role families', 'Two titles never held', 'Roles they would not search'],
+          ['Core technologies', 'Separate term searches', 'Postings with unusual titles'],
+          ['Stated target', 'Its own query set', 'Where they want to go'],
+          ['Constraints', 'Filters, not query terms', 'Eligibility, never traded off'],
+        ],
+      },
     },
     {
       heading: 'The seniority trap',
       paragraphs: [
         'CV text and posting text match most strongly when they describe the same technologies, which happens across every level. A junior CV looks textually similar to a staff-level posting in the same area, and similarity-based search cheerfully returns it.',
         'Derive the seniority band explicitly from years, scope and responsibility, confirm it with the candidate, and filter on it. Leaving it to the matching layer produces recommendations that waste everyone’s time.',
+        'Allow a deliberate band rather than an exact level. One step up is a reasonable stretch and often where the good outcomes are; three steps up is a waste of an afternoon, and the useful configuration is a range with an asymmetric tolerance rather than a single point.',
       ],
     },
     {
@@ -50,6 +71,7 @@ export const post: BlogPost = {
       paragraphs: [
         'No single source has everything. Aggregators have breadth with stale entries, employer career pages have accuracy without breadth, and specialist boards carry roles that never appear elsewhere.',
         'Query several, then deduplicate by employer and role rather than by URL — the same posting appears with different links across aggregators. Prefer the employer’s own page as the canonical record when one exists.',
+        'Run the queries in parallel with their own timeouts. A slow source should reduce coverage for one run rather than delay the whole result, and a candidate waiting forty seconds for a feed will not wait twice.',
       ],
     },
     {
@@ -57,6 +79,22 @@ export const post: BlogPost = {
       paragraphs: [
         'A CV records history and says nothing about intent. Someone may be leaving the field it describes, looking for less responsibility, or wanting to use one skill from it and none of the others.',
         'Searching purely from the document therefore optimises for continuity, which is exactly wrong for the people most in need of help. Take an explicit target and weight it above anything derived from the history.',
+        'Constraints are the other half of what the document cannot supply. Location, right to work, notice period and a salary floor do not appear on a CV and every one of them determines whether a result is worth showing at all.',
+      ],
+    },
+    {
+      heading: 'What a CV cannot be searched for',
+      paragraphs: [
+        'Some of the strongest predictors of a good match are absent from the document entirely. Company size, how much process someone wants, whether they prefer building new things or maintaining existing ones, and how much they care about the domain are all invisible to text derived from employment history.',
+        'They are cheap to collect once and worth more than another matching improvement. Three preferences captured in the first session change the shortlist more than a better embedding model does.',
+        'Dismissals fill in the rest over time. A candidate rejecting two roles at very large companies has told you something a CV never could, and a search that incorporates that is doing something genuinely personalised rather than merely relevant.',
+      ],
+      bullets: [
+        'Company size and stage they actually enjoy',
+        'Build new versus maintain existing',
+        'How much the domain matters to them',
+        'Team size and management appetite',
+        'Anything they have already decided they will not do again',
       ],
     },
     {
@@ -64,6 +102,7 @@ export const post: BlogPost = {
       paragraphs: [
         'A list of postings with no stated reason reads as generic, and candidates dismiss the whole set when two look irrelevant. One line of explanation changes how the same list is received.',
         '"Matched on your work with X at Y" also exposes bad matching. If the explanation reads as thin, the match was thin, and that is information you want before the candidate finds it.',
+        'Explanations are only possible if you kept the intermediate result. Matching claim to requirement leaves you with something to point at; comparing two document-level vectors leaves you with a number and nothing to say about it.',
       ],
     },
   ],
@@ -83,6 +122,14 @@ export const post: BlogPost = {
     {
       q: 'What does a CV fail to tell the agent?',
       a: 'Intent. Someone may be leaving the field their CV describes, so searching purely from it optimises for continuity — wrong for exactly the people who need most help.',
+    },
+    {
+      q: 'Should the seniority filter be exact?',
+      a: 'No — a band with asymmetric tolerance. One step up is a reasonable stretch and often where good outcomes are; three steps up wastes an afternoon.',
+    },
+    {
+      q: 'What preferences are worth collecting beyond the CV?',
+      a: 'Company size, build versus maintain, how much the domain matters, and management appetite. Three of those change the shortlist more than a better embedding model.',
     },
   ],
   related: ['how-to-build-an-ai-job-finder-using-job-apis', 'how-to-build-an-ai-agent-that-finds-jobs-from-multiple-websites', 'how-to-match-a-resume-with-a-job-description'],

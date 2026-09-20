@@ -22,14 +22,23 @@ export const post: BlogPost = {
   author: 'JobsDart Editorial',
   readingMinutes: 8,
   category: 'AI Engineering',
+  anchors: ['AI assistant', 'chatbots'],
   excerpt:
     'The distinction is not marketing. It decides how much can go wrong without a human noticing, which is the only question that matters when you build one.',
+  keyTakeaways: [
+    'One question separates all three: what can it do without a human in the loop?',
+    'A chatbot produces text only, and that constraint is a feature rather than a limitation.',
+    'An assistant acts on request with the result shown — where most useful production systems sit.',
+    'An agent chooses its own steps, which multiplies both capability and the cost of being wrong.',
+    'Start at the least autonomous option that solves the problem and move up only on evidence.',
+  ],
   sections: [
     {
       heading: 'One question separates all three',
       paragraphs: [
         'Ask what the system can do without a human in the loop. Everything else — the interface, the model, the branding — follows from that answer.',
         'A chatbot can say things. An assistant can say things and do a small, requested set of things. An agent can decide what to do, do several of them in sequence, and keep going without being asked between steps.',
+        'Note that none of this is about how good the conversation feels. A chatbot can be more articulate than an agent; the distinction is entirely about consequence and who authorised it.',
       ],
     },
     {
@@ -37,6 +46,7 @@ export const post: BlogPost = {
       paragraphs: [
         'A chatbot answers within a bounded domain. Classically these were decision trees; now they are usually a model with retrieval over a knowledge base. The defining property is that it produces text and nothing else.',
         'That constraint is a feature. The worst outcome is a wrong answer a user can see and disregard. Nothing moves, nothing sends, nothing is charged. For a support FAQ or documentation search this is exactly right, and reaching for anything more capable adds risk with no benefit.',
+        'The one caveat is that text can still cause harm where it is relied upon — medical, legal or financial guidance, or anything a user will act on without verifying. "Only produces text" limits the mechanism, not the consequence.',
       ],
     },
     {
@@ -44,6 +54,7 @@ export const post: BlogPost = {
       paragraphs: [
         'An assistant can invoke tools — book the meeting, draft the email, look up the order — but each action follows a specific request, and the user sees the result before anything else happens. The loop closes through a human every time.',
         'This is where most useful production systems sit, and it is undersold because it sounds less impressive than autonomy. The human confirmation is precisely what makes it deployable against real systems: mistakes surface immediately, at the point where someone can correct them.',
+        'It also has a property agents lack: errors do not compound. Each action starts from a state the user has seen and accepted, so a mistake at step three cannot silently become the premise for steps four through ten.',
       ],
       bullets: [
         'One request, one action, one visible result',
@@ -57,6 +68,27 @@ export const post: BlogPost = {
       paragraphs: [
         'An agent is given a goal rather than an instruction, and works out the steps itself. It may call ten tools, revise its approach based on what it finds, and report back only when finished. Nobody approves the intermediate decisions.',
         'That is genuinely more powerful and genuinely harder to operate. Errors compound across steps, cost is unpredictable until it stops, and the failure mode is not "wrong answer" but "confidently did the wrong sequence of things". Every serious deployment therefore reintroduces a human at the points that matter — which is the honest reason most shipped agents are narrower than the demos.',
+        'The security position changes too. An assistant reads untrusted content while a user is watching; an agent may read it, act on it and continue, which is what turns indirect prompt injection from a curiosity into an incident.',
+      ],
+      table: {
+        caption: 'The three architectures compared on what actually differs',
+        columns: ['', 'Chatbot', 'Assistant', 'Agent'],
+        rows: [
+          ['Can take actions', 'No', 'On request', 'On its own decision'],
+          ['Human sees each step', 'N/A', 'Yes', 'No'],
+          ['Errors compound', 'No', 'No', 'Yes'],
+          ['Cost predictability', 'High', 'High', 'Low until it stops'],
+          ['Injection consequence', 'Bad text', 'Bad suggestion', 'Bad action'],
+          ['Hardest part to build', 'Retrieval quality', 'Tool design', 'Stopping and verifying'],
+        ],
+      },
+    },
+    {
+      heading: 'The labels are used loosely, so read the capabilities',
+      paragraphs: [
+        'Vendors apply all three terms to whatever is currently most marketable, which means the label on a product tells you very little. The same is true in job descriptions: a role advertised as building agents is frequently building assistants, and that is not a complaint about either.',
+        'The questions that resolve it are concrete. What tools can it call? Does a person see the result before the next step? What is the maximum number of actions it can take from one instruction? Who approves anything irreversible?',
+        'Ask those about your own system too. Teams routinely describe what they have built as an agent when the sequence is fixed in code, and as an assistant when it is quietly chaining actions nobody approves.',
       ],
     },
     {
@@ -64,6 +96,7 @@ export const post: BlogPost = {
       paragraphs: [
         'Start at the least capable option that solves the problem and move up only when it demonstrably does not. This is the opposite of how these projects usually begin, and it is why so many stall: teams build an agent, discover it is unreliable, and spend months adding the constraints that would have made it an assistant.',
         'A practical test: write down what happens if the system does the most damaging thing it is capable of. If that sentence is survivable, autonomy is affordable. If it involves money leaving, a message going out, or a record being destroyed, you want a human on that specific step — regardless of what you call the product.',
+        'It is also entirely reasonable to mix them within one product. Autonomy on the reversible mechanics, assistant behaviour on anything an outsider will see, and a plain answer where a question just needs answering — that combination is what most successful systems actually are.',
       ],
       bullets: [
         'Answers questions from known material — chatbot',
@@ -90,8 +123,24 @@ export const post: BlogPost = {
       q: 'Do agents always need human approval?',
       a: 'Not for everything — but for anything irreversible, outbound or financial, yes. Practically every production agent gates those specific steps, whatever autonomy it has elsewhere.',
     },
+    {
+      q: 'How do I tell what a product really is?',
+      a: 'Ask what tools it can call, whether a person sees each result, the maximum actions from one instruction, and who approves irreversible ones. The label is marketing; those four answers are not.',
+    },
+    {
+      q: 'Can one product be all three?',
+      a: 'Yes, and most good ones are — autonomy on reversible mechanics, assistant behaviour on anything an outsider sees, and plain answers where a question just needs answering.',
+    },
   ],
   related: ['what-is-agentic-ai', 'what-are-ai-agents', 'ai-job-search-copilot-vs-application-agent'],
+  references: [
+    {
+      title: 'ReAct: Synergizing Reasoning and Acting in Language Models',
+      url: 'https://arxiv.org/abs/2210.03629',
+      publisher: 'arXiv',
+      note: 'The reason-then-act loop most agent frameworks are based on.',
+    },
+  ],
 };
 
 export default post;
