@@ -111,6 +111,16 @@ export const CAMPAIGN_STRUCTURE_CATALOG: CampaignCategoryDefinition[] = [
     defaultTemplateId: 'tpl_re_engagement',
     targetAudienceRule: 'Dormant candidates inactive >= 15 days',
   },
+  {
+    type: 'BLOG_SHOWCASE',
+    icon: '📖',
+    label: 'Blog Showcase & Career Insights',
+    exampleSubject: '📖 Must-Read: {{BLOG_TITLE}} | JobsDart Career Insights',
+    triggerCondition: 'New insightful blog articles published on JobsDart',
+    recommendedFrequency: 'Weekly / Bi-Weekly Newsletter',
+    defaultTemplateId: 'tpl_blog_showcase',
+    targetAudienceRule: 'All active and passive candidates to drive knowledge and site traffic',
+  },
 ];
 
 export const EMAIL_TEMPLATE_CATALOG: Record<string, EmailTemplateDefinition> = {
@@ -740,7 +750,215 @@ export const EMAIL_TEMPLATE_CATALOG: Record<string, EmailTemplateDefinition> = {
       </html>
     `,
   },
+
+  // 8. 📖 Blog Showcase & Career Insights Template
+  tpl_blog_showcase: {
+    id: 'tpl_blog_showcase',
+    name: '📖 Blog Showcase & Career Insights',
+    category: 'BLOG_SHOWCASE',
+    subject: '📖 Must-Read: {{BLOG_TITLE}} | JobsDart Career Insights',
+    description: 'Drives high-intent candidate traffic to published blog guides and articles.',
+    tags: ['blog-showcase', 'career-insights', 'traffic-acquisition'],
+    htmlLayout: ({ candidate, origin }) => `
+      <!DOCTYPE html>
+      <html>
+        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>JobsDart Insights</title></head>
+        <body style="font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color:#f8fafc; padding:24px; color:#1e293b; margin:0;">
+          <div style="max-width:600px; margin:0 auto; background:#ffffff; border-radius:24px; padding:32px; border:1px solid #cbd5e1;">
+            <div style="text-align:center; margin-bottom:20px;">
+              <span style="background:#ede9fe; color:#6d28d9; font-size:11px; font-weight:800; padding:4px 12px; border-radius:20px; text-transform:uppercase;">
+                📖 Career Insights
+              </span>
+              <h2 style="color:#1e293b; font-size:22px; font-weight:800; margin:10px 0 0 0;">Latest Engineering & Career Guides</h2>
+            </div>
+            <p style="font-size:15px; font-weight:600; color:#334155;">Hi ${candidate.name.split(' ')[0]},</p>
+            <p style="font-size:14px; color:#475569; line-height:1.6;">
+              Explore our latest published career roadmaps, AI guides, and tech interview tips designed to accelerate your job search.
+            </p>
+            <div style="text-align:center; margin:24px 0;">
+              <a href="${origin}/blog" style="display:inline-block; background:#7c3aed; color:#ffffff; font-size:14px; font-weight:800; padding:12px 26px; border-radius:10px; text-decoration:none;">
+                Explore JobsDart Blog &rarr;
+              </a>
+            </div>
+            ${renderComplianceFooter(candidate, origin)}
+          </div>
+        </body>
+      </html>
+    `,
+  },
 };
+
+export interface BlogEmailPayload {
+  slug: string;
+  heading?: string;
+  title?: string;
+  excerpt: string;
+  category: string;
+  readingMinutes?: number;
+  keyTakeaways?: string[];
+  publishedAt?: string;
+}
+
+export interface RenderBlogEmailOptions {
+  candidate: CRMCandidate;
+  blog: BlogEmailPayload;
+  relatedBlogs?: BlogEmailPayload[];
+  origin?: string;
+  customSubject?: string;
+}
+
+/**
+ * Renders high-converting Blog Email Campaign Template with UTM Tracking
+ */
+export function renderBlogEmailTemplate({
+  candidate,
+  blog,
+  relatedBlogs = [],
+  origin = 'https://jobsdart.in',
+  customSubject,
+}: RenderBlogEmailOptions): { subject: string; htmlContent: string; tags: string[] } {
+  const firstName = candidate.name.split(' ')[0] || candidate.name;
+  const blogTitle = blog.heading || blog.title || 'Tech Career Guide';
+  const readingTime = blog.readingMinutes || 5;
+  const category = blog.category || 'Career Insights';
+  const articleUrl = `${origin}/blog/${blog.slug}?utm_source=crm&utm_medium=email&utm_campaign=blog_digest&utm_content=${blog.slug}`;
+
+  let subject = customSubject || `📖 Must-Read: ${blogTitle} | JobsDart Career Insights`;
+  subject = subject
+    .replace('{{FIRSTNAME}}', firstName)
+    .replace('{{BLOG_TITLE}}', blogTitle)
+    .replace('{{CATEGORY}}', category);
+
+  const keyTakeawaysHtml = blog.keyTakeaways && blog.keyTakeaways.length > 0
+    ? `
+      <div style="background:#f5f3ff; border-left:4px solid #7c3aed; border-radius:8px; padding:16px 20px; margin:20px 0;">
+        <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#6d28d9; margin-bottom:8px;">
+          💡 Key Takeaways in this Guide:
+        </div>
+        <ul style="margin:0; padding-left:18px; color:#334155; font-size:13px; line-height:1.6;">
+          ${blog.keyTakeaways.slice(0, 3).map(k => `<li style="margin-bottom:6px;">${k}</li>`).join('')}
+        </ul>
+      </div>
+    `
+    : '';
+
+  const relatedHtml = relatedBlogs && relatedBlogs.length > 0
+    ? `
+      <div style="margin-top:28px; padding-top:20px; border-top:1px dashed #cbd5e1;">
+        <h4 style="margin:0 0 14px 0; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#64748b;">
+          📚 Recommended Career Reads for You
+        </h4>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          ${relatedBlogs.slice(0, 2).map(rel => {
+            const relUrl = `${origin}/blog/${rel.slug}?utm_source=crm&utm_medium=email&utm_campaign=blog_related&utm_content=${rel.slug}`;
+            return `
+              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px 18px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                  <span style="background:#ede9fe; color:#6d28d9; font-size:10px; font-weight:800; padding:2px 8px; border-radius:6px; text-transform:uppercase;">
+                    ${rel.category || 'Article'}
+                  </span>
+                  <span style="color:#94a3b8; font-size:11px; font-weight:600;">
+                    ${rel.readingMinutes || 4} min read
+                  </span>
+                </div>
+                <a href="${relUrl}" style="color:#0f172a; font-size:14px; font-weight:700; text-decoration:none; display:block; margin-top:4px; line-height:1.4;">
+                  ${rel.heading || rel.title} &rarr;
+                </a>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `
+    : '';
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${blogTitle}</title>
+      </head>
+      <body style="font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color:#f1f5f9; padding:24px; color:#1e293b; margin:0;">
+        <div style="max-width:620px; margin:0 auto; background:#ffffff; border-radius:24px; padding:32px; border:1px solid #cbd5e1; box-shadow:0 10px 30px rgba(0,0,0,0.06);">
+          
+          <!-- Header Banner -->
+          <div style="text-align:center; padding-bottom:20px; border-bottom:2px solid #ede9fe; margin-bottom:24px;">
+            <div style="display:inline-block; background:linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); color:#ffffff; font-size:11px; font-weight:800; padding:5px 14px; border-radius:20px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+              📖 JobsDart Career & Tech Insights
+            </div>
+            <h1 style="color:#0f172a; margin:4px 0 6px 0; font-size:22px; font-weight:900; line-height:1.3;">
+              Weekly Expert Guide
+            </h1>
+            <p style="color:#64748b; font-size:13px; margin:0; font-weight:500;">
+              High-impact strategies & career roadmaps for ambitious tech professionals
+            </p>
+          </div>
+
+          <!-- Greeting -->
+          <p style="font-size:15px; font-weight:600; color:#334155; margin-bottom:8px;">
+            Hi ${firstName},
+          </p>
+          <p style="font-size:14px; color:#475569; line-height:1.6; margin-bottom:20px;">
+            Our engineering and career editorial team just published a new in-depth guide to help give you an unfair advantage in tech hiring, interview preparation, and skill growth:
+          </p>
+
+          <!-- Main Blog Feature Card -->
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:18px; padding:24px; margin-bottom:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="background:#ede9fe; color:#6d28d9; font-size:11px; font-weight:800; padding:4px 10px; border-radius:8px; text-transform:uppercase;">
+                ${category}
+              </span>
+              <span style="color:#64748b; font-size:12px; font-weight:600;">
+                ⏱️ ${readingTime} min read
+              </span>
+            </div>
+
+            <h2 style="margin:8px 0 12px 0; font-size:20px; font-weight:800; line-height:1.35; color:#0f172a;">
+              <a href="${articleUrl}" style="color:#0f172a; text-decoration:none;">
+                ${blogTitle}
+              </a>
+            </h2>
+
+            <p style="margin:0 0 16px 0; color:#475569; font-size:14px; line-height:1.6;">
+              ${blog.excerpt}
+            </p>
+
+            ${keyTakeawaysHtml}
+
+            <!-- Primary Call to Action Button -->
+            <div style="text-align:center; margin:24px 0 8px 0;">
+              <a href="${articleUrl}" style="display:inline-block; background:linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); color:#ffffff; font-size:14px; font-weight:800; text-decoration:none; padding:14px 32px; border-radius:12px; box-shadow:0 4px 14px rgba(124, 58, 237, 0.35); text-transform:uppercase; letter-spacing:0.5px;">
+                Read Full Article on JobsDart &rarr;
+              </a>
+              <p style="margin:8px 0 0 0; font-size:11px; color:#94a3b8; font-weight:500;">
+                ✓ 100% Free &bull; No Login Required &bull; Read on Web or Mobile
+              </p>
+            </div>
+          </div>
+
+          ${relatedHtml}
+
+          <!-- Compliance Footer -->
+          ${renderComplianceFooter(candidate, origin)}
+
+        </div>
+      </body>
+    </html>
+  `;
+
+  return {
+    subject,
+    htmlContent,
+    tags: [
+      'blog-campaign',
+      'traffic-acquisition',
+      category.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+      blog.slug,
+    ],
+  };
+}
 
 function renderComplianceFooter(candidate: CRMCandidate, origin: string): string {
   return `

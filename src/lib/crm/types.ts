@@ -39,6 +39,7 @@ export type CampaignType =
   | 'PRODUCT_UPDATES'
   | 'CONVERSION'
   | 'RE_ENGAGEMENT'
+  | 'BLOG_SHOWCASE'
   // Backward compatibility aliases
   | 'AI_JOB_RECOMMENDATION'
   | 'ONBOARDING_WELCOME'

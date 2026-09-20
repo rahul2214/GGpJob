@@ -7,7 +7,7 @@ import {
   Users, Mail, Sparkles, RefreshCw, Send, CheckCircle2,
   AlertTriangle, ShieldCheck, Filter, Search,
   Eye, ShieldAlert, Cpu,
-  ExternalLink, Loader2, Play
+  ExternalLink, Loader2, Play, BookOpen
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,17 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { CRMCandidate, CRMEmailLog, CRMAnalyticsSummary, CampaignType } from "@/lib/crm/types";
-import { CAMPAIGN_STRUCTURE_CATALOG, renderCRMTemplate } from "@/lib/crm/template-engine";
+import { CAMPAIGN_STRUCTURE_CATALOG, renderCRMTemplate, renderBlogEmailTemplate } from "@/lib/crm/template-engine";
 import { filterCandidatesByCampaignType } from "@/lib/crm/candidate-crm";
+
+export interface BlogSummary {
+  slug: string;
+  heading: string;
+  excerpt: string;
+  category: string;
+  readingMinutes: number;
+  publishedAt: string;
+}
 
 export default function AdminCRMPage() {
   const { user, loading: userLoading } = useUser();
@@ -41,6 +50,19 @@ export default function AdminCRMPage() {
   const [testEmail, setTestEmail] = useState("");
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [executingCampaignType, setExecutingCampaignType] = useState<string | null>(null);
+
+  // Blog Campaigns State
+  const [blogs, setBlogs] = useState<BlogSummary[]>([]);
+  const [blogsLoading, setBlogsLoading] = useState(false);
+  const [selectedBlogSlug, setSelectedBlogSlug] = useState<string>("");
+  const [blogSearchQuery, setBlogSearchQuery] = useState("");
+  const [blogCategoryFilter, setBlogCategoryFilter] = useState("ALL");
+  const [blogCustomSubject, setBlogCustomSubject] = useState("");
+  const [blogTargetStage, setBlogTargetStage] = useState<string>("ALL");
+  const [includeRelatedBlogs, setIncludeRelatedBlogs] = useState(true);
+  const [blogTestEmail, setBlogTestEmail] = useState("");
+  const [isSendingBlogTest, setIsSendingBlogTest] = useState(false);
+  const [isLaunchingBlogCampaign, setIsLaunchingBlogCampaign] = useState(false);
 
   // Template Preview Dialog State
   const [activePreviewTemplate, setActivePreviewTemplate] = useState<{ title: string; html: string } | null>(null);
@@ -67,6 +89,25 @@ export default function AdminCRMPage() {
     }
   };
 
+  const fetchBlogs = async () => {
+    setBlogsLoading(true);
+    try {
+      const res = await fetch("/api/crm/blogs");
+      if (!res.ok) throw new Error("Failed to load blog articles");
+      const data = await res.json();
+      const fetched: BlogSummary[] = data.blogs || [];
+      setBlogs(fetched);
+      if (fetched.length > 0) {
+        setSelectedBlogSlug(prev => prev || fetched[0].slug);
+        setBlogCustomSubject(prev => prev || `📖 Must-Read: ${fetched[0].heading} | JobsDart Career Insights`);
+      }
+    } catch (err: any) {
+      console.warn("Failed to fetch blogs for CRM:", err);
+    } finally {
+      setBlogsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!userLoading) {
       if (!user) {
@@ -75,6 +116,7 @@ export default function AdminCRMPage() {
         router.push("/");
       } else {
         fetchCRMData();
+        fetchBlogs();
       }
     }
   }, [user, userLoading, router, isAdmin]);
@@ -215,6 +257,177 @@ export default function AdminCRMPage() {
       title: `${label} — Subject: ${subject}`,
       html: htmlContent,
     });
+  };
+
+  // Blog Action Handlers & Calculations
+  const selectedBlog = blogs.find(b => b.slug === selectedBlogSlug) || blogs[0] || null;
+
+  const blogCategories = ["ALL", ...Array.from(new Set(blogs.map(b => b.category))).filter(Boolean)];
+
+  const filteredBlogs = blogs.filter(b => {
+    const matchesCat = blogCategoryFilter === "ALL" || b.category === blogCategoryFilter;
+    const matchesSearch = !blogSearchQuery ||
+      b.heading.toLowerCase().includes(blogSearchQuery.toLowerCase()) ||
+      b.slug.toLowerCase().includes(blogSearchQuery.toLowerCase()) ||
+      b.excerpt.toLowerCase().includes(blogSearchQuery.toLowerCase());
+    return matchesCat && matchesSearch;
+  });
+
+  const getStageCount = (stage: string) => {
+    const activeList = candidates.filter(c => !c.isUnsubscribed && c.emailFrequency !== 'PAUSED');
+    if (stage === 'ALL') return activeList.length;
+    return activeList.filter(c => c.lifecycleStage === stage).length;
+  };
+
+  const handleSelectBlog = (b: BlogSummary) => {
+    setSelectedBlogSlug(b.slug);
+    setBlogCustomSubject(`📖 Must-Read: ${b.heading} | JobsDart Career Insights`);
+  };
+
+  const handlePreviewBlogEmail = () => {
+    if (!selectedBlog) {
+      toast({ title: "No Blog Selected", description: "Please pick a blog article to preview.", variant: "destructive" });
+      return;
+    }
+    const sampleCandidate = candidates[0] || {
+      id: 'demo',
+      uuid: 'demo-uuid',
+      name: 'Sarah Jenkins',
+      email: 'sarah.jenkins@example.com',
+      role: 'Job Seeker',
+      headline: 'Senior Full Stack Engineer',
+      skills: ['React', 'Node.js', 'TypeScript', 'AWS'],
+      currentCity: 'Bengaluru',
+      country: 'India',
+      preferredJobTitles: ['Senior Engineer'],
+      preferredLocations: ['Remote'],
+      lifecycleStage: 'HIGHLY_ENGAGED',
+      engagementScore: 88,
+      brevoSyncStatus: 'SYNCED',
+      emailFrequency: 'WEEKLY',
+      isUnsubscribed: false,
+      totalEmailsSent: 4,
+      totalEmailsOpened: 3,
+      totalEmailsClicked: 2,
+      totalApplicationsSubmitted: 1,
+      createdAt: new Date().toISOString(),
+    };
+
+    const related = includeRelatedBlogs
+      ? blogs.filter(b => b.slug !== selectedBlog.slug).slice(0, 2)
+      : [];
+
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://jobsdart.in';
+
+    const { subject, htmlContent } = renderBlogEmailTemplate({
+      candidate: sampleCandidate,
+      blog: selectedBlog,
+      relatedBlogs: related,
+      origin,
+      customSubject: blogCustomSubject.trim() || undefined,
+    });
+
+    setActivePreviewTemplate({
+      title: `Blog Campaign Preview: ${subject}`,
+      html: htmlContent,
+    });
+  };
+
+  const handleSendBlogTestEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBlog) {
+      toast({ title: "No Blog Selected", description: "Please pick a blog article first.", variant: "destructive" });
+      return;
+    }
+    if (!blogTestEmail || !blogTestEmail.includes("@")) {
+      toast({ title: "Invalid Email", description: "Please provide a valid recipient email address.", variant: "destructive" });
+      return;
+    }
+
+    setIsSendingBlogTest(true);
+    try {
+      const res = await fetch("/api/crm/send-blog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: selectedBlog.slug,
+          testEmail: blogTestEmail.trim(),
+          customSubject: blogCustomSubject.trim() || undefined,
+          includeRelated: includeRelatedBlogs,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send test blog email");
+
+      toast({
+        title: "✓ Test Blog Email Dispatched!",
+        description: data.message || `Dispatched to ${blogTestEmail}`,
+      });
+      fetchCRMData();
+    } catch (err: any) {
+      toast({
+        title: "Test Dispatch Failed",
+        description: err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingBlogTest(false);
+    }
+  };
+
+  const handleLaunchBlogCampaign = async () => {
+    if (!selectedBlog) {
+      toast({ title: "No Blog Selected", description: "Please pick a blog article first.", variant: "destructive" });
+      return;
+    }
+
+    const eligibleCount = getStageCount(blogTargetStage);
+    if (eligibleCount === 0) {
+      toast({
+        title: "No Eligible Candidates",
+        description: `No candidates found in the "${blogTargetStage}" audience segment.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to launch this Blog Campaign?\n\n` +
+      `Article: "${selectedBlog.heading}"\n` +
+      `Audience Segment: ${blogTargetStage} (${eligibleCount} recipient${eligibleCount > 1 ? 's' : ''})\n` +
+      `Brevo Email Delivery will initiate immediately.`
+    );
+    if (!confirmed) return;
+
+    setIsLaunchingBlogCampaign(true);
+    try {
+      const res = await fetch("/api/crm/send-blog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: selectedBlog.slug,
+          targetStage: blogTargetStage,
+          customSubject: blogCustomSubject.trim() || undefined,
+          includeRelated: includeRelatedBlogs,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to launch blog campaign");
+
+      toast({
+        title: "🚀 Blog Campaign Dispatched!",
+        description: data.message,
+      });
+      fetchCRMData();
+    } catch (err: any) {
+      toast({
+        title: "Campaign Launch Failed",
+        description: err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLaunchingBlogCampaign(false);
+    }
   };
 
   // Filter candidates
@@ -420,20 +633,23 @@ export default function AdminCRMPage() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="campaigns" className="space-y-6">
-        <TabsList className="bg-slate-100 dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-800">
-          <TabsTrigger value="campaigns" className="rounded-xl font-bold text-xs px-5 py-2.5">
+        <TabsList className="bg-slate-100 dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-800 flex-wrap h-auto gap-1">
+          <TabsTrigger value="campaigns" className="rounded-xl font-bold text-xs px-4 py-2.5">
             <Sparkles className="w-4 h-4 mr-2 text-indigo-600" /> 7-Campaign Segmentation Engine
           </TabsTrigger>
-          <TabsTrigger value="directory" className="rounded-xl font-bold text-xs px-5 py-2.5">
+          <TabsTrigger value="blogs" className="rounded-xl font-bold text-xs px-4 py-2.5">
+            <BookOpen className="w-4 h-4 mr-2 text-violet-600" /> Blog Campaigns & Traffic ({blogs.length})
+          </TabsTrigger>
+          <TabsTrigger value="directory" className="rounded-xl font-bold text-xs px-4 py-2.5">
             <Users className="w-4 h-4 mr-2" /> Candidate Directory ({filteredCandidates.length})
           </TabsTrigger>
-          <TabsTrigger value="engine" className="rounded-xl font-bold text-xs px-5 py-2.5">
+          <TabsTrigger value="engine" className="rounded-xl font-bold text-xs px-4 py-2.5">
             <Cpu className="w-4 h-4 mr-2 text-indigo-600" /> AI Match Matrix
           </TabsTrigger>
-          <TabsTrigger value="logs" className="rounded-xl font-bold text-xs px-5 py-2.5">
+          <TabsTrigger value="logs" className="rounded-xl font-bold text-xs px-4 py-2.5">
             <Mail className="w-4 h-4 mr-2 text-emerald-600" /> Email Dispatch Logs
           </TabsTrigger>
-          <TabsTrigger value="deliverability" className="rounded-xl font-bold text-xs px-5 py-2.5">
+          <TabsTrigger value="deliverability" className="rounded-xl font-bold text-xs px-4 py-2.5">
             <ShieldCheck className="w-4 h-4 mr-2 text-amber-500" /> Anti-Spam & Deliverability
           </TabsTrigger>
         </TabsList>
@@ -511,6 +727,314 @@ export default function AdminCRMPage() {
               })}
             </div>
           </div>
+        </TabsContent>
+
+        {/* --- TAB: Blog Campaigns & Traffic Acquisition --- */}
+        <TabsContent value="blogs" className="space-y-6">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-violet-950 via-slate-900 to-indigo-950 p-6 sm:p-8 rounded-3xl text-white border border-violet-800/30 shadow-xl relative overflow-hidden">
+            <div className="absolute right-0 top-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="p-2 rounded-2xl bg-violet-600/30 text-violet-300 border border-violet-500/30">
+                    <BookOpen className="w-6 h-6" />
+                  </span>
+                  <h2 className="text-2xl font-black tracking-tight">Blog Newsletter & Traffic Acquisition</h2>
+                </div>
+                <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
+                  Boost site traffic by dispatching curated career roadmaps, tech interview guides, and industry insights directly to candidate inboxes. Every email includes UTM-tagged CTAs pointing back to your published articles on <strong>jobsdart.in/blog</strong>.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/10 text-center">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-300 block">Published Articles</span>
+                  <span className="text-xl font-black text-white">{blogs.length}</span>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/10 text-center">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-300 block">Reachable Candidates</span>
+                  <span className="text-xl font-black text-emerald-400">{getStageCount('ALL')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {blogsLoading ? (
+            <div className="bg-white dark:bg-slate-900 p-12 rounded-3xl border border-slate-200/70 dark:border-slate-800/70 text-center space-y-3">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-violet-600" />
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Loading Published Blog Articles...</p>
+            </div>
+          ) : blogs.length === 0 ? (
+            <div className="bg-white dark:bg-slate-900 p-12 rounded-3xl border border-slate-200/70 dark:border-slate-800/70 text-center">
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">No published blog articles found.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Left Column: Blog Explorer & Picker (5 columns) */}
+              <div className="lg:col-span-5 space-y-4">
+                <Card className="rounded-3xl border-slate-200/70 dark:border-slate-800/70 shadow-sm overflow-hidden">
+                  <CardHeader className="p-5 pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                        <Search className="w-4 h-4 text-violet-600" /> Select Article
+                      </CardTitle>
+                      <Badge variant="outline" className="text-[11px] font-bold">
+                        {filteredBlogs.length} of {blogs.length}
+                      </Badge>
+                    </div>
+                    <CardDescription className="text-xs text-slate-500">
+                      Choose which guide to feature in your email newsletter.
+                    </CardDescription>
+
+                    {/* Search & Category Filter */}
+                    <div className="space-y-2 pt-2">
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                        <Input
+                          placeholder="Search articles by title or keyword..."
+                          value={blogSearchQuery}
+                          onChange={e => setBlogSearchQuery(e.target.value)}
+                          className="pl-9 h-9 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200"
+                        />
+                      </div>
+
+                      {/* Category Filter Pills */}
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                        {blogCategories.slice(0, 8).map(cat => (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => setBlogCategoryFilter(cat)}
+                            className={cn(
+                              "px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider shrink-0 transition-all",
+                              blogCategoryFilter === cat
+                                ? "bg-violet-600 text-white shadow-sm"
+                                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
+                            )}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="p-4 pt-1 max-h-[560px] overflow-y-auto space-y-2.5">
+                    {filteredBlogs.map(b => {
+                      const isSelected = selectedBlog?.slug === b.slug;
+                      return (
+                        <div
+                          key={b.slug}
+                          onClick={() => handleSelectBlog(b)}
+                          className={cn(
+                            "p-3.5 rounded-2xl border transition-all cursor-pointer text-left space-y-2",
+                            isSelected
+                              ? "border-violet-500 bg-violet-50/70 dark:bg-violet-950/30 shadow-md ring-2 ring-violet-500/20"
+                              : "border-slate-200/70 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-950/40"
+                          )}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300">
+                              {b.category}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-semibold text-slate-400">
+                                ⏱️ {b.readingMinutes} min
+                              </span>
+                              {isSelected && (
+                                <Badge className="bg-violet-600 text-white text-[10px] font-extrabold py-0 h-5">
+                                  ✓ Selected
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+
+                          <h3 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug">
+                            {b.heading}
+                          </h3>
+
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                            {b.excerpt}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Right Column: Campaign Studio & Dispatch (7 columns) */}
+              <div className="lg:col-span-7 space-y-5">
+                {selectedBlog ? (
+                  <Card className="rounded-3xl border-slate-200/70 dark:border-slate-800/70 shadow-sm p-6 space-y-5">
+                    {/* Selected Blog Snapshot */}
+                    <div className="bg-slate-50 dark:bg-slate-950/60 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-violet-600 dark:text-violet-400">
+                          Active Article Featured
+                        </span>
+                        <a
+                          href={`/blog/${selectedBlog.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline gap-1"
+                        >
+                          View Live on Site <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+
+                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-snug">
+                        {selectedBlog.heading}
+                      </h3>
+
+                      <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">
+                        {selectedBlog.excerpt}
+                      </p>
+
+                      <div className="flex items-center gap-3 pt-1 text-[11px] font-bold text-slate-400">
+                        <span>Category: <strong className="text-slate-700 dark:text-slate-200">{selectedBlog.category}</strong></span>
+                        <span>&bull;</span>
+                        <span>Estimated Read: <strong className="text-slate-700 dark:text-slate-200">{selectedBlog.readingMinutes} mins</strong></span>
+                        <span>&bull;</span>
+                        <span>Published: <strong className="text-slate-700 dark:text-slate-200">{selectedBlog.publishedAt}</strong></span>
+                      </div>
+                    </div>
+
+                    {/* Subject Line Customization */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase tracking-wider text-slate-500 block">
+                        Email Subject Line
+                      </label>
+                      <Input
+                        value={blogCustomSubject}
+                        onChange={e => setBlogCustomSubject(e.target.value)}
+                        placeholder="e.g. 📖 Must-Read: ..."
+                        className="h-11 rounded-xl text-xs font-bold bg-white dark:bg-slate-900"
+                      />
+                      <p className="text-[11px] text-slate-400">
+                        Supports <code className="text-violet-600">{"{{FIRSTNAME}}"}</code>, <code className="text-violet-600">{"{{BLOG_TITLE}}"}</code>, and <code className="text-violet-600">{"{{CATEGORY}}"}</code> variables.
+                      </p>
+                    </div>
+
+                    {/* Audience Segment Selection */}
+                    <div className="space-y-2.5">
+                      <label className="text-xs font-black uppercase tracking-wider text-slate-500 block">
+                        Target Audience Segment
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        {[
+                          { id: 'ALL', label: 'All Active Users', count: getStageCount('ALL') },
+                          { id: 'ACTIVE_SEEKER', label: 'Active Job Seekers', count: getStageCount('ACTIVE_SEEKER') },
+                          { id: 'PASSIVE_SEEKER', label: 'Passive Seekers', count: getStageCount('PASSIVE_SEEKER') },
+                          { id: 'HIGHLY_ENGAGED', label: 'Highly Engaged', count: getStageCount('HIGHLY_ENGAGED') },
+                          { id: 'DORMANT', label: 'Dormant (Reactivate)', count: getStageCount('DORMANT') },
+                        ].map(seg => (
+                          <button
+                            key={seg.id}
+                            type="button"
+                            onClick={() => setBlogTargetStage(seg.id)}
+                            className={cn(
+                              "p-3 rounded-2xl border text-left transition-all flex flex-col justify-between",
+                              blogTargetStage === seg.id
+                                ? "border-violet-600 bg-violet-50/60 dark:bg-violet-950/30 ring-2 ring-violet-500/20"
+                                : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900"
+                            )}
+                          >
+                            <span className="text-xs font-extrabold text-slate-900 dark:text-white block">
+                              {seg.label}
+                            </span>
+                            <span className="text-[11px] font-bold text-violet-600 dark:text-violet-400 mt-1">
+                              {seg.count} recipient{seg.count !== 1 ? 's' : ''}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Options: Related Articles Toggle */}
+                    <div className="flex items-center gap-3 p-3.5 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                      <input
+                        type="checkbox"
+                        id="includeRelated"
+                        checked={includeRelatedBlogs}
+                        onChange={e => setIncludeRelatedBlogs(e.target.checked)}
+                        className="w-4 h-4 rounded text-violet-600 focus:ring-violet-500 cursor-pointer"
+                      />
+                      <label htmlFor="includeRelated" className="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                        Include 2 Recommended Reads in Email Footer <span className="font-normal text-slate-400">(Increases internal link clicks &amp; multi-page sessions)</span>
+                      </label>
+                    </div>
+
+                    {/* Action Controls & Preview */}
+                    <div className="pt-2 space-y-4">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handlePreviewBlogEmail}
+                          className="h-11 rounded-xl font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300 flex-1 border-slate-300 dark:border-slate-700"
+                        >
+                          <Eye className="w-4 h-4 mr-2 text-violet-600" /> Preview Rendered Email
+                        </Button>
+                      </div>
+
+                      {/* Test Dispatch Box */}
+                      <form onSubmit={handleSendBlogTestEmail} className="p-4 bg-violet-50/50 dark:bg-violet-950/20 rounded-2xl border border-violet-200 dark:border-violet-900/40 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black uppercase tracking-wider text-violet-900 dark:text-violet-300 flex items-center gap-1.5">
+                            <Send className="w-3.5 h-3.5" /> Send Test Email via Brevo
+                          </span>
+                          <span className="text-[10px] text-slate-400">Verifies layout in your inbox</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            type="email"
+                            placeholder="admin@example.com"
+                            value={blogTestEmail}
+                            onChange={e => setBlogTestEmail(e.target.value)}
+                            required
+                            className="h-10 text-xs rounded-xl bg-white dark:bg-slate-900 border-violet-200"
+                          />
+                          <Button
+                            type="submit"
+                            disabled={isSendingBlogTest}
+                            className="h-10 px-5 rounded-xl bg-violet-700 hover:bg-violet-800 text-white font-bold text-xs uppercase shrink-0"
+                          >
+                            {isSendingBlogTest ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send Test"}
+                          </Button>
+                        </div>
+                      </form>
+
+                      {/* Launch Full Campaign CTA */}
+                      <Button
+                        type="button"
+                        onClick={handleLaunchBlogCampaign}
+                        disabled={isLaunchingBlogCampaign || getStageCount(blogTargetStage) === 0}
+                        className="w-full h-12 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-violet-600/25"
+                      >
+                        {isLaunchingBlogCampaign ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            Dispatching via Brevo Automation...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Launch Blog Campaign to {getStageCount(blogTargetStage)} Candidate(s)
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </Card>
+                ) : (
+                  <Card className="rounded-3xl border-slate-200/70 dark:border-slate-800/70 shadow-sm p-12 text-center">
+                    <p className="text-sm font-bold text-slate-400">Select an article from the list to configure campaign.</p>
+                  </Card>
+                )}
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* --- TAB 1: Candidate Directory --- */}

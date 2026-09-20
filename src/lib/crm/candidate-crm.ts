@@ -639,6 +639,32 @@ export async function getCRMEmailLogs(): Promise<CRMEmailLog[]> {
   return IN_MEMORY_LOGS;
 }
 
+/**
+ * Records an Email Dispatch entry in Supabase and In-Memory audit log
+ */
+export async function recordCRMEmailLog(logEntry: CRMEmailLog): Promise<void> {
+  IN_MEMORY_LOGS.unshift(logEntry);
+
+  try {
+    await supabaseAdmin.from('crm_email_logs').insert({
+      candidate_id: logEntry.candidateId,
+      candidate_email: logEntry.candidateEmail,
+      candidate_name: logEntry.candidateName,
+      campaign_type: logEntry.campaignType,
+      email_subject: logEntry.emailSubject,
+      brevo_message_id: logEntry.brevoMessageId,
+      status: logEntry.status,
+      recommended_job_ids: logEntry.recommendedJobIds || [],
+      recommended_job_titles: logEntry.recommendedJobTitles || [],
+      match_score_average: logEntry.matchScoreAverage || 0,
+      sent_at: logEntry.sentAt,
+      error_message: logEntry.errorMessage || null,
+    });
+  } catch (e) {
+    console.warn('[CRM] Supabase email log insert fallback:', e);
+  }
+}
+
 import { computeCRMAnalytics } from './analytics-engine';
 
 /**
