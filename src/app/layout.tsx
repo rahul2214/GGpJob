@@ -320,6 +320,13 @@ export default function RootLayout({
           }}
         />
 
+        {/* Google AdSense Site Verification & Code */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3640606958192895"
+          crossOrigin="anonymous"
+        />
+
         {/* Google Analytics */}
 
         {gaMeasurementId && (
