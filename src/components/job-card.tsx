@@ -201,6 +201,7 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
                     jobSkills={job.requiredSkills || job.skills || job.requirements || []}
                     userSkills={user?.skills || []}
                     size="sm"
+                    showTierLabel={false}
                   />
                 </div>
               )}

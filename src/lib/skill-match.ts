@@ -109,7 +109,7 @@ export function calculateSkillMatch(
     iconName = 'target';
   } else {
     tier = 'low';
-    tierLabel = 'Below 70% Match';
+    tierLabel = 'Skill Match';
     tierTagline = `You match ${matchedSkills.length} of ${normalizedJobSkills.length} required skills. Add skills to boost match score.`;
     badgeBg = 'bg-gradient-to-r from-rose-500/15 to-purple-500/15 text-rose-900 dark:text-rose-200';
     borderColor = 'border-rose-500/40 dark:border-rose-400/30';

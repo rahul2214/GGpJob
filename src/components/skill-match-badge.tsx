@@ -13,6 +13,7 @@ interface SkillMatchBadgeProps {
   showDetailsInPopover?: boolean;
   size?: "sm" | "md" | "lg";
   className?: string;
+  showTierLabel?: boolean;
 }
 
 export default function SkillMatchBadge({
@@ -20,7 +21,8 @@ export default function SkillMatchBadge({
   userSkills = [],
   showDetailsInPopover = true,
   size = "md",
-  className
+  className,
+  showTierLabel = size !== "sm"
 }: SkillMatchBadgeProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -67,12 +69,16 @@ export default function SkillMatchBadge({
         {getIcon()}
       </span>
       <span className="tracking-tight">
-        {matchData.matchPercentage}%
+        {matchData.matchPercentage}%{showTierLabel ? "" : " Match"}
       </span>
-      <span className="text-slate-300 dark:text-slate-700">•</span>
-      <span className="font-bold truncate max-w-[140px]">
-        {matchData.tier === "top" ? "Top Rated Candidate" : matchData.tierLabel}
-      </span>
+      {showTierLabel && (
+        <>
+          <span className="text-slate-300 dark:text-slate-700">•</span>
+          <span className="font-bold truncate max-w-[140px]">
+            {matchData.tier === "top" ? "Top Rated Candidate" : matchData.tierLabel}
+          </span>
+        </>
+      )}
       {showDetailsInPopover && (
         <ChevronRight className="w-3 h-3 text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
       )}
