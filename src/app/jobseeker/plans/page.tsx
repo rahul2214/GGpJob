@@ -36,21 +36,29 @@ export default function JobSeekerPlansPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<{code: string, discount: number} | null>(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   
-  const [plans, setPlans] = useState<any[]>(JOB_SEEKER_PLANS);
+  const [plans, setPlans] = useState<any[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState<typeof JOB_SEEKER_PLANS[0] | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetch('/api/payments/prices')
       .then(res => res.json())
       .then(data => {
-        if (data?.prices) {
+        if (data?.creditPacks && Array.isArray(data.creditPacks) && data.creditPacks.length > 0) {
+          setPlans(data.creditPacks.map((pack: any) => {
+            const price = Number(pack.price) || 0;
+            const credits = Number(pack.credits) || 0;
+            const perCredit = credits > 0 ? (price / credits) : 0;
+            return { ...pack, price, credits, perCredit };
+          }));
+        } else if (data?.prices) {
           setPlans(JOB_SEEKER_PLANS.map(plan => {
             const dbPrice = data.prices[plan.id];
             const price = dbPrice !== undefined ? dbPrice : 0;
-            const perCredit = plan.credits > 0 ? (price / plan.credits) : 0;
-            return { ...plan, price, perCredit };
+            const credits = (data.credits && data.credits[plan.id] !== undefined) ? Number(data.credits[plan.id]) : plan.credits;
+            const perCredit = credits > 0 ? (price / credits) : 0;
+            return { ...plan, price, credits, perCredit };
           }));
         }
       })

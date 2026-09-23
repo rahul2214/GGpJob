@@ -10,27 +10,28 @@ import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle, ShieldAlert, ArrowLeft, Save, Edit2, Coins, Briefcase, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase-client";
+import { cn } from "@/lib/utils";
 
 // Metadata mapping for grouping and display names
-const PLAN_METADATA: Record<string, { name: string; type: string; category: string; description: string }> = {
+const PLAN_METADATA: Record<string, { name: string; type: string; category: string; description: string; defaultCredits?: number }> = {
   'free': { name: 'Free Plan', type: 'Plan', category: 'Recruiter', description: 'Default free posting' },
   'basic': { name: 'Basic Plan', type: 'Plan', category: 'Recruiter', description: 'Single job posting' },
   'basic_plan': { name: 'Basic Plan', type: 'Plan', category: 'Recruiter', description: 'Single job posting' },
   'premium': { name: 'Premium Plan', type: 'Plan', category: 'Recruiter', description: 'Standard hiring plan' },
   'pro': { name: 'Pro Recruitment', type: 'Plan', category: 'Recruiter', description: 'Unlimited premium hiring' },
 
-  'mini': { name: 'Mini Credit Pack', type: 'Credits', category: 'Job Seeker Pack', description: '10 credits for referrals and topups' },
-  'popular_pack': { name: 'Popular Credit Pack', type: 'Credits', category: 'Job Seeker Pack', description: '60 credits for referrals and topups' },
-  'pro_pack': { name: 'Pro Credit Pack', type: 'Credits', category: 'Job Seeker Pack', description: '150 credits for referrals and topups' },
+  'mini': { name: 'Mini Credit Pack', type: 'Credits', category: 'Job Seeker Pack', description: '10 credits for referrals and topups', defaultCredits: 10 },
+  'popular_pack': { name: 'Popular Credit Pack', type: 'Credits', category: 'Job Seeker Pack', description: '60 credits for referrals and topups', defaultCredits: 60 },
+  'pro_pack': { name: 'Pro Credit Pack', type: 'Credits', category: 'Job Seeker Pack', description: '150 credits for referrals and topups', defaultCredits: 150 },
 
   'jobseeker_basic': { name: 'Basic Candidate Plan', type: 'Plan', category: 'Job Seeker', description: 'Job seeker basic plan' },
   'jobseeker_premium': { name: 'Premium Candidate Plan', type: 'Plan', category: 'Job Seeker', description: 'Job seeker premium plan' },
   'jobseeker_pro': { name: 'Pro Candidate Plan', type: 'Plan', category: 'Job Seeker', description: 'Job seeker pro plan' },
 
-  'employee_starter': { name: 'Starter Boost', type: 'Credits', category: 'Job Seeker Pack', description: '50 credits pack' },
-  'employee_double': { name: 'Double Boost', type: 'Credits', category: 'Job Seeker Pack', description: '100 credits pack' },
-  'employee_pro': { name: 'Pro Boost Pack', type: 'Credits', category: 'Job Seeker Pack', description: '250 credits pack' },
-  'employee_enterprise': { name: 'Enterprise Boost', type: 'Credits', category: 'Job Seeker Pack', description: '600 credits pack' },
+  'employee_starter': { name: 'Starter Boost', type: 'Credits', category: 'Job Seeker Pack', description: '50 credits pack', defaultCredits: 50 },
+  'employee_double': { name: 'Double Boost', type: 'Credits', category: 'Job Seeker Pack', description: '100 credits pack', defaultCredits: 100 },
+  'employee_pro': { name: 'Pro Boost Pack', type: 'Credits', category: 'Job Seeker Pack', description: '250 credits pack', defaultCredits: 250 },
+  'employee_enterprise': { name: 'Enterprise Boost', type: 'Credits', category: 'Job Seeker Pack', description: '600 credits pack', defaultCredits: 600 },
 };
 
 export default function AdminPlansPage() {
@@ -39,9 +40,11 @@ export default function AdminPlansPage() {
   const { toast } = useToast();
 
   const [prices, setPrices] = useState<Record<string, number>>({});
+  const [credits, setCredits] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingPrice, setEditingPrice] = useState<string>("");
+  const [editingCredits, setEditingCredits] = useState<string>("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const isAdmin = user?.role === 'Admin' || user?.role === 'Super Admin';
@@ -61,6 +64,7 @@ export default function AdminPlansPage() {
       if (!res.ok) throw new Error("Failed to load prices");
       const data = await res.json();
       setPrices(data.prices || {});
+      setCredits(data.credits || {});
     } catch (err: any) {
       toast({
         title: "Load Failed",
@@ -84,14 +88,16 @@ export default function AdminPlansPage() {
     }
   }, [user, userLoading, router, isAdmin]);
 
-  const handleStartEdit = (id: string, currentPrice: number) => {
+  const handleStartEdit = (id: string, currentPrice: number, currentCredits?: number) => {
     setEditingId(id);
     setEditingPrice(String(currentPrice));
+    setEditingCredits(String(currentCredits ?? credits[id] ?? PLAN_METADATA[id]?.defaultCredits ?? 10));
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditingPrice("");
+    setEditingCredits("");
   };
 
   const handleSavePrice = async (planId: string) => {
@@ -103,6 +109,22 @@ export default function AdminPlansPage() {
         variant: "destructive"
       });
       return;
+    }
+
+    const meta = PLAN_METADATA[planId] || { name: planId, type: 'Other', category: 'Other' };
+    const isCreditsPlan = meta.type === 'Credits' || meta.category === 'Job Seeker Pack';
+
+    let numericCredits: number | undefined = undefined;
+    if (isCreditsPlan) {
+      numericCredits = parseInt(editingCredits, 10);
+      if (isNaN(numericCredits) || numericCredits < 1) {
+        toast({
+          title: "Invalid Credits",
+          description: "Please enter a valid integer (at least 1) for credits.",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     setUpdatingId(planId);
@@ -117,24 +139,35 @@ export default function AdminPlansPage() {
 
       const url = userIdVal ? `/api/admin/plans?userId=${encodeURIComponent(String(userIdVal))}` : '/api/admin/plans';
 
-      const meta = PLAN_METADATA[planId] || { name: planId };
+      const payload: { planId: string; price: number; name: string; credits?: number | null } = {
+        planId,
+        price: numericPrice,
+        name: meta.name
+      };
+      if (isCreditsPlan && numericCredits !== undefined) {
+        payload.credits = numericCredits;
+      }
+
       const res = await fetch(url, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ planId, price: numericPrice, name: meta.name })
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to update price.");
+        throw new Error(errData.error || "Failed to update plan.");
       }
 
       toast({
-        title: "Price Updated",
-        description: `Price for plan "${planId}" updated successfully to $${numericPrice}.`
+        title: "Plan Updated",
+        description: `Plan "${meta.name || planId}" updated successfully.${isCreditsPlan ? ` Price: $${numericPrice}, Credits: ${numericCredits}.` : ` Price: $${numericPrice}.`}`
       });
 
       setPrices(prev => ({ ...prev, [planId]: numericPrice }));
+      if (isCreditsPlan && numericCredits !== undefined) {
+        setCredits(prev => ({ ...prev, [planId]: numericCredits! }));
+      }
       setEditingId(null);
     } catch (err: any) {
       toast({
@@ -200,7 +233,7 @@ export default function AdminPlansPage() {
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to Dashboard
           </Button>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Plans & Pricing Manager</h1>
-          <p className="text-slate-500 text-sm">Update plan values in USD (Base Currency). All international currencies will scale dynamically.</p>
+          <p className="text-slate-500 text-sm">Update plan values in USD (Base Currency) and credit allocations for job seeker packs. All international currencies will scale dynamically.</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchPrices} className="self-start sm:self-center">
           <RefreshCw className="w-4 h-4 mr-2" /> Refresh Rates
@@ -218,8 +251,10 @@ export default function AdminPlansPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {keys.map((id) => {
-                const meta = PLAN_METADATA[id] || { name: id, description: 'Dynamic Plan', type: 'Other' };
+                const meta = PLAN_METADATA[id] || { name: id, description: 'Dynamic Plan', type: 'Other', category: 'Other' };
                 const currentPrice = prices[id];
+                const isCreditsPlan = meta.type === 'Credits' || meta.category === 'Job Seeker Pack';
+                const currentCredits = credits[id] ?? meta.defaultCredits ?? (isCreditsPlan ? 10 : null);
                 const isEditing = editingId === id;
                 const isUpdating = updatingId === id;
 
@@ -232,7 +267,10 @@ export default function AdminPlansPage() {
                     <Card className="h-full flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-md transition-shadow rounded-2xl border-slate-200/65">
                       <CardHeader className="pb-4">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                          <span className={cn(
+                            "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
+                            isCreditsPlan ? "bg-amber-100 text-amber-700 font-extrabold" : "bg-slate-100 text-slate-600"
+                          )}>
                             {meta.type}
                           </span>
                           <span className="text-xs text-slate-400 font-mono">ID: {id}</span>
@@ -243,26 +281,87 @@ export default function AdminPlansPage() {
                         </CardDescription>
                       </CardHeader>
 
-                      <CardContent className="py-2 flex-grow flex items-center justify-between bg-slate-50/50 border-y border-slate-100 px-6 h-16">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Base Price:</span>
-                        {isEditing ? (
-                          <div className="flex items-center gap-2 max-w-[120px]">
-                            <span className="text-lg font-extrabold text-slate-700">$</span>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={editingPrice}
-                              onChange={(e) => setEditingPrice(e.target.value)}
-                              className="h-9 font-extrabold rounded-xl text-right bg-white text-base"
-                            />
-                          </div>
-                        ) : (
-                          <span className="text-2xl font-black text-indigo-600 tracking-tight">
-                            ${currentPrice.toFixed(2)} <span className="text-[10px] font-bold text-slate-400">USD</span>
-                          </span>
-                        )}
-                      </CardContent>
+                      {isCreditsPlan ? (
+                        <CardContent className="py-3 flex-grow flex flex-col justify-center bg-slate-50/50 border-y border-slate-100 px-6 min-h-[5.5rem] gap-2.5">
+                          {isEditing ? (
+                            <div className="space-y-2.5 w-full">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Base Price:</span>
+                                <div className="flex items-center gap-1.5 max-w-[130px]">
+                                  <span className="text-sm font-extrabold text-slate-600">$</span>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={editingPrice}
+                                    onChange={(e) => setEditingPrice(e.target.value)}
+                                    className="h-8 font-bold rounded-lg text-right bg-white text-sm"
+                                    placeholder="0.00"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Credits:</span>
+                                <div className="flex items-center gap-1.5 max-w-[130px]">
+                                  <span className="text-sm">🪙</span>
+                                  <Input
+                                    type="number"
+                                    step="1"
+                                    min="1"
+                                    value={editingCredits}
+                                    onChange={(e) => setEditingCredits(e.target.value)}
+                                    className="h-8 font-bold rounded-lg text-right bg-white text-sm"
+                                    placeholder="Credits"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Base Price:</span>
+                                <span className="text-2xl font-black text-indigo-600 tracking-tight">
+                                  ${currentPrice.toFixed(2)} <span className="text-[10px] font-bold text-slate-400">USD</span>
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between border-t border-slate-200/50 pt-2">
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Credits:</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="inline-flex items-center gap-1 text-xs font-black text-amber-700 bg-amber-100/80 px-2.5 py-0.5 rounded-full border border-amber-300">
+                                    🪙 {currentCredits} Credits
+                                  </span>
+                                  {typeof currentCredits === 'number' && currentCredits > 0 && (
+                                    <span className="text-[11px] font-semibold text-slate-400">
+                                      (${ (currentPrice / currentCredits).toFixed(2) }/cr)
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </CardContent>
+                      ) : (
+                        <CardContent className="py-2 flex-grow flex items-center justify-between bg-slate-50/50 border-y border-slate-100 px-6 h-16">
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Base Price:</span>
+                          {isEditing ? (
+                            <div className="flex items-center gap-2 max-w-[120px]">
+                              <span className="text-lg font-extrabold text-slate-700">$</span>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={editingPrice}
+                                onChange={(e) => setEditingPrice(e.target.value)}
+                                className="h-9 font-extrabold rounded-xl text-right bg-white text-base"
+                              />
+                            </div>
+                          ) : (
+                            <span className="text-2xl font-black text-indigo-600 tracking-tight">
+                              ${currentPrice.toFixed(2)} <span className="text-[10px] font-bold text-slate-400">USD</span>
+                            </span>
+                          )}
+                        </CardContent>
+                      )}
 
                       <CardFooter className="p-4 bg-white flex justify-end gap-2 px-6">
                         {isEditing ? (
@@ -288,10 +387,10 @@ export default function AdminPlansPage() {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={() => handleStartEdit(id, currentPrice)}
+                            onClick={() => handleStartEdit(id, currentPrice, currentCredits ?? undefined)}
                             className="rounded-xl border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-600"
                           >
-                            <Edit2 className="w-3.5 h-3.5 mr-1.5 text-slate-400" /> Edit Price
+                            <Edit2 className="w-3.5 h-3.5 mr-1.5 text-slate-400" /> {isCreditsPlan ? 'Edit Pack' : 'Edit Price'}
                           </Button>
                         )}
                       </CardFooter>

@@ -11,7 +11,6 @@ import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { CREDIT_PACKS } from "@/lib/pricing-constants";
 import Link from "next/link";
 import { CurrencySelector } from "@/components/currency-selector";
 import { formatPrice, convertPrice, BILLING_CURRENCY_CODES } from "@/utils/currency";
@@ -23,6 +22,35 @@ declare global {
     Razorpay: any;
   }
 }
+
+export interface CreditPack {
+  id: string;
+  name: string;
+  price: number;
+  credits: number;
+  perCredit: number;
+  description: string;
+  color: string;
+  popular?: boolean;
+}
+
+const PACK_STYLE_PRESETS: Record<string, { color: string; description: string; popular?: boolean }> = {
+  mini: {
+    color: 'sky',
+    description: 'Perfect for quick applications and referral boosts.',
+  },
+  popular_pack: {
+    color: 'amber',
+    popular: true,
+    description: 'Our best value pack for active job applicants.',
+  },
+  pro_pack: {
+    color: 'indigo',
+    description: 'Maximum credits for aggressive job hunting.',
+  },
+};
+
+const COLOR_VARIANTS = ['sky', 'amber', 'indigo', 'emerald', 'purple'];
 
 export default function CreditsPage() {
   const { user, loading, fetchUserProfile, setUser } = useUser();
@@ -37,25 +65,41 @@ export default function CreditsPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<{code: string, discount: number} | null>(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   
-  const [packs, setPacks] = useState<any[]>(CREDIT_PACKS);
+  const [packs, setPacks] = useState<CreditPack[]>([]);
   const [loadingPacks, setLoadingPacks] = useState(true);
-  const [selectedPack, setSelectedPack] = useState<typeof CREDIT_PACKS[0] | null>(null);
+  const [selectedPack, setSelectedPack] = useState<CreditPack | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetch('/api/payments/prices')
       .then(res => res.json())
       .then(data => {
-        if (data?.prices) {
-          setPacks(CREDIT_PACKS.map(pack => {
-            const dbPrice = data.prices[pack.id];
-            const price = dbPrice !== undefined ? dbPrice : 0;
-            const perCredit = pack.credits > 0 ? (price / pack.credits) : 0;
-            return { ...pack, price, perCredit };
-          }));
+        if (data?.creditPacks && Array.isArray(data.creditPacks) && data.creditPacks.length > 0) {
+          const dbPacks: CreditPack[] = data.creditPacks.map((item: any, idx: number) => {
+            const style = PACK_STYLE_PRESETS[item.id] || {};
+            const credits = Number(item.credits) || 0;
+            const price = Number(item.price) || 0;
+            const perCredit = credits > 0 ? (price / credits) : 0;
+            return {
+              id: item.id,
+              name: item.name || item.id,
+              credits,
+              price,
+              perCredit,
+              description: style.description || `${credits} credits pack for applications and referrals.`,
+              color: style.color || COLOR_VARIANTS[idx % COLOR_VARIANTS.length],
+              popular: style.popular ?? (item.id === 'popular_pack' || idx === 1),
+            };
+          });
+          setPacks(dbPacks);
+        } else {
+          setPacks([]);
         }
       })
-      .catch(err => console.warn('Failed to fetch pack prices:', err))
+      .catch(err => {
+        console.warn('Failed to fetch pack prices from database:', err);
+        setPacks([]);
+      })
       .finally(() => setLoadingPacks(false));
   }, []);
 
@@ -74,7 +118,7 @@ export default function CreditsPage() {
     return () => { if (document.body.contains(script)) document.body.removeChild(script); };
   }, []);
 
-  const handlePackSelect = (pack: typeof CREDIT_PACKS[0]) => {
+  const handlePackSelect = (pack: CreditPack) => {
      setSelectedPack(pack);
      setAppliedCoupon(null);
      setCouponCode("");
@@ -217,82 +261,117 @@ export default function CreditsPage() {
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-          {packs.map((pack, idx) => {
-            const convertedPrice = convertPrice(pack.price, currency, exchangeRates);
-            const formattedPrice = formatPrice(convertedPrice, currency);
-
-            return (
-              <motion.div
-                key={pack.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1, duration: 0.5 }}
-                className="flex"
+        {loadingPacks ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            {[1, 2, 3].map((n) => (
+              <div
+                key={n}
+                className="h-[430px] rounded-[2.5rem] bg-white border border-slate-200/80 shadow-md animate-pulse p-8 flex flex-col justify-between"
               >
-                <Card className={cn(
-                  "relative flex flex-col w-full border border-slate-200 shadow-xl rounded-[2.5rem] overflow-hidden bg-white transition-all hover:scale-[1.02]",
-                  pack.popular && "ring-4 ring-amber-400/30 shadow-amber-200/40 border-none"
-                )}>
-                  {pack.popular && (
-                    <div className="absolute top-0 right-0 bg-amber-500 text-white px-6 py-2 rounded-bl-[1.5rem] text-xs font-bold tracking-widest uppercase z-20">
-                      Best Value
-                    </div>
-                  )}
+                <div className="space-y-4">
+                  <div className="h-6 w-2/3 bg-slate-200 rounded-xl mx-auto" />
+                  <div className="h-4 w-5/6 bg-slate-100 rounded-lg mx-auto" />
+                  <div className="h-16 w-24 bg-slate-200 rounded-2xl mx-auto mt-6" />
+                </div>
+                <div className="space-y-3">
+                  <div className="h-8 w-1/2 bg-slate-200 rounded-xl mx-auto" />
+                  <div className="h-12 w-full bg-slate-200 rounded-2xl" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : packs.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 max-w-md mx-auto p-8 shadow-sm">
+            <Coins className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <h3 className="text-lg font-bold text-slate-700">No Credit Packs Available</h3>
+            <p className="text-sm text-slate-500 mt-1">Please check back later or contact support.</p>
+          </div>
+        ) : (
+          <div className={cn(
+            "grid gap-8 max-w-4xl mx-auto",
+            packs.length === 1 ? "grid-cols-1 max-w-md" : packs.length === 2 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3"
+          )}>
+            {packs.map((pack, idx) => {
+              const convertedPrice = convertPrice(pack.price, currency, exchangeRates);
+              const formattedPrice = formatPrice(convertedPrice, currency);
 
-                  <div className={cn(
-                    "p-8 text-white text-center",
-                    pack.color === 'sky' && "bg-gradient-to-br from-sky-500 to-blue-600",
-                    pack.color === 'amber' && "bg-gradient-to-br from-amber-500 to-orange-600",
-                    pack.color === 'indigo' && "bg-gradient-to-br from-indigo-600 to-purple-700"
+              return (
+                <motion.div
+                  key={pack.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1, duration: 0.5 }}
+                  className="flex"
+                >
+                  <Card className={cn(
+                    "relative flex flex-col w-full border border-slate-200 shadow-xl rounded-[2.5rem] overflow-hidden bg-white transition-all hover:scale-[1.02]",
+                    pack.popular && "ring-4 ring-amber-400/30 shadow-amber-200/40 border-none"
                   )}>
-                    <h3 className="text-2xl font-bold mb-1">{pack.name}</h3>
-                    <p className="text-white/80 text-xs leading-relaxed mb-6">{pack.description}</p>
-                    
-                    <div className="text-5xl font-black tracking-tighter text-white mb-2">
-                      {pack.credits}
-                    </div>
-                    <span className="text-white/70 text-[10px] font-bold uppercase tracking-wider block">
-                      Credits Pack
-                    </span>
-                  </div>
+                    {pack.popular && (
+                      <div className="absolute top-0 right-0 bg-amber-500 text-white px-6 py-2 rounded-bl-[1.5rem] text-xs font-bold tracking-widest uppercase z-20">
+                        Best Value
+                      </div>
+                    )}
 
-                  <CardContent className="p-8 flex-grow flex flex-col justify-center items-center text-center">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Price</p>
-                      <p className="text-3xl font-black text-slate-900">
-                        {loadingPacks ? (
-                          <span className="animate-pulse text-2xl opacity-60">...</span>
-                        ) : (
-                          formattedPrice
+                    <div className={cn(
+                      "p-8 text-white text-center",
+                      pack.color === 'sky' && "bg-gradient-to-br from-sky-500 to-blue-600",
+                      pack.color === 'amber' && "bg-gradient-to-br from-amber-500 to-orange-600",
+                      pack.color === 'indigo' && "bg-gradient-to-br from-indigo-600 to-purple-700",
+                      pack.color === 'emerald' && "bg-gradient-to-br from-emerald-500 to-teal-600",
+                      pack.color === 'purple' && "bg-gradient-to-br from-purple-600 to-pink-600"
+                    )}>
+                      <h3 className="text-2xl font-bold mb-1">{pack.name}</h3>
+                      <p className="text-white/80 text-xs leading-relaxed mb-6">{pack.description}</p>
+                      
+                      <div className="text-5xl font-black tracking-tighter text-white mb-2">
+                        {pack.credits}
+                      </div>
+                      <span className="text-white/70 text-[10px] font-bold uppercase tracking-wider block">
+                        Credits Pack
+                      </span>
+                    </div>
+
+                    <CardContent className="p-8 flex-grow flex flex-col justify-center items-center text-center">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Price</p>
+                        <p className="text-3xl font-black text-slate-900">
+                          {formattedPrice}
+                        </p>
+                        {pack.perCredit > 0 && (
+                          <p className="text-xs text-slate-400 font-medium">
+                            {formatPrice(convertPrice(pack.perCredit, currency, exchangeRates), currency)} / credit
+                          </p>
                         )}
-                      </p>
-                    </div>
-                  </CardContent>
+                      </div>
+                    </CardContent>
 
-                  <CardFooter className="p-8 pt-0">
-                    <Button
-                      onClick={() => handlePackSelect(pack)}
-                      disabled={!!processing || loadingPacks}
-                      className={cn(
-                        "w-full h-12 rounded-2xl font-bold text-base transition-all text-white",
-                        pack.color === 'sky' && "bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-200",
-                        pack.color === 'amber' && "bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-200",
-                        pack.color === 'indigo' && "bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200"
-                      )}
-                    >
-                      {processing === pack.id || loadingPacks ? (
-                        <LoaderCircle className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <span>Buy Pack</span>
-                      )}
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </div>
+                    <CardFooter className="p-8 pt-0">
+                      <Button
+                        onClick={() => handlePackSelect(pack)}
+                        disabled={!!processing}
+                        className={cn(
+                          "w-full h-12 rounded-2xl font-bold text-base transition-all text-white",
+                          pack.color === 'sky' && "bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-200",
+                          pack.color === 'amber' && "bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-200",
+                          pack.color === 'indigo' && "bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200",
+                          pack.color === 'emerald' && "bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200",
+                          pack.color === 'purple' && "bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-200"
+                        )}
+                      >
+                        {processing === pack.id ? (
+                          <LoaderCircle className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <span>Buy Pack</span>
+                        )}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

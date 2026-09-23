@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import Razorpay from 'razorpay';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getExchangeRates, convertUSD } from '@/lib/exchange-rate-service';
-import { getPlanPrices } from '@/lib/plan-prices-service';
+import { getPlanPrices, getPlanCredits } from '@/lib/plan-prices-service';
 import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 import { getBillingCurrency } from '@/utils/currency';
 
@@ -230,18 +230,24 @@ export async function POST(request: Request) {
         updateData.is_verified = true;
         break;
 
-      case 'mini':
-        updateData.credits_to_add = 10;
+      default:
         break;
-      case 'basic_pack':
-        updateData.credits_to_add = 25;
-        break;
-      case 'popular_pack':
-        updateData.credits_to_add = 60;
-        break;
-      case 'pro_pack':
-        updateData.credits_to_add = 150;
-        break;
+    }
+
+    // Allocate dynamic credits for credit top-up packages
+    if (['mini', 'basic_pack', 'popular_pack', 'pro_pack', 'employee_starter', 'employee_double', 'employee_pro', 'employee_enterprise'].includes(planId)) {
+      const planCredits = await getPlanCredits();
+      const defaultCredits: Record<string, number> = {
+        mini: 10,
+        basic_pack: 25,
+        popular_pack: 60,
+        pro_pack: 150,
+        employee_starter: 50,
+        employee_double: 100,
+        employee_pro: 250,
+        employee_enterprise: 600,
+      };
+      updateData.credits_to_add = planCredits[planId] !== undefined ? planCredits[planId] : (defaultCredits[planId] || 10);
     }
 
     if (['basic', 'basic_plan', 'premium', 'pro'].includes(planId)) {
