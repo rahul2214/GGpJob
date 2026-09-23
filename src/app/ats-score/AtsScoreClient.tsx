@@ -23,42 +23,31 @@ export function AtsScoreClient({ initialShowPromo = true }: AtsScoreClientProps)
 
   return (
     <div className="relative overflow-x-hidden pb-24">
-      {/* ── Premium Hero ── */}
+      {/* ── Hero ── */}
       {showPromo && (
-        <div className="relative bg-gradient-to-b from-slate-950 via-indigo-950/80 to-slate-900 overflow-hidden pt-10 pb-20">
-          {/* Background orbs */}
-          <div className="absolute top-[-20%] left-[-10%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-tr from-indigo-600/20 to-purple-600/10 blur-[120px] pointer-events-none" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-gradient-to-br from-blue-500/15 to-cyan-500/10 blur-[100px] pointer-events-none" />
-          {/* Dot grid */}
-          <div className="absolute inset-0 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:28px_28px] opacity-[0.06] pointer-events-none" />
-          {/* Bottom fade */}
-          <div className="absolute bottom-0 left-0 right-0 h-24 dark:from-slate-950 to-transparent" />
-
-          <div className="relative z-10 container max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-7">
-
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] text-white">
+        <div className="pt-8 pb-10 sm:pt-12 sm:pb-12 text-center">
+          <div className="container max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] text-slate-900 dark:text-white">
               Beat the ATS.{" "}
-              <span className="text-indigo-400">
+              <span className="text-indigo-600 dark:text-indigo-400">
                 Land the Interview.
               </span>
             </h1>
 
-            <p className="text-slate-300 text-base sm:text-lg lg:text-xl max-w-2xl mx-auto font-medium leading-relaxed">
+            <p className="text-slate-600 dark:text-slate-400 text-base sm:text-lg lg:text-xl max-w-2xl mx-auto font-medium leading-relaxed">
               Paste your resume & job description. Our AI scores your ATS compatibility, flags missing keywords, and rewrites your bullet points to stand out.
             </p>
 
-           
-
             {/* Stats row */}
-            <div className="flex flex-wrap items-center justify-center gap-8 pt-4">
+            <div className="flex flex-wrap items-center justify-center gap-8 pt-2">
               {[
                 { value: "50K+", label: "Resumes Analyzed" },
                 { value: "94%", label: "Score Accuracy" },
                 { value: "Free", label: "First Scan" },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
-                  <div className="text-2xl sm:text-3xl font-black text-white">{stat.value}</div>
-                  <div className="text-xs text-slate-400 font-medium mt-0.5">{stat.label}</div>
+                  <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{stat.value}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -66,9 +55,9 @@ export function AtsScoreClient({ initialShowPromo = true }: AtsScoreClientProps)
         </div>
       )}
 
-      <div className="container max-w-6xl px-4 sm:px-6 relative z-10 -mt-4">
+      <div className="container max-w-6xl px-4 sm:px-6 relative z-10">
         {/* Spacer */}
-        <div className={showPromo ? "mb-10" : "pt-[30px] mb-10"} />
+        <div className={showPromo ? "mb-6" : "pt-[30px] mb-6"} />
 
         {/* Core ATS Application panel */}
         <AtsChecker />

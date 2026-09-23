@@ -1644,43 +1644,31 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
         }
       `}</style>
 
-      {/* ── Premium Hero ── */}
+      {/* ── Hero ── */}
       {showPromo && (
-        <div className="relative -mx-4 sm:-mx-6 mb-10 bg-gradient-to-b from-slate-950 via-indigo-950/70 to-slate-900 overflow-hidden pt-12 pb-20 print:hidden">
-          {/* Background orbs */}
-          <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-br from-purple-600/15 to-indigo-600/10 blur-[100px] pointer-events-none" />
-          <div className="absolute bottom-[-10%] left-[-5%] w-[40vw] h-[40vw] rounded-full bg-gradient-to-tr from-indigo-500/10 to-blue-500/10 blur-[80px] pointer-events-none" />
-          {/* Dot grid */}
-          <div className="absolute inset-0 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:28px_28px] opacity-[0.05] pointer-events-none" />
-          {/* Bottom fade */}
-          <div className="absolute bottom-0 left-0 right-0 h-24 dark:from-slate-950 to-transparent" />
-
-          <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6">
-           
-
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] text-white">
+        <div className="pt-8 pb-10 sm:pt-10 sm:pb-12 text-center print:hidden">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] text-slate-900 dark:text-white">
               Build Your Perfect{" "}
-              <span className="text-indigo-400">
+              <span className="text-indigo-600 dark:text-indigo-400">
                 Resume.
               </span>
             </h1>
 
-            <p className="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto font-medium leading-relaxed">
+            <p className="text-slate-600 dark:text-slate-400 text-base sm:text-lg max-w-2xl mx-auto font-medium leading-relaxed">
               Fill in your details, let our AI generate polished bullet points, score your ATS compatibility, and export a recruiter-ready PDF — all in one place.
             </p>
 
-            
-
             {/* Stats row */}
-            <div className="flex flex-wrap items-center justify-center gap-8 pt-3">
+            <div className="flex flex-wrap items-center justify-center gap-8 pt-2">
               {[
                 { value: "Free", label: "First Resume" },
                 { value: "1 min", label: "To Generate" },
                 { value: "PDF", label: "ATS-Safe Export" },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
-                  <div className="text-2xl sm:text-3xl font-black text-white">{stat.value}</div>
-                  <div className="text-xs text-slate-400 font-medium mt-0.5">{stat.label}</div>
+                  <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{stat.value}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -2528,7 +2516,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
           <div className="space-y-2">
             <Button
-              className="w-full py-6 text-sm font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-transform"
+              className="w-full py-6 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-transform"
               onClick={handleGenerate}
               disabled={isGenerating}
             >
@@ -3249,7 +3237,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold shadow-md"
+              className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md"
               onClick={handleConfirmCreditDeduction}
             >
               <Sparkles className="w-3.5 h-3.5 mr-1" />
