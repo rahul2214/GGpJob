@@ -198,11 +198,46 @@ function renderRichText(text: string) {
   )
 }
 
+interface TemplateCandidateData {
+  name?: string
+  role?: string
+  photoUrl?: string
+}
+
 interface TemplateOption {
   id: string
   name: string
   description: string
-  renderThumbnail: () => React.ReactNode
+  renderThumbnail: (data?: TemplateCandidateData) => React.ReactNode
+}
+
+function RealisticHeadshot({ photoUrl, className = "w-7 h-8" }: { photoUrl?: string; className?: string }) {
+  if (photoUrl) {
+    return (
+      <div className={`${className} relative rounded-xs overflow-hidden shrink-0 border border-slate-300 dark:border-slate-600 shadow-xs`}>
+        <img src={photoUrl} alt="Candidate" className="w-full h-full object-cover" />
+      </div>
+    )
+  }
+  return (
+    <div className={`${className} relative rounded-xs overflow-hidden shrink-0 bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 shadow-xs flex items-center justify-center`}>
+      <svg viewBox="0 0 40 46" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full object-cover">
+        <rect width="40" height="46" fill="#e2e8f0" />
+        <path d="M4 46C4 36 10 32 20 32C30 32 36 36 36 46H4Z" fill="#1e293b" />
+        <path d="M15 32L20 40L25 32H15Z" fill="#ffffff" />
+        <path d="M19 33L20 41L21 33L20.5 32H19.5L19 33Z" fill="#4f46e5" />
+        <rect x="17" y="24" width="6" height="9" fill="#fed7aa" />
+        <ellipse cx="20" cy="18" rx="8" ry="9.5" fill="#fed7aa" />
+        <path d="M12 15C12 9 15 7 20 7C25 7 28 9 28 15C27 12 25 10 20 10C15 10 13 12 12 15Z" fill="#0f172a" />
+      </svg>
+    </div>
+  )
+}
+
+const getCandidate = (data?: TemplateCandidateData, defaultRole = "Senior Software Engineer") => {
+  const cName = data?.name && data.name.trim() ? data.name.trim() : "Alex Morgan"
+  const cRole = data?.role && data.role.trim() ? data.role.trim() : defaultRole
+  return { name: cName, role: cRole }
 }
 
 const TEMPLATES: TemplateOption[] = [
@@ -210,314 +245,1260 @@ const TEMPLATES: TemplateOption[] = [
     id: "classic-serif",
     name: "Classic Serif",
     description: "Traditional academic styling with Times-Roman serif typography and centered headers.",
-    renderThumbnail: () => (
-      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800 font-serif">
-        <div className="text-center space-y-0.5">
-          <div className="h-2 w-16 bg-slate-800 dark:bg-slate-200 mx-auto rounded-sm" />
-          <div className="h-0.5 w-24 bg-slate-400 mx-auto rounded-sm" />
-          <div className="h-0.5 w-full bg-slate-800 dark:bg-slate-200 my-0.5" />
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Senior Software Architect")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-serif shadow-xs overflow-hidden select-none pointer-events-none">
+          {/* Header */}
+          <div className="text-center pb-0.5 border-b border-slate-800 dark:border-slate-200">
+            <div className="text-[8.5px] font-black uppercase tracking-widest text-slate-900 dark:text-white leading-tight truncate">
+              {cName}
+            </div>
+            <div className="text-[5px] italic text-slate-600 dark:text-slate-400 truncate">
+              {cRole}
+            </div>
+            <div className="text-[3.8px] text-slate-500 dark:text-slate-400 truncate">
+              alex.morgan@email.com • +1 555-0192 • San Francisco, CA • linkedin.com/in/alex • github.com/alex
+            </div>
+          </div>
+
+          {/* Professional Summary */}
+          <div>
+            <div className="text-[4.5px] font-bold uppercase tracking-wider text-center text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-0.2 mb-0.2">
+              Professional Summary
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight text-center">
+              Accomplished software architect with 8+ years designing fault-tolerant distributed cloud systems, high-throughput microservices, and enterprise web platforms.
+            </p>
+          </div>
+
+          {/* Experience */}
+          <div className="space-y-0.5">
+            <div className="text-[4.5px] font-bold uppercase tracking-wider text-center text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-0.2">
+              Professional Experience
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Apex Solutions — Lead Architect</span>
+                <span className="text-[3.8px] font-normal text-slate-500 shrink-0">2021 – Pres</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Directed cloud migration scaling distributed systems to 3M+ active daily users.
+              </p>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Optimized database throughput, decreasing query latency by 42%.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Vanguard Tech — Software Engineer</span>
+                <span className="text-[3.8px] font-normal text-slate-500 shrink-0">2018 – 2021</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Built distributed messaging pipelines handling 10M+ daily events in Go.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Starlight Labs — Associate Engineer</span>
+                <span className="text-[3.8px] font-normal text-slate-500 shrink-0">2016 – 2018</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Developed RESTful services in Node.js and PostgreSQL for fintech clients.
+              </p>
+            </div>
+          </div>
+
+          {/* Key Projects */}
+          <div>
+            <div className="text-[4.5px] font-bold uppercase tracking-wider text-center text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-0.2 mb-0.2">
+              Featured Projects
+            </div>
+            <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+              <span className="truncate">CloudMesh Engine (Go, Kafka, Redis)</span>
+              <span className="text-[3.8px] font-normal text-slate-500 shrink-0">github.com/mesh</span>
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+              • High-throughput event router deployed across 8 global cloud regions.
+            </p>
+            <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white mt-0.2">
+              <span className="truncate">SecureAuth Gateway (Python, OAuth2)</span>
+              <span className="text-[3.8px] font-normal text-slate-500 shrink-0">50k req/s</span>
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+              • Zero-trust authentication service with automated token rotation.
+            </p>
+          </div>
+
+          {/* Skills & Education */}
+          <div className="pt-0.5 border-t border-slate-200 dark:border-slate-800 space-y-0.2">
+            <div className="text-[4.2px] text-slate-700 dark:text-slate-300 truncate">
+              <span className="font-bold text-slate-900 dark:text-white">Skills:</span> TypeScript, React, Python, Go, Node.js, AWS, Kubernetes, PostgreSQL, Docker, Redis
+            </div>
+            <div className="flex justify-between text-[4.2px]">
+              <span className="font-bold text-slate-900 dark:text-white truncate">B.S. Computer Science — Stanford University (GPA 3.9)</span>
+              <span className="text-slate-500 text-[3.8px] shrink-0">AWS Certified Pro • CKA</span>
+            </div>
+          </div>
         </div>
-        <div className="space-y-0.5">
-          <div className="h-1.5 w-12 bg-slate-600 rounded-sm" />
-          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
-          <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-sm" />
-        </div>
-        <div className="space-y-0.5">
-          <div className="h-1.5 w-10 bg-slate-600 rounded-sm" />
-          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
-        </div>
-      </div>
-    )
+      )
+    }
   },
   {
     id: "modern-minimal",
     name: "Modern Minimalist",
     description: "Clean sans-serif layout with muted slate tones and left-aligned headers.",
-    renderThumbnail: () => (
-      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
-        <div className="space-y-0.5">
-          <div className="h-2.5 w-20 bg-slate-700 dark:bg-slate-300 rounded-sm" />
-          <div className="h-0.5 w-14 bg-slate-400 rounded-sm" />
-          <div className="h-0.5 w-full bg-slate-200 dark:bg-slate-700 my-0.5" />
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Full Stack Developer")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          {/* Header */}
+          <div className="pb-0.5 border-b border-slate-100 dark:border-slate-800">
+            <div className="text-[9.5px] font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight truncate">
+              {cName}
+            </div>
+            <div className="text-[5px] font-semibold text-indigo-600 dark:text-indigo-400 truncate">
+              {cRole}
+            </div>
+            <div className="text-[3.8px] text-slate-400 dark:text-slate-500 mt-0.2 truncate">
+              alex@email.com • +1 555-0192 • San Francisco, CA • linkedin.com/in/alex • alexmorgan.dev
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div>
+            <div className="text-[4.5px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.2">
+              Summary
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight">
+              Full-stack engineer crafting performant web apps, design systems, and resilient cloud APIs with 7+ years of startup experience.
+            </p>
+          </div>
+
+          {/* Experience */}
+          <div className="space-y-0.5">
+            <div className="text-[4.5px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+              Experience
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-800 dark:text-slate-200">
+                <span className="truncate">Acme Corp • Senior Developer</span>
+                <span className="text-[3.8px] font-normal text-slate-400 shrink-0">2021 – Pres</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight pl-1">
+                • Spearheaded checkout rebuild, increasing mobile conversion by 22%.
+              </p>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight pl-1">
+                • Standardized REST API patterns across 14 microservices.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-800 dark:text-slate-200">
+                <span className="truncate">Starlight Labs • Frontend Engineer</span>
+                <span className="text-[3.8px] font-normal text-slate-400 shrink-0">2019 – 2021</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight pl-1">
+                • Developed real-time telemetry dashboard with React & WebSockets.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-800 dark:text-slate-200">
+                <span className="truncate">PixelForge • Web Developer</span>
+                <span className="text-[3.8px] font-normal text-slate-400 shrink-0">2017 – 2019</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight pl-1">
+                • Shipped 20+ responsive web applications with 99.8% test coverage.
+              </p>
+            </div>
+          </div>
+
+          {/* Projects */}
+          <div>
+            <div className="text-[4.5px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.2">
+              Projects
+            </div>
+            <div className="flex justify-between text-[4.3px] font-bold text-slate-800 dark:text-slate-200">
+              <span className="truncate">NextPulse Telemetry (Next.js, Tailwind)</span>
+              <span className="text-[3.8px] font-normal text-slate-400 shrink-0">v2.0</span>
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight pl-1">
+              • High-performance metrics dashboard with sub-50ms latency.
+            </p>
+            <div className="flex justify-between text-[4.3px] font-bold text-slate-800 dark:text-slate-200 mt-0.2">
+              <span className="truncate">QuickState Store (TypeScript)</span>
+              <span className="text-[3.8px] font-normal text-slate-400 shrink-0">★ 1.8k</span>
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight pl-1">
+              • Ultra-lightweight reactive state management library.
+            </p>
+          </div>
+
+          {/* Skills & Education */}
+          <div className="pt-0.5 border-t border-slate-100 dark:border-slate-800 space-y-0.2">
+            <div className="text-[4.2px] text-slate-600 dark:text-slate-400 truncate">
+              <span className="font-semibold text-slate-800 dark:text-slate-200">Stack:</span> TypeScript, Next.js, Node, GraphQL, PostgreSQL, Docker, AWS, Redis, Tailwind
+            </div>
+            <div className="flex justify-between text-[4.2px] text-slate-500">
+              <span>B.S. Software Engineering — UC Berkeley</span>
+              <span>Scrum Master (CSM) • AWS Dev</span>
+            </div>
+          </div>
         </div>
-        <div className="space-y-0.5">
-          <div className="h-1.5 w-14 bg-slate-500 rounded-sm" />
-          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
-          <div className="h-0.5 w-5/6 bg-slate-300 dark:bg-slate-700 rounded-sm" />
-        </div>
-        <div className="space-y-0.5">
-          <div className="h-1.5 w-10 bg-slate-500 rounded-sm" />
-          <div className="h-0.5 w-3/4 bg-slate-300 dark:bg-slate-700 rounded-sm" />
-        </div>
-      </div>
-    )
+      )
+    }
   },
   {
     id: "executive-navy",
     name: "Executive Navy",
     description: "Polished corporate style featuring deep navy accents and sharp dividing lines.",
-    renderThumbnail: () => (
-      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
-        <div className="text-center space-y-0.5">
-          <div className="h-2.5 w-20 bg-blue-900 dark:bg-blue-400 mx-auto rounded-sm" />
-          <div className="h-0.5 w-28 bg-blue-700 dark:bg-blue-300 mx-auto rounded-sm" />
-          <div className="h-0.5 w-full bg-blue-900 dark:bg-blue-400 my-0.5" />
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Vice President of Engineering")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          {/* Header */}
+          <div className="text-center pb-0.5 border-b-2 border-blue-900 dark:border-blue-400">
+            <div className="text-[9.5px] font-black uppercase tracking-wider text-blue-900 dark:text-blue-400 leading-tight truncate">
+              {cName}
+            </div>
+            <div className="text-[5px] font-bold uppercase tracking-wide text-slate-700 dark:text-slate-300 truncate">
+              {cRole}
+            </div>
+            <div className="text-[3.8px] text-slate-500 dark:text-slate-400 mt-0.2 truncate">
+              alex.morgan@enterprise.io • +1 555-0192 • New York, NY • linkedin.com/in/alexmorgan
+            </div>
+          </div>
+
+          {/* Profile */}
+          <div>
+            <div className="text-[4.5px] font-black text-blue-900 dark:text-blue-400 uppercase tracking-wider border-b border-blue-900/30 pb-0.2 mb-0.2">
+              Executive Profile
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight">
+              Strategic technology executive with 12+ years scaling global engineering organizations, driving enterprise cloud transformations, and delivering SaaS solutions generating over $50M in ARR.
+            </p>
+          </div>
+
+          {/* Experience */}
+          <div className="space-y-0.5">
+            <div className="text-[4.5px] font-black text-blue-900 dark:text-blue-400 uppercase tracking-wider border-b border-blue-900/30 pb-0.2">
+              Leadership Experience
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Global Cloud Corp — VP Engineering</span>
+                <span className="text-[3.8px] font-medium text-blue-900 dark:text-blue-400 shrink-0">2020 – Pres</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Scaled engineering department from 20 to 85 engineers across 4 regions; delivered $18M ARR product.
+              </p>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Championed DevSecOps culture reducing deployment cycle times from weeks to minutes.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Apex Systems — Director of Software</span>
+                <span className="text-[3.8px] font-medium text-blue-900 dark:text-blue-400 shrink-0">2017 – 2020</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Unified architecture across 28 distributed services reducing cloud spend 30%.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Vanguard Tech — Systems Architect</span>
+                <span className="text-[3.8px] font-medium text-blue-900 dark:text-blue-400 shrink-0">2014 – 2017</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Architected core transaction clearing system handling $2B+ in annual volume.
+              </p>
+            </div>
+          </div>
+
+          {/* Strategic Initiatives */}
+          <div>
+            <div className="text-[4.5px] font-black text-blue-900 dark:text-blue-400 uppercase tracking-wider border-b border-blue-900/30 pb-0.2 mb-0.2">
+              Strategic Initiatives
+            </div>
+            <div className="text-[4.3px] font-bold text-slate-900 dark:text-white">
+              Enterprise Cloud Modernization & SOC2 Certification
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+              • Migrated 400+ on-prem workloads to AWS with 100% compliance audit pass.
+            </p>
+          </div>
+
+          {/* Competencies & Education */}
+          <div className="pt-0.5 border-t border-blue-900/30 space-y-0.2">
+            <div className="text-[4px] text-slate-700 dark:text-slate-300 truncate">
+              <span className="font-bold text-blue-900 dark:text-blue-400">Competencies:</span> Strategic Roadmapping, P&L ($25M+), SOC2 Type II, Global Team Leadership
+            </div>
+            <div className="flex justify-between items-center text-[4.2px]">
+              <span className="font-bold text-blue-900 dark:text-blue-400 truncate">Columbia University — M.S. CS</span>
+              <span className="text-slate-500 shrink-0">Board Member, TechVentures</span>
+            </div>
+          </div>
         </div>
-        <div className="space-y-0.5">
-          <div className="h-1.5 w-16 bg-blue-900 dark:bg-blue-400 rounded-sm" />
-          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
-          <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-sm" />
-        </div>
-        <div className="space-y-0.5">
-          <div className="h-1.5 w-12 bg-blue-900 dark:bg-blue-400 rounded-sm" />
-          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
-        </div>
-      </div>
-    )
+      )
+    }
   },
   {
     id: "compact-tech",
     name: "Compact Tech",
     description: "High-density layout optimized for tech professionals with maximum content space.",
-    renderThumbnail: () => (
-      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
-        <div className="space-y-0.5">
-          <div className="h-2 w-16 bg-slate-800 dark:bg-slate-200 rounded-sm" />
-          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
-          <div className="h-0.5 w-full bg-slate-800 dark:bg-slate-200" />
+    renderThumbnail: (data) => {
+      const { name: cName } = getCandidate(data, "Staff Backend Engineer")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-mono shadow-xs overflow-hidden select-none pointer-events-none">
+          {/* Header */}
+          <div className="flex justify-between items-baseline border-b border-slate-800 dark:border-slate-200 pb-0.5">
+            <span className="text-[8px] font-black text-slate-950 dark:text-white truncate">{cName.toUpperCase()}</span>
+            <span className="text-[3.8px] text-slate-500 shrink-0">alex@dev.io • github.com/alex • +1 555-0192</span>
+          </div>
+
+          <div className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight">
+            // SUMMARY: Staff engineer specializing in distributed systems, Kafka streaming & low-latency APIs.
+          </div>
+
+          {/* Tech Stack Matrix */}
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-1 rounded border border-slate-200 dark:border-slate-700 text-[3.8px] leading-tight space-y-0.2">
+            <div className="truncate"><span className="font-bold text-slate-900 dark:text-white">LANGUAGES:</span> TypeScript, Python, Go, Rust, C++, SQL</div>
+            <div className="truncate"><span className="font-bold text-slate-900 dark:text-white">FRAMEWORKS:</span> React, Next.js, Node, FastAPI, Express, Tailwind</div>
+            <div className="truncate"><span className="font-bold text-slate-900 dark:text-white">DEVOPS:</span> Docker, Kubernetes, AWS (EKS, S3, RDS), Terraform, CI/CD</div>
+          </div>
+
+          {/* Experience */}
+          <div className="space-y-0.5">
+            <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+              // WORK_EXPERIENCE
+            </div>
+            <div>
+              <div className="flex justify-between text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">CloudGrid — Staff Backend Engineer</span>
+                <span className="text-[3.8px] text-slate-500 shrink-0">2021 – Pres</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 pl-1 leading-tight">
+                • Deployed distributed event engine processing 80k rps with 99.99% SLA.
+              </p>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 pl-1 leading-tight">
+                • Cut cloud compute cost by $60k/mo through memory profiling & Go optimization.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">ByteStream — Systems Engineer</span>
+                <span className="text-[3.8px] text-slate-500 shrink-0">2019 – 2021</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 pl-1 leading-tight">
+                • Implemented zero-trust auth service with mTLS across 24 services.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">KernelWorks — Software Developer</span>
+                <span className="text-[3.8px] text-slate-500 shrink-0">2017 – 2019</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 pl-1 leading-tight">
+                • Built high-concurrency TCP socket server handling 100k persistent connections.
+              </p>
+            </div>
+          </div>
+
+          {/* Projects */}
+          <div>
+            <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+              // KEY_PROJECTS
+            </div>
+            <div className="flex justify-between text-[4.3px] font-bold text-slate-900 dark:text-white">
+              <span className="truncate">TaskFlow Orchestrator (Go, Redis)</span>
+              <span className="text-[3.8px] text-slate-500 shrink-0">★ 2.4k</span>
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 pl-1 leading-tight">
+              • Fault-tolerant distributed queue handling 50k+ worker tasks/sec.
+            </p>
+          </div>
+
+          {/* Education */}
+          <div className="border-t border-slate-200 dark:border-slate-700 pt-0.5 flex justify-between text-[4.2px]">
+            <span className="font-bold text-slate-900 dark:text-white truncate">B.S. CS — Georgia Tech (GPA 3.9)</span>
+            <span className="text-slate-500 shrink-0">CKA Certified • AWS Pro</span>
+          </div>
         </div>
-        <div className="space-y-0.5">
-          <div className="h-1 w-10 bg-slate-700 dark:bg-slate-300 rounded-sm" />
-          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
-          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
-        </div>
-        <div className="space-y-0.5">
-          <div className="h-1 w-10 bg-slate-700 dark:bg-slate-300 rounded-sm" />
-          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
-        </div>
-      </div>
-    )
+      )
+    }
   },
   {
     id: "two-column",
     name: "Two-Column",
     description: "30/70 split layout with skills & education on the left, experience & projects on the right.",
-    renderThumbnail: () => (
-      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
-        <div className="space-y-0.5 pb-0.5 border-b border-slate-200 dark:border-slate-700">
-          <div className="h-2 w-16 bg-slate-800 dark:bg-slate-200 rounded-sm" />
-          <div className="h-0.5 w-24 bg-slate-400 rounded-sm" />
-        </div>
-        <div className="flex gap-1.5 flex-1 pt-1">
-          <div className="w-[25%] border-r border-slate-200 dark:border-slate-700 pr-1 space-y-1">
-            <div className="h-1 w-6 bg-slate-600 rounded-sm" />
-            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
-            <div className="h-0.5 w-3/4 bg-slate-300 dark:bg-slate-700 rounded-sm" />
-            <div className="h-1 w-6 bg-slate-600 rounded-sm mt-0.5" />
-            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Senior Full Stack Engineer")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          {/* Header */}
+          <div className="pb-0.5 border-b border-slate-200 dark:border-slate-700">
+            <div className="text-[9.5px] font-extrabold text-slate-900 dark:text-white leading-tight truncate">
+              {cName}
+            </div>
+            <div className="text-[5px] font-semibold text-indigo-600 dark:text-indigo-400 truncate">
+              {cRole} • alex@email.com • +1 555-0192 • San Francisco, CA
+            </div>
           </div>
-          <div className="w-[75%] space-y-1">
-            <div className="h-1 w-10 bg-slate-700 dark:bg-slate-300 rounded-sm" />
-            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
-            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
-            <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-sm" />
+
+          <div className="flex gap-1.5 flex-1 pt-0.2 overflow-hidden">
+            {/* Left Column (32%) */}
+            <div className="w-[32%] border-r border-slate-200 dark:border-slate-700 pr-1 space-y-0.5 shrink-0">
+              <div>
+                <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-0.2">
+                  Contact
+                </div>
+                <div className="text-[3.5px] text-slate-500 dark:text-slate-400 space-y-0.2">
+                  <div className="truncate">alex@email.com</div>
+                  <div>+1 555-0192</div>
+                  <div>San Francisco</div>
+                  <div className="truncate">linkedin.com/in/alex</div>
+                </div>
+              </div>
+              <div>
+                <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-0.2">
+                  Skills
+                </div>
+                <div className="flex flex-wrap gap-0.2 text-[3.5px]">
+                  {["React", "TS", "Node", "Python", "AWS", "SQL", "Docker", "Next", "Redis", "GraphQL"].map((s) => (
+                    <span key={s} className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-0.8 py-0.2 rounded-xs font-medium">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-0.2">
+                  Education
+                </div>
+                <div className="text-[3.5px] text-slate-600 dark:text-slate-400 leading-tight">
+                  <div className="font-bold text-slate-800 dark:text-slate-200">B.S. Comp Sci</div>
+                  <div>Stanford '20 (3.85 GPA)</div>
+                </div>
+              </div>
+              <div>
+                <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-0.2">
+                  Certifications
+                </div>
+                <div className="text-[3.5px] text-slate-500 leading-tight">
+                  AWS Solutions Architect Pro
+                </div>
+              </div>
+              <div>
+                <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-0.2">
+                  Languages
+                </div>
+                <div className="text-[3.5px] text-slate-500 leading-tight">
+                  English (Native), Spanish (Fluent)
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column (68%) */}
+            <div className="w-[68%] space-y-0.5 pl-0.5">
+              <div>
+                <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-0.2 mb-0.2">
+                  Summary
+                </div>
+                <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight">
+                  Full stack engineer building scalable financial web apps, payment gateways, and real-time transaction microservices.
+                </p>
+              </div>
+
+              <div>
+                <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-0.2">
+                  Experience
+                </div>
+                <div>
+                  <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                    <span className="truncate">FinTech • Lead Eng</span>
+                    <span className="text-[3.5px] text-slate-400 shrink-0">2021–Pres</span>
+                  </div>
+                  <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                    • Built payment gateway processing $45M/mo with sub-second latency.
+                  </p>
+                  <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                    • Reduced cart checkout drop-off rate by 24% via instant auth.
+                  </p>
+                </div>
+                <div>
+                  <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                    <span className="truncate">NextGen • Software Dev</span>
+                    <span className="text-[3.5px] text-slate-400 shrink-0">2019–2021</span>
+                  </div>
+                  <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                    • Designed automated CI testing suite improving code coverage to 92%.
+                  </p>
+                </div>
+                <div>
+                  <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                    <span className="truncate">Alpha Web • Junior Dev</span>
+                    <span className="text-[3.5px] text-slate-400 shrink-0">2017–2019</span>
+                  </div>
+                  <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                    • Integrated 15+ third-party REST APIs and payment webhooks.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-0.2 mb-0.2">
+                  Key Projects
+                </div>
+                <div className="text-[4.3px] font-bold text-slate-900 dark:text-white truncate">
+                  PayFlow SDK (Go, Stripe, Redis)
+                </div>
+                <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                  • Sub-100ms checkout SDK integrated by 80+ merchants.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    )
+      )
+    }
   },
   {
     id: "creative-bold",
     name: "Creative Bold",
     description: "Eye-catching design with a vibrant accent bar and border-accented section headers.",
-    renderThumbnail: () => (
-      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
-        <div className="space-y-0.5">
-          <div className="h-2.5 w-18 bg-indigo-900 dark:bg-indigo-300 rounded-sm" />
-          <div className="h-0.5 w-full bg-indigo-600 rounded-full" />
-          <div className="h-0.5 w-24 bg-slate-400 rounded-sm" />
-        </div>
-        <div className="space-y-1">
-          <div className="flex items-center gap-1">
-            <div className="h-2 w-0.5 bg-indigo-600 rounded-sm" />
-            <div className="h-1.5 w-12 bg-indigo-900 dark:bg-indigo-300 rounded-sm" />
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Lead Product Designer & UI Engineer")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          {/* Header */}
+          <div className="border-l-3 border-indigo-600 pl-1.5 pb-0.5">
+            <div className="text-[9.5px] font-black text-indigo-700 dark:text-indigo-400 leading-tight truncate">
+              {cName.toUpperCase()}
+            </div>
+            <div className="text-[5px] font-bold text-slate-800 dark:text-slate-200 truncate">
+              {cRole}
+            </div>
+            <div className="text-[3.8px] text-slate-500 dark:text-slate-400 mt-0.2 truncate">
+              alex@designstudio.io • portfolio.dev • San Francisco, CA • behance.net/alex
+            </div>
           </div>
-          <div className="space-y-0.5 pl-1.5">
-            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
-            <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-sm" />
+
+          {/* About Me */}
+          <div>
+            <div className="flex items-center gap-1 border-b border-indigo-100 dark:border-indigo-950 pb-0.2 mb-0.2">
+              <div className="w-1 h-1.5 bg-indigo-600 rounded-xs" />
+              <span className="text-[4.5px] font-black uppercase tracking-wider text-indigo-950 dark:text-indigo-300">
+                About Me
+              </span>
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight">
+              Design technologist crafting high-conversion design systems, accessible UI kits, and interactive web experiences.
+            </p>
+          </div>
+
+          {/* Experience */}
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1 border-b border-indigo-100 dark:border-indigo-950 pb-0.2">
+              <div className="w-1 h-1.5 bg-indigo-600 rounded-xs" />
+              <span className="text-[4.5px] font-black uppercase tracking-wider text-indigo-950 dark:text-indigo-300">
+                Work Experience
+              </span>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Studio Pixel — Design Lead</span>
+                <span className="text-[3.8px] font-semibold text-indigo-600 dark:text-indigo-400 shrink-0">2022 – Pres</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Created design system powering 6 mobile and web enterprise applications.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Verve Digital — Senior UI Developer</span>
+                <span className="text-[3.8px] font-semibold text-indigo-600 dark:text-indigo-400 shrink-0">2020 – 2022</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Built accessible React design component kit reducing sprint cycles 35%.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Nova Agency — UI/UX Designer</span>
+                <span className="text-[3.8px] font-semibold text-indigo-600 dark:text-indigo-400 shrink-0">2018 – 2020</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Designed 25+ responsive brand identities and web design systems.
+              </p>
+            </div>
+          </div>
+
+          {/* Featured Projects */}
+          <div>
+            <div className="flex items-center gap-1 border-b border-indigo-100 dark:border-indigo-950 pb-0.2 mb-0.2">
+              <div className="w-1 h-1.5 bg-indigo-600 rounded-xs" />
+              <span className="text-[4.5px] font-black uppercase tracking-wider text-indigo-950 dark:text-indigo-300">
+                Featured Projects
+              </span>
+            </div>
+            <div className="flex justify-between text-[4.3px]">
+              <span className="font-bold text-slate-800 dark:text-slate-200 truncate">OpenDesign UI Kit (4.5k stars)</span>
+              <span className="text-slate-400 text-[3.8px] shrink-0">React • Figma</span>
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+              • Modular component system with 100% WCAG AA compliance.
+            </p>
+          </div>
+
+          {/* Skills & Honors */}
+          <div className="space-y-0.2 pt-0.2">
+            <div className="flex flex-wrap gap-0.5 text-[3.5px]">
+              {["Design Systems", "Figma", "React", "Next.js", "Tailwind", "Motion", "A11y", "TypeScript", "WebGL", "Storybook"].map((tag) => (
+                <span key={tag} className="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-0.8 py-0.2 rounded-xs font-semibold">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <div className="flex justify-between text-[4px] text-slate-500 pt-0.2 border-t border-slate-100 dark:border-slate-800">
+              <span>B.A. Interactive Media — RISD</span>
+              <span>Awwwards Site of the Day (2023)</span>
+            </div>
           </div>
         </div>
-        <div className="space-y-1">
-          <div className="flex items-center gap-1">
-            <div className="h-2 w-0.5 bg-indigo-600 rounded-sm" />
-            <div className="h-1.5 w-10 bg-indigo-900 dark:bg-indigo-300 rounded-sm" />
-          </div>
-          <div className="h-0.5 w-3/4 pl-1.5 bg-slate-300 dark:bg-slate-700 rounded-sm" />
-        </div>
-      </div>
-    )
+      )
+    }
   },
   {
     id: "elegant-sidebar",
     name: "Elegant Sidebar",
     description: "Distinct left sidebar with contact info & skills separated by a clean vertical divider.",
-    renderThumbnail: () => (
-      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex border border-slate-200 dark:border-slate-800">
-        <div className="w-[25%] border-r border-slate-300 dark:border-slate-700 pr-1 space-y-1">
-          <div className="h-2 w-10 bg-slate-900 dark:bg-white rounded-sm" />
-          <div className="h-0.5 w-8 bg-slate-400 rounded-sm" />
-          <div className="space-y-0.5 pt-0.5">
-            <div className="h-0.5 w-full bg-slate-400 rounded-sm" />
-            <div className="h-0.5 w-full bg-slate-400 rounded-sm" />
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Enterprise Solutions Architect")
+      const initials = cName.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2).toUpperCase() || "AM"
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg flex border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          {/* Left Sidebar (34%) */}
+          <div className="w-[34%] bg-slate-100/90 dark:bg-slate-800/80 p-1.5 flex flex-col space-y-0.5 border-r border-slate-200 dark:border-slate-700 shrink-0">
+            <div>
+              <div className="w-5 h-5 rounded-full bg-slate-900 dark:bg-indigo-600 text-white text-[7px] font-black flex items-center justify-center mx-auto mb-0.5 shadow-xs">
+                {initials}
+              </div>
+              <div className="text-center text-[5px] font-bold text-slate-900 dark:text-white truncate">{cName}</div>
+              <div className="text-center text-[3.8px] text-slate-500 mb-0.5 truncate">Architect</div>
+
+              <div className="text-[4px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600 pb-0.2 mb-0.2">
+                Contact
+              </div>
+              <div className="text-[3.5px] text-slate-600 dark:text-slate-400 space-y-0.2 mb-0.5">
+                <div className="truncate">alex@cloud.io</div>
+                <div>+1 555-0192</div>
+                <div>San Francisco</div>
+                <div className="truncate">linkedin.com/in/alex</div>
+              </div>
+
+              <div className="text-[4px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600 pb-0.2 mb-0.2">
+                Skills
+              </div>
+              <div className="text-[3.5px] text-slate-600 dark:text-slate-400 space-y-0.2 mb-0.5">
+                <div>• Cloud Arch</div>
+                <div>• TypeScript</div>
+                <div>• Python / Go</div>
+                <div>• Kubernetes</div>
+                <div>• Terraform</div>
+                <div>• Microservices</div>
+              </div>
+
+              <div className="text-[4px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600 pb-0.2 mb-0.2">
+                Education
+              </div>
+              <div className="text-[3.5px] text-slate-500 truncate">
+                MIT • B.S. CS '19 (Honors)
+              </div>
+            </div>
+
+            <div className="text-[3.5px] text-slate-500 pt-0.2 border-t border-slate-200 dark:border-slate-700 space-y-0.2">
+              <div>AWS Solutions Pro</div>
+              <div>English, German</div>
+            </div>
           </div>
-          <div className="h-1 w-8 bg-slate-600 rounded-sm pt-0.5" />
-          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
+
+          {/* Right Main (66%) */}
+          <div className="w-[66%] p-1.5 flex flex-col space-y-0.5">
+            <div>
+              <div className="text-[9.5px] font-black text-slate-900 dark:text-white leading-tight truncate">
+                {cName}
+              </div>
+              <div className="text-[5px] font-semibold text-slate-500 dark:text-slate-400 mb-0.2 truncate">
+                {cRole}
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight">
+                Architecting resilient multi-cloud infrastructures and microservices for Fortune 500 enterprises.
+              </p>
+            </div>
+
+            <div className="space-y-0.5">
+              <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-0.2">
+                Work Experience
+              </div>
+              <div>
+                <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                  <span className="truncate">Apex Cloud • Principal</span>
+                  <span className="text-[3.5px] text-slate-400 shrink-0">2021–Pres</span>
+                </div>
+                <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                  • Directed 15 multi-region enterprise cloud migrations with zero downtime.
+                </p>
+                <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                  • Reduced operational cloud spend by 28% through autoscaling policies.
+                </p>
+              </div>
+              <div>
+                <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                  <span className="truncate">Matrix Soft • Senior Eng</span>
+                  <span className="text-[3.5px] text-slate-400 shrink-0">2018–2021</span>
+                </div>
+                <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                  • Led migration of on-prem monolithic services to Kubernetes on AWS.
+                </p>
+              </div>
+              <div>
+                <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                  <span className="truncate">CloudNative • Systems Dev</span>
+                  <span className="text-[3.5px] text-slate-400 shrink-0">2016–2018</span>
+                </div>
+                <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                  • Built distributed service discovery and API gateway proxy in Go.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-0.2 mb-0.2">
+                Key Initiatives
+              </div>
+              <div className="text-[4.3px] font-bold text-slate-900 dark:text-white">
+                Multi-Region Disaster Recovery Mesh
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Active-active failover architecture cutting RTO from 2h to 12s.
+              </p>
+            </div>
+          </div>
         </div>
-        <div className="w-[75%] pl-1.5 space-y-1">
-          <div className="space-y-0.5">
-            <div className="h-1.5 w-12 bg-slate-700 dark:bg-slate-300 rounded-sm" />
-            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
-            <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-sm" />
-          </div>
-          <div className="space-y-0.5">
-            <div className="h-1.5 w-12 bg-slate-700 dark:bg-slate-300 rounded-sm" />
-            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-sm" />
-          </div>
-        </div>
-      </div>
-    )
+      )
+    }
   },
   {
     id: "ats-clean",
     name: "ATS Clean",
     description: "Ultra-clean monospace layout without borders, engineered for 100% ATS readability.",
-    renderThumbnail: () => (
-      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800 font-mono">
-        <div className="space-y-0.5">
-          <div className="h-2 w-18 bg-slate-900 dark:bg-white rounded-none" />
-          <div className="h-0.5 w-24 bg-slate-400 rounded-none" />
+    renderThumbnail: (data) => {
+      const { name: cName } = getCandidate(data, "Senior Software Engineer")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-mono shadow-xs overflow-hidden select-none pointer-events-none">
+          {/* Header */}
+          <div className="text-center pb-0.5 border-b border-slate-400 dark:border-slate-600">
+            <div className="text-[8.5px] font-bold text-slate-950 dark:text-white uppercase tracking-tight truncate">
+              {cName.toUpperCase()}
+            </div>
+            <div className="text-[3.8px] text-slate-600 dark:text-slate-400 mt-0.2 truncate">
+              alex.morgan@email.com | +1 555-0192 | San Francisco, CA | linkedin.com/in/alex | github.com/alex
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div>
+            <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+              === PROFESSIONAL SUMMARY ===
+            </div>
+            <p className="text-[3.8px] text-slate-700 dark:text-slate-300 leading-tight">
+              Senior software engineer with 8+ years specializing in distributed systems, backend APIs, and database performance optimization.
+            </p>
+          </div>
+
+          {/* Experience */}
+          <div className="space-y-0.5">
+            <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+              === PROFESSIONAL EXPERIENCE ===
+            </div>
+            <div>
+              <div className="flex justify-between text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">SENIOR SOFTWARE ENGINEER, TECHCORP</span>
+                <span className="text-[3.8px] font-normal text-slate-600 shrink-0">2021 – PRES</span>
+              </div>
+              <p className="text-[3.8px] text-slate-700 dark:text-slate-300 leading-tight pl-1">
+                - Architected backend services handling $35M in monthly transactions.
+              </p>
+              <p className="text-[3.8px] text-slate-700 dark:text-slate-300 leading-tight pl-1">
+                - Reduced database query latency by 45% via Redis caching architecture.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">SOFTWARE DEVELOPER, DATASYNC</span>
+                <span className="text-[3.8px] font-normal text-slate-600 shrink-0">2018 – 2021</span>
+              </div>
+              <p className="text-[3.8px] text-slate-700 dark:text-slate-300 leading-tight pl-1">
+                - Engineered scalable REST APIs using Python, PostgreSQL, and Docker.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">ASSOCIATE DEVELOPER, NEXUS SYSTEMS</span>
+                <span className="text-[3.8px] font-normal text-slate-600 shrink-0">2016 – 2018</span>
+              </div>
+              <p className="text-[3.8px] text-slate-700 dark:text-slate-300 leading-tight pl-1">
+                - Maintained core relational database schemas and optimized indexing.
+              </p>
+            </div>
+          </div>
+
+          {/* Projects */}
+          <div>
+            <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+              === KEY PROJECTS ===
+            </div>
+            <div className="flex justify-between text-[4.3px] font-bold text-slate-900 dark:text-white">
+              <span className="truncate">RATE LIMITER SERVICE (GO, REDIS)</span>
+              <span className="text-[3.8px] font-normal text-slate-600 shrink-0">100k req/s</span>
+            </div>
+            <p className="text-[3.8px] text-slate-700 dark:text-slate-300 leading-tight pl-1">
+              - Sliding-window algorithm preventing DDoS with sub-millisecond overhead.
+            </p>
+          </div>
+
+          {/* Skills & Education */}
+          <div className="border-t border-slate-300 dark:border-slate-700 pt-0.5 space-y-0.2">
+            <div className="text-[4px] text-slate-700 dark:text-slate-300 truncate">
+              Skills: Python, TypeScript, React, Node.js, SQL, AWS, Docker, Kubernetes, CI/CD, Kafka, Redis
+            </div>
+            <div className="flex justify-between text-[4px] text-slate-700 dark:text-slate-300">
+              <span>B.S. in Computer Science — UCLA (2016)</span>
+              <span>AWS Certified | CKA Certified</span>
+            </div>
+          </div>
         </div>
-        <div className="space-y-1">
-          <div className="h-1.5 w-14 bg-slate-800 dark:bg-slate-200 rounded-none" />
-          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-none" />
-          <div className="h-0.5 w-5/6 bg-slate-300 dark:bg-slate-700 rounded-none" />
-        </div>
-        <div className="space-y-1">
-          <div className="h-1.5 w-10 bg-slate-800 dark:bg-slate-200 rounded-none" />
-          <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-none" />
-        </div>
-      </div>
-    )
+      )
+    }
   },
   {
     id: "photo-modern-sidebar",
     name: "Modern Photo Sidebar",
     description: "Professional two-column layout with candidate photo (sharp edges), skills & contacts in a stylish left sidebar.",
-    renderThumbnail: () => (
-      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex border border-slate-200 dark:border-slate-800">
-        <div className="w-[25%] border-r border-slate-300 dark:border-slate-700 pr-1 space-y-1 flex flex-col items-center">
-          <div className="w-6 h-6 rounded-none bg-indigo-500/30 border border-indigo-400 flex items-center justify-center shrink-0">
-            <User className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Senior Software Engineer")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg flex border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          {/* Left Sidebar (32%) */}
+          <div className="w-[32%] bg-indigo-50/70 dark:bg-indigo-950/40 p-1.5 flex flex-col space-y-0.5 border-r border-indigo-100 dark:border-indigo-900/60 items-center shrink-0">
+            <div className="flex flex-col items-center w-full">
+              <RealisticHeadshot photoUrl={data?.photoUrl} className="w-8 h-9 mb-0.5" />
+              <div className="text-[4.5px] font-bold uppercase tracking-wider text-indigo-950 dark:text-indigo-200 text-center border-b border-indigo-200 dark:border-indigo-800 pb-0.2 w-full mb-0.2">
+                Contact
+              </div>
+              <div className="text-[3.5px] text-slate-600 dark:text-slate-400 space-y-0.2 w-full">
+                <div className="truncate">alex@email.com</div>
+                <div>+1 555-0192</div>
+                <div>San Francisco</div>
+                <div className="truncate">github.com/alex</div>
+              </div>
+
+              <div className="text-[4.5px] font-bold uppercase tracking-wider text-indigo-950 dark:text-indigo-200 text-center border-b border-indigo-200 dark:border-indigo-800 pb-0.2 w-full mt-0.5 mb-0.2">
+                Skills
+              </div>
+              <div className="text-[3.5px] text-slate-600 dark:text-slate-400 space-y-0.2 w-full">
+                <div>• React / Next</div>
+                <div>• TypeScript</div>
+                <div>• Node / Python</div>
+                <div>• Cloud & AWS</div>
+                <div>• PostgreSQL</div>
+                <div>• Docker & K8s</div>
+              </div>
+
+              <div className="text-[4.5px] font-bold uppercase tracking-wider text-indigo-950 dark:text-indigo-200 text-center border-b border-indigo-200 dark:border-indigo-800 pb-0.2 w-full mt-0.5 mb-0.2">
+                Education
+              </div>
+              <div className="text-[3.5px] text-slate-500 w-full text-center truncate">
+                Stanford '20 • B.S. CS
+              </div>
+            </div>
+
+            <div className="text-[3.5px] text-slate-500 w-full text-center pt-0.2 border-t border-indigo-100 dark:border-indigo-900/60 truncate">
+              AWS Certified • French
+            </div>
           </div>
-          <div className="w-full space-y-0.5 pt-0.5">
-            <div className="h-1 w-full bg-slate-600 rounded-none" />
-            <div className="h-0.5 w-3/4 bg-slate-400 rounded-none" />
-            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-none" />
+
+          {/* Right Main (68%) */}
+          <div className="w-[68%] p-1.5 flex flex-col space-y-0.5">
+            <div>
+              <div className="border-b-2 border-indigo-600 pb-0.2 mb-0.2">
+                <div className="text-[9.5px] font-black text-slate-900 dark:text-white leading-tight truncate">
+                  {cName}
+                </div>
+                <div className="text-[5px] font-bold text-indigo-600 dark:text-indigo-400 truncate">
+                  {cRole}
+                </div>
+              </div>
+
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight mb-0.2">
+                Passionate full stack developer with expertise in high-performance web applications and cloud architecture.
+              </p>
+            </div>
+
+            <div className="space-y-0.5">
+              <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-0.2">
+                Work Experience
+              </div>
+              <div>
+                <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                  <span className="truncate">Apex Solutions • Lead</span>
+                  <span className="text-[3.5px] text-slate-400 shrink-0">2021–Pres</span>
+                </div>
+                <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                  • Built distributed microservices serving 4M+ active daily users.
+                </p>
+                <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                  • Decreased API response times by 38% via Redis caching layer.
+                </p>
+              </div>
+              <div>
+                <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                  <span className="truncate">CoreTech • Senior Dev</span>
+                  <span className="text-[3.5px] text-slate-400 shrink-0">2018–2021</span>
+                </div>
+                <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                  • Engineered GraphQL gateway integrating 12 microservices.
+                </p>
+              </div>
+              <div>
+                <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                  <span className="truncate">InnoSoft • Web Dev</span>
+                  <span className="text-[3.5px] text-slate-400 shrink-0">2016–2018</span>
+                </div>
+                <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                  • Shipped customer-facing billing & subscription management portal.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-0.2 mb-0.2">
+                Featured Projects
+              </div>
+              <div className="text-[4.3px] font-bold text-slate-900 dark:text-white truncate">
+                PulseStack Collaborative Dashboard
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Real-time collaborative workspace with WebSockets & Next.js.
+              </p>
+            </div>
           </div>
         </div>
-        <div className="w-[75%] pl-1.5 space-y-1">
-          <div className="space-y-0.5 pb-0.5 border-b border-indigo-500">
-            <div className="h-2 w-14 bg-slate-900 dark:bg-white rounded-none" />
-            <div className="h-0.5 w-10 bg-indigo-600 rounded-none" />
-          </div>
-          <div className="space-y-0.5">
-            <div className="h-1.5 w-12 bg-slate-700 dark:bg-slate-300 rounded-none" />
-            <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-none" />
-            <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-none" />
-          </div>
-        </div>
-      </div>
-    )
+      )
+    }
   },
   {
     id: "photo-executive",
     name: "Executive Headshot",
     description: "Prestigious executive template with a sharp rectangular headshot and corporate navy accents.",
-    renderThumbnail: () => (
-      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-1.5 pb-1 border-b border-blue-900 dark:border-blue-700">
-          <div className="w-6 h-6 rounded-none bg-blue-900/20 border border-blue-800 flex items-center justify-center shrink-0">
-            <User className="w-3.5 h-3.5 text-blue-900 dark:text-blue-400" />
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Chief Technology Officer")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          {/* Header */}
+          <div className="flex items-center gap-1.5 pb-0.5 border-b-2 border-blue-900 dark:border-blue-400">
+            <RealisticHeadshot photoUrl={data?.photoUrl} className="w-8 h-10" />
+            <div className="flex-1 min-w-0">
+              <div className="text-[9.5px] font-black uppercase tracking-wider text-blue-900 dark:text-blue-400 leading-tight truncate">
+                {cName}
+              </div>
+              <div className="text-[5px] font-bold uppercase tracking-wide text-slate-700 dark:text-slate-300 truncate">
+                {cRole}
+              </div>
+              <div className="text-[3.8px] text-slate-500 dark:text-slate-400 mt-0.2 truncate">
+                alex.morgan@exec.io • +1 555-0192 • New York • linkedin.com/in/alex
+              </div>
+            </div>
           </div>
-          <div className="space-y-0.5 flex-1">
-            <div className="h-2 w-16 bg-blue-900 dark:bg-blue-300 rounded-none" />
-            <div className="h-0.5 w-20 bg-slate-400 rounded-none" />
+
+          {/* Leadership Profile */}
+          <div>
+            <div className="text-[4.5px] font-black text-blue-900 dark:text-blue-400 uppercase tracking-wider border-b border-blue-900/30 pb-0.2 mb-0.2">
+              Executive Leadership
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight">
+              Strategic technology executive overseeing $25M budget and 80+ engineers delivering enterprise cloud platforms.
+            </p>
+          </div>
+
+          {/* Experience */}
+          <div className="space-y-0.5">
+            <div className="text-[4.5px] font-black text-blue-900 dark:text-blue-400 uppercase tracking-wider border-b border-blue-900/30 pb-0.2">
+              Career History
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">FinTech Holdings — CTO</span>
+                <span className="text-[3.8px] font-medium text-blue-900 dark:text-blue-400 shrink-0">2020 – Pres</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Orchestrated cloud modernization reducing compute cost 34%.
+              </p>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Achieved 100% SOC2 Type II compliance with zero critical findings.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Enterprise SaaS — VP Engineering</span>
+                <span className="text-[3.8px] font-medium text-blue-900 dark:text-blue-400 shrink-0">2016 – 2020</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Scaled engineering organization from 15 to 65 across three continents.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Vanguard Capital — Director</span>
+                <span className="text-[3.8px] font-medium text-blue-900 dark:text-blue-400 shrink-0">2013 – 2016</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Led digital transformation of core banking and portfolio platform.
+              </p>
+            </div>
+          </div>
+
+          {/* Key Programs */}
+          <div>
+            <div className="text-[4.5px] font-black text-blue-900 dark:text-blue-400 uppercase tracking-wider border-b border-blue-900/30 pb-0.2 mb-0.2">
+              Key Strategic Programs
+            </div>
+            <div className="text-[4.3px] font-bold text-slate-900 dark:text-white">
+              Global Multi-Cloud Migration & SOC2 Type II
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+              • Modernized 40+ legacy systems to AWS/GCP with zero unscheduled downtime.
+            </p>
+          </div>
+
+          {/* Competencies & Education */}
+          <div className="pt-0.5 border-t border-blue-900/30 space-y-0.2">
+            <div className="text-[4px] text-slate-700 dark:text-slate-300 truncate">
+              <span className="font-bold text-blue-900 dark:text-blue-400">Core:</span> Executive Governance, SOC2 Type II, SaaS Architecture, P&L ($25M)
+            </div>
+            <div className="flex justify-between items-center text-[4.2px]">
+              <span className="font-bold text-blue-900 dark:text-blue-400 truncate">Columbia — M.S. Comp Sci</span>
+              <span className="text-slate-500 shrink-0">Board Member, TechVentures</span>
+            </div>
           </div>
         </div>
-        <div className="space-y-0.5">
-          <div className="h-1.5 w-14 bg-blue-900 dark:bg-blue-400 rounded-none" />
-          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-none" />
-          <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-none" />
-        </div>
-        <div className="space-y-0.5">
-          <div className="h-1.5 w-10 bg-blue-900 dark:bg-blue-400 rounded-none" />
-          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-none" />
-        </div>
-      </div>
-    )
+      )
+    }
   },
   {
     id: "photo-creative",
     name: "Creative Portfolio",
     description: "Dynamic layout featuring candidate headshot with clean sharp edges, vibrant indigo accents, and portfolio links.",
-    renderThumbnail: () => (
-      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-1.5">
-          <div className="w-6 h-6 rounded-none bg-indigo-600/20 border border-indigo-500 flex items-center justify-center shrink-0">
-            <Camera className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Product Designer & Frontend Dev")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          {/* Header */}
+          <div className="flex items-center gap-1.5 pb-0.5">
+            <div className="ring-2 ring-indigo-600 rounded-xs overflow-hidden shrink-0">
+              <RealisticHeadshot photoUrl={data?.photoUrl} className="w-8 h-9" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[9.5px] font-black text-indigo-700 dark:text-indigo-400 leading-tight truncate">
+                {cName}
+              </div>
+              <div className="text-[5px] font-bold text-slate-800 dark:text-slate-200 truncate">
+                {cRole}
+              </div>
+              <div className="text-[3.8px] text-indigo-600 dark:text-indigo-400 font-medium truncate">
+                github.com/alex • behance.net/alex • San Francisco • +1 555-0192
+              </div>
+            </div>
           </div>
-          <div className="space-y-0.5 flex-1">
-            <div className="h-2 w-14 bg-indigo-900 dark:bg-indigo-300 rounded-none" />
-            <div className="h-0.5 w-18 bg-slate-400 rounded-none" />
+
+          <div className="h-0.5 w-full bg-indigo-600 mb-0.2" />
+
+          {/* About */}
+          <div>
+            <div className="text-[4.5px] font-black uppercase tracking-wider text-slate-900 dark:text-white border-l-2 border-indigo-600 pl-1 mb-0.2">
+              About Me
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight">
+              Product designer and creative developer building intuitive digital products, modular design systems, and delightful web animations.
+            </p>
+          </div>
+
+          {/* Experience */}
+          <div className="space-y-0.5">
+            <div className="text-[4.5px] font-black uppercase tracking-wider text-slate-900 dark:text-white border-l-2 border-indigo-600 pl-1">
+              Work Experience
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Studio Seven — Senior Designer</span>
+                <span className="text-[3.8px] font-semibold text-indigo-600 shrink-0">2022 – Pres</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Led design and frontend UX for SaaS product used by 200k+ subscribers.
+              </p>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Increased user onboarding completion rate from 62% to 88%.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Aura Labs — UI/UX Designer</span>
+                <span className="text-[3.8px] font-semibold text-indigo-600 shrink-0">2020 – 2022</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Prototyped and shipped mobile design system with 98% design fidelity.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">HyperDesign — Visual Designer</span>
+                <span className="text-[3.8px] font-semibold text-indigo-600 shrink-0">2018 – 2020</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Crafted comprehensive web design guidelines for 30+ client brands.
+              </p>
+            </div>
+          </div>
+
+          {/* Projects */}
+          <div>
+            <div className="text-[4.5px] font-black uppercase tracking-wider text-slate-900 dark:text-white border-l-2 border-indigo-600 pl-1 mb-0.2">
+              Featured Projects
+            </div>
+            <div className="flex justify-between text-[4.3px] font-bold text-slate-900 dark:text-white truncate">
+              Prism UI Kit (3.8k stars) • React, Figma
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+              • Dark-mode ready design system for enterprise dashboards.
+            </p>
+          </div>
+
+          {/* Skills & Education */}
+          <div className="space-y-0.2 pt-0.2">
+            <div className="flex flex-wrap gap-0.5 text-[3.5px]">
+              {["UI/UX Design", "React", "Next.js", "Figma", "Tailwind", "Design Systems", "Framer", "Motion", "Storybook", "A11y"].map((item) => (
+                <span key={item} className="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-0.8 py-0.2 rounded-xs font-semibold">
+                  {item}
+                </span>
+              ))}
+            </div>
+            <div className="text-[4px] text-slate-500 pt-0.2 border-t border-slate-100 dark:border-slate-800 flex justify-between">
+              <span>B.F.A. Design & Technology — Parsons</span>
+              <span>Awwwards Site of the Year Nominee</span>
+            </div>
           </div>
         </div>
-        <div className="h-0.5 w-full bg-indigo-600 rounded-none" />
-        <div className="space-y-1">
-          <div className="flex items-center gap-1">
-            <div className="h-2 w-0.5 bg-indigo-600 rounded-none" />
-            <div className="h-1.5 w-10 bg-indigo-900 dark:bg-indigo-300 rounded-none" />
-          </div>
-          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-none pl-1" />
-        </div>
-      </div>
-    )
+      )
+    }
   },
   {
     id: "photo-minimal",
     name: "Minimal Avatar",
     description: "Refined minimalist styling with a sharp rectangular profile photo badge alongside name & title.",
-    renderThumbnail: () => (
-      <div className="h-24 w-full bg-slate-50 dark:bg-slate-900 rounded-lg p-2 flex flex-col justify-between border border-slate-200 dark:border-slate-800">
-        <div className="flex items-center justify-between pb-1 border-b border-slate-200 dark:border-slate-800">
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Senior Software Engineer")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-0.5 border-b border-slate-200 dark:border-slate-700">
+            <div className="min-w-0 pr-1">
+              <div className="text-[9.5px] font-bold text-slate-900 dark:text-white tracking-tight leading-tight truncate">
+                {cName}
+              </div>
+              <div className="text-[5px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                {cRole}
+              </div>
+              <div className="text-[3.8px] text-slate-400 mt-0.2 truncate">
+                alex@email.com • +1 555-0192 • San Francisco, CA • github.com/alex
+              </div>
+            </div>
+            <RealisticHeadshot photoUrl={data?.photoUrl} className="w-7 h-8" />
+          </div>
+
+          {/* Summary */}
+          <div>
+            <div className="text-[4.5px] font-bold uppercase tracking-widest text-slate-400 mb-0.2">
+              Summary
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight">
+              Senior engineer focused on modular frontend architectures, micro-frontends, design systems, and distributed backend services.
+            </p>
+          </div>
+
+          {/* Experience */}
           <div className="space-y-0.5">
-            <div className="h-2 w-14 bg-slate-800 dark:bg-slate-200 rounded-none" />
-            <div className="h-0.5 w-20 bg-slate-400 rounded-none" />
+            <div className="text-[4.5px] font-bold uppercase tracking-widest text-slate-400">
+              Experience
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-800 dark:text-slate-200">
+                <span className="truncate">NextScale Labs — Lead Engineer</span>
+                <span className="text-[3.8px] text-slate-400 shrink-0">2021 – Pres</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight pl-1">
+                • Engineered real-time collaborative workspace serving 500k+ MAU.
+              </p>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight pl-1">
+                • Reduced bundle size by 38% through route-based code splitting.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-800 dark:text-slate-200">
+                <span className="truncate">Hyperion Soft — Software Dev</span>
+                <span className="text-[3.8px] font-normal text-slate-400 shrink-0">2019 – 2021</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight pl-1">
+                • Built high-concurrency event ingestion service in Go and Kafka.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.3px] font-bold text-slate-800 dark:text-slate-200">
+                <span className="truncate">OmniWeb — Full Stack Engineer</span>
+                <span className="text-[3.8px] font-normal text-slate-400 shrink-0">2017 – 2019</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight pl-1">
+                • Shipped customer portal handling 100k daily active users.
+              </p>
+            </div>
           </div>
-          <div className="w-5 h-5 rounded-none bg-slate-300 dark:bg-slate-700 border border-slate-400 flex items-center justify-center shrink-0">
-            <User className="w-3 h-3 text-slate-600 dark:text-slate-300" />
+
+          {/* Projects */}
+          <div>
+            <div className="text-[4.5px] font-bold uppercase tracking-widest text-slate-400 mb-0.2">
+              Projects
+            </div>
+            <div className="flex justify-between text-[4.3px] font-bold text-slate-800 dark:text-slate-200">
+              <span className="truncate">HyperRoute (Micro-frontend Router)</span>
+              <span className="text-[3.8px] text-slate-400 shrink-0">★ 1.2k</span>
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight pl-1">
+              • Zero-config micro-frontend router cutting bundle transfers 40%.
+            </p>
+          </div>
+
+          {/* Skills & Education */}
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-0.5 space-y-0.2">
+            <div className="text-[4px] text-slate-600 dark:text-slate-400 truncate">
+              TypeScript, React, Next.js, Python, PostgreSQL, AWS, GraphQL, Docker, Redis, Tailwind
+            </div>
+            <div className="flex justify-between text-[4.2px] text-slate-500">
+              <span>B.S. CS — University of Washington</span>
+              <span>AWS Certified Architect</span>
+            </div>
           </div>
         </div>
-        <div className="space-y-0.5">
-          <div className="h-1.5 w-12 bg-slate-600 rounded-none" />
-          <div className="h-0.5 w-full bg-slate-300 dark:bg-slate-700 rounded-none" />
-          <div className="h-0.5 w-4/5 bg-slate-300 dark:bg-slate-700 rounded-none" />
-        </div>
-        <div className="space-y-0.5">
-          <div className="h-1.5 w-10 bg-slate-600 rounded-none" />
-          <div className="h-0.5 w-3/4 bg-slate-300 dark:bg-slate-700 rounded-none" />
-        </div>
-      </div>
-    )
+      )
+    }
   }
 ]
 
@@ -1838,7 +2819,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       }`}
                     >
                       <div className="mb-2 overflow-hidden rounded-lg">
-                        {tmpl.renderThumbnail()}
+                        {tmpl.renderThumbnail({ name, role, photoUrl })}
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-1">
@@ -2602,7 +3583,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               const previewSectionTitleSize = isCompact ? "text-[8px] sm:text-[10px] font-black uppercase tracking-wider" : "text-[8.5px] sm:text-xs font-black uppercase tracking-wider"
               const previewHeadlineSize = isCompact ? "text-[7.5px] sm:text-[10px]" : "text-[8px] sm:text-[11px]"
               const previewTitleSize = isCompact ? "text-sm sm:text-2xl" : isCreative ? "text-base sm:text-3xl md:text-4xl" : "text-base sm:text-2xl md:text-3xl"
-              const previewSectionMargin = isCompact ? "mb-1.5 sm:mb-3" : (isTwoColumn || isElegant || isPhotoSidebar) ? "mb-2 sm:mb-4" : "mb-2 sm:mb-5"
+              const previewSectionMargin = isCompact ? "mb-1 sm:mb-2" : (isTwoColumn || isElegant || isPhotoSidebar) ? "mb-1.5 sm:mb-2.5" : "mb-1.5 sm:mb-3"
               const previewSectionHeaderMargin = isCompact ? "mb-0.5 sm:mb-1" : "mb-0.5 sm:mb-1.5"
               const previewSectionDividerColor = isNavy
                 ? "border-blue-900 dark:border-blue-800 border-b-2"
@@ -2930,11 +3911,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     {isPhotoSidebar ? (
                       <div className="flex flex-row gap-2.5 sm:gap-6">
                         {/* Left Sidebar (25% on desktop, 28% on mobile) */}
-                        <div className="w-[28%] sm:w-[25%] shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-4 space-y-2 sm:space-y-4">
-                          <div className="flex justify-center sm:justify-start">
+                        <div className="w-[28%] sm:w-[25%] shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-4">
+                          <div className="flex justify-center sm:justify-start mb-2 sm:mb-3">
                             {renderAvatar("w-14 h-14 sm:w-32 sm:h-32")}
                           </div>
-                          <div>
+                          <div className={previewSectionMargin}>
                             <h2 className={`${previewSectionTitleSize} text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-0.5 mb-1 sm:mb-2`}>
                               Contact
                             </h2>
@@ -2946,8 +3927,8 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                           {renderPreviewAchievements()}
                         </div>
                         {/* Right Main (72% on mobile, 75% on desktop) */}
-                        <div className="flex-1 min-w-0 pl-1 sm:pl-2 space-y-2 sm:space-y-4">
-                          <div className="pb-1.5 sm:pb-3 border-b-2 border-indigo-600">
+                        <div className="flex-1 min-w-0 pl-1 sm:pl-2">
+                          <div className="pb-1.5 sm:pb-3 mb-2 sm:mb-3 border-b-2 border-indigo-600">
                             <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 break-words`}>
                               {name || "Your Name"}
                             </div>
@@ -3054,13 +4035,13 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
                         {/* 2 Column Body: 30% Left / 70% Right side-by-side */}
                         <div className="flex flex-row gap-2.5 sm:gap-6">
-                          <div className="w-[30%] sm:w-[30%] shrink-0 space-y-2 sm:space-y-4">
+                          <div className="w-[30%] sm:w-[30%] shrink-0">
                             {renderPreviewSkills()}
                             {renderPreviewEducation()}
                             {renderPreviewLanguages()}
                             {renderPreviewAchievements()}
                           </div>
-                          <div className="flex-1 min-w-0 space-y-2 sm:space-y-4">
+                          <div className="flex-1 min-w-0">
                             {renderPreviewSummary()}
                             {renderPreviewExperience()}
                             {renderPreviewProjects()}
@@ -3071,8 +4052,8 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       /* Elegant Sidebar */
                       <div className="flex flex-row gap-2.5 sm:gap-6">
                         {/* Left Sidebar (30%) */}
-                        <div className="w-[30%] sm:w-[30%] shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-4 space-y-2 sm:space-y-4">
-                          <div>
+                        <div className="w-[30%] sm:w-[30%] shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-4">
+                          <div className={previewSectionMargin}>
                             <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 sm:mb-1 break-words`}>{name || "Your Name"}</div>
                             {role && (
                               <p className={`${previewHeadlineSize} font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 sm:mb-2 break-words`}>{role}</p>
@@ -3085,8 +4066,8 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                           {renderPreviewAchievements()}
                         </div>
                         {/* Right Main (70%) */}
-                        <div className="flex-1 min-w-0 pl-1 sm:pl-2 space-y-2 sm:space-y-4">
-                          <div className="pb-1.5 sm:pb-3 border-b-2 border-slate-200 dark:border-slate-800">
+                        <div className="flex-1 min-w-0 pl-1 sm:pl-2">
+                          <div className={`pb-1.5 sm:pb-3 border-b-2 border-slate-200 dark:border-slate-800 ${previewSectionMargin}`}>
                             <h2 className={`${previewSectionTitleSize} text-slate-900 dark:text-white`}>
                               Overview & History
                             </h2>

@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap,
@@ -25,6 +26,7 @@ import {
   Bell,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   X,
   Settings,
   Shield,
@@ -33,6 +35,9 @@ import {
   BarChart2,
   Bookmark,
   BookOpen,
+  KeyRound,
+  Headphones,
+  Info,
 } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { supabase } from "@/lib/supabase-client";
@@ -65,6 +70,16 @@ const NAV_CONFIG: Record<string, NavSection[]> = {
       items: [
         { icon: User, label: "Profile", href: "/profile" },
         { icon: MessageSquareQuote, label: "Feedback", href: "/feedback" },
+        {
+          icon: Settings,
+          label: "Settings",
+          href: "/settings",
+          subItems: [
+            { icon: Info, label: "About", href: "/settings?tab=about" },
+            { icon: Headphones, label: "Support", href: "/settings?tab=support" },
+            { icon: KeyRound, label: "Change Password", href: "/settings?tab=password" },
+          ],
+        },
       ],
     },
   ],
@@ -82,6 +97,16 @@ const NAV_CONFIG: Record<string, NavSection[]> = {
       items: [
         { icon: User, label: "Profile", href: "/profile" },
         { icon: MessageSquareQuote, label: "Feedback", href: "/feedback" },
+        {
+          icon: Settings,
+          label: "Settings",
+          href: "/settings",
+          subItems: [
+            { icon: Info, label: "About", href: "/settings?tab=about" },
+            { icon: Headphones, label: "Support", href: "/settings?tab=support" },
+            { icon: KeyRound, label: "Change Password", href: "/settings?tab=password" },
+          ],
+        },
       ],
     },
   ],
@@ -119,12 +144,20 @@ const NAV_CONFIG: Record<string, NavSection[]> = {
 };
 
 
+type SubNavItem = {
+  icon: React.ElementType;
+  label: string;
+  href: string;
+  badge?: string;
+};
+
 type NavItem = {
   icon: React.ElementType;
   label: string;
   href: string;
   badge?: string;
   exact?: boolean;
+  subItems?: SubNavItem[];
 };
 
 type NavSection = {
@@ -142,12 +175,28 @@ function SidebarContent({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get("tab");
   const { user } = useUser();
+
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
+    Settings: true,
+  });
+
+  const toggleExpand = (label: string) => {
+    setExpandedItems((prev) => ({
+      ...prev,
+      [label]: prev[label] === undefined ? false : !prev[label],
+    }));
+  };
 
   const role = user?.role || "Job Seeker";
   let sections = NAV_CONFIG[role];
   if (!sections && (role === "Admin" || role === "Super Admin" || role.toLowerCase() === "admin" || role.toLowerCase() === "super admin" || role.toLowerCase().includes("admin"))) {
     sections = NAV_CONFIG["Admin"];
+  }
+  if (!sections && (role.toLowerCase() === "recruiter" || role.toLowerCase() === "employer" || role.toLowerCase() === "company")) {
+    sections = NAV_CONFIG["Recruiter"];
   }
   if (!sections) {
     sections = NAV_CONFIG["Job Seeker"];
@@ -157,7 +206,15 @@ function SidebarContent({
     if (href === "/") return pathname === "/";
     // Handle query params
     const [path] = href.split("?");
-    return pathname === path || pathname.startsWith(path + "/");
+    return pathname === path || (path !== "/" && pathname.startsWith(path + "/"));
+  };
+
+  const isSubActive = (subHref: string) => {
+    const [path, query] = subHref.split("?");
+    if (pathname !== path) return false;
+    if (!query) return true;
+    const tab = new URLSearchParams(query).get("tab");
+    return currentTab === tab || (!currentTab && tab === "about");
   };
 
   const handleLogout = async () => {
@@ -192,6 +249,121 @@ function SidebarContent({
               {section.items.map((item) => {
                 const active = isActive(item.href);
                 const Icon = item.icon;
+                const hasSubItems = item.subItems && item.subItems.length > 0;
+                const isExpanded = expandedItems[item.label] ?? true;
+
+                if (hasSubItems) {
+                  return (
+                    <li key={item.label} className="space-y-0.5">
+                      <div className="relative group flex items-center">
+                        <Link
+                          href={item.href}
+                          onClick={onClose}
+                          title={collapsed ? item.label : undefined}
+                          className={cn(
+                            "flex items-center rounded-xl transition-all duration-150 group relative flex-1",
+                            collapsed ? "justify-center p-2.5 mx-1" : "gap-3 px-3 py-2.5",
+                            active
+                              ? "bg-indigo-600/15 text-indigo-300 border border-indigo-500/30 shadow-sm"
+                              : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent"
+                          )}
+                        >
+                          {/* Left accent bar */}
+                          {active && !collapsed && (
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-indigo-500 rounded-full" />
+                          )}
+                          <Icon className={cn("shrink-0 transition-colors", collapsed ? "w-5 h-5" : "w-4 h-4", active ? "text-indigo-400" : "text-slate-500 group-hover:text-slate-300")} />
+                          {!collapsed && (
+                            <span className="text-sm font-semibold leading-none">{item.label}</span>
+                          )}
+
+                          {/* Hover Flyout for collapsed mode */}
+                          {collapsed && (
+                            <div className="absolute left-full ml-3 z-50 hidden group-hover:flex flex-col bg-slate-900 text-slate-100 text-xs p-2 rounded-xl shadow-2xl border border-slate-700 min-w-[170px] space-y-1">
+                              <span className="px-2 py-1 font-bold text-indigo-400 border-b border-slate-800 text-[11px] uppercase tracking-wider">
+                                {item.label}
+                              </span>
+                              {item.subItems!.map((sub) => {
+                                const SubIcon = sub.icon;
+                                const subActive = isSubActive(sub.href);
+                                return (
+                                  <Link
+                                    key={sub.href}
+                                    href={sub.href}
+                                    onClick={onClose}
+                                    className={cn(
+                                      "flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors",
+                                      subActive
+                                        ? "bg-indigo-600/20 text-indigo-300 font-semibold"
+                                        : "text-slate-300 hover:text-white hover:bg-slate-800"
+                                    )}
+                                  >
+                                    <SubIcon className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                                    <span>{sub.label}</span>
+                                  </Link>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </Link>
+
+                        {/* Expand toggle arrow on right */}
+                        {!collapsed && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              toggleExpand(item.label);
+                            }}
+                            className="p-2 text-slate-500 hover:text-slate-200 hover:bg-slate-800/80 rounded-lg transition-colors mr-1 shrink-0"
+                            title={isExpanded ? "Collapse" : "Expand"}
+                          >
+                            <ChevronDown
+                              className={cn(
+                                "w-3.5 h-3.5 transition-transform duration-200",
+                                isExpanded ? "rotate-0" : "-rotate-90"
+                              )}
+                            />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Sub-items list */}
+                      {!collapsed && isExpanded && (
+                        <ul className="ml-5 pl-3 py-1 space-y-1 border-l border-slate-800/80">
+                          {item.subItems!.map((sub) => {
+                            const SubIcon = sub.icon;
+                            const subActive = isSubActive(sub.href);
+                            return (
+                              <li key={sub.href}>
+                                <Link
+                                  href={sub.href}
+                                  onClick={onClose}
+                                  className={cn(
+                                    "flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all group",
+                                    subActive
+                                      ? "bg-indigo-600/20 text-indigo-300 font-semibold border border-indigo-500/20 shadow-xs"
+                                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                                  )}
+                                >
+                                  <SubIcon
+                                    className={cn(
+                                      "w-3.5 h-3.5 shrink-0 transition-colors",
+                                      subActive ? "text-indigo-400" : "text-slate-500 group-hover:text-slate-300"
+                                    )}
+                                  />
+                                  <span>{sub.label}</span>
+                                </Link>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                }
+
                 return (
                   <li key={item.href}>
                     <Link

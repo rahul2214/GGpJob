@@ -3,7 +3,6 @@
 import { useUser } from "@/contexts/user-context";
 import { ProfileForm } from "@/components/profile-form";
 import { Button } from "@/components/ui/button";
-import { ChangePasswordForm } from "@/components/change-password-form";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
@@ -193,7 +192,7 @@ export default function ProfilePage() {
         { id: 'overview', label: 'Overview', icon: LayoutDashboard, desc: 'Basic Information & Details' },
         { id: 'professional', label: 'Professional', icon: Briefcase, desc: 'Summary, Resume & Work Experience' },
         { id: 'details', label: 'Personal Info', icon: Users, desc: 'Background & Diversity Details' },
-        { id: 'security', label: 'Security', icon: ShieldCheck, desc: 'Password & Account Management' },
+        { id: 'security', label: 'Preferences', icon: ShieldCheck, desc: 'Currency & Account Settings' },
     ] as const;
 
     const availableTabs = user.role === 'Job Seeker' ? tabs : tabs.filter(t => t.id === 'overview' || t.id === 'security');
@@ -613,11 +612,7 @@ export default function ProfilePage() {
                                             </div>
                                         </ConfigCard>
 
-                                        <ConfigCard index={1} title="Account Security" subtitle="Update your password to keep your account safe." icon={ShieldCheck} color="slate">
-                                            <ChangePasswordForm />
-                                        </ConfigCard>
-
-                                        <ConfigCard index={2} title="Danger Zone" subtitle="Deactivate your account with a 30-day grace period." icon={Trash2} color="rose">
+                                        <ConfigCard index={1} title="Danger Zone" subtitle="Deactivate your account with a 30-day grace period." icon={Trash2} color="rose">
                                             <DeleteAccountButton />
                                         </ConfigCard>
                                     </div>
