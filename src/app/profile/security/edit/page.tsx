@@ -65,7 +65,7 @@ export default function MobileEditSecurityPage() {
                         </div>
                     </div>
                     <Link
-                        href="/settings?tab=password"
+                        href="/settings/password"
                         className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:underline shrink-0"
                     >
                         Go to Settings <ArrowRight className="w-3.5 h-3.5" />

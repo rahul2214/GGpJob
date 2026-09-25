@@ -16,7 +16,7 @@ export default function Footer() {
               <span>Jobs<span className="text-gradient-primary">Dart</span></span>
             </Link>
             <p className="text-sm text-slate-400 mb-6 leading-relaxed">
-              India&apos;s leading employee referral network. Connect directly with verified insiders at 500+ MNCs and bypass the ATS black hole.
+              An intelligent career growth and recruitment platform by Veltria. Connect directly with top recruiters, optimize your resume with AI-driven ATS scoring, and discover verified opportunities.
             </p>
             <div className="flex flex-wrap gap-2.5">
               <a
@@ -81,11 +81,12 @@ export default function Footer() {
           <div>
             <h4 className="font-bold text-white mb-4 text-sm uppercase tracking-wider">Account &amp; Legal</h4>
             <ul className="space-y-2.5 text-sm">
+              <li><Link href="/about" className="hover:text-violet-400 transition-colors">About Us</Link></li>
+              <li><Link href="/contact" className="hover:text-violet-400 transition-colors">Contact Us</Link></li>
               <li><Link href="/login" className="hover:text-violet-400 transition-colors">Candidate Sign In</Link></li>
               <li><Link href="/signup" className="hover:text-violet-400 transition-colors">Create Free Account</Link></li>
               <li><Link href="/privacy" className="hover:text-violet-400 transition-colors">Privacy Policy</Link></li>
               <li><Link href="/terms" className="hover:text-violet-400 transition-colors">Terms of Service</Link></li>
-              <li><Link href="/contact" className="hover:text-violet-400 transition-colors">Contact Support</Link></li>
             </ul>
           </div>
 

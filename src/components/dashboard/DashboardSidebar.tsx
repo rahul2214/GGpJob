@@ -75,11 +75,11 @@ const NAV_CONFIG: Record<string, NavSection[]> = {
           label: "Settings",
           href: "/settings",
           subItems: [
-            { icon: Info, label: "About", href: "/settings?tab=about" },
-            { icon: Headphones, label: "Support", href: "/settings?tab=support" },
-            { icon: KeyRound, label: "Change Password", href: "/settings?tab=password" },
+            { icon: Headphones, label: "Support", href: "/settings/support" },
+            { icon: KeyRound, label: "Change Password", href: "/settings/password" },
           ],
         },
+        { icon: Info, label: "About", href: "/about" },
       ],
     },
   ],
@@ -102,11 +102,11 @@ const NAV_CONFIG: Record<string, NavSection[]> = {
           label: "Settings",
           href: "/settings",
           subItems: [
-            { icon: Info, label: "About", href: "/settings?tab=about" },
-            { icon: Headphones, label: "Support", href: "/settings?tab=support" },
-            { icon: KeyRound, label: "Change Password", href: "/settings?tab=password" },
+            { icon: Headphones, label: "Support", href: "/settings/support" },
+            { icon: KeyRound, label: "Change Password", href: "/settings/password" },
           ],
         },
+        { icon: Info, label: "About", href: "/about" },
       ],
     },
   ],
@@ -179,14 +179,12 @@ function SidebarContent({
   const currentTab = searchParams.get("tab");
   const { user } = useUser();
 
-  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
-    Settings: true,
-  });
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
 
   const toggleExpand = (label: string) => {
     setExpandedItems((prev) => ({
       ...prev,
-      [label]: prev[label] === undefined ? false : !prev[label],
+      [label]: !prev[label],
     }));
   };
 
@@ -211,10 +209,12 @@ function SidebarContent({
 
   const isSubActive = (subHref: string) => {
     const [path, query] = subHref.split("?");
-    if (pathname !== path) return false;
-    if (!query) return true;
-    const tab = new URLSearchParams(query).get("tab");
-    return currentTab === tab || (!currentTab && tab === "about");
+    if (query) {
+      if (pathname !== path) return false;
+      const tab = new URLSearchParams(query).get("tab");
+      return currentTab === tab;
+    }
+    return pathname === path || (path !== "/" && pathname.startsWith(path + "/"));
   };
 
   const handleLogout = async () => {
@@ -250,7 +250,7 @@ function SidebarContent({
                 const active = isActive(item.href);
                 const Icon = item.icon;
                 const hasSubItems = item.subItems && item.subItems.length > 0;
-                const isExpanded = expandedItems[item.label] ?? true;
+                const isExpanded = expandedItems[item.label] ?? false;
 
                 if (hasSubItems) {
                   return (
