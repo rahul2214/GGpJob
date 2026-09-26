@@ -240,6 +240,44 @@ import theCompleteArchitectureOfAnAiJobApplicationPlatform from '@/content/blog/
 import theFutureOfJobApplicationsHumansVsAiAgents from '@/content/blog/the-future-of-job-applications-humans-vs-ai-agents';
 import willAiAgentsApplyForJobsForYou from '@/content/blog/will-ai-agents-apply-for-jobs-for-you';
 import willRecruitersUseAiToInterviewAiAgents from '@/content/blog/will-recruiters-use-ai-to-interview-ai-agents';
+import techLayoffs2026AiJobs from '@/content/blog/tech-layoffs-2026-ai-jobs';
+import ragAlternativesIn2026 from '@/content/blog/rag-alternatives-in-2026';
+import ragVsLongContextCag from '@/content/blog/rag-vs-long-context-cag';
+import whatIsAgenticRag from '@/content/blog/what-is-agentic-rag';
+import whatIsGraphrag from '@/content/blog/what-is-graphrag';
+import mcpVsRag from '@/content/blog/mcp-vs-rag';
+import ragVsFineTuning from '@/content/blog/rag-vs-fine-tuning';
+import textToSqlVsRag from '@/content/blog/text-to-sql-vs-rag';
+import aiMemoryVsRag from '@/content/blog/ai-memory-vs-rag';
+import hybridSearchVsVectorSearch from '@/content/blog/hybrid-search-vs-vector-search';
+import howToReduceRagHallucinations from '@/content/blog/how-to-reduce-rag-hallucinations';
+import ragForRecruitmentAndHiring from '@/content/blog/rag-for-recruitment-and-hiring';
+import howToBuildARagApplicationFromScratch from '@/content/blog/how-to-build-a-rag-application-from-scratch';
+import howToBuildARagChatbot from '@/content/blog/how-to-build-a-rag-chatbot';
+import advancedRagRetrievalTechniques from '@/content/blog/advanced-rag-retrieval-techniques';
+import whatIsMultimodalRag from '@/content/blog/what-is-multimodal-rag';
+import aiSearchEnginesVsRag from '@/content/blog/ai-search-engines-vs-rag';
+import howToBuildARagResumeAssistant from '@/content/blog/how-to-build-a-rag-resume-assistant';
+import ragForCompanyKnowledgeBases from '@/content/blog/rag-for-company-knowledge-bases';
+import contextRotExplained from '@/content/blog/context-rot-explained';
+import selfRagVsCorrectiveRagVsAdaptiveRag from '@/content/blog/self-rag-vs-corrective-rag-vs-adaptive-rag';
+import howToBuildAnAgenticRagSystem from '@/content/blog/how-to-build-an-agentic-rag-system';
+import howToBuildAGraphragApplication from '@/content/blog/how-to-build-a-graphrag-application';
+import howToBuildAnAiDatabaseAssistant from '@/content/blog/how-to-build-an-ai-database-assistant';
+import vectorDatabaseVsSearchEngineForAi from '@/content/blog/vector-database-vs-search-engine-for-ai';
+import howToReduceRagLatencyAndCost from '@/content/blog/how-to-reduce-rag-latency-and-cost';
+import commonRagMistakes from '@/content/blog/common-rag-mistakes';
+import ragForPdfs from '@/content/blog/rag-for-pdfs';
+import ragForResumeScreening from '@/content/blog/rag-for-resume-screening';
+import ragForJobRecommendations from '@/content/blog/rag-for-job-recommendations';
+import ragForInterviewPreparation from '@/content/blog/rag-for-interview-preparation';
+import howToEvaluateARagSystem from '@/content/blog/how-to-evaluate-a-rag-system';
+import ragRerankingExplained from '@/content/blog/rag-reranking-explained';
+import howVectorEmbeddingsWork from '@/content/blog/how-vector-embeddings-work';
+import whatIsModularRag from '@/content/blog/what-is-modular-rag';
+import canPostgresqlReplaceAVectorDatabase from '@/content/blog/can-postgresql-replace-a-vector-database';
+import webSearchVsRag from '@/content/blog/web-search-vs-rag';
+import howToBuildAnMcpServer from '@/content/blog/how-to-build-an-mcp-server';
 
 /**
  * Declaration order is not display order — getAllPosts sorts by date — so a new
@@ -458,6 +496,44 @@ export const BLOG_POSTS: BlogPost[] = [
   theFutureOfJobApplicationsHumansVsAiAgents,
   willAiAgentsApplyForJobsForYou,
   willRecruitersUseAiToInterviewAiAgents,
+  techLayoffs2026AiJobs,
+  ragAlternativesIn2026,
+  ragVsLongContextCag,
+  whatIsAgenticRag,
+  whatIsGraphrag,
+  mcpVsRag,
+  ragVsFineTuning,
+  textToSqlVsRag,
+  aiMemoryVsRag,
+  hybridSearchVsVectorSearch,
+  howToReduceRagHallucinations,
+  ragForRecruitmentAndHiring,
+  howToBuildARagApplicationFromScratch,
+  howToBuildARagChatbot,
+  advancedRagRetrievalTechniques,
+  whatIsMultimodalRag,
+  aiSearchEnginesVsRag,
+  howToBuildARagResumeAssistant,
+  ragForCompanyKnowledgeBases,
+  contextRotExplained,
+  selfRagVsCorrectiveRagVsAdaptiveRag,
+  howToBuildAnAgenticRagSystem,
+  howToBuildAGraphragApplication,
+  howToBuildAnAiDatabaseAssistant,
+  vectorDatabaseVsSearchEngineForAi,
+  howToReduceRagLatencyAndCost,
+  commonRagMistakes,
+  ragForPdfs,
+  ragForResumeScreening,
+  ragForJobRecommendations,
+  ragForInterviewPreparation,
+  howToEvaluateARagSystem,
+  ragRerankingExplained,
+  howVectorEmbeddingsWork,
+  whatIsModularRag,
+  canPostgresqlReplaceAVectorDatabase,
+  webSearchVsRag,
+  howToBuildAnMcpServer,
 ];
 
 export * from './types';
