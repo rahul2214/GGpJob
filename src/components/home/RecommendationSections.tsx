@@ -100,6 +100,12 @@ export default function RecommendationSections() {
       }
     }
     fetchJobs();
+
+    const handleJobApplied = () => {
+      fetchJobs();
+    };
+    window.addEventListener('job-applied', handleJobApplied);
+    return () => window.removeEventListener('job-applied', handleJobApplied);
   }, [user?.uuid]);
 
   // Compute recommendation scores for logged in candidate

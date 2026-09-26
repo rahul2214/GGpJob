@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/use-jobs";
+import { getJobUrl } from "@/lib/job-url";
 
 interface Notification {
     id: string;
@@ -153,7 +154,7 @@ export default function NotificationsPage() {
 
                                 if (notif.jobId) {
                                     return (
-                                        <Link key={notif.id} href={`/jobs/${notif.jobId}`} className="block">
+                                        <Link key={notif.id} href={getJobUrl({ id: notif.jobId, title: notif.jobTitle })} className="block">
                                             {content}
                                         </Link>
                                     );

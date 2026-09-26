@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { supabase } from "@/lib/supabase-client";
 import type { Job } from '@/lib/types';
 import axiosInstance from "@/lib/axios";
@@ -10,8 +10,16 @@ import axiosInstance from "@/lib/axios";
 // Axios-based fetcher with explicit typing for SWR
 const fetcher = (url: string) => axiosInstance.get(url) as any;
 
+export function invalidateJobsCache() {
+  mutate(
+    (key) => typeof key === 'string' && (key.startsWith('/jobs') || key.startsWith('/applications') || key.startsWith('/api/jobs')),
+    undefined,
+    { revalidate: true }
+  );
+}
+
 export function useJobs(params?: Record<string, any>) {
-  const { data, error, isLoading } = useSWR<Job[]>(() => {
+  const { data, error, isLoading, mutate: mutateThis } = useSWR<Job[]>(() => {
     if (!params) return '/jobs';
     
     // Skip fetching recommended or referral jobs if userId isn't available yet
@@ -21,13 +29,14 @@ export function useJobs(params?: Record<string, any>) {
     return `/jobs?${queryString}`;
   }, fetcher, {
     revalidateOnFocus: false,
-    dedupingInterval: 60000, 
+    dedupingInterval: 5000, 
   });
 
   return {
     jobs: data,
     isLoading,
-    isError: error
+    isError: error,
+    mutateJobs: mutateThis
   };
 }
 
@@ -61,7 +70,7 @@ export function useApplications(params?: Record<string, any> | null) {
       fetcher,
       {
           revalidateOnFocus: false,
-          dedupingInterval: 60000,
+          dedupingInterval: 5000,
       }
   );
 

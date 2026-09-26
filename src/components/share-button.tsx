@@ -4,6 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Share2 } from "lucide-react";
+import { getJobUrl } from "@/lib/job-url";
 
 interface ShareButtonProps {
     jobId?: string;
@@ -36,10 +37,12 @@ export function ShareButton({ jobId, jobTitle, companyName, variant, className }
     const handleShare = async (e: React.MouseEvent<HTMLButtonElement | HTMLSpanElement>) => {
         e.stopPropagation();
         e.preventDefault();
-        const effectiveJobId = jobId || (typeof window !== 'undefined' ? window.location.pathname.split('/jobs/')[1]?.split('?')[0] : '');
-        const jobUrl = `${window.location.origin}/jobs/${effectiveJobId}`;
         const pageH1 = typeof document !== 'undefined' ? document.querySelector('h1')?.textContent : '';
         const titleText = (jobTitle && jobTitle !== 'Job Details') ? jobTitle : (pageH1 || (typeof document !== 'undefined' ? document.title : 'Job Opening'));
+        let jobUrl = typeof window !== 'undefined' ? window.location.href : '';
+        if (jobId) {
+            jobUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}${getJobUrl({ id: jobId, title: jobTitle || titleText })}`;
+        }
         const companyText = companyName ? ` at ${companyName}` : '';
         const shareData = {
             title: `Job Opening: ${titleText}${companyText}`,

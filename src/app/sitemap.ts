@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { SITE_URL } from '@/lib/site';
 import { getLocationFacets } from '@/lib/job-taxonomy';
 import { getAllPosts, getTotalPages } from '@/lib/blog';
+import { jobTitleToSlug } from '@/lib/job-url';
 
 // Shared with metadataBase and every canonical tag, so the sitemap can never
 // advertise a different host than the pages themselves claim.
@@ -23,6 +24,7 @@ const staticRoutes: MetadataRoute.Sitemap = [
   { url: `${baseUrl}/resume-builder`, changeFrequency: 'weekly', priority: 0.9 },
   { url: `${baseUrl}/blog`, changeFrequency: 'weekly', priority: 0.8 },
   { url: `${baseUrl}/communities`, changeFrequency: 'daily', priority: 0.7 },
+  { url: `${baseUrl}/about`, changeFrequency: 'monthly', priority: 0.6 },
   { url: `${baseUrl}/company/login`, changeFrequency: 'monthly', priority: 0.6 },
   { url: `${baseUrl}/company/signup`, changeFrequency: 'monthly', priority: 0.5 },
   { url: `${baseUrl}/contact`, changeFrequency: 'monthly', priority: 0.5 },
@@ -44,7 +46,7 @@ async function getJobEntries(): Promise<MetadataRoute.Sitemap> {
     // `jobs` has no updated_at column; posted_at is the only timestamp available.
     const { data, error } = await supabaseAdmin
       .from('jobs')
-      .select('uuid, posted_at')
+      .select('uuid, title, posted_at')
       .eq('status', 'active')
       .gt('expires_at', new Date().toISOString())
       .order('posted_at', { ascending: false })
@@ -55,12 +57,12 @@ async function getJobEntries(): Promise<MetadataRoute.Sitemap> {
       return [];
     }
 
-    const rows = (data || []) as Array<{ uuid: string | null; posted_at: string | null }>;
+    const rows = (data || []) as Array<{ uuid: string | null; title: string | null; posted_at: string | null }>;
 
     return rows
       .filter(job => Boolean(job.uuid))
       .map(job => ({
-        url: `${baseUrl}/jobs/${job.uuid}`,
+        url: `${baseUrl}/jobs/${jobTitleToSlug(job.title)}/${job.uuid}`,
         lastModified: new Date(job.posted_at || Date.now()),
         changeFrequency: 'daily' as const,
         priority: 0.8,

@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChatDrawer } from "@/components/chat/ChatDrawer";
+import { getJobUrl } from "@/lib/job-url";
 
 const statusConfig: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
   "Under Review":         { label: "Under Review",        color: "text-blue-700",    bg: "bg-blue-100",    icon: Clock },
@@ -147,7 +148,7 @@ export default function ApplicationsPage() {
                           <Calendar className="w-3.5 h-3.5" />
                           Applied {format(new Date(app.appliedAt), "PPP")}
                         </span>
-                        <Link href={`/jobs/${app.jobId}`}
+                        <Link href={getJobUrl({ id: app.jobId, title: app.jobTitle })}
                           className="flex items-center gap-1 text-indigo-600 hover:text-indigo-700 text-xs font-semibold transition-colors">
                           View Job <ArrowRight className="w-3.5 h-3.5" />
                         </Link>

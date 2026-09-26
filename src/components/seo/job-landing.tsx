@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { MapPin, Briefcase, Building2, Wallet } from 'lucide-react';
 import type { JobSummary, LocationFacet } from '@/lib/job-taxonomy';
 import { getAllPosts } from '@/lib/blog';
+import { getJobUrl } from '@/lib/job-url';
 
 function formatSalary(job: JobSummary): string | null {
   if (!job.salaryMin || job.salaryMin <= 0) return null;
@@ -45,7 +46,7 @@ export function JobList({ jobs }: { jobs: JobSummary[] }) {
         return (
           <li key={job.uuid}>
             <Link
-              href={`/jobs/${job.uuid}`}
+              href={getJobUrl(job)}
               className="block p-5 rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200/70 dark:border-slate-800/70 hover:border-indigo-300 hover:shadow-md transition-all"
             >
               <h3 className="font-bold text-base sm:text-lg text-slate-900 dark:text-white leading-snug">
@@ -190,7 +191,7 @@ export function buildItemListSchema(jobs: JobSummary[], pageUrl: string, siteOri
     itemListElement: jobs.slice(0, 50).map((job, idx) => ({
       '@type': 'ListItem',
       position: idx + 1,
-      url: `${siteOrigin}/jobs/${job.uuid}`,
+      url: `${siteOrigin}${getJobUrl(job)}`,
       name: job.companyName ? `${job.title} at ${job.companyName}` : job.title,
     })),
   };

@@ -4,7 +4,7 @@ import { notFound, useParams, useSearchParams, useRouter } from 'next/navigation
 import type { Job, Application } from "@/lib/types";
 import {
     Briefcase, MapPin, Building, Users,
-    ChevronRight, Award, LayoutList, CheckCircle2,
+    ChevronRight, Award, LayoutList, CheckCircle2, CheckCircle, ExternalLink,
     User as UserIcon, Linkedin,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { ApplyButton } from './apply-button';
 import JobCard from '@/components/job-card';
 import { useUser } from '@/contexts/user-context';
 import { useState, useEffect, Suspense, useCallback, useMemo, useRef } from 'react';
+import { mutate } from 'swr';
 import JobDetailsLoading from './loading';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -99,7 +100,7 @@ function renderCompanyLogo(job: Job, sizeClass: string = "w-20 h-20 text-3xl") {
     );
 }
 
-function JobDetailsContent() {
+function JobDetailsContent({ jobId }: { jobId?: string } = {}) {
     const { user } = useUser();
     const { toast } = useToast();
     const router = useRouter();
@@ -109,7 +110,7 @@ function JobDetailsContent() {
     const [loading, setLoading] = useState(true);
     const params = useParams();
     const searchParams = useSearchParams();
-    const id = params.id as string;
+    const id = (jobId || params.jobId || params.id) as string;
 
     // Visibility tracking for footer
     const [isApplyAreaVisible, setIsApplyAreaVisible] = useState(false);
@@ -140,7 +141,49 @@ function JobDetailsContent() {
         return 'Not Disclosed';
     }, []);
 
-    const appliedJobIds = useMemo(() => new Set((userApplications || []).map(app => app.jobId)), [userApplications]);
+    const appliedJobIds = useMemo(() => {
+        const set = new Set<string | number>();
+        (userApplications || []).forEach(app => {
+            if (app.jobId) set.add(app.jobId);
+            if (app.jobNumericId) {
+                set.add(app.jobNumericId);
+                set.add(String(app.jobNumericId));
+            }
+            if ((app as any).jobs?.uuid) set.add((app as any).jobs.uuid);
+            if ((app as any).jobs?.id) {
+                set.add((app as any).jobs.id);
+                set.add(String((app as any).jobs.id));
+            }
+        });
+        return set;
+    }, [userApplications]);
+
+    const isJobApplied = useMemo(() => {
+        if (job?.isApplied) return true;
+        if (!id && !job) return false;
+        const checks = [
+            id,
+            job?.uuid,
+            job?.id ? String(job.id) : null,
+            job?.id ? Number(job.id) : null,
+        ].filter(Boolean);
+        return checks.some(val => appliedJobIds.has(val as any));
+    }, [job?.isApplied, job?.uuid, job?.id, id, appliedJobIds]);
+
+    // Proactively fetch all applications for the logged-in user to ensure accurate applied state
+    useEffect(() => {
+        if (!user?.uuid) return;
+        let isMounted = true;
+        fetch(`/api/applications?userId=${user.uuid}`)
+            .then(res => res.ok ? res.json() : [])
+            .then(data => {
+                if (isMounted && Array.isArray(data)) {
+                    setUserApplications(data);
+                }
+            })
+            .catch(err => console.error("[JOB_DETAILS] Failed to load user applications:", err));
+        return () => { isMounted = false; };
+    }, [user?.uuid]);
 
     const isCorporateEmail = useCallback((email?: string | null) => {
         if (!email) return false;
@@ -152,7 +195,7 @@ function JobDetailsContent() {
     // Filter related jobs: remove those the user has already applied to
     const relatedJobs = useMemo(() => {
         if (user?.role === 'Job Seeker' && (allRelatedJobs || []).length > 0) {
-            return (allRelatedJobs || []).filter(j => !appliedJobIds.has(j.uuid));
+            return (allRelatedJobs || []).filter(j => !appliedJobIds.has(j.uuid) && !appliedJobIds.has(String(j.id)));
         }
         return allRelatedJobs || [];
     }, [allRelatedJobs, appliedJobIds, user]);
@@ -175,7 +218,7 @@ function JobDetailsContent() {
 
             // If the API says we've applied, add it to our local state
             if (data?.isApplied) {
-                setUserApplications([{ jobId: id } as any]);
+                setUserApplications(prev => [...prev, { jobId: data.uuid || id, jobNumericId: data.id } as any]);
             }
         } catch (error) {
             console.error(error);
@@ -265,26 +308,48 @@ function JobDetailsContent() {
             return;
         }
 
-        if (appliedJobIds.has(id) || user.role !== 'Job Seeker') {
+        const targetJobId = job?.uuid || id;
+
+        // If already applied or non-job-seeker, immediately open the destination link
+        if (isJobApplied || user.role !== 'Job Seeker') {
             window.open(url, '_blank', 'noopener,noreferrer');
             return;
         }
+
+        // Mark as applied locally immediately for instant UX responsiveness
+        setJob(prev => prev ? {
+            ...prev,
+            applicantCount: (prev.applicantCount || 0) + 1,
+            isApplied: true
+        } : null);
+        setUserApplications(prev => [...prev, { jobId: targetJobId, jobNumericId: job?.id } as any]);
+
+        toast({
+            title: "Application Tracked",
+            description: "Opening job site in a new tab...",
+        });
 
         try {
             const response = await fetch('/api/applications', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ jobId: id, userId: user.uuid }),
+                body: JSON.stringify({ jobId: targetJobId, userId: user.uuid }),
             });
 
             if (response.ok || response.status === 409) {
-                // Refresh only the applicant count and apps list locally
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('job-applied', { detail: { jobId: targetJobId, jobPk: job?.id } }));
+                }
+                mutate(
+                    (key) => typeof key === 'string' && (key.startsWith('/jobs') || key.startsWith('/applications') || key.startsWith('/api/jobs')),
+                    undefined,
+                    { revalidate: true }
+                );
                 const res = await fetch(`/api/applications?userId=${user.uuid}`);
                 if (res.ok) {
                     const data = await res.json();
-                    setUserApplications(Array.isArray(data) ? data : []);
+                    if (Array.isArray(data)) setUserApplications(data);
                 }
-                // Refresh job info to update applicant count
                 fetchJobInfo();
             }
         } catch (error) {
@@ -301,7 +366,15 @@ function JobDetailsContent() {
                 applicantCount: (prev.applicantCount || 0) + 1,
                 isApplied: true
             } : null);
-            setUserApplications(prev => [...prev, { jobId: id } as any]);
+            setUserApplications(prev => [...prev, { jobId: job.uuid || id, jobNumericId: job.id } as any]);
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('job-applied', { detail: { jobId: job.uuid || id, jobPk: job.id } }));
+            }
+            mutate(
+                (key) => typeof key === 'string' && (key.startsWith('/jobs') || key.startsWith('/applications') || key.startsWith('/api/jobs')),
+                undefined,
+                { revalidate: true }
+            );
         }
     }, [job, id]);
 
@@ -400,16 +473,33 @@ function JobDetailsContent() {
                                         <div className="min-w-[120px]">
                                             {job.jobLink ? (
                                                 <Button
-                                                    className="w-full bg-[#2e5bff] hover:bg-blue-700 text-white rounded-full font-bold h-11 text-base px-10"
+                                                    className={cn(
+                                                        "w-full rounded-full font-bold h-11 text-base px-8 transition-all duration-300 flex items-center justify-center gap-2",
+                                                        isJobApplied
+                                                            ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-500/20"
+                                                            : "bg-[#2e5bff] hover:bg-blue-700 text-white shadow-sm shadow-blue-500/20"
+                                                    )}
                                                     onClick={(e) => handleExternalApply(e, job.jobLink!)}
+                                                    title={isJobApplied ? "Already applied — click to visit website" : "Apply on Website"}
                                                 >
-                                                    Apply on Website
+                                                    {isJobApplied ? (
+                                                        <>
+                                                            <CheckCircle className="h-4 w-4 shrink-0" />
+                                                            <span>Applied</span>
+                                                            <ExternalLink className="h-3.5 w-3.5 opacity-80 shrink-0 ml-1" />
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <span>Apply on Website</span>
+                                                            <ExternalLink className="h-3.5 w-3.5 opacity-80 shrink-0 ml-1" />
+                                                        </>
+                                                    )}
                                                 </Button>
                                             ) : (
                                                 <ApplyButton 
                                                     job={job} 
                                                     variant="desktop" 
-                                                    isApplied={appliedJobIds.has(id)} 
+                                                    isApplied={isJobApplied} 
                                                     onSuccess={handleApplySuccess}
                                                 />
                                             )}
@@ -506,15 +596,15 @@ function JobDetailsContent() {
                                     {/* Candidate Skill Match & Compatibility Panel for Job Seekers */}
                                     {user?.role === 'Job Seeker' && (job.requiredSkills || job.requirements) && ((job.requiredSkills?.length || 0) > 0 || (job.requirements?.length || 0) > 0) && (
                                         <div className={cn(
-                                            "p-6 rounded-2xl border backdrop-blur-md my-6 transition-all shadow-sm relative overflow-hidden",
-                                            matchData.tier === 'top' && "bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-emerald-600/10 border-emerald-500/30",
-                                            matchData.tier === 'strong' && "bg-gradient-to-br from-indigo-500/10 via-blue-500/5 to-indigo-600/10 border-indigo-500/30",
-                                            matchData.tier === 'potential' && "bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-600/10 border-amber-500/30",
-                                            matchData.tier === 'low' && "bg-gradient-to-br from-rose-500/10 via-purple-500/5 to-rose-600/10 border-rose-500/30"
+                                            "p-6 rounded-2xl border my-6 transition-all shadow-sm relative overflow-hidden bg-white dark:bg-slate-900",
+                                            matchData.tier === 'top' && "border-emerald-500",
+                                            matchData.tier === 'strong' && "border-indigo-500",
+                                            matchData.tier === 'potential' && "border-amber-500",
+                                            matchData.tier === 'low' && "border-rose-500"
                                         )}>
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                 <div className="flex items-center gap-3.5">
-                                                    <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 flex items-center justify-center shadow-sm shrink-0">
+                                                    <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center shadow-sm shrink-0">
                                                         {matchData.tier === 'top' && <Sparkles className="w-6 h-6 text-emerald-500 animate-pulse" />}
                                                         {matchData.tier === 'strong' && <Zap className="w-6 h-6 text-indigo-500" />}
                                                         {matchData.tier === 'potential' && <Target className="w-6 h-6 text-amber-500" />}
@@ -543,7 +633,7 @@ function JobDetailsContent() {
                                             </div>
 
                                             {/* Matched vs Missing Skills Breakdown */}
-                                            <div className="mt-4 pt-4 border-t border-slate-200/50 dark:border-slate-800/50 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div>
                                                     <div className="text-[11px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-2 flex items-center gap-1.5">
                                                         <CheckCircle2 className="w-3.5 h-3.5" />
@@ -654,15 +744,32 @@ function JobDetailsContent() {
                                         {job.jobLink ? (
                                             <Button
                                                 size="lg"
-                                                className="w-full bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full"
+                                                className={cn(
+                                                    "w-full text-white font-bold rounded-full transition-all duration-300 flex items-center justify-center gap-2",
+                                                    isJobApplied
+                                                        ? "bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-500/20"
+                                                        : "bg-[#2e5bff] hover:bg-[#1e4be0] shadow-sm shadow-blue-500/20"
+                                                )}
                                                 onClick={(e) => handleExternalApply(e, job.jobLink!)}
+                                                title={isJobApplied ? "Already applied — click to visit website" : "Apply on Website"}
                                             >
-                                                Apply on Website
+                                                {isJobApplied ? (
+                                                    <>
+                                                        <CheckCircle className="h-4 w-4 shrink-0" />
+                                                        <span>Applied</span>
+                                                        <ExternalLink className="h-3.5 w-3.5 opacity-80 shrink-0 ml-1" />
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span>Apply on Website</span>
+                                                        <ExternalLink className="h-3.5 w-3.5 opacity-80 shrink-0 ml-1" />
+                                                    </>
+                                                )}
                                             </Button>
                                         ) : (
                                             <ApplyButton 
                                                 job={job} 
-                                                isApplied={appliedJobIds.has(id)} 
+                                                isApplied={isJobApplied} 
                                                 onSuccess={handleApplySuccess}
                                             />
                                         )}
@@ -768,8 +875,7 @@ function JobDetailsContent() {
                                         <JobCard
                                             key={relatedJob.id}
                                             job={relatedJob}
-                                            isApplied={appliedJobIds.has(relatedJob.uuid)}
-
+                                            isApplied={appliedJobIds.has(relatedJob.uuid) || appliedJobIds.has(String(relatedJob.id))}
                                         />
                                     ))}
                                 </div>
@@ -794,15 +900,32 @@ function JobDetailsContent() {
                     {job.jobLink ? (
                         <Button
                             size="lg"
-                            className="w-full bg-[#2e5bff] hover:bg-[#1e4be0] text-white font-bold rounded-full"
+                            className={cn(
+                                "w-full text-white font-bold rounded-full transition-all duration-300 flex items-center justify-center gap-2",
+                                isJobApplied
+                                    ? "bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-500/20"
+                                    : "bg-[#2e5bff] hover:bg-[#1e4be0] shadow-sm shadow-blue-500/20"
+                            )}
                             onClick={(e) => handleExternalApply(e, job.jobLink!)}
+                            title={isJobApplied ? "Already applied — click to visit website" : "Apply on Website"}
                         >
-                            Apply on Website
+                            {isJobApplied ? (
+                                <>
+                                    <CheckCircle className="h-4 w-4 shrink-0" />
+                                    <span>Applied</span>
+                                    <ExternalLink className="h-3.5 w-3.5 opacity-80 shrink-0 ml-1" />
+                                </>
+                            ) : (
+                                <>
+                                    <span>Apply on Website</span>
+                                    <ExternalLink className="h-3.5 w-3.5 opacity-80 shrink-0 ml-1" />
+                                </>
+                            )}
                         </Button>
                     ) : (
                         <ApplyButton 
                             job={job} 
-                            isApplied={appliedJobIds.has(id)} 
+                            isApplied={isJobApplied} 
                             onSuccess={handleApplySuccess}
                         />
                     )}
@@ -812,10 +935,10 @@ function JobDetailsContent() {
     );
 }
 
-export default function JobDetailsPage() {
+export default function JobDetailsPage({ jobId }: { jobId?: string } = {}) {
     return (
         <Suspense fallback={<JobDetailsLoading />}>
-            <JobDetailsContent />
+            <JobDetailsContent jobId={jobId} />
         </Suspense>
     )
 }

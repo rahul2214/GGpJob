@@ -43,8 +43,8 @@ export function calculateSkillMatch(
       tier: 'top',
       tierLabel: 'Top Rated Candidate',
       tierTagline: 'Matches all general requirements for this position.',
-      badgeBg: 'bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-emerald-600/15 text-emerald-700 dark:text-emerald-300',
-      borderColor: 'border-emerald-500/40 dark:border-emerald-500/30',
+      badgeBg: 'text-emerald-700 dark:text-emerald-400',
+      borderColor: 'border-emerald-500 dark:border-emerald-400',
       badgeText: 'Top Rated Candidate',
       iconName: 'sparkles'
     };
@@ -87,32 +87,32 @@ export function calculateSkillMatch(
     tier = 'top';
     tierLabel = 'Top Rated Candidate';
     tierTagline = `Spot on! You match ${matchedSkills.length} of ${normalizedJobSkills.length} required skills.`;
-    badgeBg = 'bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-emerald-600/20 text-emerald-800 dark:text-emerald-200';
-    borderColor = 'border-emerald-500/50 dark:border-emerald-400/40 shadow-emerald-500/10';
+    badgeBg = 'text-emerald-700 dark:text-emerald-400';
+    borderColor = 'border-emerald-500 dark:border-emerald-400';
     badgeText = 'Top Rated Candidate';
     iconName = 'sparkles';
   } else if (percentage >= 70) {
     tier = 'strong';
     tierLabel = 'Strong Match';
     tierTagline = `Great fit! You match ${matchedSkills.length} of ${normalizedJobSkills.length} key skills.`;
-    badgeBg = 'bg-gradient-to-r from-indigo-500/20 to-blue-500/20 text-indigo-900 dark:text-indigo-200';
-    borderColor = 'border-indigo-500/50 dark:border-indigo-400/40 shadow-indigo-500/10';
+    badgeBg = 'text-indigo-700 dark:text-indigo-400';
+    borderColor = 'border-indigo-500 dark:border-indigo-400';
     badgeText = 'Strong Match';
     iconName = 'zap';
   } else if (percentage >= 50) {
     tier = 'potential';
     tierLabel = 'Potential Match';
     tierTagline = `Good base! You match ${matchedSkills.length} of ${normalizedJobSkills.length} skills (${missingSkills.length} skill gap).`;
-    badgeBg = 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-900 dark:text-amber-200';
-    borderColor = 'border-amber-500/50 dark:border-amber-400/40 shadow-amber-500/10';
+    badgeBg = 'text-amber-700 dark:text-amber-400';
+    borderColor = 'border-amber-500 dark:border-amber-400';
     badgeText = 'Potential Match';
     iconName = 'target';
   } else {
     tier = 'low';
     tierLabel = 'Skill Match';
     tierTagline = `You match ${matchedSkills.length} of ${normalizedJobSkills.length} required skills. Add skills to boost match score.`;
-    badgeBg = 'bg-gradient-to-r from-rose-500/15 to-purple-500/15 text-rose-900 dark:text-rose-200';
-    borderColor = 'border-rose-500/40 dark:border-rose-400/30';
+    badgeBg = 'text-rose-700 dark:text-rose-400';
+    borderColor = 'border-rose-500 dark:border-rose-400';
     badgeText = 'Skill Gap Alert';
     iconName = 'compass';
   }

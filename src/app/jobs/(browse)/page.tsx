@@ -7,7 +7,7 @@ import JobCard from "@/components/job-card";
 import { JobFilters } from "@/components/job-filters";
 import { useUser } from "@/contexts/user-context";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useJobs } from "@/hooks/use-jobs";
+import { useJobs, useApplications } from "@/hooks/use-jobs";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -303,6 +303,29 @@ function JobSearchContent() {
   const [page, setPage] = useState(1);
   const [savedJobUuids, setSavedJobUuids] = useState<Set<string>>(new Set());
 
+  const { applications, mutateApplications } = useApplications(user?.uuid ? { userId: user.uuid } : null);
+  const appliedJobIds = useMemo(() => {
+    const set = new Set<string>();
+    if (!applications || !Array.isArray(applications)) return set;
+    applications.forEach((app: any) => {
+      if (app.job_pk) set.add(String(app.job_pk));
+      if (app.jobId) set.add(String(app.jobId));
+      if (app.jobNumericId) set.add(String(app.jobNumericId));
+      if (app.jobs?.uuid) set.add(String(app.jobs.uuid));
+      if (app.jobs?.id) set.add(String(app.jobs.id));
+    });
+    return set;
+  }, [applications]);
+
+  // Listen for job-applied events across the app to update state immediately
+  useEffect(() => {
+    const handleJobApplied = () => {
+      mutateApplications();
+    };
+    window.addEventListener('job-applied', handleJobApplied);
+    return () => window.removeEventListener('job-applied', handleJobApplied);
+  }, [mutateApplications]);
+
   const rawTab = (searchParams.get("view") || "all") as TabKey;
   const activeTab: TabKey = TABS.includes(rawTab) ? rawTab : "all";
   const config = TAB_CONFIG[activeTab];
@@ -375,7 +398,12 @@ function JobSearchContent() {
       return true;
     });
 
-    // 2. If user is a Jobseeker and openWorldwide is false, only show jobs from their country
+    // 2. Exclude jobs that the user has already applied to
+    if (appliedJobIds.size > 0) {
+      all = all.filter((j: Job) => !appliedJobIds.has(String(j.id)) && !appliedJobIds.has(String(j.uuid)));
+    }
+
+    // 3. If user is a Jobseeker and openWorldwide is false, only show jobs from their country
     if ((user?.role === "Job Seeker" || !user?.role) && user?.openWorldwide === false && user?.country) {
       all = all.filter((j: Job) => matchesCountry(j, user.country));
     }
@@ -446,7 +474,7 @@ function JobSearchContent() {
       default:
         return searched;
     }
-  }, [rawJobs, activeTab, user, searchParams]);
+  }, [rawJobs, activeTab, user, searchParams, appliedJobIds]);
 
   // Pagination slice for non-all tabs (client-side)
   const ITEMS_PER_PAGE = 24;

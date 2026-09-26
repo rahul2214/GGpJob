@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Trash2, Search, MoreHorizontal, Eye, Share2 } from "lucide-react";
 import { format } from "date-fns";
+import { getJobUrl } from "@/lib/job-url";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -149,7 +150,7 @@ export default function ManageJobsPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                      <DropdownMenuItem asChild>
-                       <Link href={`/jobs/${job.uuid}?view=admin`}>
+                       <Link href={`${getJobUrl(job)}?view=admin`}>
                           <Eye className="mr-2 h-4 w-4" />
                           View Details
                        </Link>

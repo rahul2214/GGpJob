@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { CheckCircle, LoaderCircle, Ban, AlertTriangle, Sparkles, ArrowRight } from 'lucide-react';
 import { Job } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { mutate } from 'swr';
 import {
     Dialog,
     DialogContent,
@@ -66,6 +67,14 @@ export function ApplyButton({ job, variant = 'default', isApplied: propIsApplied
             }
             
             setIsApplied(true);
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('job-applied', { detail: { jobId: job.uuid, jobPk: job.id } }));
+            }
+            mutate(
+                (key) => typeof key === 'string' && (key.startsWith('/jobs') || key.startsWith('/applications') || key.startsWith('/api/jobs')),
+                undefined,
+                { revalidate: true }
+            );
             onSuccess?.();
             toast({
                 title: "Application Submitted!",

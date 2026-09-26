@@ -1,7 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { supabaseAdmin } from '@/lib/supabase-admin';
-import JobDetailsClient from './job-details-client';
+import JobDetailsClient from '../job-details-client';
 import {
   SITE_URL,
   buildJobPostingSchema,
@@ -9,73 +8,35 @@ import {
   jobLocationLabel,
   toPlainText,
   truncate,
-  type JobLocation,
 } from '@/lib/job-posting-schema';
+import { getJobDetails } from '@/lib/job-lookup';
+import { jobTitleToSlug } from '@/lib/job-url';
 
 type Props = {
-  params: { id: string };
+  params: { id: string; jobId: string };
 };
 
 const OG_IMAGE = `${SITE_URL}/og-image.png`;
 
-/**
- * Loads the job with everything the JobPosting markup and metadata need.
- * `generateMetadata` and the page body both call this; Next dedupes the
- * request within a render pass, so the row is fetched once.
- */
-type JobLookup =
-  | { status: 'ok'; job: any; locations: JobLocation[] }
-  | { status: 'not-found' }
-  | { status: 'error' };
-
-async function getJob(id: string): Promise<JobLookup> {
-  const isNumericId = /^\d+$/.test(id);
-
-  const { data, error } = await supabaseAdmin
-    .from('jobs')
-    .select('*, job_types!job_type_pk(name), workplace_types!workplace_type_pk(name), currencies!currency_id(code)')
-    .eq(isNumericId ? 'id' : 'uuid', id)
-    .maybeSingle();
-
-  if (error) {
-    console.error('[JOB_PAGE] Failed to load job:', error.message);
-    return { status: 'error' };
-  }
-  if (!data) return { status: 'not-found' };
-
-  // Locations live in the job_locations join table, mirroring the jobs API.
-  let locations: JobLocation[] = [];
-  const { data: locRows, error: locError } = await supabaseAdmin
-    .from('job_locations')
-    .select('countries:country_id(name), states_provinces:state_province_id(name), cities:city_id(name)')
-    .eq('job_id', data.id);
-
-  if (locError) {
-    console.error('[JOB_PAGE] Failed to load job locations:', locError.message);
-  } else {
-    locations = (locRows || []).map((row: any) => ({
-      city: row.cities?.name ?? null,
-      state: row.states_provinces?.name ?? null,
-      country: row.countries?.name ?? null,
-    }));
-  }
-
-  return { status: 'ok', job: data, locations };
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const result = await getJob(params.id);
-  const canonical = `${SITE_URL}/jobs/${params.id}`;
+  const result = await getJobDetails(params.jobId);
 
-  // Raised here rather than in the component so the response carries a real 404
-  // status instead of a soft 404, which Google penalises.
   if (result.status === 'not-found') notFound();
 
-  if (result.status === 'error') {
+  if (result.status === 'error' || !result.job) {
     return { title: 'Job Details', robots: { index: false, follow: true } };
   }
 
   const { job, locations } = result;
+  const canonicalSlug = jobTitleToSlug(job.title);
+  const requestSlug = decodeURIComponent(params.id || '').toLowerCase();
+  if (requestSlug !== canonicalSlug.toLowerCase()) {
+    notFound();
+  }
+
+  const targetId = job.uuid || params.jobId;
+  const canonical = `${SITE_URL}/jobs/${canonicalSlug}/${targetId}`;
+
   const location = jobLocationLabel(job, locations);
   const title = location
     ? `${job.title} at ${job.company_name} — ${location}`
@@ -135,12 +96,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function JobDetailsPage({ params }: Props) {
-  const result = await getJob(params.id);
+  const result = await getJobDetails(params.jobId);
   if (result.status === 'not-found') notFound();
+  if (result.status === 'error' || !result.job) notFound();
 
-  const job = result.status === 'ok' ? result.job : null;
-  const locations = result.status === 'ok' ? result.locations : [];
-  const canonical = `${SITE_URL}/jobs/${params.id}`;
+  const { job, locations } = result;
+  const canonicalSlug = jobTitleToSlug(job.title);
+  const requestSlug = decodeURIComponent(params.id || '').toLowerCase();
+  const targetId = job.uuid || params.jobId;
+
+  // Strict SEO URL enforcement: ONLY the exact canonical title slug (/jobs/{job-title}/{job-uuid}) is allowed.
+  // Any invalid or placeholder slug (such as "...", dots, or arbitrary text) returns 404 Not Found.
+  if (requestSlug !== canonicalSlug.toLowerCase()) {
+    notFound();
+  }
+
+  const canonical = `${SITE_URL}/jobs/${canonicalSlug}/${targetId}`;
 
   // Only advertise live listings to Google Jobs — markup for an expired role is
   // a structured data violation — and only when Google can actually place them.
@@ -174,7 +145,7 @@ export default async function JobDetailsPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <JobDetailsClient />
+      <JobDetailsClient jobId={targetId} />
     </>
   );
 }

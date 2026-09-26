@@ -4,7 +4,7 @@ import type { Job } from '@/lib/types';
 import { getSubscriptionInfo, expiredResponse } from '@/lib/subscription';
 import { intelligentSearchJobs } from '@/lib/intelligent-search';
 import { matchesCountry } from '@/lib/recommendation-engine';
-import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
+import { requireAuth, isOwnerOrAdmin, getAuthenticatedUser } from '@/lib/auth-server';
 import {
     WORLDWIDE_COUNTRY_ID,
     isWorldwideCountryId,
@@ -207,27 +207,57 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = request.nextUrl;
 
-        const userId = searchParams.get('userId');
+        let effectiveUserId = searchParams.get('userId');
+        if (!effectiveUserId) {
+            try {
+                const authUser = await getAuthenticatedUser(request);
+                if (authUser) {
+                    effectiveUserId = String(authUser.uuid || authUser.id);
+                }
+            } catch (e) {
+                // Ignore auth errors for public requests
+            }
+        }
+
         let appliedJobPks: number[] = [];
+        let appliedJobUuids: string[] = [];
         let user: any = null;
 
-        if (userId) {
-            const isUuid = userId.includes('-');
-            const { data: jobseeker } = await supabaseAdmin
+        if (effectiveUserId) {
+            const isNumeric = /^\d+$/.test(String(effectiveUserId));
+            const isUuid = String(effectiveUserId).includes('-');
+            let seekerQuery = supabaseAdmin
                 .from('jobseekers')
                 .select(`
                     id, uuid, open_worldwide, country, current_country_id,
                     countries:current_country_id(name),
                     cities:current_city_id(name, states_provinces:state_province_id(name, countries:country_id(name)))
-                `)
-                .eq(isUuid ? 'uuid' : 'id', userId)
-                .maybeSingle();
+                `);
+
+            if (isNumeric) {
+                seekerQuery = seekerQuery.or(`id.eq.${effectiveUserId},uuid.eq.${effectiveUserId}`);
+            } else if (isUuid) {
+                seekerQuery = seekerQuery.eq('uuid', effectiveUserId);
+            } else {
+                seekerQuery = seekerQuery.eq('uuid', effectiveUserId);
+            }
+
+            const { data: jobseeker } = await seekerQuery.maybeSingle();
             user = jobseeker as any;
 
-            if (user) {
-                const { data: apps } = await supabaseAdmin.from('applications').select('job_pk').eq('user_pk', user.id);
+            if (user && user.id) {
+                const { data: apps } = await supabaseAdmin
+                    .from('applications')
+                    .select('job_pk, jobs(id, uuid)')
+                    .eq('user_pk', user.id);
                 if (apps && apps.length > 0) {
-                    appliedJobPks = apps.map((ap: any) => ap.job_pk).filter(Boolean);
+                    apps.forEach((ap: any) => {
+                        if (ap.job_pk) appliedJobPks.push(Number(ap.job_pk));
+                        if (ap.jobs?.id) appliedJobPks.push(Number(ap.jobs.id));
+                        if (ap.jobs?.uuid) appliedJobUuids.push(String(ap.jobs.uuid));
+                    });
+                    appliedJobPks = Array.from(new Set(appliedJobPks.filter(Boolean)));
+                    appliedJobUuids = Array.from(new Set(appliedJobUuids.filter(Boolean)));
                 }
             }
         }
@@ -395,6 +425,13 @@ export async function GET(request: NextRequest) {
                 referral = referral.filter(j => matchesCountry(j, userCountry));
             }
 
+            if (appliedJobPks.length > 0 || appliedJobUuids.length > 0) {
+                const appliedPkSet = new Set(appliedJobPks.map(Number));
+                const appliedUuidSet = new Set(appliedJobUuids);
+                recommended = recommended.filter(j => !appliedPkSet.has(Number(j.id)) && !appliedUuidSet.has(String(j.uuid)));
+                referral = referral.filter(j => !appliedPkSet.has(Number(j.id)) && !appliedUuidSet.has(String(j.uuid)));
+            }
+
             return NextResponse.json({
                 recommended,
                 referral,
@@ -422,9 +459,14 @@ export async function GET(request: NextRequest) {
                 .in('skill_pk', userSkillPks);
 
             if (matchingJobSkills && matchingJobSkills.length > 0) {
-                const mPks = Array.from(new Set(matchingJobSkills.map((m: any) => m.job_pk).filter(Boolean)));
+                let mPks: number[] = Array.from(new Set(matchingJobSkills.map((m: any) => Number(m.job_pk)).filter(Boolean)));
+                if (appliedJobPks.length > 0) {
+                    mPks = mPks.filter(pk => !appliedJobPks.includes(pk));
+                }
                 if (mPks.length > 0) {
                     query = query.in('id', mPks);
+                } else {
+                    return NextResponse.json([]);
                 }
             }
         }
@@ -505,9 +547,14 @@ export async function GET(request: NextRequest) {
                     .from('job_locations')
                     .select('job_id')
                     .in('country_id', [...countryPks, WORLDWIDE_COUNTRY_ID]);
-                const jobIds = (matchedJobLocations || []).map((jl: any) => jl.job_id);
+                let jobIds = (matchedJobLocations || []).map((jl: any) => jl.job_id);
+                if (appliedJobPks.length > 0) {
+                    jobIds = jobIds.filter((id: number) => !appliedJobPks.includes(id));
+                }
                 if (jobIds.length > 0) {
                     query = query.in('id', jobIds);
+                } else {
+                    return NextResponse.json([]);
                 }
             }
         }
@@ -678,6 +725,13 @@ export async function GET(request: NextRequest) {
 
         let finalJobs = await resolveJobNames(jobs || []);
 
+        // Strictly exclude jobs already applied to by the user
+        if (appliedJobPks.length > 0 || appliedJobUuids.length > 0) {
+            const appliedPkSet = new Set(appliedJobPks.map(Number));
+            const appliedUuidSet = new Set(appliedJobUuids);
+            finalJobs = finalJobs.filter(j => !appliedPkSet.has(Number(j.id)) && !appliedUuidSet.has(String(j.uuid)));
+        }
+
         // If jobseeker is not open to worldwide, strictly filter out other country jobs
         if (user && !isOpenWorldwide && userCountry) {
             finalJobs = finalJobs.filter(j => matchesCountry(j, userCountry));
@@ -693,7 +747,9 @@ export async function GET(request: NextRequest) {
         }
 
         const response = NextResponse.json(finalJobs);
-        if (!recruiterId) {
+        if (effectiveUserId || searchParams.get('fresh') === 'true') {
+            response.headers.set('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+        } else if (!recruiterId) {
             response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
         }
         return response;

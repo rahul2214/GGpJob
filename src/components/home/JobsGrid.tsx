@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { intelligentSearchJobs } from '@/lib/intelligent-search';
 import { useUser } from '@/contexts/user-context';
 import { matchesCountry } from '@/lib/recommendation-engine';
+import { getJobUrl } from '@/lib/job-url';
 
 const FALLBACK_JOBS = [
   {
@@ -356,6 +357,12 @@ export function JobsGrid() {
     }
 
     fetchRecentJobs();
+
+    const handleJobApplied = () => {
+      fetchRecentJobs();
+    };
+    window.addEventListener('job-applied', handleJobApplied);
+    return () => window.removeEventListener('job-applied', handleJobApplied);
   }, [user?.uuid]);
 
   const rawDisplayJobs = dbJobs.length > 0 ? dbJobs : FALLBACK_JOBS;
@@ -495,7 +502,7 @@ export function JobsGrid() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors truncate" title={roleTitle}>
-                          <Link href={`/jobs/${jobId}`} className="after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded">
+                          <Link href={getJobUrl({ id: jobId, title: roleTitle })} className="after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded">
                             {roleTitle}
                           </Link>
                         </h3>

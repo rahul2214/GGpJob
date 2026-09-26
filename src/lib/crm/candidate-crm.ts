@@ -8,6 +8,7 @@ import type {
   CRMAnalyticsSummary,
   CampaignType,
 } from './types';
+import { getJobUrl } from '@/lib/job-url';
 
 // In-Memory Fallback Cache for local development/environments without full SQL tables yet
 const IN_MEMORY_LOGS: CRMEmailLog[] = [];
@@ -334,7 +335,7 @@ export async function getRecommendedJobsHtml(
       const company = job.company_name || job.companyName || 'Verified Tech Employer';
       const loc = job.address || job.location || (candidate.currentCity ? `${candidate.currentCity}, ${candidate.country || ''}` : 'Remote Worldwide');
       const salary = job.salary_range || job.salaryRange || (job.salary_min_usd_cents && job.salary_max_usd_cents ? `$${Math.round(job.salary_min_usd_cents / 100)} - $${Math.round(job.salary_max_usd_cents / 100)}` : 'Competitive Compensation');
-      const applyUrl = `${origin}/jobs/${job.id}`;
+      const applyUrl = `${origin}${getJobUrl({ id: job.id, uuid: job.uuid, title: job.title || job.role })}`;
       const workplace = job.workplaceType || job.workplace_type || 'Remote / Hybrid';
 
       return `
@@ -823,7 +824,7 @@ export async function getRecentJobsHtml(
       const loc = job.address || job.location || (candidate.currentCity ? `${candidate.currentCity}, ${candidate.country || ''}` : 'Remote / Hybrid');
       const salary = job.salary_range || job.salaryRange || (job.salary_min_usd_cents && job.salary_max_usd_cents ? `$${Math.round(job.salary_min_usd_cents / 100)} - $${Math.round(job.salary_max_usd_cents / 100)}` : 'Competitive Compensation');
       const industry = job.industry || 'Technology';
-      const applyUrl = `${origin}/jobs/${job.id}`;
+      const applyUrl = `${origin}${getJobUrl({ id: job.id, uuid: job.uuid, title: job.title || job.role })}`;
 
       return `
         <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:18px; margin-bottom:14px; box-shadow:0 2px 6px rgba(0,0,0,0.02);">

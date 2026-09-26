@@ -36,8 +36,9 @@ export function PublicNavbar() {
   const router = useRouter();
 
   const isJobsPage = pathname === "/jobs";
-  const isJobDetailsPage = pathname.startsWith("/jobs/") && pathname !== "/jobs/saved" && pathname !== "/jobs/post" && !pathname.startsWith("/jobs/edit/");
-  const currentJobId = isJobDetailsPage ? pathname.split("/jobs/")[1]?.split("?")[0] : null;
+  const isJobDetailsPage = pathname.startsWith("/jobs/") && pathname !== "/jobs/saved" && pathname !== "/jobs/post" && !pathname.startsWith("/jobs/edit/") && !pathname.startsWith("/jobs/in/") && pathname !== "/jobs/remote";
+  const jobSegments = isJobDetailsPage ? pathname.split("?")[0].replace(/^\/jobs\//, '').split('/').filter(Boolean) : [];
+  const currentJobId = jobSegments.length > 0 ? jobSegments[jobSegments.length - 1] : null;
   const showBackArrow = isJobsPage || isJobDetailsPage;
 
   useEffect(() => {

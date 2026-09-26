@@ -12,6 +12,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import SkillMatchBadge from '@/components/skill-match-badge';
+import { getJobUrl } from '@/lib/job-url';
 
 interface JobCardProps {
   job: Job;
@@ -105,7 +106,7 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
       transition={{ duration: 0.3, ease: "easeOut" }}
       className="h-full"
     >
-      <Link href={`/jobs/${job.uuid || job.id}`} className="block h-full">
+      <Link href={getJobUrl(job)} className="block h-full">
         <Card className={cn(
           "h-full flex flex-col relative overflow-hidden transition-all duration-300 px-1 sm:px-2.5",
           "bg-white/80 dark:bg-slate-900/60 backdrop-blur-md",
@@ -202,6 +203,7 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
                     userSkills={user?.skills || []}
                     size="sm"
                     showTierLabel={false}
+                   
                   />
                 </div>
               )}
