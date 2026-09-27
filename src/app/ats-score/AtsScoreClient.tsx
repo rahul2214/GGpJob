@@ -41,9 +41,9 @@ export function AtsScoreClient({ initialShowPromo = true }: AtsScoreClientProps)
             {/* Stats row */}
             <div className="flex flex-wrap items-center justify-center gap-8 pt-2">
               {[
-                { value: "50K+", label: "Resumes Analyzed" },
-                { value: "94%", label: "Score Accuracy" },
-                { value: "Free", label: "First Scan" },
+                { value: "25+", label: "ATS Checks" },
+                { value: "Instant", label: "AI Analysis" },
+                { value: "Free", label: "ATS Scan" },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
                   <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{stat.value}</div>

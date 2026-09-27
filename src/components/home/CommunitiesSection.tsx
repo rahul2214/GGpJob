@@ -84,11 +84,11 @@ const FEATURED_COMMUNITIES = [
 
 const COMMUNITY_SPOTLIGHTS = [
   {
-    id: "referral-drops",
+    id: "direct-hiring",
     title: "Exclusive Direct Hiring Drops",
     subtitle: "Direct access to active job openings posted by verified recruiters",
     tag: "Instant Direct Access",
-    stats: "3,400+ Positions Open This Month",
+    stats: "Verified Openings Updated Daily",
     snippet: {
       author: "Sarah Jenkins · Lead Recruiter @ Stripe",
       time: "2 hours ago",
@@ -133,7 +133,7 @@ import { useRouter } from 'next/navigation';
 export function CommunitiesSection() {
   const { user } = useUser();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<string>("referral-drops");
+  const [activeTab, setActiveTab] = useState<string>("direct-hiring");
 
   const joinTarget = user ? '/communities' : '/login';
 
@@ -297,7 +297,7 @@ export function CommunitiesSection() {
                 >
                   <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                     
                       <span className="text-xs font-bold text-slate-300">{currentSpotlight.tag}</span>
                     </div>
                     <span className="text-xs font-semibold text-violet-400 bg-violet-500/20 px-2.5 py-1 rounded-full border border-violet-500/30">
@@ -337,7 +337,7 @@ export function CommunitiesSection() {
                   {/* CTA Banner inside box */}
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                     <p className="text-xs text-slate-400">
-                      Join 50,000+ engineers discussing tech, career growth & active hiring opportunities.
+                      Connect with tech professionals discussing career growth, industry insights & active hiring opportunities.
                     </p>
                     <Link
                       href={joinTarget}

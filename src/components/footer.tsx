@@ -83,21 +83,26 @@ export default function Footer() {
             <ul className="space-y-2.5 text-sm">
               <li><Link href="/about" className="hover:text-violet-400 transition-colors">About Us</Link></li>
               <li><Link href="/contact" className="hover:text-violet-400 transition-colors">Contact Us</Link></li>
-              <li><Link href="/login" className="hover:text-violet-400 transition-colors">Candidate Sign In</Link></li>
-              <li><Link href="/signup" className="hover:text-violet-400 transition-colors">Create Free Account</Link></li>
               <li><Link href="/privacy" className="hover:text-violet-400 transition-colors">Privacy Policy</Link></li>
               <li><Link href="/terms" className="hover:text-violet-400 transition-colors">Terms of Service</Link></li>
+              <li><Link href="/cookies" className="hover:text-violet-400 transition-colors">Cookie Policy</Link></li>
+              <li><Link href="/refund" className="hover:text-violet-400 transition-colors">Refund &amp; Cancellation</Link></li>
+              <li><Link href="/login" className="hover:text-violet-400 transition-colors">Candidate Sign In</Link></li>
+              <li><Link href="/signup" className="hover:text-violet-400 transition-colors">Create Free Account</Link></li>
             </ul>
           </div>
 
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-slate-500">
-            &copy; {new Date().getFullYear()} JobsDart Global. All rights reserved.
-          </p>
-          <p className="text-xs text-slate-500 flex items-center gap-1.5">
+        <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+          <div>
+            <p>&copy; {new Date().getFullYear()} JobsDart (A Sub-Product of Veltria). All rights reserved.</p>
+            <p className="mt-1 text-slate-500">
+              We partner with Google AdSense and third-party advertising networks to support our free career tools and job discovery services.
+            </p>
+          </div>
+          <p className="flex items-center gap-1.5 shrink-0">
             Made with <Heart className="w-3 h-3 text-red-500 fill-red-500/20" /> for the global tech community.
           </p>
         </div>

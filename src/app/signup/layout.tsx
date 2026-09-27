@@ -17,9 +17,8 @@ export const metadata: Metadata = {
     ],
     alternates: { canonical: siteUrl('/signup') },
     robots: {
-        index: true,
+        index: false,
         follow: true,
-        googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
     },
     openGraph: {
         title: 'Create a Free Job Seeker Account on JobsDart',

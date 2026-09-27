@@ -9,9 +9,8 @@ export const metadata: Metadata = {
   keywords: ['jobsdart login', 'jobs dart login', 'job seeker login', 'job portal login', 'sign in jobsdart'],
   alternates: { canonical: siteUrl('/login') },
   robots: {
-    index: true,
+    index: false,
     follow: true,
-    googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
   },
   openGraph: {
     title: 'Login to JobsDart — Job Seeker Account',

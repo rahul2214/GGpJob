@@ -10,11 +10,11 @@ export const metadata: Metadata = {
 const sections = [
   {
     title: "1. Acceptance of Terms",
-    content: `By accessing or using Jobs Dart ("the Platform"), you agree to be bound by these Terms of Service. If you do not agree to these terms, you may not access or use the Platform. These terms apply to all visitors, users, and others who wish to access or use the service.`,
+    content: `By accessing or using JobsDart ("the Platform"), operated as a specialized product of Veltria, you agree to be bound by these Terms of Service. If you do not agree to these terms, you may not access or use the Platform. These terms apply to all visitors, job seekers, recruiters, and registered users of the service.`,
   },
   {
     title: "2. Description of Service",
-    content: `Jobs Dart is an online job portal that connects Job Seekers with Recruiters and Employees. The Platform allows users to post job listings, search for employment opportunities, submit job applications, share referrals, and manage hiring pipelines.`,
+    content: `JobsDart is an online career growth and recruitment platform connecting Job Seekers with Recruiters and Employers. The Platform enables users to discover verified job listings, submit job applications, audit and optimize resumes using AI-assisted ATS diagnostics, read educational career guides, and connect directly with hiring managers.`,
   },
   {
     title: "3. User Accounts",

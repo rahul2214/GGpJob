@@ -205,10 +205,7 @@ export function BlogIndexView({ page }: { page: number }) {
           >
             {lastUpdated && (
               <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/60 dark:border-slate-800 shadow-sm">
-                <span className="relative flex w-2 h-2">
-                  <span className="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-75 animate-ping motion-reduce:animate-none" />
-                  <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-500" />
-                </span>
+                
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                   Updated{' '}
                   <time dateTime={lastUpdated}>

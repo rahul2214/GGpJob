@@ -66,6 +66,32 @@ export interface BlogFaq {
   a: string;
 }
 
+export interface PracticalStep {
+  step: number;
+  title: string;
+  description: string;
+}
+
+export interface CommonMistake {
+  mistake: string;
+  fix: string;
+}
+
+export interface ToolReference {
+  name: string;
+  badge?: string;
+  description: string;
+  href: string;
+  ctaText?: string;
+}
+
+export interface AuthorProfile {
+  name: string;
+  role: string;
+  bio: string;
+  avatarUrl?: string;
+}
+
 export interface BlogPost {
   slug: string;
   /** SEO <title>; the root layout appends " | JobsDart". */
@@ -85,6 +111,8 @@ export interface BlogPost {
    */
   tint?: HeroTint;
   excerpt: string;
+  /** Optional dedicated introduction paragraphs extending the excerpt */
+  introduction?: string[];
   /**
    * Three to five one-line conclusions, rendered above the article body.
    *
@@ -94,6 +122,21 @@ export interface BlogPost {
    */
   keyTakeaways?: string[];
   sections: BlogSection[];
+  /** Step-by-step actionable sequence for candidates or developers */
+  practicalSteps?: PracticalStep[];
+  /** Specific pitfalls and how to avoid/fix them */
+  commonMistakes?: CommonMistake[];
+  /** Honest edge cases, boundaries, and what isn't measured */
+  limitations?: string[];
+  /** Formal wrap-up / summary takeaway */
+  conclusion?: {
+    heading?: string;
+    paragraphs: string[];
+  };
+  /** JobsDart first-party tools relevant to this guide */
+  tools?: ToolReference[];
+  /** Author / reviewer credentials and bio (E-E-A-T) */
+  authorProfile?: AuthorProfile;
   faqs?: BlogFaq[];
   /** Slugs of related posts, rendered as internal links. */
   related?: string[];

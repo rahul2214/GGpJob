@@ -9,9 +9,8 @@ export const metadata: Metadata = {
   keywords: ['recruiter login', 'post a job', 'post jobs online', 'hiring plans', 'job posting site', 'recruitment portal india', 'employer login', 'hire candidates', 'jobsdart recruiter', 'jobs dart'],
   alternates: { canonical: siteUrl('/company/login') },
   robots: {
-    index: true,
+    index: false,
     follow: true,
-    googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
   },
   openGraph: {
     title: 'Recruiter Login & Hiring Plans on JobsDart — Post Jobs Online',

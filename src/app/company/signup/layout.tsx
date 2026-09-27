@@ -18,9 +18,8 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: siteUrl('/company/signup') },
   robots: {
-    index: true,
+    index: false,
     follow: true,
-    googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
   },
   openGraph: {
     title: 'Recruiter Sign Up — Post Jobs and Hire | JobsDart',

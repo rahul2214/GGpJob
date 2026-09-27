@@ -8,6 +8,7 @@ import { RoleTabs } from './RoleTabs';
 import { CommunitiesSection } from './CommunitiesSection';
 import { JobsGrid } from './JobsGrid';
 import { ReviewsSection } from './ReviewsSection';
+import { LatestArticlesSection } from './LatestArticlesSection';
 import { FaqSection } from './FaqSection';
 import { CtaSection } from './CtaSection';
 
@@ -24,6 +25,7 @@ const JobPortalHome = () => {
                 <CommunitiesSection />
                 <JobsGrid />
                 <ReviewsSection />
+                <LatestArticlesSection />
                 <FaqSection />
                 <CtaSection />
             </div>

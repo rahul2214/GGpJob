@@ -251,9 +251,9 @@ export function HeroSection() {
                             className="flex items-center gap-8 pt-2 border-t border-slate-100 dark:border-slate-800"
                         >
                             {[
-                                { to: 50000, suffix: "+", label: "Open roles" },
-                                { to: 120, suffix: "+", label: "Countries" },
-                                { to: 10000, suffix: "+", label: "Recruiters" },
+                                { to: 100, suffix: "%", label: "Verified Jobs" },
+                                { to: 50, suffix: "+", label: "Tech Categories" },
+                                { to: 24, suffix: "/7", label: "AI Career Tools" },
                             ].map(stat => (
                                 <div key={stat.label}>
                                     <p className="text-xl font-bold text-slate-900 dark:text-white tabular-nums">

@@ -54,7 +54,7 @@ export function RoleTabs() {
             Designed for the <span className="text-gradient-primary">Entire Ecosystem</span>
           </h2>
           <p className="section-subheading mx-auto">
-            Whether you are hunting for a global role, referring talent, or recruiting at scale, JobsDart offers specialized workflows for everyone.
+            Whether you are hunting for a global role, optimizing your resume, or recruiting at scale, JobsDart offers specialized workflows for everyone.
           </p>
         </div>
 

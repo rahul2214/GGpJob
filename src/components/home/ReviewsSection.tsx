@@ -39,7 +39,7 @@ export function ReviewsSection() {
                 <div className="text-center max-w-3xl mx-auto mb-16">
                     
                     <h2 className="section-heading mt-4 mb-6">
-                        Trusted by <span className="text-gradient-primary">Thousands</span> Worldwide
+                        Trusted by <span className="text-gradient-primary">Candidates</span> Worldwide
                     </h2>
                     <p className="section-subheading mx-auto">
                         Real candidates and recruiters connecting, interviewing, and landing dream roles across the globe.

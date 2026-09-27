@@ -16,6 +16,9 @@ const MAX_JOB_URLS = 20000;
 // prerendered; render it per request instead of failing the build-time attempt.
 export const dynamic = 'force-dynamic';
 
+// Only public, indexable canonical URLs that provide publisher value are included.
+// Private pages, authentication portals (/login, /signup, /company/login, /company/signup),
+// transactional surfaces, and signed-in dashboards are strictly excluded.
 const staticRoutes: MetadataRoute.Sitemap = [
   { url: `${baseUrl}/`, changeFrequency: 'daily', priority: 1.0 },
   { url: `${baseUrl}/jobs`, changeFrequency: 'hourly', priority: 0.9 },
@@ -25,13 +28,10 @@ const staticRoutes: MetadataRoute.Sitemap = [
   { url: `${baseUrl}/blog`, changeFrequency: 'weekly', priority: 0.8 },
   { url: `${baseUrl}/communities`, changeFrequency: 'daily', priority: 0.7 },
   { url: `${baseUrl}/about`, changeFrequency: 'monthly', priority: 0.6 },
-  { url: `${baseUrl}/company/login`, changeFrequency: 'monthly', priority: 0.6 },
-  { url: `${baseUrl}/company/signup`, changeFrequency: 'monthly', priority: 0.5 },
   { url: `${baseUrl}/contact`, changeFrequency: 'monthly', priority: 0.5 },
-  { url: `${baseUrl}/login`, changeFrequency: 'monthly', priority: 0.5 },
-  { url: `${baseUrl}/signup`, changeFrequency: 'monthly', priority: 0.5 },
   { url: `${baseUrl}/terms`, changeFrequency: 'yearly', priority: 0.3 },
   { url: `${baseUrl}/privacy`, changeFrequency: 'yearly', priority: 0.3 },
+  { url: `${baseUrl}/cookies`, changeFrequency: 'yearly', priority: 0.3 },
   { url: `${baseUrl}/refund`, changeFrequency: 'yearly', priority: 0.3 },
 ];
 

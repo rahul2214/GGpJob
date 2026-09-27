@@ -29,10 +29,10 @@ const row2 = [
 ];
 
 const stats = [
-  "10,000+ Verified Recruiters",
-  "50+ countries",
-  "98% verification rate",
-  "100,000+ Direct Hires",
+  "Verified Job Listings",
+  "Remote & Global Roles",
+  "AI Resume & ATS Checker",
+  "Direct Recruiter Outreach",
 ];
 
 function CompanyPill({ name, flag }: { name: string; flag?: string }) {

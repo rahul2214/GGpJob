@@ -7,16 +7,16 @@ const TRADITIONAL = [
   { icon: X, label: "Cold email into the void", sub: "No response, no context" },
   { icon: X, label: "ATS spam filter", sub: "Résumé never seen by humans" },
   { icon: X, label: "Consistent ghosting", sub: "Zero feedback, zero closure" },
-  { icon: X, label: "~3 months to offer", sub: "Average job-search duration" },
-  { icon: X, label: "1% interview rate", sub: "Industry cold-apply average" },
+  { icon: X, label: "Lengthy hiring cycles", sub: "Uncertain timeline and waiting" },
+  { icon: X, label: "Low callback rates", sub: "Cold applications often lost in volume" },
 ];
 
 const JOBSDART = [
   { icon: Users, label: "Direct recruiter chat", sub: "Direct connection to hiring team" },
   { icon: Shield, label: "AI ATS Optimization", sub: "Score & tune resume instantly" },
-  { icon: Zap, label: "Verified hire milestones", sub: "Fast-track candidate placement" },
-  { icon: Globe, label: "~12 days to offer", sub: "Median across all placements" },
-  { icon: Check, label: "45% interview rate", sub: "For direct vetted applicants" },
+  { icon: Zap, label: "Verified hire milestones", sub: "Clear process and status visibility" },
+  { icon: Globe, label: "Direct applicant review", sub: "Applications go straight to the hiring team" },
+  { icon: Check, label: "Tailored AI resumes", sub: "Optimized for role-specific requirements" },
 ];
 
 const fadeUp = {
@@ -116,12 +116,12 @@ export function ComparisonSection() {
             {/* bottom stat */}
             <div className="mt-8 flex gap-4">
               <div className="flex-1 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 p-3 text-center">
-                <p className="text-2xl font-bold text-slate-700 dark:text-white/30">3 mo</p>
-                <p className="text-xs text-slate-500 dark:text-white/20">avg. time to offer</p>
+                <p className="text-2xl font-bold text-slate-700 dark:text-white/30">Manual</p>
+                <p className="text-xs text-slate-500 dark:text-white/20">application filtering</p>
               </div>
               <div className="flex-1 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 p-3 text-center">
-                <p className="text-2xl font-bold text-red-500 dark:text-red-400/60">1%</p>
-                <p className="text-xs text-slate-500 dark:text-white/20">interview rate</p>
+                <p className="text-2xl font-bold text-red-500 dark:text-red-400/60">Low</p>
+                <p className="text-xs text-slate-500 dark:text-white/20">visibility & feedback</p>
               </div>
             </div>
           </motion.div>
@@ -160,7 +160,7 @@ export function ComparisonSection() {
                 <h3 className="text-lg font-bold text-white">JobsDart</h3>
               </div>
               <span className="ml-auto rounded-full bg-violet-500/15 px-3 py-0.5 text-xs font-medium text-violet-300 border border-violet-500/30">
-                Stitch-Verified
+                AI-Verified
               </span>
             </div>
 
@@ -190,12 +190,12 @@ export function ComparisonSection() {
             {/* bottom stat */}
             <div className="relative mt-8 flex gap-4">
               <div className="flex-1 rounded-xl bg-violet-500/10 border border-violet-500/20 p-3 text-center">
-                <p className="text-2xl font-bold text-violet-300">12 days</p>
-                <p className="text-xs text-white/40">avg. time to offer</p>
+                <p className="text-2xl font-bold text-violet-300">Direct</p>
+                <p className="text-xs text-white/40">hiring access</p>
               </div>
               <div className="flex-1 rounded-xl bg-blue-500/10 border border-blue-500/20 p-3 text-center">
-                <p className="text-2xl font-bold text-blue-300">45%</p>
-                <p className="text-xs text-white/40">interview rate</p>
+                <p className="text-2xl font-bold text-blue-300">Instant</p>
+                <p className="text-xs text-white/40">ATS resume scoring</p>
               </div>
             </div>
           </motion.div>
@@ -210,8 +210,8 @@ export function ComparisonSection() {
           className="mt-10 text-center text-sm text-slate-500 dark:text-white/30"
         >
           Join{" "}
-          <span className="font-semibold text-violet-600 dark:text-violet-400">12,000+</span>{" "}
-          professionals already skipping the queue.
+          <span className="font-semibold text-violet-600 dark:text-violet-400">candidates worldwide</span>{" "}
+          accelerating their career search.
         </motion.p>
       </div>
     </section>

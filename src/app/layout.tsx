@@ -13,6 +13,7 @@ import { UserProvider } from '@/contexts/user-context';
 import CareerAssistant from '@/components/chat/CareerAssistant';
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
 import { NetworkStatusIndicator } from '@/components/NetworkStatusIndicator';
+import { CookieConsentBanner } from '@/components/CookieConsentBanner';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -137,6 +138,10 @@ export const metadata: Metadata = {
       'max-image-preview': 'large',
       'max-snippet': -1,
     },
+  },
+
+  other: {
+    'google-adsense-account': 'ca-pub-3640606958192895',
   },
 };
 
@@ -321,6 +326,10 @@ export default function RootLayout({
         />
 
         {/* Google AdSense Site Verification & Code */}
+        <meta
+          name="google-adsense-account"
+          content="ca-pub-3640606958192895"
+        />
         <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3640606958192895"
@@ -422,6 +431,7 @@ export default function RootLayout({
           <Toaster />
 
           <CareerAssistant />
+          <CookieConsentBanner />
         </UserProvider>
       </body>
     </html>
