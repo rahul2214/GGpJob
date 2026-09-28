@@ -2722,11 +2722,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               variant="outline"
               onClick={() => {
                 populateFromUserProfile(user)
-                toast({ title: "Profile Auto-Filled! ✨", description: "All experience, projects, education, summary & skills imported from your profile." })
+                toast({ title: "Profile Auto-Filled!", description: "All experience, projects, education, summary & skills imported from your profile." })
               }}
               className="w-full sm:w-auto border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100 text-indigo-700 font-bold h-9 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm shrink-0"
             >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              
               Sync from Profile
             </Button>
           )}

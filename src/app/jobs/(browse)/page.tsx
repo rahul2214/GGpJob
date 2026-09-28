@@ -48,8 +48,8 @@ const TAB_CONFIG: Record<TabKey, TabConfig> = {
   recommended: {
     label: "Recommended",
     icon: <Sparkles className="w-3.5 h-3.5" />,
-    color: "text-amber-500 dark:text-amber-400",
-    badge: "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400",
+    color: "text-indigo-600 dark:text-indigo-400",
+    badge: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400",
     title: "AI Recommended Roles",
     subtitle: "Ranked for you based on your skills, experience, location, and preferences.",
     requiresLogin: true,
@@ -57,8 +57,8 @@ const TAB_CONFIG: Record<TabKey, TabConfig> = {
   "near-you": {
     label: "Near You",
     icon: <MapPin className="w-3.5 h-3.5" />,
-    color: "text-emerald-600 dark:text-emerald-400",
-    badge: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400",
+    color: "text-indigo-600 dark:text-indigo-400",
+    badge: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400",
     title: "Jobs Near You",
     subtitle: "Opportunities matched to your country, state, and city from your profile.",
     requiresLogin: true,
@@ -66,16 +66,16 @@ const TAB_CONFIG: Record<TabKey, TabConfig> = {
   recent: {
     label: "Recently Posted",
     icon: <Clock className="w-3.5 h-3.5" />,
-    color: "text-blue-600 dark:text-blue-400",
-    badge: "bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400",
+    color: "text-indigo-600 dark:text-indigo-400",
+    badge: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400",
     title: "Recently Posted",
     subtitle: "Fresh opportunities posted in the last 7 days — apply before the queue builds.",
   },
   skills: {
     label: "Skill Match",
     icon: <Zap className="w-3.5 h-3.5" />,
-    color: "text-violet-600 dark:text-violet-400",
-    badge: "bg-violet-50 text-violet-700 dark:bg-violet-950/20 dark:text-violet-400",
+    color: "text-indigo-600 dark:text-indigo-400",
+    badge: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400",
     title: "Matched to Your Skills",
     subtitle: "Jobs requiring the exact skills listed in your profile, ranked by overlap.",
     requiresLogin: true,
@@ -83,8 +83,8 @@ const TAB_CONFIG: Record<TabKey, TabConfig> = {
   visa: {
     label: "Visa Sponsorship",
     icon: <Globe className="w-3.5 h-3.5" />,
-    color: "text-rose-600 dark:text-rose-400",
-    badge: "bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400",
+    color: "text-indigo-600 dark:text-indigo-400",
+    badge: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400",
     title: "Visa Sponsorship Jobs",
     subtitle: "Companies offering work visa or permit sponsorship for international candidates.",
   },
@@ -491,10 +491,12 @@ function JobSearchContent() {
   const needsLogin = config.requiresLogin && !user;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 pb-8 relative overflow-hidden">
-      {/* Background blobs */}
-      <div className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full blur-[140px] pointer-events-none -translate-x-1/2 -translate-y-1/2 opacity-20 dark:opacity-10 bg-indigo-500" />
-      <div className="absolute top-20 right-0 w-[500px] h-[500px] rounded-full blur-[120px] pointer-events-none translate-x-1/3 opacity-20 dark:opacity-10 bg-violet-400" />
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 pb-8 relative">
+      {/* Background blobs isolated to prevent horizontal overflow without breaking sticky */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full blur-[140px] -translate-x-1/2 -translate-y-1/2 opacity-20 dark:opacity-10 bg-indigo-500" />
+        <div className="absolute top-20 right-0 w-[500px] h-[500px] rounded-full blur-[120px] translate-x-1/3 opacity-20 dark:opacity-10 bg-violet-400" />
+      </div>
 
       <div className="container max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
@@ -518,7 +520,7 @@ function JobSearchContent() {
                   }}
                   className={`flex items-center gap-1.5 whitespace-nowrap py-2 px-3.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${
                     isActive
-                      ? "bg-white dark:bg-slate-800 shadow text-slate-900 dark:text-white"
+                      ? "bg-white dark:bg-slate-800 shadow text-indigo-600 dark:text-indigo-400 font-bold"
                       : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                   }`}
                 >
@@ -547,18 +549,15 @@ function JobSearchContent() {
         {/* Layout Grid */}
         <div className="grid lg:grid-cols-[270px_1fr] gap-6 items-start">
 
-          {/* Sidebar Filters */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
-            className="hidden lg:block sticky top-24 bg-white/70 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/50 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.01)]"
-          >
-            <JobFilters />
-          </motion.div>
+          {/* Sidebar Filters - Sticky while jobs scroll */}
+          <aside className="hidden lg:block w-[270px] shrink-0 sticky top-[calc(var(--app-sticky-offset,4rem)+1rem)] self-start z-20">
+            <div className="max-h-[calc(100vh-var(--app-sticky-offset,4rem)-2rem)] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <JobFilters />
+            </div>
+          </aside>
 
           {/* Results column */}
-          <div className="space-y-5">
+          <div className="space-y-5 min-w-0">
 
            
             {/* Login nudge for personalised tabs */}

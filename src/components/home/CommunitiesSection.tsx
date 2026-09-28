@@ -185,9 +185,7 @@ export function CommunitiesSection() {
                 <div className="relative z-10">
                   {/* Top Row: Icon + Badge */}
                   <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-900 dark:text-white group-hover:scale-110 transition-transform duration-300 shadow-sm">
-                      <Icon className="w-6 h-6 text-violet-600 dark:text-violet-400" />
-                    </div>
+                   
                     <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${comm.badgeColor}`}>
                       {comm.category}
                     </span>
@@ -225,7 +223,7 @@ export function CommunitiesSection() {
                       {comm.membersCount} Members
                     </div>
                     <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      
                       {comm.activeNow} Online Now
                     </span>
                   </div>

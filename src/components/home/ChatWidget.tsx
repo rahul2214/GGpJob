@@ -74,13 +74,13 @@ export function ChatWidget() {
                                 </div>
                                 <div>
                                     <h3 className="font-extrabold text-sm text-white flex items-center gap-1.5">
-                                        Rohan K. <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                        Rohan K.
                                     </h3>
                                     <p className="text-[10px] text-slate-400 font-medium">Talent Acquisition Lead @ Google</p>
                                 </div>
                             </div>
                             <span className="bg-violet-500/20 text-violet-300 border border-violet-500/30 text-[9px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                                <Sparkles className="w-2.5 h-2.5 animate-pulse text-violet-450" /> Live Chat
+                                Live Chat
                             </span>
                         </div>
 

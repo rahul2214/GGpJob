@@ -6,7 +6,7 @@ import { useUser } from "@/contexts/user-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, Lock, Coins, Tag, ArrowLeft } from "lucide-react";
+import { LoaderCircle, Lock, Coins, Tag, ArrowLeft, Wallet, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -247,19 +247,78 @@ export default function CreditsPage() {
           </div>
         </div>
 
-        <div className="text-center mb-16 space-y-4">
+        <div className="text-center mb-10 space-y-4">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <h1 className="text-5xl font-black text-slate-900 tracking-tight flex items-center justify-center gap-3">
+            <h1 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight flex items-center justify-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
                 <Coins className="w-6 h-6" />
               </div>
               Top-up Credits
             </h1>
-            <p className="text-slate-500 text-lg max-w-xl mx-auto mt-4">
+            <p className="text-slate-500 text-base sm:text-lg max-w-xl mx-auto mt-3">
               Get additional credits to fast-track your job applications and boost your profile visibility.
             </p>
           </motion.div>
         </div>
+
+        {/* Current Balance / Wallet Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="max-w-3xl mx-auto mb-14 bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.03)] p-6 sm:p-7"
+        >
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 mb-5 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm shrink-0">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">My Wallet & Balance</h3>
+                <p className="text-xs text-slate-400 font-medium">Overview of your available credits</p>
+              </div>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100/80 rounded-full text-xs font-bold self-start sm:self-auto">
+             
+              <span>Active Balance</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Total Balance */}
+            <div className="bg-gradient-to-br from-indigo-50/90 via-indigo-50/50 to-violet-50/60 rounded-2xl p-4 border border-indigo-100 text-center sm:text-left">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Available</p>
+              <div className="flex items-baseline gap-1.5 justify-center sm:justify-start">
+                <span className="text-3xl font-black text-indigo-600 tracking-tight">
+                  {(user.subscriptionCredits || 0) + (user.purchasedCredits || 0)}
+                </span>
+                <span className="text-xs font-bold text-indigo-500">Credits</span>
+              </div>
+            </div>
+
+            {/* Subscription Credits */}
+            <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100 text-center sm:text-left">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Subscription Credits</p>
+              <div className="flex items-baseline gap-1.5 justify-center sm:justify-start">
+                <span className="text-3xl font-black text-slate-800 tracking-tight">
+                  {user.subscriptionCredits || 0}
+                </span>
+                <span className="text-xs font-medium text-slate-400">Monthly</span>
+              </div>
+            </div>
+
+            {/* Purchased Credits */}
+            <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100 text-center sm:text-left">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Purchased Credits</p>
+              <div className="flex items-baseline gap-1.5 justify-center sm:justify-start">
+                <span className="text-3xl font-black text-emerald-600 tracking-tight">
+                  {user.purchasedCredits || 0}
+                </span>
+                <span className="text-xs font-medium text-slate-400">Top-up</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         {loadingPacks ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">

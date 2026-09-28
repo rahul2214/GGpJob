@@ -334,7 +334,7 @@ function JobFiltersContent({ isSheet = false }: JobFiltersProps) {
     }
 
     return (
-        <Card className="sticky top-20 shadow-sm border rounded-2xl overflow-hidden">
+        <Card className="shadow-sm border border-slate-200/60 dark:border-slate-800/60 rounded-2xl overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
             <CardHeader className="flex flex-row items-center justify-between py-4 px-6 border-b bg-muted/20">
                 <span className="font-bold text-sm tracking-wide">Job Filters</span>
                 {hasActiveFilters && (

@@ -23,22 +23,22 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   const features = [
     {
-      icon: Sparkles,
+      
       title: "ATS Resume Scorer",
       desc: "Instant AI auditing for keyword density, formatting compliance, and industry standard readability to help candidates pass Applicant Tracking Systems.",
     },
     {
-      icon: FileText,
+     
       title: "Interactive CV Templates",
       desc: "Full-fidelity, production-grade resume templates pre-loaded with realistic content across multiple modern engineering and business disciplines.",
     },
     {
-      icon: Briefcase,
+     
       title: "Verified Job Discovery",
       desc: "Curated opportunities across top tech companies, verified employer openings, and high-growth global teams with zero spam listings.",
     },
     {
-      icon: ShieldCheck,
+     
       title: "Recruiter Hiring Suite",
       desc: "Streamlined candidate pipeline management, instant job publishing, and talent matchmaking tools built for modern hiring teams.",
     },
@@ -124,16 +124,13 @@ export default function AboutPage() {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {features.map((feat) => {
-              const Icon = feat.icon;
               return (
                 <div
                   key={feat.title}
                   className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-2.5"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-                      <Icon className="w-5 h-5" />
-                    </div>
+                   
                     <h4 className="text-base font-bold text-slate-900 dark:text-white">
                       {feat.title}
                     </h4>

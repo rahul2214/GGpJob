@@ -13,7 +13,7 @@ import { SummaryForm } from "@/components/summary-form";
 import { PersonalInfoFormCombined } from "@/components/personal-info-form-combined";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserCog, ShieldCheck, FileText, Briefcase, Link2, Users, Mail, Phone, LayoutDashboard, Trash2, Wallet, Award, Sparkles, Zap, Camera, Loader2, ChevronRight, Globe } from "lucide-react";
+import { UserCog, ShieldCheck, FileText, Briefcase, Link2, Users, Mail, Phone, LayoutDashboard, Trash2, Camera, Loader2, ChevronRight, Globe } from "lucide-react";
 import { DeleteAccountButton } from "@/components/delete-account-button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -198,17 +198,20 @@ export default function ProfilePage() {
     const availableTabs = user.role === 'Job Seeker' ? tabs : tabs.filter(t => t.id === 'overview' || t.id === 'security');
 
     return (
-        <div className="min-h-screen bg-slate-50/60 relative overflow-hidden pt-8 lg:pt-12 pb-0">
+        <div className="min-h-screen bg-slate-50/60 relative pt-8 lg:pt-12 pb-0">
             {/* Ambient Animated Glows */}
-            <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none -translate-y-1/2" />
-            <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none translate-y-1/3" />
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[140px] -translate-y-1/2" />
+                <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-violet-500/10 rounded-full blur-[120px] translate-y-1/3" />
+            </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 {/* 2-Column Desktop Layout: Left Sidebar + Right Main Content */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     
-                    {/* LEFT COLUMN (Profile Card, Wallet/Reputation, Navigation Tabs) */}
-                    <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
+                    {/* LEFT COLUMN (Profile Card, Navigation Tabs, Wallet/Reputation) */}
+                    <aside className="lg:col-span-4 lg:sticky lg:top-[calc(var(--app-sticky-offset,4rem)+1.5rem)] lg:self-start lg:z-20">
+                        <div className="lg:max-h-[calc(100vh-var(--app-sticky-offset,4rem)-3rem)] lg:overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden space-y-6">
                         {/* Profile Header Card */}
                         <motion.div 
                             initial={{ opacity: 0, y: 20 }}
@@ -350,81 +353,11 @@ export default function ProfilePage() {
                             </div>
                         </motion.div>
 
-                        {/* Wallet & Reputation Cards */}
-                        {user.role === 'Job Seeker' && (
-                            <motion.div 
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.4, delay: 0.1 }}
-                                className="space-y-4"
-                            >
-                                {/* Wallet Card */}
-                                <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.015)] p-5">
-                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <Wallet className="w-3.5 h-3.5 text-indigo-500" />
-                                        My Wallet
-                                    </h3>
-                                    {user.role === 'Job Seeker' ? (
-                                        <div className="flex flex-col gap-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center shrink-0 border border-indigo-100">
-                                                    <Sparkles className="w-5 h-5 text-indigo-600" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Available Credits</p>
-                                                    <p className="text-xl font-black text-slate-900 tracking-tight">{(user.subscriptionCredits || 0) + (user.purchasedCredits || 0)}</p>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
-                                                <div className="bg-slate-50/80 rounded-xl p-2 text-center border border-slate-100">
-                                                    <p className="text-[8px] font-bold text-slate-400 uppercase leading-none mb-1">Subscription</p>
-                                                    <p className="text-sm font-black text-indigo-600">{user.subscriptionCredits || 0}</p>
-                                                </div>
-                                                <div className="bg-slate-50/80 rounded-xl p-2 text-center border border-slate-100">
-                                                    <p className="text-[8px] font-bold text-slate-400 uppercase leading-none mb-1">Purchased</p>
-                                                    <p className="text-sm font-black text-emerald-600">{user.purchasedCredits || 0}</p>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => router.push('/jobseeker/credits')}
-                                                className="w-full mt-1 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-indigo-200 transition-all duration-200"
-                                            >
-                                                <Zap className="w-3.5 h-3.5" />
-                                                Buy Credits
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col gap-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
-                                                    <Award className="w-5 h-5 text-emerald-600" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Available Credits</p>
-                                                    <p className="text-xl font-black text-slate-900 tracking-tight">{(user as any).credits?.toLocaleString() || 0} Credits</p>
-                                                </div>
-                                            </div>
-                                            {(user as any).totalRewards > 0 && (
-                                                <div className="pt-2 border-t border-slate-100">
-                                                    <div className="flex justify-between items-center text-[10px]">
-                                                        <span className="font-bold text-slate-400 uppercase">Total Rewards</span>
-                                                        <span className="font-black text-emerald-600">{(user as any).totalRewards.toLocaleString()} Credits</span>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-
-
-                            </motion.div>
-                        )}
-
                         {/* Navigation Tabs (Vertical Sidebar) */}
                         <motion.div 
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4, delay: 0.2 }}
+                            transition={{ duration: 0.4, delay: 0.1 }}
                             className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.015)] p-2.5 space-y-1.5"
                         >
                             {availableTabs.map((tab) => {
@@ -483,7 +416,8 @@ export default function ProfilePage() {
                                 );
                             })}
                         </motion.div>
-                    </div>
+                        </div>
+                    </aside>
 
                     {/* RIGHT COLUMN (Data Panels & Active Tab Content - Desktop Only) */}
                     <div className="hidden lg:block lg:col-span-8 w-full">
