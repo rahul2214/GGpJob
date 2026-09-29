@@ -2315,13 +2315,15 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
         referralCard: generatedResume?.referralCard
       }
 
+      const effectiveTitle = (name && name.trim()) ? `${name.trim()}'s Resume` : (draftTitle || 'My Resume')
+
       const res = await fetch('/api/resume/drafts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: selectedDraftId === 'new' ? undefined : selectedDraftId,
           userId: user.uuid,
-          title: draftTitle || 'Untitled Resume',
+          title: effectiveTitle,
           templateType,
           resumeData: resumePayload
         })
@@ -2332,7 +2334,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
       }
 
       const savedData = await res.json()
-      toast({ title: "Resume Saved! 💾", description: `"${draftTitle}" saved successfully.` })
+      toast({ title: "Resume Saved! 💾", description: `"${effectiveTitle}" saved successfully.` })
 
       // Update local state
       if (selectedDraftId === 'new') {
@@ -2790,7 +2792,13 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
-      link.download = `${currentResumeData.name.replace(/\s+/g, "_") || "resume"}_ATS_Optimized.pdf`
+      const candidateName = (currentResumeData.name && currentResumeData.name.trim() && currentResumeData.name !== "Your Name")
+        ? currentResumeData.name.trim()
+        : (name && name.trim() && name.trim() !== "Your Name")
+          ? name.trim()
+          : "Resume"
+      const cleanFileName = candidateName.replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, "_")
+      link.download = `${cleanFileName}.pdf`
       document.body.appendChild(link)
       link.click()
 
@@ -2963,23 +2971,15 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               Sync from Profile
             </Button>
           )}
-          <div className="flex items-center gap-2 flex-1 sm:flex-initial w-full sm:w-auto">
-            <Input
-              value={draftTitle}
-              onChange={e => setDraftTitle(e.target.value)}
-              placeholder="Draft Name"
-              className="flex-1 sm:w-[160px] md:w-[180px] h-9 rounded-xl border-slate-250 text-xs bg-slate-50/50"
-            />
-            <Button
-              size="sm"
-              onClick={handleSaveDraft}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-9 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm shrink-0"
-              disabled={isSavingDraft}
-            >
-              {isSavingDraft ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Layers className="w-3.5 h-3.5" />}
-              Save
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            onClick={handleSaveDraft}
+            className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-9 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm shrink-0"
+            disabled={isSavingDraft}
+          >
+            {isSavingDraft ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Layers className="w-3.5 h-3.5" />}
+            Save
+          </Button>
         </div>
       </div>
 

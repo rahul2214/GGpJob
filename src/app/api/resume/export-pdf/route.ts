@@ -27,11 +27,16 @@ export async function POST(req: NextRequest) {
     const buffer = await renderToBuffer(element as any)
     const uint8Array = new Uint8Array(buffer)
 
+    const rawName = (data.name && data.name.trim() && data.name !== "Your Name")
+      ? data.name.trim()
+      : "Resume"
+    const cleanName = rawName.replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, "_")
+
     return new NextResponse(uint8Array, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${encodeURIComponent(data.name || "resume")}_resume.pdf"`,
+        "Content-Disposition": `attachment; filename="${cleanName}.pdf"`,
       },
     })
   } catch (err: any) {
