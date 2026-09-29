@@ -14,6 +14,7 @@ const ZIP = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00]);
 const SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
 const HTML = Buffer.from('<html><body><script>alert(document.cookie)</script></body></html>');
 const PE_EXE = Buffer.from([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00]);
+const OLE2_DOC = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0x00, 0x00]);
 
 /**
  * Regression tests for VULN-006 / VULN-007 (unrestricted upload types on the
@@ -38,6 +39,28 @@ describe('Upload validation — resumes', () => {
       RESUME_FILE_RULES,
     );
     expect(r.ok).toBe(true);
+  });
+
+  it('accepts a genuine DOCX with alternate browser MIME types', () => {
+    const r1 = validateFileContent(ZIP, 'resume.docx', 'application/zip', RESUME_FILE_RULES);
+    expect(r1.ok).toBe(true);
+
+    const r2 = validateFileContent(ZIP, 'resume.docx', 'application/octet-stream', RESUME_FILE_RULES);
+    expect(r2.ok).toBe(true);
+  });
+
+  it('accepts a genuine legacy DOC (OLE2 compound file)', () => {
+    const r = validateFileContent(
+      OLE2_DOC,
+      'cv.doc',
+      'application/msword',
+      RESUME_FILE_RULES,
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.extension).toBe('doc');
+      expect(r.contentType).toBe('application/msword');
+    }
   });
 
   it('rejects HTML renamed to .pdf even when the MIME type lies', () => {

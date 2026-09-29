@@ -1537,12 +1537,19 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
   const router = useRouter()
   const { toast } = useToast()
 
-  // Show promotional material only if the user is NOT logged in. While the
-  // session is still resolving we keep the server's answer to avoid a flash.
-  const showPromo = user ? false : loading ? initialShowPromo : true;
+  // Hydration guard: ensures initial client render matches server HTML perfectly
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Show promotional material only if the user is NOT logged in.
+  // Before mounted, use server's initialShowPromo to guarantee zero hydration mismatch.
+  const showPromo = mounted ? !user : initialShowPromo;
 
   // Credit & Usage State
   const isFirstTimeResumeBuilder = !(user?.hasUsedResumeBuilder ?? user?.has_used_resume_builder ?? (user as any)?.metadata?.has_used_resume_builder)
+  const isFirstTime = mounted ? isFirstTimeResumeBuilder : true;
   const userTotalCredits = user ? ((user.subscriptionCredits || 0) + (user.purchasedCredits || 0) || (user.credits || 0)) : 0
   const [showCreditConfirmDialog, setShowCreditConfirmDialog] = useState(false)
 
@@ -1597,6 +1604,10 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
   const [location, setLocation] = useState("")
   const [photoUrl, setPhotoUrl] = useState<string>("")
   const photoInputRef = useRef<HTMLInputElement>(null)
+
+  // Resume Document Upload State (.pdf, .doc, .docx)
+  const [isParsingResume, setIsParsingResume] = useState(false)
+  const resumeFileInputRef = useRef<HTMLInputElement>(null)
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -1747,6 +1758,205 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
     education,
     generatedResume
   ])
+
+  // Populate form fields from uploaded & parsed resume document (PDF or Word)
+  const populateFromParsedResume = (data: any, originalFileName?: string) => {
+    if (!data) return
+
+    if (data.name) setName(data.name)
+    if (data.role) setRole(data.role)
+    if (data.email) setEmail(data.email)
+    if (data.phone) setPhone(data.phone)
+    if (data.location) setLocation(data.location)
+    if (data.linkedinUrl) setLinkedinUrl(data.linkedinUrl)
+    if (data.githubUrl) setGithubUrl(data.githubUrl)
+    if (data.portfolioUrl) setPortfolioUrl(data.portfolioUrl)
+    if (data.summary) setProfessionalSummary(data.summary)
+
+    // Map domain to templateType if relevant
+    if (data.domain) {
+      const d = String(data.domain).toLowerCase()
+      if (d.includes("product")) {
+        setTemplateType("Product Manager")
+      } else if (d.includes("software") || d.includes("engineer") || d.includes("developer")) {
+        setTemplateType("Software Engineer")
+      } else if (d.includes("fresher") || d.includes("entry") || d.includes("student")) {
+        setTemplateType("Fresher")
+      } else if (d.includes("lead") || d.includes("manager") || d.includes("senior") || d.includes("architect")) {
+        setTemplateType("Experienced")
+      }
+    }
+
+    // Populate Experience
+    if (Array.isArray(data.experience) && data.experience.length > 0) {
+      setJobs(data.experience.map((exp: any) => {
+        let points: string[] = []
+        if (Array.isArray(exp.bullets) && exp.bullets.length > 0) {
+          points = exp.bullets.filter(Boolean)
+        } else if (exp.description) {
+          points = String(exp.description)
+            .split(/\r?\n/)
+            .map(s => s.replace(/^[•\-\*]\s*/, '').trim())
+            .filter(Boolean)
+        }
+        if (points.length === 0) points = [""]
+
+        return {
+          company: exp.company || "",
+          role: exp.title || exp.role || "",
+          startDate: normalizeMonthInput(exp.startDate || ""),
+          endDate: (exp.isCurrent || exp.is_current) ? "" : normalizeMonthInput(exp.endDate || ""),
+          location: exp.location || "",
+          points: points,
+          currentlyWorkHere: Boolean(exp.isCurrent || exp.is_current)
+        }
+      }))
+    }
+
+    // Populate Projects
+    if (Array.isArray(data.projects) && data.projects.length > 0) {
+      setProjects(data.projects.map((proj: any) => {
+        let points: string[] = []
+        if (Array.isArray(proj.bullets) && proj.bullets.length > 0) {
+          points = proj.bullets.filter(Boolean)
+        } else if (proj.description) {
+          points = String(proj.description)
+            .split(/\r?\n/)
+            .map(s => s.replace(/^[•\-\*]\s*/, '').trim())
+            .filter(Boolean)
+        }
+        if (points.length === 0) points = [""]
+
+        return {
+          name: proj.name || "",
+          techStack: proj.techStack || proj.technologies || "",
+          projectLink: proj.url || proj.projectLink || "",
+          points: points
+        }
+      }))
+    }
+
+    // Populate Education
+    if (Array.isArray(data.education) && data.education.length > 0) {
+      setEducation(data.education.map((edu: any) => {
+        let yr = ""
+        const sDate = (edu.startDate || "").substring(0, 4)
+        const eDate = (edu.isCurrent || edu.is_current) ? "Present" : (edu.endDate || "").substring(0, 4)
+        if (sDate && eDate) {
+          yr = `${sDate} - ${eDate}`
+        } else if (eDate) {
+          yr = eDate
+        } else if (sDate) {
+          yr = sDate
+        }
+        return {
+          institution: edu.institution || edu.school || "",
+          degree: edu.degree || "",
+          fieldOfStudy: edu.fieldOfStudy || edu.field_of_study || "",
+          year: yr,
+          grade: edu.grade || ""
+        }
+      }))
+    }
+
+    // Populate Skills
+    if (Array.isArray(data.skillCategories) && data.skillCategories.length > 0) {
+      setSkills(normalizeSkills(data.skillCategories))
+    } else if (Array.isArray(data.skills) && data.skills.length > 0) {
+      setSkills(normalizeSkills(data.skills))
+    }
+
+    // Populate Languages
+    if (Array.isArray(data.languages) && data.languages.length > 0) {
+      const validLangs = data.languages.filter(Boolean)
+      if (validLangs.length > 0) {
+        setLanguages(validLangs)
+      }
+    }
+
+    // Populate Achievements & Certifications
+    const fetchedItems: string[] = []
+    if (Array.isArray(data.achievements)) {
+      data.achievements.forEach((a: any) => {
+        if (typeof a === 'string' && a.trim()) fetchedItems.push(a.trim())
+      })
+    }
+    if (Array.isArray(data.certifications)) {
+      data.certifications.forEach((c: any) => {
+        if (typeof c === 'string' && c.trim()) fetchedItems.push(c.trim())
+      })
+    }
+    if (fetchedItems.length > 0) {
+      setAchievements(Array.from(new Set(fetchedItems)))
+    }
+
+    // Update draft title from filename if still default
+    if (originalFileName && (!draftTitle || draftTitle === "My Resume")) {
+      const cleanTitle = originalFileName.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ")
+      if (cleanTitle) setDraftTitle(cleanTitle)
+    }
+  }
+
+  // Handle file input change for Resume Document upload (.pdf, .doc, .docx)
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    if (!['pdf', 'docx', 'doc'].includes(ext)) {
+      toast({
+        title: "Unsupported File Format",
+        description: "Please select a PDF (.pdf) or Word document (.docx, .doc).",
+        variant: "destructive"
+      })
+      if (e.target) e.target.value = ""
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Please select a resume file smaller than 5MB.",
+        variant: "destructive"
+      })
+      if (e.target) e.target.value = ""
+      return
+    }
+
+    setIsParsingResume(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const res = await fetch("/api/resume/parse", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}))
+        throw new Error(errJson.error || `Server responded with ${res.status}`)
+      }
+
+      const parsedData = await res.json()
+      populateFromParsedResume(parsedData, file.name)
+
+      toast({
+        title: "Resume Uploaded & Parsed! ✨",
+        description: `Successfully loaded data from "${file.name}". All fields have been populated.`
+      })
+    } catch (err: any) {
+      console.error("Error parsing resume document:", err)
+      toast({
+        title: "Could Not Extract All Data",
+        description: err.message || "Failed to extract text from document. You can still fill fields manually.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsParsingResume(false)
+      if (e.target) e.target.value = ""
+    }
+  }
 
   // Populate form fields from user profile
   const populateFromUserProfile = (usr: any) => {
@@ -2714,9 +2924,33 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
           </div>
         </div>
 
-        {/* Right Side: Sync from Profile + Draft Name + Save Version */}
+        {/* Right Side: Upload Resume + Sync from Profile + Draft Name + Save Version */}
         <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 justify-stretch sm:justify-end border-t lg:border-t-0 pt-3 lg:pt-0 border-slate-200/50 dark:border-slate-800/50">
-          {user && (
+          <input
+            ref={resumeFileInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            className="hidden"
+            onChange={handleResumeUpload}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            type="button"
+            disabled={isParsingResume}
+            onClick={() => resumeFileInputRef.current?.click()}
+            className="w-full sm:w-auto border-emerald-300 dark:border-emerald-700 bg-emerald-50/60 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold h-9 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm shrink-0 transition-colors"
+            title="Upload your resume in PDF or Word (.docx, .doc) format"
+          >
+            {isParsingResume ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+            ) : (
+              <Upload className="w-3.5 h-3.5 text-emerald-600" />
+            )}
+            <span>{isParsingResume ? "Extracting Data..." : "Upload & Auto-fill"}</span>
+          </Button>
+
+          {mounted && user && (
             <Button
               size="sm"
               variant="outline"
@@ -2726,7 +2960,6 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               }}
               className="w-full sm:w-auto border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100 text-indigo-700 font-bold h-9 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm shrink-0"
             >
-              
               Sync from Profile
             </Button>
           )}
@@ -2744,7 +2977,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               disabled={isSavingDraft}
             >
               {isSavingDraft ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Layers className="w-3.5 h-3.5" />}
-              Save Version
+              Save
             </Button>
           </div>
         </div>
@@ -3509,21 +3742,21 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               ) : (
                 <>
                   <Sparkles className="w-5 h-5 text-amber-300 fill-amber-300 animate-pulse" />
-                  {isFirstTimeResumeBuilder ? "Generate with AI (Free 1st Time)" : "Generate with AI (1 Credit)"}
+                  {isFirstTime ? "Generate with AI (Free 1st Time)" : "Generate with AI (1 Credit)"}
                   <ChevronRight className="w-5 h-5 ml-1" />
                 </>
               )}
             </Button>
 
-            {user && (
+            {mounted && user && (
               <div className="flex items-center justify-between text-xs px-2.5 py-1.5 bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80 rounded-xl">
                 <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 font-medium">
                   <Coins className="w-3.5 h-3.5 text-amber-500" />
                   Credits left: <strong className="text-slate-900 dark:text-white font-bold">{userTotalCredits} {userTotalCredits === 1 ? 'credit' : 'credits'}</strong>
                 </span>
-                {isFirstTimeResumeBuilder ? (
+                {isFirstTime ? (
                   <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400 text-[10px] font-bold px-2 py-0.5">
-                    ✨ 1st Use Free
+                    1st Use Free
                   </Badge>
                 ) : (
                   <Link href="/jobseeker/credits" className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
@@ -4218,11 +4451,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md"
+              className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md flex items-center justify-center gap-1"
               onClick={handleConfirmCreditDeduction}
             >
-              <Sparkles className="w-3.5 h-3.5 mr-1" />
-              Confirm & Use 1 Credit
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Confirm & Use 1 Credit</span>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

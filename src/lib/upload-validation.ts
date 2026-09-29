@@ -20,17 +20,28 @@ export interface FileTypeRule {
 export const RESUME_FILE_RULES: Record<string, FileTypeRule> = {
   pdf: {
     extensions: ['pdf'],
-    mimeTypes: ['application/pdf'],
+    mimeTypes: ['application/pdf', 'application/x-pdf', 'application/octet-stream'],
     magic: [[0x25, 0x50, 0x44, 0x46]], // %PDF
   },
   docx: {
     extensions: ['docx'],
-    mimeTypes: ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+    mimeTypes: [
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/zip',
+      'application/x-zip-compressed',
+      'application/octet-stream',
+      'application/msword'
+    ],
     magic: [[0x50, 0x4b, 0x03, 0x04], [0x50, 0x4b, 0x05, 0x06], [0x50, 0x4b, 0x07, 0x08]], // ZIP
   },
   doc: {
     extensions: ['doc'],
-    mimeTypes: ['application/msword'],
+    mimeTypes: [
+      'application/msword',
+      'application/x-msword',
+      'application/vnd.msword',
+      'application/octet-stream'
+    ],
     magic: [[0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]], // OLE2 compound file
   },
 };

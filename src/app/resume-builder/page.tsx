@@ -97,8 +97,15 @@ export const metadata: Metadata = {
 
 export default function Page() {
   // Resolved server-side so the marketing copy, headings and FAQ ship in the
-  // initial HTML for crawlers, while signed-in users never see it flash in.
-  const isSignedIn = Boolean(cookies().get("sb-access-token")?.value)
+  const cookieStore = cookies()
+  const allCookies = cookieStore.getAll()
+  const isSignedIn = allCookies.some(c =>
+    c.name === "sb-access-token" ||
+    c.name === "sb:token" ||
+    c.name === "firebase-token" ||
+    c.name === "supabase-auth-token" ||
+    (c.name.startsWith("sb-") && c.name.endsWith("-auth-token"))
+  )
 
   const jsonLd = {
     "@context": "https://schema.org",

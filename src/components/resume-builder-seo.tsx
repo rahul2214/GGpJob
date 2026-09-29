@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser } from "@/contexts/user-context";
 import { ChevronDown, HelpCircle, FileText, Sparkles, Download, LayoutTemplate } from "lucide-react";
 import { motion, AnimatePresence, type Easing } from "framer-motion";
@@ -38,10 +38,15 @@ interface ResumeBuilderSeoProps {
 }
 
 export function ResumeBuilderSeo({ initialShow = true }: ResumeBuilderSeoProps) {
-  const { user, loading } = useUser();
+  const { user } = useUser();
+  const [mounted, setMounted] = useState(false);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
-  const show = user ? false : loading ? initialShow : true;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const show = mounted ? !user : initialShow;
   if (!show) return null;
 
   return (
