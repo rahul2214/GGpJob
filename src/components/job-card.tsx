@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Job } from "@/lib/types";
-import { MapPin, Briefcase, Clock, CheckCircle, Bookmark } from 'lucide-react';
+import {CheckCircle, Bookmark } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useUser } from '@/contexts/user-context';
 import { useToast } from '@/hooks/use-toast';
@@ -108,7 +108,7 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
     >
       <Link href={getJobUrl(job)} className="block h-full">
         <Card className={cn(
-          "h-full flex flex-col relative overflow-hidden transition-all duration-300 px-1 sm:px-2.5",
+          "h-full flex flex-col relative overflow-hidden transition-all duration-300 px- sm:px-2.5",
           "bg-white/80 dark:bg-slate-900/60 backdrop-blur-md",
           "border border-slate-200/50 dark:border-slate-800/50",
           "shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(99,102,241,0.06)]",
@@ -117,7 +117,7 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
           {/* Subtle light reflex layer for glassmorphic cards */}
           <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 pointer-events-none" />
           
-          <CardHeader className="relative pb-2" style={{ paddingLeft : 12, paddingRight : 12 }}>
+          <CardHeader className="relative pb-2 pt-2" style={{ paddingLeft : 8, paddingRight : 2 }}>
             <div className="flex justify-between items-start gap-3">
               <div className="flex items-start gap-3.5 min-w-0 flex-1">
                 {/* Custom Brand Logo Tonal Box */}
@@ -155,40 +155,29 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
               
             </div>
             
-            {/* Horizontal Tonal Dividers */}
-            <div className="mt-4" />
+       
           </CardHeader>
 
-          <CardContent className="flex-grow pb-4" style={{ paddingLeft : 12, paddingRight : 12 }}>
-            <div className="flex flex-col space-y-3.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+          <CardContent className="flex-grow pb-2" style={{ paddingLeft : 12, paddingRight : 12 }}>
+            <div className="flex flex-col space-y-2.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
               <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-5 h-5 dark:bg-slate-950/30 flex items-center justify-center shrink-0">
-                    <MapPin className="h-3 w-3 text-indigo-500" />
-                  </div>
+                  
                   <span className="truncate font-medium" title={(job.locations && job.locations.length > 0) ? job.locations.join(', ') : (job.location || 'Not Disclosed')}>
                     {(job.locations && job.locations.length > 0) ? job.locations.join(', ') : (job.location || 'Not Disclosed')}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-5 h-5 flex items-center justify-center shrink-0">
-                    <Briefcase className="h-3 w-3 text-indigo-500" />
-                  </div>
+                 
                   <span className="truncate font-medium">{job.type || 'Not Disclosed'}</span>
                 </div>
               </div>
 
-              {job.companyVerification && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge className="bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200/60 dark:border-blue-800/60 text-[9px] font-bold">
-                    <CheckCircle className="w-2.5 h-2.5 mr-1" /> Verified Company
-                  </Badge>
-                </div>
-              )}
+            
 
               {((job.requiredSkills && job.requiredSkills.length > 0) || (job.skills && job.skills.length > 0) || (job.requirements && job.requirements.length > 0)) && (
-                <div className="flex items-center gap-1.5 pt-1 text-xs text-slate-500 dark:text-slate-400 font-medium truncate w-full">
-                  <span className="font-bold text-slate-700 dark:text-slate-300 shrink-0">Skills:</span>
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium truncate w-full">
+                  
                   <span className="truncate text-slate-600 dark:text-slate-300 font-medium">
                     {(job.requiredSkills || job.skills || job.requirements || []).join(', ')}
                   </span>
@@ -197,7 +186,7 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
 
               {/* AI Skill Match Badge for Job Seekers */}
               {user?.role === 'Job Seeker' && (job.requiredSkills || job.requirements || job.skills) && (
-                <div className="shrink-0 pt-0.5">
+                <div className="shrink-0">
                   <SkillMatchBadge
                     jobSkills={job.requiredSkills || job.skills || job.requirements || []}
                     userSkills={user?.skills || []}
@@ -211,15 +200,15 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
           </CardContent>
 
           {/* Card Footer badges row */}
-          <CardFooter className="flex justify-between items-center pb-4" style={{ paddingLeft: 12, paddingRight: 12 }}>
+          <CardFooter className="flex justify-between items-center pb-2" style={{ paddingLeft: 12, paddingRight: 12 }}>
             <div className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-600 flex items-center gap-1.5 tracking-wider">
-              <Clock className="h-3.5 w-3.5 text-slate-400/80" />
+            
               {formatDistanceToNow(new Date(job.postedAt), { addSuffix: true }).replace(/^about\s+/i, '')}
             </div>
             
             <div className="flex items-center gap-1.5 flex-wrap">
               {job.visaSponsorship && (
-                <Badge variant="outline" className="bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 border-sky-200/80 dark:border-sky-900/50 font-bold text-[9px] uppercase tracking-wider py-0.5 px-2 rounded-lg">
+                <Badge variant="outline" className="text-sky-700 dark:bg-sky-950/40 dark:text-sky-300  font-bold text-[9px] uppercase tracking-wider py-0.5 px-2">
                   ✈ Visa Sponsored
                 </Badge>
               )}
@@ -239,7 +228,7 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
                   onClick={handleSaveClick}
                   disabled={saving}
                   className={cn(
-                    "p-1.5 rounded-lg border transition-all duration-300 flex items-center justify-center shrink-0 ml-1 bg-white/60 border-slate-200 text-slate-400 hover:text-indigo-600 dark:bg-slate-950/40 dark:border-slate-800/80 dark:text-slate-600 dark:hover:text-indigo-400",
+                    "p-1.5 transition-all duration-300 flex items-center justify-center shrink-0 ml-1 bg-white/60 border-slate-200 text-slate-400 hover:text-indigo-600 dark:bg-slate-950/40 dark:border-slate-800/80 dark:text-slate-600 dark:hover:text-indigo-400",
                     saved && "bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-950/40 dark:border-indigo-900/50 dark:text-indigo-400"
                   )}
                   title={saved ? "Remove Bookmark" : "Save Job"}

@@ -58,15 +58,13 @@ export default function SkillMatchBadge({
         "inline-flex items-center gap-1.5 rounded-full transition-all duration-300 font-extrabold cursor-pointer group",
         matchData.badgeBg,
         matchData.borderColor,
-        size === "sm" && "px-2 py-0.5 text-[10px]",
-        size === "md" && "px-2.5 py-1 text-xs",
-        size === "lg" && "px-3.5 py-1.5 text-sm",
+        size === "sm" && " py-0.5 text-[10px]",
+        size === "md" && "py-1 text-xs",
+        size === "lg" && "py-1.5 text-sm",
         className
       )}
     >
-      <span className="flex items-center justify-center shrink-0">
-        {getIcon()}
-      </span>
+     
       <span className="tracking-tight">
         {matchData.matchPercentage}%{showTierLabel ? "" : " Match"}
       </span>
