@@ -196,9 +196,7 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
                     <div className="space-y-1.5">
                         <div className="flex items-center gap-2">
                             <h3 className="font-extrabold text-slate-900 text-lg tracking-tight">Profile Strength</h3>
-                            {completion >= 80 && (
-                                <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
-                            )}
+                           
                         </div>
                         <p className="text-xs text-slate-500 leading-normal max-w-[220px]">
                             {info.description}

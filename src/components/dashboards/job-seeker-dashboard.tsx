@@ -80,7 +80,7 @@ export default function JobSeekerDashboard() {
               prefetch={false} 
               className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors inline-flex items-center gap-1.5"
             >
-              <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            
               ATS Checker
             </Link>
             <Link 
@@ -88,7 +88,7 @@ export default function JobSeekerDashboard() {
               prefetch={false} 
               className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors inline-flex items-center gap-1.5"
             >
-              <Zap className="w-4 h-4 text-amber-500" />
+              
               Resume Builder
             </Link>
           </div>
