@@ -295,7 +295,7 @@ export function ProfileStrength({ user }: ProfileStrengthProps) {
                         </div>
                         <h4 className="text-sm font-black text-white tracking-wide">Elite Profile Rating</h4>
                         <p className="text-xs text-indigo-200 mt-1 leading-relaxed">
-                            Your profile is 100% complete! Recruiter matches and referral requests are fully boosted.
+                            Your profile is 100% complete! Recruiter matches requests are fully boosted.
                         </p>
                         <div className="mt-4 flex items-center justify-center gap-1 bg-white/5 border border-white/5 py-2 px-3 rounded-xl inline-flex">
                             <Check className="w-3.5 h-3.5 text-emerald-400" />
