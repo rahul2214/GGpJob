@@ -120,7 +120,12 @@ function getRateLimitConfig(
   method: string,
   authenticated: boolean
 ): { limit: number; windowMs: number } {
-  // Strict limits on authentication and payment endpoints
+  // Extra strict rate limit on account registration to prevent automated spam/bot attacks
+  if (pathname === '/api/auth/signup' && method === 'POST') {
+    return { limit: 5, windowMs: 15 * 60 * 1000 };
+  }
+
+  // Strict limits on other authentication and payment endpoints
   if (pathname.startsWith('/api/auth/') || pathname.startsWith('/api/payments/')) {
     return { limit: 15, windowMs: 60000 };
   }

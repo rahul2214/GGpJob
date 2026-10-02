@@ -36,7 +36,10 @@ const DISALLOWED_DOMAINS = [
 const formSchema = z.object({
   name: z.string().min(2, "Full name must be at least 2 characters."),
   email: z.string().email("Please enter a valid email address."),
-  phone: z.string().min(10, "Phone number must be at least 10 digits."),
+  phone: z.string()
+    .min(7, "Phone number must be at least 7 digits.")
+    .max(15, "Phone number cannot exceed 15 digits.")
+    .regex(/^[0-9]+$/, "Phone number must contain only numbers."),
   role: z.literal("Recruiter").default("Recruiter"),
   companyName: z.string().min(2, "Company name must be at least 2 characters."),
   companyWebsite: z.string()
@@ -78,6 +81,7 @@ export default function CompanySignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [countryCode, setCountryCode] = useState("+91");
+  const [websiteHp, setWebsiteHp] = useState("");
 
   useEffect(() => {
     if (!loading && user) router.push('/');
@@ -119,6 +123,7 @@ export default function CompanySignupPage() {
           phone: fullPhone,
           companyName: data.companyName,
           companyWebsite: data.companyWebsite || undefined,
+          website_hp: websiteHp,
         }),
       });
 
@@ -227,6 +232,17 @@ export default function CompanySignupPage() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-4">
+              {/* Anti-bot invisible honeypot */}
+              <input
+                type="text"
+                name="website_hp"
+                value={websiteHp}
+                onChange={(e) => setWebsiteHp(e.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+                style={{ position: 'absolute', opacity: 0, zIndex: -1, pointerEvents: 'none', height: 0, width: 0 }}
+                aria-hidden="true"
+              />
               <FormField control={form.control} name="name" render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-slate-700 font-semibold text-sm">Full Name</FormLabel>
@@ -253,7 +269,15 @@ export default function CompanySignupPage() {
                         onChange={setCountryCode}
                         className="h-11 max-w-[100px] rounded-xl border border-slate-200 bg-slate-100 text-slate-700 font-bold text-sm"
                       />
-                      <Input placeholder="9876543210" className="h-11 rounded-xl border-slate-200 focus:border-emerald-400 bg-slate-50 focus:bg-white transition-colors flex-1" {...field} />
+                      <Input
+                        type="tel"
+                        inputMode="numeric"
+                        maxLength={15}
+                        placeholder="9876543210"
+                        className="h-11 rounded-xl border-slate-200 focus:border-emerald-400 bg-slate-50 focus:bg-white transition-colors flex-1"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
+                      />
                     </div>
                   </FormControl>
                   <FormMessage />

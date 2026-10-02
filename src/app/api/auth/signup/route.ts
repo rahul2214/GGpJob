@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendFirebaseVerificationEmail } from '@/lib/auth-utils';
+import { validateEmailDeliverability } from '@/lib/email-deliverability';
 
 const DISALLOWED_DOMAINS = [
   'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com',
@@ -10,12 +11,29 @@ const DISALLOWED_DOMAINS = [
 
 export async function POST(request: Request) {
   try {
-    const { name, email, password, role, phone, companyName, companyWebsite, department, referralCode } = await request.json();
+    const { name, email, password, role, phone, companyName, companyWebsite, department, referralCode, website_hp } = await request.json();
+
+    // Anti-bot honeypot: hidden field that real users never fill out, but automated bots do
+    if (website_hp && String(website_hp).trim().length > 0) {
+      return NextResponse.json({ error: 'Automated submission rejected.' }, { status: 400 });
+    }
 
     const fullPhone = phone ? (phone.trim().startsWith('+') ? phone.trim() : `+91${phone.trim()}`) : undefined;
 
     if (!name || !email || !password || !role) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
+    }
+
+    if (phone && !/^\+?[0-9]{7,15}$/.test(phone.trim())) {
+      return NextResponse.json({ error: 'Please enter a valid phone number containing digits only (7 to 15 digits).' }, { status: 400 });
+    }
+
+    // Verify real-world deliverability (active DNS MX mail servers & non-disposable)
+    const deliverability = await validateEmailDeliverability(email);
+    if (!deliverability.valid) {
+      return NextResponse.json({
+        error: deliverability.error || 'Please enter a valid, active email address that can receive emails.',
+      }, { status: 400 });
     }
 
     if ((role === 'Recruiter') && !companyName) {
@@ -69,31 +87,50 @@ export async function POST(request: Request) {
       }
     }
 
-    const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      phone: fullPhone,
-      email_confirm: false, // Do not auto-confirm; Firebase will send the verification
-      phone_confirm: false, // Do not auto-confirm phone; stored for record only
-      user_metadata: {
-        name,
-        role,
+    let authData: any = null;
+    try {
+      const res = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
         phone: fullPhone,
-        companyName: companyName || undefined,
-        companyWebsite: companyWebsite || undefined,
-        department: department || undefined,
-      },
-    });
+        email_confirm: false, // Do not auto-confirm; Firebase will send the verification
+        phone_confirm: false, // Do not auto-confirm phone; stored for record only
+        user_metadata: {
+          name,
+          role,
+          phone: fullPhone,
+          companyName: companyName || undefined,
+          companyWebsite: companyWebsite || undefined,
+          department: department || undefined,
+        },
+      });
 
-    if (createError) {
-      const errMsg = createError.message?.toLowerCase() || '';
-      if (errMsg.includes('phone')) {
+      if (res?.error) {
+        const errMsg = (res.error.message || '').toLowerCase();
+        const errCode = res.error.code || '';
+        if (errMsg.includes('phone') || errCode === 'phone_exists') {
+          return NextResponse.json({ error: 'An account with this phone number already exists.' }, { status: 409 });
+        }
+        if (errMsg.includes('already registered') || errMsg.includes('already exists') || errCode === 'email_exists') {
+          return NextResponse.json({ error: 'An account with this email address has already been registered. Please sign in instead.' }, { status: 409 });
+        }
+        throw res.error;
+      }
+      authData = res?.data;
+    } catch (createErr: any) {
+      const errMsg = (createErr?.message || '').toLowerCase();
+      const errCode = createErr?.code || '';
+      if (errMsg.includes('phone') || errCode === 'phone_exists') {
         return NextResponse.json({ error: 'An account with this phone number already exists.' }, { status: 409 });
       }
-      if (errMsg.includes('already registered') || errMsg.includes('already exists')) {
-        return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 });
+      if (errMsg.includes('already registered') || errMsg.includes('already exists') || errCode === 'email_exists') {
+        return NextResponse.json({ error: 'An account with this email address has already been registered. Please sign in instead.' }, { status: 409 });
       }
-      throw createError;
+      throw createErr;
+    }
+
+    if (!authData?.user) {
+      return NextResponse.json({ error: 'Failed to create user account.' }, { status: 500 });
     }
 
     // ✅ AUTOMATED PROFILE CREATION - Admin roles cannot self-register
@@ -166,7 +203,25 @@ export async function POST(request: Request) {
     );
 
   } catch (error: any) {
+    const errMsg = (error?.message || '').toLowerCase();
+    const errCode = error?.code || '';
+
+    if (errMsg.includes('phone') || errCode === 'phone_exists') {
+      return NextResponse.json(
+        { error: 'An account with this phone number already exists. Please sign in or use a different phone number.' },
+        { status: 409 }
+      );
+    }
+
+    if (errMsg.includes('already registered') || errMsg.includes('already exists') || errCode === 'email_exists') {
+      return NextResponse.json(
+        { error: 'An account with this email address has already been registered. Please sign in instead.' },
+        { status: 409 }
+      );
+    }
+
     console.error('[API_SIGNUP] Error:', error);
     return NextResponse.json({ error: error.message || 'Failed to create account.' }, { status: 500 });
   }
 }
+

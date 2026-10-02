@@ -803,7 +803,15 @@ export function ProfileForm({ user, isEditingPage = false }: ProfileFormProps) {
                                         onChange={setCountryCode}
                                         className="h-10 max-w-[110px] rounded-md border border-slate-200 bg-slate-100 text-slate-700 font-bold text-sm"
                                     />
-                                    <Input placeholder="9876543210" className="flex-1" {...field} />
+                                    <Input
+                                        type="tel"
+                                        inputMode="numeric"
+                                        maxLength={15}
+                                        placeholder="9876543210"
+                                        className="flex-1"
+                                        {...field}
+                                        onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
+                                    />
                                 </div>
                             </FormControl>
                             <FormMessage />

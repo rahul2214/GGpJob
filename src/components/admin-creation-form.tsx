@@ -118,7 +118,14 @@ export function AdminCreationForm({ onSuccess }: AdminCreationFormProps) {
                 <FormItem>
                 <FormLabel>Phone Number</FormLabel>
                 <FormControl>
-                    <Input placeholder="1234567890" {...field} />
+                    <Input
+                        type="tel"
+                        inputMode="numeric"
+                        maxLength={10}
+                        placeholder="1234567890"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
+                    />
                 </FormControl>
                 <FormMessage />
                 </FormItem>

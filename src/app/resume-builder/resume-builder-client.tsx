@@ -3187,7 +3187,15 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 block mb-1">Phone</label>
-                    <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="9876543210" className="rounded-xl h-9 text-xs" />
+                    <Input
+                      type="tel"
+                      inputMode="numeric"
+                      maxLength={15}
+                      value={phone}
+                      onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
+                      placeholder="9876543210"
+                      className="rounded-xl h-9 text-xs"
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

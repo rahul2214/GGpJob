@@ -47,6 +47,7 @@ const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
   phone: z.string()
     .min(7, "Phone number must be at least 7 digits.")
+    .max(15, "Phone number cannot exceed 15 digits.")
     .regex(/^[0-9]+$/, "Phone number must contain only numbers."),
   password: z.string()
     .min(8, "Password must be at least 8 characters.")
@@ -81,6 +82,8 @@ export default function SignupPage() {
     }
   }, [user, loading, router]);
 
+  const [websiteHp, setWebsiteHp] = useState("");
+
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: { name: "", email: "", phone: "", password: "", confirmPassword: "" },
@@ -112,6 +115,7 @@ export default function SignupPage() {
           password: data.password,
           role: 'Job Seeker',
           phone: `${countryCode}${data.phone.replace(/^\+/, '')}`,
+          website_hp: websiteHp,
         }),
       });
 
@@ -254,6 +258,17 @@ export default function SignupPage() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit, (err) => onFormInvalid(err, toast))} className="space-y-4">
+              {/* Anti-bot invisible honeypot */}
+              <input
+                type="text"
+                name="website_hp"
+                value={websiteHp}
+                onChange={(e) => setWebsiteHp(e.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+                style={{ position: 'absolute', opacity: 0, zIndex: -1, pointerEvents: 'none', height: 0, width: 0 }}
+                aria-hidden="true"
+              />
               {/* Name + Email row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField control={form.control} name="name" render={({ field }) => (
@@ -283,7 +298,15 @@ export default function SignupPage() {
                         onChange={setCountryCode}
                         className="h-11 max-w-[100px] rounded-xl border border-slate-200 bg-slate-100 text-slate-700 font-bold text-sm"
                       />
-                      <Input placeholder="9876543210" className="h-11 rounded-xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors flex-1" {...field} />
+                      <Input
+                        type="tel"
+                        inputMode="numeric"
+                        maxLength={15}
+                        placeholder="9876543210"
+                        className="h-11 rounded-xl border-slate-200 focus:border-indigo-400 bg-slate-50 focus:bg-white transition-colors flex-1"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
+                      />
                     </div>
                   </FormControl>
                   <FormMessage />
