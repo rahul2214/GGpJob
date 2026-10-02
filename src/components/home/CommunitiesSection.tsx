@@ -271,7 +271,7 @@ export function CommunitiesSection() {
                         <span className={`text-xs font-bold ${isActive ? "text-violet-600 dark:text-violet-400" : "text-slate-700 dark:text-slate-300"}`}>
                           {item.title}
                         </span>
-                        {isActive && <Sparkles className="w-4 h-4 text-violet-600 dark:text-violet-400 animate-pulse" />}
+                        
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
                         {item.subtitle}
