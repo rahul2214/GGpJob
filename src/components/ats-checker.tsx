@@ -384,7 +384,7 @@ export function AtsChecker() {
               ) : (
                 <div className="p-4 rounded-2xl border border-indigo-100/60 bg-indigo-50/20 text-indigo-900 dark:border-indigo-950/30 dark:bg-indigo-950/5 text-xs sm:text-sm space-y-1.5 animate-in fade-in duration-300">
                   <p className="font-bold flex items-center gap-1.5 text-indigo-700 dark:text-indigo-400">
-                    <Sparkles className="w-4 h-4" /> General Check Mode
+                    General Check Mode
                   </p>
                   <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-xs">
                     Evaluates resume format, alignment, structures, active verbs, readability, and content patterns against general automated ATS scanner protocols.

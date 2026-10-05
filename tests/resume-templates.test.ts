@@ -199,5 +199,63 @@ describe("Resume Templates & PDF Rendering Pipeline", () => {
     expect(buffer).toBeDefined()
     expect(buffer.length).toBeGreaterThan(1000)
   })
+
+  describe("Custom Style Configuration (Fonts, Density Scales, Colors)", () => {
+    it("renders valid PDF with custom sans font, compact scale, and emerald primary color", async () => {
+      const element = React.createElement(ResumePdfDocument, {
+        data: SAMPLE_RESUME_DATA,
+        template: "ats-executive-modern",
+        styleConfig: {
+          fontFamily: "sans",
+          fontSizeScale: "compact",
+          primaryColor: "#047857",
+          textColor: "#111827",
+        },
+      })
+
+      const buffer = await renderToBuffer(element as any)
+      expect(buffer).toBeDefined()
+      expect(buffer.length).toBeGreaterThan(1000)
+      const header = buffer.subarray(0, 5).toString("ascii")
+      expect(header).toBe("%PDF-")
+    })
+
+    it("renders valid PDF with custom monospace font, spacious scale, and burgundy primary color", async () => {
+      const element = React.createElement(ResumePdfDocument, {
+        data: SAMPLE_RESUME_DATA,
+        template: "classic-serif",
+        styleConfig: {
+          fontFamily: "mono",
+          fontSizeScale: "spacious",
+          primaryColor: "#881337",
+          textColor: "#000000",
+        },
+      })
+
+      const buffer = await renderToBuffer(element as any)
+      expect(buffer).toBeDefined()
+      expect(buffer.length).toBeGreaterThan(1000)
+      const header = buffer.subarray(0, 5).toString("ascii")
+      expect(header).toBe("%PDF-")
+    })
+
+    it("renders valid PDF with serif font, standard scale, and executive navy color", async () => {
+      const element = React.createElement(ResumePdfDocument, {
+        data: SAMPLE_RESUME_DATA,
+        template: "creative-bold",
+        styleConfig: {
+          fontFamily: "serif",
+          fontSizeScale: "normal",
+          primaryColor: "#1e3a8a",
+        },
+      })
+
+      const buffer = await renderToBuffer(element as any)
+      expect(buffer).toBeDefined()
+      expect(buffer.length).toBeGreaterThan(1000)
+      const header = buffer.subarray(0, 5).toString("ascii")
+      expect(header).toBe("%PDF-")
+    })
+  })
 })
 

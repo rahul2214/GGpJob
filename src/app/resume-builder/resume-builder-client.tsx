@@ -13,8 +13,10 @@ import { Badge } from "@/components/ui/badge"
 import {
   Loader2, Sparkles, Plus, Trash2, Check, Briefcase,
   Code, GraduationCap, User, FileText, ChevronRight, ChevronLeft, ChevronDown,
-  Award, Download, Layers, Palette, X, Camera, Upload, Image as ImageIcon, Coins
+  Award, Download, Layers, Palette, X, Camera, Upload, Image as ImageIcon, Coins,
+  RotateCcw, Type, Sliders
 } from "lucide-react"
+import type { ResumeStyleConfig } from "@/components/resume/ResumePdfDocument"
 import { AnimatePresence, motion } from "framer-motion"
 import Link from "next/link"
 import {
@@ -2124,8 +2126,10 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
   const [draftTitle, setDraftTitle] = useState("My Resume")
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [visualTemplate, setVisualTemplate] = useState<string>("classic-serif")
+  const [styleConfig, setStyleConfig] = useState<ResumeStyleConfig>({})
   const [templateCategory, setTemplateCategory] = useState<'all' | 'ats' | 'tech' | 'executive' | 'photo' | 'creative'>('all')
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
+  const [showStylingPicker, setShowStylingPicker] = useState(false)
   const templateScrollRef = useRef<HTMLDivElement>(null)
 
   const scrollTemplates = (direction: 'left' | 'right') => {
@@ -2304,6 +2308,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
         if (data.draftTitle) setDraftTitle(data.draftTitle)
         if (data.templateType) setTemplateType(data.templateType)
         if (data.visualTemplate) setVisualTemplate(data.visualTemplate)
+        if (data.styleConfig !== undefined) setStyleConfig(data.styleConfig)
         if (data.name !== undefined) setName(data.name)
         if (data.role !== undefined) setRole(data.role)
         if (data.email !== undefined) setEmail(data.email)
@@ -2338,6 +2343,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
         draftTitle,
         templateType,
         visualTemplate,
+        styleConfig,
         name,
         role,
         email,
@@ -2365,6 +2371,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
     draftTitle,
     templateType,
     visualTemplate,
+    styleConfig,
     name,
     role,
     email,
@@ -2891,6 +2898,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
       setGeneratedResume(null)
     }
     setVisualTemplate(data.visualTemplate || "classic-serif")
+    if (data.styleConfig) {
+      setStyleConfig(data.styleConfig)
+    } else {
+      setStyleConfig({})
+    }
     setGapResult(null)
   }
 
@@ -2936,6 +2948,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
           grade: e.grade
         })),
         visualTemplate,
+        styleConfig: Object.keys(styleConfig).length > 0 ? styleConfig : undefined,
         isGenerated: !!generatedResume,
         referralCard: generatedResume?.referralCard
       }
@@ -3405,7 +3418,8 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           data: currentResumeData,
-          template: visualTemplate
+          template: visualTemplate,
+          styleConfig: (styleConfig.fontFamily || styleConfig.fontSizeScale || styleConfig.primaryColor || styleConfig.textColor) ? styleConfig : undefined
         })
       })
 
@@ -3536,14 +3550,16 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
           <div className="hidden sm:block h-5 w-px bg-slate-200/80 dark:bg-slate-800/80" />
 
-          {/* Design Layout Picker Button */}
-          <div className="flex items-center justify-between sm:justify-start gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0">Design Layout:</span>
+          {/* Design Layout Picker & Styling Buttons */}
+          <div className="flex flex-wrap items-center justify-between sm:justify-start gap-2">
             <Button
               type="button"
               variant={showTemplatePicker ? "default" : "outline"}
               size="sm"
-              onClick={() => setShowTemplatePicker(prev => !prev)}
+              onClick={() => {
+                setShowTemplatePicker(prev => !prev)
+                if (!showTemplatePicker) setShowStylingPicker(false)
+              }}
               className={`flex-1 sm:flex-none h-9 rounded-xl border-slate-250 text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all ${
                 showTemplatePicker
                   ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 dark:shadow-none"
@@ -3553,6 +3569,28 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               <Palette className={`w-3.5 h-3.5 ${showTemplatePicker ? "text-white" : "text-indigo-500"}`} />
               <span>Choose Template</span>
               <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showTemplatePicker ? "rotate-180" : ""}`} />
+            </Button>
+
+            <Button
+              type="button"
+              variant={showStylingPicker ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setShowStylingPicker(prev => !prev)
+                if (!showStylingPicker) setShowTemplatePicker(false)
+              }}
+              className={`flex-1 sm:flex-none h-9 rounded-xl border-slate-250 text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all ${
+                showStylingPicker
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 dark:shadow-none"
+                  : "bg-slate-50/50 hover:bg-slate-100 text-slate-700 dark:text-slate-200"
+              }`}
+            >
+              <Sliders className={`w-3.5 h-3.5 ${showStylingPicker ? "text-white" : "text-indigo-500"}`} />
+              <span>Font & Styling</span>
+              {(styleConfig.fontFamily || styleConfig.fontSizeScale || styleConfig.primaryColor || styleConfig.textColor) && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Custom styles active" />
+              )}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showStylingPicker ? "rotate-180" : ""}`} />
             </Button>
           </div>
         </div>
@@ -3753,6 +3791,241 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                   );
                 })}
               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Font & Styling - Expandable Drawer Section below Save Button & Toolbar */}
+      <AnimatePresence>
+        {showStylingPicker && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            transition={{ duration: 0.25 }}
+            className="mb-6 overflow-hidden print:hidden"
+          >
+            <div className="p-4 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-800/80 pb-2.5 mb-3 px-1">
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-wide uppercase">
+                    Font & Visual Styling
+                  </span>
+                  {(styleConfig.fontFamily || styleConfig.fontSizeScale || styleConfig.primaryColor || styleConfig.textColor) && (
+                    <Badge variant="secondary" className="text-[10px] bg-indigo-100/70 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-semibold px-2 py-0 border-indigo-200 dark:border-indigo-800">
+                      Active Overrides
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {(styleConfig.fontFamily || styleConfig.fontSizeScale || styleConfig.primaryColor || styleConfig.textColor) && (
+                    <button
+                      type="button"
+                      onClick={() => setStyleConfig({})}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors cursor-pointer mr-2"
+                      title="Reset styling to current template defaults"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Reset Defaults
+                    </button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowStylingPicker(false)}
+                    className="h-7 px-2 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg ml-1"
+                  >
+                    <X className="w-3.5 h-3.5 mr-1" /> Close
+                  </Button>
+                </div>
+              </div>
+
+              {/* Controls Layout with Dropdown Selects */}
+              {(() => {
+                const defaultFont = (visualTemplate === 'classic-serif' || visualTemplate === 'ats-ivy-league') ? 'serif' : (visualTemplate === 'ats-clean') ? 'mono' : 'sans';
+                const defaultDensity = (visualTemplate === 'compact-tech' || visualTemplate === 'ats-compact-onepage') ? 'compact' : 'normal';
+                const defaultPrimaryColor = (visualTemplate === 'ats-emerald-professional') ? '#047857' : (visualTemplate === 'ats-tech-faang') ? '#2563eb' : (visualTemplate === 'ats-executive-modern') ? '#1e293b' : (visualTemplate === 'executive-navy' || visualTemplate === 'photo-executive') ? '#1e3a8a' : (visualTemplate === 'creative-bold' || visualTemplate === 'photo-creative') ? '#4f46e5' : '#0f172a';
+                const defaultTextColor = (visualTemplate === 'classic-serif' || visualTemplate === 'ats-ivy-league') ? '#000000' : '#0f172a';
+
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end px-1 pt-1">
+                    {/* 1. Font Family Dropdown */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <Type className="w-3.5 h-3.5 text-indigo-500" />
+                        Font Family
+                      </label>
+                      <Select
+                        value={styleConfig.fontFamily || defaultFont}
+                        onValueChange={(val) => setStyleConfig(prev => ({ ...prev, fontFamily: val as any }))}
+                      >
+                        <SelectTrigger className="w-full h-9 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium shadow-xs">
+                          <SelectValue placeholder="Select Font Family" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="sans" className="text-xs font-sans">
+                            Modern Sans (Inter / Helvetica)
+                          </SelectItem>
+                          <SelectItem value="serif" className="text-xs font-serif">
+                            Classic Serif (Times / Garamond)
+                          </SelectItem>
+                          <SelectItem value="mono" className="text-xs font-mono">
+                            Clean Monospace (Courier / Code)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* 2. Density / Scale Dropdown */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <Sliders className="w-3.5 h-3.5 text-indigo-500" />
+                        Density / Scale
+                      </label>
+                      <Select
+                        value={styleConfig.fontSizeScale || defaultDensity}
+                        onValueChange={(val) => setStyleConfig(prev => ({ ...prev, fontSizeScale: val as any }))}
+                      >
+                        <SelectTrigger className="w-full h-9 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium shadow-xs">
+                          <SelectValue placeholder="Select Density" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="compact" className="text-xs">
+                            Compact (A- | High Density)
+                          </SelectItem>
+                          <SelectItem value="normal" className="text-xs">
+                            Standard (A | Balanced Spacing)
+                          </SelectItem>
+                          <SelectItem value="spacious" className="text-xs">
+                            Spacious (A+ | Relaxed Spacing)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* 3. Accent & Headers Color Dropdown */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                          <Palette className="w-3.5 h-3.5 text-indigo-500" />
+                          Accent & Headers
+                        </label>
+                        <label
+                          className="inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-indigo-600 dark:text-slate-400 cursor-pointer"
+                          title="Pick custom hex color"
+                        >
+                          <input
+                            type="color"
+                            value={styleConfig.primaryColor || defaultPrimaryColor}
+                            onChange={(e) => setStyleConfig(prev => ({ ...prev, primaryColor: e.target.value }))}
+                            className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-600 cursor-pointer p-0 appearance-none bg-transparent"
+                          />
+                          <span>Custom</span>
+                        </label>
+                      </div>
+                      <Select
+                        value={styleConfig.primaryColor?.toLowerCase() || defaultPrimaryColor.toLowerCase()}
+                        onValueChange={(val) => setStyleConfig(prev => ({ ...prev, primaryColor: val }))}
+                      >
+                        <SelectTrigger className="w-full h-9 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium shadow-xs">
+                          <SelectValue placeholder="Select Accent Color" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="#0f172a" className="text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[#0f172a]" />
+                              <span>Dark Slate (#0f172a)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="#1e3a8a" className="text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[#1e3a8a]" />
+                              <span>Executive Navy (#1e3a8a)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="#4f46e5" className="text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[#4f46e5]" />
+                              <span>Electric Indigo (#4f46e5)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="#047857" className="text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[#047857]" />
+                              <span>Emerald Green (#047857)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="#881337" className="text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[#881337]" />
+                              <span>Burgundy Wine (#881337)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="#0284c7" className="text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[#0284c7]" />
+                              <span>Steel Blue (#0284c7)</span>
+                            </div>
+                          </SelectItem>
+                          {styleConfig.primaryColor && !['#0f172a', '#1e3a8a', '#4f46e5', '#047857', '#881337', '#0284c7'].includes(styleConfig.primaryColor.toLowerCase()) && (
+                            <SelectItem value={styleConfig.primaryColor.toLowerCase()} className="text-xs">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: styleConfig.primaryColor }} />
+                                <span>Custom ({styleConfig.primaryColor})</span>
+                              </div>
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* 4. Text Color Dropdown */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <FileText className="w-3.5 h-3.5 text-indigo-500" />
+                        Text Color
+                      </label>
+                      <Select
+                        value={styleConfig.textColor?.toLowerCase() || defaultTextColor.toLowerCase()}
+                        onValueChange={(val) => setStyleConfig(prev => ({ ...prev, textColor: val }))}
+                      >
+                        <SelectTrigger className="w-full h-9 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium shadow-xs">
+                          <SelectValue placeholder="Select Text Color" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="#000000" className="text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[#000000] border border-black/20" />
+                              <span>Deep Black (#000000)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="#0f172a" className="text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[#0f172a]" />
+                              <span>Dark Slate (#0f172a)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="#334155" className="text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[#334155]" />
+                              <span>Charcoal (#334155)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="#1e293b" className="text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[#1e293b]" />
+                              <span>Navy Slate (#1e293b)</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </motion.div>
         )}
@@ -4459,6 +4732,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                
                 {hasUserData && (
                   <Button
                     size="sm"
@@ -4485,7 +4759,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                 </Button>
               </div>
             </div>
-            {/* Helper style definitions based on visualTemplate */}
+            {/* Helper style definitions based on visualTemplate and styleConfig */}
             {(() => {
               const isIvyLeague = visualTemplate === 'ats-ivy-league'
               const isTechFaang = visualTemplate === 'ats-tech-faang'
@@ -4507,19 +4781,33 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               const isPhotoCreative = visualTemplate === 'photo-creative'
               const isPhotoMinimal = visualTemplate === 'photo-minimal'
 
-              const previewFontClass = isSerif ? "font-serif" : isAtsClean ? "font-mono" : "font-sans"
-              const previewTextColor = isEmerald
-                ? "text-slate-900 dark:text-slate-100"
-                : isMinimal || isElegant || isSwiss
-                ? "text-slate-700 dark:text-slate-300"
-                : "text-slate-950 dark:text-slate-100"
-              const previewPadding = isCompact ? "p-2.5 sm:p-5 md:p-6" : isIvyLeague || isAtsClean ? "p-3 sm:p-6 md:p-8" : "p-3 sm:p-8 lg:p-12"
-              const previewTextSize = isCompact ? "text-[8px] sm:text-[11px]" : "text-[8.5px] sm:text-xs"
-              const previewSectionTitleSize = isCompact ? "text-[8px] sm:text-[10px] font-black uppercase tracking-wider" : "text-[8.5px] sm:text-xs font-black uppercase tracking-wider"
-              const previewHeadlineSize = isCompact ? "text-[7.5px] sm:text-[10px]" : "text-[8px] sm:text-[11px]"
-              const previewTitleSize = isCompact ? "text-sm sm:text-2xl" : isCreative ? "text-base sm:text-3xl md:text-4xl" : "text-base sm:text-2xl md:text-3xl"
-              const previewSectionMargin = isCompact ? "mb-1 sm:mb-2" : (isTwoColumn || isElegant || isPhotoSidebar) ? "mb-1.5 sm:mb-2.5" : "mb-1.5 sm:mb-3"
-              const previewSectionHeaderMargin = isCompact ? "mb-0.5 sm:mb-1" : "mb-0.5 sm:mb-1.5"
+              const previewFontClass = styleConfig.fontFamily === 'serif'
+                ? "font-serif"
+                : styleConfig.fontFamily === 'mono'
+                ? "font-mono"
+                : styleConfig.fontFamily === 'sans'
+                ? "font-sans"
+                : (isSerif ? "font-serif" : isAtsClean ? "font-mono" : "font-sans")
+
+              const previewTextColor = styleConfig.textColor
+                ? ""
+                : (isEmerald
+                  ? "text-slate-900 dark:text-slate-100"
+                  : isMinimal || isElegant || isSwiss
+                  ? "text-slate-700 dark:text-slate-300"
+                  : "text-slate-950 dark:text-slate-100")
+
+              const scale = styleConfig.fontSizeScale
+              const isEffectiveCompact = scale === 'compact' || (!scale && isCompact)
+              const isEffectiveSpacious = scale === 'spacious'
+
+              const previewPadding = isEffectiveCompact ? "p-2.5 sm:p-5 md:p-6" : isEffectiveSpacious ? "p-3 sm:p-8 lg:p-14" : (isIvyLeague || isAtsClean ? "p-3 sm:p-6 md:p-8" : "p-3 sm:p-8 lg:p-12")
+              const previewTextSize = isEffectiveCompact ? "text-[7.5px] sm:text-[10.5px]" : isEffectiveSpacious ? "text-[9.5px] sm:text-[13px]" : "text-[8.5px] sm:text-xs"
+              const previewSectionTitleSize = isEffectiveCompact ? "text-[7.5px] sm:text-[9.5px] font-black uppercase tracking-wider" : isEffectiveSpacious ? "text-[9.5px] sm:text-sm font-black uppercase tracking-wider" : "text-[8.5px] sm:text-xs font-black uppercase tracking-wider"
+              const previewHeadlineSize = isEffectiveCompact ? "text-[7px] sm:text-[9.5px]" : isEffectiveSpacious ? "text-[9px] sm:text-xs" : "text-[8px] sm:text-[11px]"
+              const previewTitleSize = isEffectiveCompact ? "text-sm sm:text-xl md:text-2xl" : isEffectiveSpacious ? "text-lg sm:text-3xl md:text-4xl" : (isCreative ? "text-base sm:text-3xl md:text-4xl" : "text-base sm:text-2xl md:text-3xl")
+              const previewSectionMargin = isEffectiveCompact ? "mb-1 sm:mb-2" : isEffectiveSpacious ? "mb-2 sm:mb-4" : ((isTwoColumn || isElegant || isPhotoSidebar) ? "mb-1.5 sm:mb-2.5" : "mb-1.5 sm:mb-3")
+              const previewSectionHeaderMargin = isEffectiveCompact ? "mb-0.5 sm:mb-1" : isEffectiveSpacious ? "mb-1 sm:mb-2" : "mb-0.5 sm:mb-1.5"
               const previewSectionDividerColor = isEmerald
                 ? "border-emerald-700 dark:border-emerald-500 border-b-2"
                 : isTechFaang
@@ -4651,18 +4939,29 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               )
 
               const getSectionHeadingClass = () => `${previewSectionTitleSize} ${
-                isEmerald ? "text-emerald-800 dark:text-emerald-400" :
-                isTechFaang ? "text-blue-700 dark:text-blue-400" :
-                isExecModern ? "text-slate-900 dark:text-slate-200" :
-                isNavy ? "text-blue-900 dark:text-blue-400" :
-                isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
-                isMinimal || isElegant || isSwiss ? "text-slate-700 dark:text-slate-400" :
-                "text-slate-905 dark:text-white"
-              } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`
+                styleConfig.primaryColor ? "" : (
+                  isEmerald ? "text-emerald-800 dark:text-emerald-400" :
+                  isTechFaang ? "text-blue-700 dark:text-blue-400" :
+                  isExecModern ? "text-slate-900 dark:text-slate-200" :
+                  isNavy ? "text-blue-900 dark:text-blue-400" :
+                  isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
+                  isMinimal || isElegant || isSwiss ? "text-slate-700 dark:text-slate-400" :
+                  "text-slate-905 dark:text-white"
+                )
+              } ${!isCreative && !isAtsClean ? (styleConfig.primaryColor ? "border-b" : "border-b " + previewSectionDividerColor) : (isCreative && styleConfig.primaryColor ? "border-l-2 sm:border-l-4 pl-1.5 sm:pl-2" : "")} pb-0.5 ${previewSectionHeaderMargin}`
+
+              const getSectionHeadingStyle = () => {
+                if (!styleConfig.primaryColor) return undefined
+                return {
+                  color: styleConfig.primaryColor,
+                  borderColor: isAtsClean ? 'transparent' : styleConfig.primaryColor,
+                  borderLeftColor: isCreative ? styleConfig.primaryColor : undefined,
+                }
+              }
 
               const renderPreviewSummary = () => effectiveSummary ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={getSectionHeadingClass()}>
+                  <h2 className={getSectionHeadingClass()} style={getSectionHeadingStyle()}>
                     Professional Summary
                   </h2>
                   <p className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} break-words`}>{effectiveSummary}</p>
@@ -4671,7 +4970,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
               const renderPreviewSkills = () => effectiveSkills && effectiveSkills.length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={getSectionHeadingClass()}>
+                  <h2 className={getSectionHeadingClass()} style={getSectionHeadingStyle()}>
                     Skills & Tech Stack
                   </h2>
                   {typeof (effectiveSkills as any)[0] === 'string' ? (
@@ -4684,14 +4983,16 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                         return (
                           <div key={idx} className="break-words">
                             <strong className={
-                              isEmerald ? "text-emerald-800 dark:text-emerald-400" :
-                              isTechFaang ? "text-blue-700 dark:text-blue-400" :
-                              isExecModern ? "text-slate-900 dark:text-slate-200" :
-                              isNavy ? "text-blue-900 dark:text-blue-400" :
-                              isCreative ? "text-indigo-950 dark:text-indigo-300" :
-                              isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-slate-200" :
-                              "text-slate-950 dark:text-white"
-                            }>{cat.category}: </strong>
+                              styleConfig.primaryColor ? "" : (
+                                isEmerald ? "text-emerald-800 dark:text-emerald-400" :
+                                isTechFaang ? "text-blue-700 dark:text-blue-400" :
+                                isExecModern ? "text-slate-900 dark:text-slate-200" :
+                                isNavy ? "text-blue-900 dark:text-blue-400" :
+                                isCreative ? "text-indigo-950 dark:text-indigo-300" :
+                                isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-slate-200" :
+                                "text-slate-950 dark:text-white"
+                              )
+                            } style={{ color: styleConfig.primaryColor || undefined }}>{cat.category}: </strong>
                             <span>{skillsList.join(",  ")}</span>
                           </div>
                         );
@@ -4703,22 +5004,24 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
               const renderPreviewExperience = () => effectiveJobs.filter(j => j.company || j.role).length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={getSectionHeadingClass()}>
+                  <h2 className={getSectionHeadingClass()} style={getSectionHeadingStyle()}>
                     Experience
                   </h2>
                   <div className={isCompact ? "space-y-1 sm:space-y-2" : "space-y-1.5 sm:space-y-3.5"}>
                     {effectiveJobs.filter(j => j.company || j.role).map((job, idx) => (
                       <div key={idx}>
                         <div className={`flex flex-wrap items-baseline justify-between ${previewTextSize} font-bold ${
-                          isEmerald ? "text-emerald-950 dark:text-emerald-200" :
-                          isTechFaang ? "text-slate-950 dark:text-white" :
-                          isExecModern ? "text-slate-950 dark:text-white" :
-                          isNavy ? "text-blue-900 dark:text-blue-400" :
-                          isCreative ? "text-slate-900 dark:text-white" :
-                          isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-white" :
-                          "text-slate-950 dark:text-white"
+                          styleConfig.primaryColor ? "" : (
+                            isEmerald ? "text-emerald-950 dark:text-emerald-200" :
+                            isTechFaang ? "text-slate-950 dark:text-white" :
+                            isExecModern ? "text-slate-950 dark:text-white" :
+                            isNavy ? "text-blue-900 dark:text-blue-400" :
+                            isCreative ? "text-slate-900 dark:text-white" :
+                            isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-white" :
+                            "text-slate-950 dark:text-white"
+                          )
                         } mb-0.5 gap-x-1 gap-y-0.5`}>
-                          <span className="break-words">{job.role || "Role"} — {job.company || "Company"}{job.location ? ` (${job.location})` : ""}</span>
+                          <span className="break-words" style={{ color: styleConfig.primaryColor || undefined }}>{job.role || "Role"} — {job.company || "Company"}{job.location ? ` (${job.location})` : ""}</span>
                           <span className="font-semibold text-slate-500 dark:text-slate-400 text-[7.5px] sm:text-xs shrink-0">{formatExperienceDateRange(job.startDate, job.endDate, job.currentlyWorkHere)}</span>
                         </div>
                         {job.points && job.points.filter(Boolean).length > 0 && (
@@ -4736,26 +5039,28 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
               const renderPreviewProjects = () => effectiveProjects.filter(p => p.name).length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={getSectionHeadingClass()}>
+                  <h2 className={getSectionHeadingClass()} style={getSectionHeadingStyle()}>
                     Projects
                   </h2>
                   <div className={isCompact ? "space-y-1 sm:space-y-2" : "space-y-1.5 sm:space-y-3.5"}>
                     {effectiveProjects.filter(p => p.name).map((proj, idx) => (
                       <div key={idx}>
                         <div className={`flex flex-wrap items-baseline justify-between ${previewTextSize} font-bold ${
-                          isEmerald ? "text-emerald-950 dark:text-emerald-200" :
-                          isTechFaang ? "text-slate-950 dark:text-white" :
-                          isExecModern ? "text-slate-950 dark:text-white" :
-                          isNavy ? "text-blue-900 dark:text-blue-400" :
-                          isCreative ? "text-slate-900 dark:text-white" :
-                          isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-white" :
-                          "text-slate-950 dark:text-white"
+                          styleConfig.primaryColor ? "" : (
+                            isEmerald ? "text-emerald-950 dark:text-emerald-200" :
+                            isTechFaang ? "text-slate-950 dark:text-white" :
+                            isExecModern ? "text-slate-950 dark:text-white" :
+                            isNavy ? "text-blue-900 dark:text-blue-400" :
+                            isCreative ? "text-slate-900 dark:text-white" :
+                            isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-white" :
+                            "text-slate-950 dark:text-white"
+                          )
                         } mb-0.5 gap-1`}>
-                          <span className="break-words">
+                          <span className="break-words" style={{ color: styleConfig.primaryColor || undefined }}>
                             {proj.name}
                             {proj.projectLink && (
                               <span className="text-[7.5px] sm:text-[10px] font-normal text-slate-400 dark:text-slate-500 ml-1 inline-block">
-                                <a href={formatUrl(proj.projectLink)} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                <a href={formatUrl(proj.projectLink)} target="_blank" rel="noopener noreferrer" style={{ color: styleConfig.primaryColor || undefined }} className="text-indigo-600 dark:text-indigo-400 hover:underline">
                                   LINK
                                 </a>
                               </span>
@@ -4782,22 +5087,24 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
               const renderPreviewEducation = () => effectiveEducation.filter(e => e.institution || e.degree).length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={getSectionHeadingClass()}>
+                  <h2 className={getSectionHeadingClass()} style={getSectionHeadingStyle()}>
                     Education
                   </h2>
                   <div className={isCompact ? "space-y-1 sm:space-y-1.5" : "space-y-1 sm:space-y-3"}>
                     {effectiveEducation.filter(e => e.institution || e.degree).map((edu, idx) => (
                       <div key={idx}>
                         <div className={`flex flex-wrap items-baseline justify-between ${previewTextSize} font-bold ${
-                          isEmerald ? "text-emerald-950 dark:text-emerald-200" :
-                          isTechFaang ? "text-slate-950 dark:text-white" :
-                          isExecModern ? "text-slate-950 dark:text-white" :
-                          isNavy ? "text-blue-900 dark:text-blue-400" :
-                          isCreative ? "text-slate-900 dark:text-white" :
-                          isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-white" :
-                          "text-slate-950 dark:text-white"
+                          styleConfig.primaryColor ? "" : (
+                            isEmerald ? "text-emerald-950 dark:text-emerald-200" :
+                            isTechFaang ? "text-slate-950 dark:text-white" :
+                            isExecModern ? "text-slate-950 dark:text-white" :
+                            isNavy ? "text-blue-900 dark:text-blue-400" :
+                            isCreative ? "text-slate-900 dark:text-white" :
+                            isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-white" :
+                            "text-slate-950 dark:text-white"
+                          )
                         } gap-x-1 gap-y-0.5`}>
-                          <span className="break-words">{edu.degree || "Degree"}{edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ""} — {edu.institution || "Institution"}</span>
+                          <span className="break-words" style={{ color: styleConfig.primaryColor || undefined }}>{edu.degree || "Degree"}{edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ""} — {edu.institution || "Institution"}</span>
                           <span className="font-semibold text-slate-500 dark:text-slate-400 text-[7.5px] sm:text-xs shrink-0">{edu.year}</span>
                         </div>
                         {edu.grade && (
@@ -4811,7 +5118,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
               const renderPreviewAchievements = () => effectiveAchievements.filter(Boolean).length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={getSectionHeadingClass()}>
+                  <h2 className={getSectionHeadingClass()} style={getSectionHeadingStyle()}>
                     Achievements & Certifications
                   </h2>
                   <ul className="list-disc pl-2.5 sm:pl-4 space-y-0.5">
@@ -4824,7 +5131,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
               const renderPreviewLanguages = () => effectiveLanguages.filter(Boolean).length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={getSectionHeadingClass()}>
+                  <h2 className={getSectionHeadingClass()} style={getSectionHeadingStyle()}>
                     Languages
                   </h2>
                   <p className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} font-medium break-words`}>{effectiveLanguages.filter(Boolean).join(", ")}</p>
@@ -4834,6 +5141,9 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               return (
                 <div
                   id="printable-resume-area"
+                  style={{
+                    color: styleConfig.textColor || undefined,
+                  }}
                   className={`min-h-0 sm:min-h-[800px] w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl sm:rounded-3xl ${previewPadding} shadow-sm sm:shadow-xl shadow-slate-100 dark:shadow-none ${previewFontClass} ${previewTextColor} select-text overflow-hidden transition-all duration-350`}
                 >
                   <div className="text-left max-w-full animate-in fade-in duration-500">
@@ -4858,12 +5168,12 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                         </div>
                         {/* Right Main (72% on mobile, 75% on desktop) */}
                         <div className="flex-1 min-w-0 pl-1 sm:pl-2">
-                          <div className="pb-1.5 sm:pb-3 mb-2 sm:mb-3 border-b-2 border-indigo-600">
-                            <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 break-words`}>
+                          <div className="pb-1.5 sm:pb-3 mb-2 sm:mb-3 border-b-2 border-indigo-600" style={{ borderColor: styleConfig.primaryColor || undefined }}>
+                            <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
                               {effectiveName}
                             </div>
                             {effectiveRole && (
-                              <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider break-words`}>
+                              <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
                                 {effectiveRole}
                               </p>
                             )}
@@ -4876,10 +5186,10 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     ) : isPhotoExec ? (
                       /* Executive Headshot Layout */
                       <div>
-                        <div className="flex flex-row items-center sm:items-start gap-2.5 sm:gap-5 pb-2.5 sm:pb-4 mb-2.5 sm:mb-4 border-b-2 border-blue-900 dark:border-blue-700">
+                        <div className="flex flex-row items-center sm:items-start gap-2.5 sm:gap-5 pb-2.5 sm:pb-4 mb-2.5 sm:mb-4 border-b-2 border-blue-900 dark:border-blue-700" style={{ borderColor: styleConfig.primaryColor || undefined }}>
                           {renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
                           <div className="flex-1 min-w-0 text-left space-y-0.5 sm:space-y-1">
-                            <div className={`${previewTitleSize} font-black text-blue-900 dark:text-blue-400 tracking-tight break-words`}>
+                            <div className={`${previewTitleSize} font-black text-blue-900 dark:text-blue-400 tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
                               {effectiveName}
                             </div>
                             {effectiveRole && (
@@ -4905,18 +5215,18 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                         <div className="flex flex-row items-center sm:items-start gap-2.5 sm:gap-5 pb-2 mb-2">
                           {renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
                           <div className="flex-1 min-w-0 text-left space-y-0.5 sm:space-y-1">
-                            <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight break-words`}>
+                            <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
                               {effectiveName}
                             </div>
                             {effectiveRole && (
-                              <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider break-words`}>
+                              <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
                                 {effectiveRole}
                               </p>
                             )}
                             {renderContactRow()}
                           </div>
                         </div>
-                        <div className="h-0.5 sm:h-1 w-full bg-indigo-600 mb-2.5 sm:mb-4" />
+                        <div className="h-0.5 sm:h-1 w-full bg-indigo-600 mb-2.5 sm:mb-4" style={{ backgroundColor: styleConfig.primaryColor || undefined }} />
 
                         {renderPreviewSummary()}
                         {renderPreviewSkills()}
@@ -4931,7 +5241,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       <div>
                         <div className="flex flex-row items-center justify-between gap-2 pb-2 sm:pb-3 mb-2.5 sm:mb-4 border-b border-slate-200 dark:border-slate-800">
                           <div className="space-y-0.5 sm:space-y-1 text-left flex-1 min-w-0">
-                            <div className={`${previewTitleSize} font-bold text-slate-800 dark:text-white tracking-tight break-words`}>
+                            <div className={`${previewTitleSize} font-bold text-slate-800 dark:text-white tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
                               {effectiveName}
                             </div>
                             {effectiveRole && (
@@ -4956,7 +5266,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       <div>
                         {/* Header */}
                         <div className={`flex flex-col text-left mb-2.5 sm:mb-4`}>
-                          <div className={`${previewTitleSize} font-black tracking-tight mb-0.5 sm:mb-1 text-slate-950 dark:text-white break-words`}>{effectiveName}</div>
+                          <div className={`${previewTitleSize} font-black tracking-tight mb-0.5 sm:mb-1 text-slate-950 dark:text-white break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
                           {effectiveRole && (
                             <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
                           )}
@@ -4984,7 +5294,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                         {/* Left Sidebar (30%) */}
                         <div className="w-[30%] sm:w-[30%] shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-4">
                           <div className={previewSectionMargin}>
-                            <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 sm:mb-1 break-words`}>{effectiveName}</div>
+                            <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
                             {effectiveRole && (
                               <p className={`${previewHeadlineSize} font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 sm:mb-2 break-words`}>{effectiveRole}</p>
                             )}
@@ -4997,11 +5307,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                         </div>
                         {/* Right Main (70%) */}
                         <div className="flex-1 min-w-0 pl-1 sm:pl-2">
-                          <div className={`pb-1.5 sm:pb-3 border-b-2 border-slate-200 dark:border-slate-800 ${previewSectionMargin}`}>
-                            <h2 className={`${previewSectionTitleSize} text-slate-900 dark:text-white`}>
-                              Overview & History
-                            </h2>
-                          </div>
+                          
                           {renderPreviewSummary()}
                           {renderPreviewExperience()}
                           {renderPreviewProjects()}
@@ -5013,13 +5319,15 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                         {/* Header */}
                         <div className={`flex flex-col ${previewHeaderAlign} mb-2.5 sm:mb-4`}>
                           <div className={`${previewTitleSize} font-black ${
-                            isEmerald ? "text-emerald-950 dark:text-emerald-100" :
-                            isTechFaang ? "text-slate-950 dark:text-white" :
-                            isExecModern ? "text-slate-950 dark:text-white" :
-                            isNavy ? "text-blue-900 dark:text-blue-400" :
-                            isMinimal ? "text-slate-800 dark:text-white" :
-                            "text-slate-950 dark:text-white"
-                          } tracking-tight mb-0.5 sm:mb-1 break-words`}>{effectiveName}</div>
+                            styleConfig.primaryColor ? "" : (
+                              isEmerald ? "text-emerald-950 dark:text-emerald-100" :
+                              isTechFaang ? "text-slate-950 dark:text-white" :
+                              isExecModern ? "text-slate-950 dark:text-white" :
+                              isNavy ? "text-blue-900 dark:text-blue-400" :
+                              isMinimal ? "text-slate-800 dark:text-white" :
+                              "text-slate-950 dark:text-white"
+                            )
+                          } tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
                           {effectiveRole && (
                             <p className={`${previewHeadlineSize} font-bold ${
                               isEmerald ? "text-emerald-700 dark:text-emerald-400 font-bold" :
@@ -5030,7 +5338,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                               "text-slate-700 dark:text-slate-300"
                             } uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
                           )}
-                          {isCreative && <div className="h-0.5 sm:h-1 w-full bg-indigo-600 rounded-full my-1.5 sm:my-2" />}
+                          {isCreative && <div className="h-0.5 sm:h-1 w-full bg-indigo-600 rounded-full my-1.5 sm:my-2" style={{ backgroundColor: styleConfig.primaryColor || undefined }} />}
                           {renderContactRow()}
                         </div>
 

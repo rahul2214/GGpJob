@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     const { user: authUser, errorResponse } = await requireAuth(req);
     if (errorResponse) return errorResponse;
 
-    const { data, template } = await req.json()
+    const { data, template, styleConfig } = await req.json()
 
     if (!data) {
       return NextResponse.json({ error: "Missing resume data" }, { status: 400 })
@@ -21,7 +21,8 @@ export async function POST(req: NextRequest) {
 
     const element = React.createElement(ResumePdfDocument as any, {
       data,
-      template: template || "classic-serif"
+      template: template || "classic-serif",
+      styleConfig,
     })
 
     const buffer = await renderToBuffer(element as any)

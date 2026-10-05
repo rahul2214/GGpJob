@@ -9,8 +9,15 @@ import {
   Image,
 } from "@react-pdf/renderer"
 
+export interface ResumeStyleConfig {
+  fontFamily?: 'sans' | 'serif' | 'mono';
+  fontSizeScale?: 'compact' | 'normal' | 'spacious';
+  primaryColor?: string;
+  textColor?: string;
+}
+
 // Helper: Generates stylesheet based on the active visual template
-const getStyles = (template: string) => {
+const getStyles = (template: string, styleConfig?: ResumeStyleConfig) => {
   const isIvyLeague = template === 'ats-ivy-league';
   const isTechFaang = template === 'ats-tech-faang';
   const isExecModern = template === 'ats-executive-modern';
@@ -31,8 +38,19 @@ const getStyles = (template: string) => {
   const isPhotoCreative = template === 'photo-creative';
   const isAtsClean = template === 'ats-clean';
 
-  const fontFamily = isSerif ? "Times-Roman" : isAtsClean ? "Courier" : "Helvetica";
-  const fontFamilyBold = isSerif ? "Times-Bold" : isAtsClean ? "Courier-Bold" : "Helvetica-Bold";
+  let fontFamily = isSerif ? "Times-Roman" : isAtsClean ? "Courier" : "Helvetica";
+  let fontFamilyBold = isSerif ? "Times-Bold" : isAtsClean ? "Courier-Bold" : "Helvetica-Bold";
+
+  if (styleConfig?.fontFamily === 'serif') {
+    fontFamily = "Times-Roman";
+    fontFamilyBold = "Times-Bold";
+  } else if (styleConfig?.fontFamily === 'mono') {
+    fontFamily = "Courier";
+    fontFamilyBold = "Courier-Bold";
+  } else if (styleConfig?.fontFamily === 'sans') {
+    fontFamily = "Helvetica";
+    fontFamilyBold = "Helvetica-Bold";
+  }
 
   // Base colors
   let textColor = "#000000";
@@ -91,35 +109,61 @@ const getStyles = (template: string) => {
     borderColor = "transparent";
   }
 
+  // Apply explicit color overrides if provided
+  if (styleConfig?.primaryColor) {
+    nameColor = styleConfig.primaryColor;
+    sectionColor = styleConfig.primaryColor;
+    if (borderColor !== "transparent") {
+      borderColor = styleConfig.primaryColor;
+    }
+  }
+  if (styleConfig?.textColor) {
+    textColor = styleConfig.textColor;
+  }
+
   // Header Align
   const headerAlign = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isTechFaang || isExecModern || isEmerald) ? "flex-start" : "center";
   const contactJustify = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isTechFaang || isExecModern || isEmerald) ? "flex-start" : "center";
 
+  // Font sizing and density scales
+  const scale = styleConfig?.fontSizeScale;
+  const isScaleCompact = scale === 'compact' || (!scale && isCompact);
+  const isScaleSpacious = scale === 'spacious';
+
+  const baseFontSize = isScaleCompact ? 9 : isScaleSpacious ? 11 : 10;
+  const baseLineHeight = isScaleCompact ? 1.35 : isScaleSpacious ? 1.45 : 1.4;
+  const bodyFontSize = isScaleCompact ? 8.5 : isScaleSpacious ? 10.5 : 9.5;
+  const sectionTitleFontSize = isScaleCompact ? 9 : isScaleSpacious ? 11 : 10;
+  const nameFontSize = isScaleCompact ? (isCreative ? 22 : 18) : isScaleSpacious ? (isCreative ? 26 : 24) : (isCreative ? 24 : 22);
+  const headlineFontSize = isScaleCompact ? 10 : isScaleSpacious ? 12.5 : 11.5;
+  const contactTextFontSize = isScaleCompact ? 8 : isScaleSpacious ? 10 : 9;
+  const contactDotFontSize = isScaleCompact ? 7.5 : isScaleSpacious ? 9.5 : 8.5;
+
   // Spacing
-  const pagePaddingTop = isCompact ? 16 : isIvyLeague ? 24 : 28;
-  const pagePaddingBottom = isCompact ? 12 : 20;
-  const entryBlockMargin = isCompact ? 3.5 : (isTwoColumn || isElegant) ? 5 : 8;
-  const sectionMargin = isCompact ? 2 : (isTwoColumn || isElegant) ? 4 : isIvyLeague ? 4.5 : 5;
+  const pagePaddingTop = isScaleCompact ? 16 : isScaleSpacious ? 28 : (isIvyLeague ? 24 : 28);
+  const pagePaddingBottom = isScaleCompact ? 12 : isScaleSpacious ? 22 : 20;
+  const entryBlockMargin = isScaleCompact ? 3.5 : isScaleSpacious ? 9 : (isTwoColumn || isElegant) ? 5 : 8;
+  const sectionMargin = isScaleCompact ? 2 : isScaleSpacious ? 6 : (isTwoColumn || isElegant) ? 4 : isIvyLeague ? 4.5 : 5;
 
   return StyleSheet.create({
     page: {
       fontFamily,
-      fontSize: isCompact ? 9 : 10,
+      fontSize: baseFontSize,
       color: textColor,
       paddingTop: pagePaddingTop,
       paddingBottom: pagePaddingBottom,
       paddingLeft: isAtsClean ? 35 : 36,
       paddingRight: isAtsClean ? 35 : 36,
-      lineHeight: isCompact ? 1.35 : 1.4,
+      lineHeight: baseLineHeight,
       backgroundColor: "#ffffff",
     },
     headerContainer: {
       alignItems: headerAlign,
       paddingBottom: 0,
-      marginBottom: isCompact ? 3 : 6,
+      marginBottom: isScaleCompact ? 3 : 6,
     },
     name: {
-      fontSize: isCompact ? 18 : isCreative ? 24 : 22,
+      fontSize: nameFontSize,
       fontFamily: fontFamilyBold,
       color: nameColor,
       letterSpacing: isCreative ? 0.8 : 0.5,
@@ -127,18 +171,18 @@ const getStyles = (template: string) => {
       marginBottom: 2,
     },
     headline: {
-      fontSize: isCompact ? 10 : 11.5,
+      fontSize: headlineFontSize,
       fontFamily: fontFamilyBold,
-      color: isCreative ? "#4f46e5" : textColor,
+      color: isCreative ? (styleConfig?.primaryColor || "#4f46e5") : textColor,
       textTransform: "uppercase",
       letterSpacing: 0.5,
-      paddingTop: isCompact ? 4 : 6,
+      paddingTop: isScaleCompact ? 4 : 6,
       marginBottom: 0,
     },
     accentBar: {
       width: "100%",
       height: 3,
-      backgroundColor: "#4f46e5",
+      backgroundColor: styleConfig?.primaryColor || "#4f46e5",
       marginTop: 4,
       marginBottom: 6,
       borderRadius: 1.5,
@@ -151,22 +195,22 @@ const getStyles = (template: string) => {
       marginTop: 6,
     },
     contactText: {
-      fontSize: isCompact ? 8 : 9,
+      fontSize: contactTextFontSize,
       color: isMinimal || isElegant ? "#64748b" : "#475569",
     },
     contactLink: {
-      fontSize: isCompact ? 8 : 9,
-      color: isMinimal || isElegant ? "#475569" : isNavy ? "#1e3a8a" : isCreative ? "#4f46e5" : "#2563eb",
+      fontSize: contactTextFontSize,
+      color: styleConfig?.primaryColor || (isMinimal || isElegant ? "#475569" : isNavy ? "#1e3a8a" : isCreative ? "#4f46e5" : "#2563eb"),
       textDecoration: "underline",
     },
     projectLink: {
       fontFamily,
-      fontSize: isCompact ? 8.5 : 9.5,
-      color: isMinimal || isElegant ? "#4b5563" : isNavy ? "#1e3a8a" : isCreative ? "#4f46e5" : "#2563eb",
+      fontSize: bodyFontSize,
+      color: styleConfig?.primaryColor || (isMinimal || isElegant ? "#4b5563" : isNavy ? "#1e3a8a" : isCreative ? "#4f46e5" : "#2563eb"),
       textDecoration: "underline",
     },
     contactDot: {
-      fontSize: isCompact ? 7.5 : 8.5,
+      fontSize: contactDotFontSize,
       color: isAtsClean ? "#9ca3af" : borderColor === "transparent" ? "#9ca3af" : borderColor,
       marginHorizontal: 6,
     },
@@ -174,31 +218,31 @@ const getStyles = (template: string) => {
       marginBottom: sectionMargin,
     },
     sectionTitle: {
-      fontSize: isCompact ? 9 : 10,
+      fontSize: sectionTitleFontSize,
       fontFamily: fontFamilyBold,
       textTransform: "uppercase",
       color: sectionColor,
       borderBottomWidth: isAtsClean ? 0 : isCreative ? 0 : isNavy ? 1.5 : 1,
       borderBottomColor: borderColor,
       borderLeftWidth: isCreative ? 3.5 : 0,
-      borderLeftColor: isCreative ? "#4f46e5" : "transparent",
+      borderLeftColor: isCreative ? (styleConfig?.primaryColor || "#4f46e5") : "transparent",
       paddingLeft: isCreative ? 5 : 0,
       marginBottom: 3,
       paddingBottom: 1,
     },
     bodyText: {
-      fontSize: isCompact ? 8.5 : 9.5,
+      fontSize: bodyFontSize,
       color: textColor,
       lineHeight: 1.45,
       marginBottom: 3,
     },
     skillsText: {
-      fontSize: isCompact ? 8.5 : 9.5,
+      fontSize: bodyFontSize,
       color: textColor,
       lineHeight: 1.45,
     },
     skillsTextBold: {
-      fontSize: isCompact ? 8.5 : 9.5,
+      fontSize: bodyFontSize,
       color: textColor,
       fontFamily: fontFamilyBold,
     },
@@ -209,20 +253,20 @@ const getStyles = (template: string) => {
       width: "100%",
     },
     entryTitle: {
-      fontSize: isCompact ? 8.5 : 9.5,
+      fontSize: bodyFontSize,
       fontFamily: fontFamilyBold,
       color: nameColor,
       flex: 1,
       flexWrap: "wrap",
     },
     entryDate: {
-      fontSize: isCompact ? 8.5 : 9.5,
+      fontSize: bodyFontSize,
       fontFamily: fontFamilyBold,
       color: textColor,
       textAlign: "right",
     },
     entrySubtitle: {
-      fontSize: isCompact ? 8.5 : 9.5,
+      fontSize: bodyFontSize,
       color: textColor,
       marginBottom: 2,
     },
@@ -232,19 +276,19 @@ const getStyles = (template: string) => {
       paddingLeft: 6,
     },
     bulletDot: {
-      fontSize: isCompact ? 8.5 : 9.5,
+      fontSize: bodyFontSize,
       color: textColor,
       marginRight: 4,
       lineHeight: 1.35,
     },
     bulletText: {
-      fontSize: isCompact ? 8.5 : 9.5,
+      fontSize: bodyFontSize,
       color: textColor,
       flex: 1,
       lineHeight: 1.35,
     },
     bulletTextBold: {
-      fontSize: isCompact ? 8.5 : 9.5,
+      fontSize: bodyFontSize,
       color: textColor,
       fontFamily: fontFamilyBold,
       lineHeight: 1.35,
@@ -259,7 +303,7 @@ const getStyles = (template: string) => {
       alignSelf: "center",
       marginBottom: 10,
       borderWidth: 1.5,
-      borderColor: "#4f46e5",
+      borderColor: styleConfig?.primaryColor || "#4f46e5",
     },
     headerPhoto: {
       width: 80,
@@ -267,27 +311,27 @@ const getStyles = (template: string) => {
       borderRadius: 0,
       marginRight: 12,
       borderWidth: 1.5,
-      borderColor: isNavy ? "#1e3a8a" : "#4f46e5",
+      borderColor: styleConfig?.primaryColor || (isNavy ? "#1e3a8a" : "#4f46e5"),
     },
     minimalAvatarPhoto: {
       width: 65,
       height: 65,
       borderRadius: 0,
       borderWidth: 1,
-      borderColor: "#cbd5e1",
+      borderColor: styleConfig?.primaryColor || "#cbd5e1",
     },
     creativePhoto: {
       width: 80,
       height: 80,
       borderRadius: 0,
       borderWidth: 1.5,
-      borderColor: "#4f46e5",
+      borderColor: styleConfig?.primaryColor || "#4f46e5",
       marginRight: 12,
     },
     headerWithPhotoRow: {
       flexDirection: "row",
       alignItems: "center",
-      marginBottom: isCompact ? 3 : 6,
+      marginBottom: isScaleCompact ? 3 : 6,
     },
     headerPhotoMeta: {
       flex: 1,
@@ -337,6 +381,7 @@ interface ResumeData {
 interface Props {
   data: ResumeData
   template?: string
+  styleConfig?: ResumeStyleConfig
 }
 
 function parseBold(text: string, styles: any) {
@@ -526,8 +571,8 @@ const LanguagesSection = ({ data, styles }: { data: ResumeData; styles: any }) =
   )
 }
 
-export function ResumePdfDocument({ data, template = 'classic-serif' }: Props) {
-  const styles = getStyles(template);
+export function ResumePdfDocument({ data, template = 'classic-serif', styleConfig }: Props) {
+  const styles = getStyles(template, styleConfig);
 
   const formatUrl = (url?: string) => {
     if (!url) return ""
@@ -578,7 +623,7 @@ export function ResumePdfDocument({ data, template = 'classic-serif' }: Props) {
                 <Image src={photoSrc} style={styles.sidebarPhoto} />
               ) : null}
               <View style={{ marginBottom: 8, marginTop: 2 }}>
-                <Text style={{ fontSize: 13, fontFamily: "Helvetica-Bold", color: "#0f172a", textTransform: "uppercase" }}>Contact</Text>
+                <Text style={{ fontSize: 13, fontFamily: styles.name.fontFamily, color: styles.sectionTitle.color, textTransform: "uppercase" }}>Contact</Text>
                 <View style={{ marginTop: 4 }}>
                   {contactItems.map((item, i) => (
                     <View key={i} style={{ marginBottom: 2.5 }}>
@@ -598,9 +643,9 @@ export function ResumePdfDocument({ data, template = 'classic-serif' }: Props) {
             </View>
             {/* Right Column (75%) */}
             <View style={{ width: "75%", paddingLeft: 6 }}>
-              <View style={{ marginBottom: 8, paddingBottom: 6, borderBottomWidth: 1.5, borderBottomColor: "#4f46e5" }}>
+              <View style={{ marginBottom: 8, paddingBottom: 6, borderBottomWidth: 1.5, borderBottomColor: styleConfig?.primaryColor || "#4f46e5" }}>
                 <Text style={styles.name}>{data.name}</Text>
-                {data.role && <Text style={{ ...styles.headline, color: "#4f46e5" }}>{data.role}</Text>}
+                {data.role && <Text style={{ ...styles.headline, color: styleConfig?.primaryColor || "#4f46e5" }}>{data.role}</Text>}
               </View>
               <SummarySection data={data} styles={styles} />
               <ExperienceSection data={data} styles={styles} />
@@ -654,7 +699,7 @@ export function ResumePdfDocument({ data, template = 'classic-serif' }: Props) {
               ) : null}
               <View style={styles.headerPhotoMeta}>
                 <Text style={styles.name}>{data.name}</Text>
-                {data.role && <Text style={{ ...styles.headline, color: "#4f46e5" }}>{data.role}</Text>}
+                {data.role && <Text style={{ ...styles.headline, color: styleConfig?.primaryColor || "#4f46e5" }}>{data.role}</Text>}
                 <View style={styles.contactRow}>
                   {contactItems.map((item, i) => (
                     <React.Fragment key={i}>
