@@ -198,6 +198,161 @@ function renderRichText(text: string) {
   )
 }
 
+export const DUMMY_RESUME_DATA = {
+  name: "Alex Morgan",
+  role: "Senior Software Engineer",
+  photoUrl: "",
+  contact: {
+    email: "alex.morgan@email.com",
+    phone: "+1 (555) 019-2834",
+    location: "San Francisco, CA",
+    linkedin: "https://linkedin.com/in/alexmorgan",
+    github: "https://github.com/alexmorgan",
+    portfolio: "https://alexmorgan.dev",
+  },
+  summary: "Accomplished Senior Software Engineer with 6+ years of experience designing and scaling fault-tolerant cloud services, high-throughput microservices, and modern web applications. Proven track record of reducing system latency by 45% and leading cross-functional teams to ship mission-critical software on schedule.",
+  skills: [
+    {
+      category: "Languages",
+      skills: ["TypeScript", "JavaScript", "Python", "Go", "SQL"]
+    },
+    {
+      category: "Frameworks & Libraries",
+      skills: ["React", "Next.js", "Node.js", "Express", "Tailwind CSS"]
+    },
+    {
+      category: "Databases & Cloud",
+      skills: ["PostgreSQL", "Redis", "MongoDB", "AWS", "Docker", "Kubernetes"]
+    },
+    {
+      category: "Tools & Methodologies",
+      skills: ["Git", "CI/CD Pipelines", "RESTful APIs", "GraphQL", "Microservices", "Agile/Scrum"]
+    }
+  ],
+  experience: [
+    {
+      company: "Apex Solutions",
+      role: "Senior Software Engineer",
+      dates: "Jan 2022 – Present",
+      location: "San Francisco, CA",
+      bullets: [
+        "Architected and deployed a real-time event streaming pipeline processing **15M+ daily events**, reducing ingestion latency by **45%**.",
+        "Spearheaded migration of legacy monolith to Next.js and Go microservices, accelerating Core Web Vitals performance by **60%**.",
+        "Mentored a team of 6 engineers, instituted comprehensive automated testing, and increased unit/integration test coverage from 64% to **92%**."
+      ]
+    },
+    {
+      company: "Vanguard Technologies",
+      role: "Software Engineer",
+      dates: "Jun 2019 – Dec 2021",
+      location: "San Francisco, CA",
+      bullets: [
+        "Engineered scalable RESTful and GraphQL APIs serving **500K+ daily active users** with a 99.99% uptime SLA.",
+        "Optimized complex PostgreSQL query execution plans and Redis caching, cutting average API response times from 320ms to **78ms**.",
+        "Collaborated with product managers and UX designers to deliver 14 high-impact feature releases on schedule."
+      ]
+    }
+  ],
+  projects: [
+    {
+      name: "CloudMesh Distributed Router",
+      techStack: "Go, Kafka, Redis, Docker",
+      projectLink: "https://github.com/alexmorgan/cloudmesh",
+      bullets: [
+        "High-throughput asynchronous message bus supporting **50K concurrent WebSocket connections** across distributed cluster nodes.",
+        "Implemented distributed consensus protocol ensuring automatic failover and zero-downtime rolling service upgrades."
+      ]
+    },
+    {
+      name: "DevPulse Analytics Platform",
+      techStack: "TypeScript, Next.js, PostgreSQL, Tailwind CSS",
+      projectLink: "https://github.com/alexmorgan/devpulse",
+      bullets: [
+        "Open-source developer analytics dashboard adopted by **2,500+ active GitHub repositories** worldwide.",
+        "Built end-to-end OAuth2 authentication, webhook ingestion engine, and automated weekly summary reporting."
+      ]
+    }
+  ],
+  education: [
+    {
+      institution: "Stanford University",
+      degree: "Bachelor of Science",
+      fieldOfStudy: "Computer Science",
+      dates: "2015 – 2019",
+      grade: "GPA: 3.85 / 4.0"
+    }
+  ],
+  achievements: [
+    "AWS Certified Solutions Architect – Associate (2023)",
+    "1st Place Winner — Silicon Valley Global Hackathon (out of 450+ participants)",
+    "Published speaker at React Summit: 'Architecting High-Performance Micro-Frontends'"
+  ],
+  languages: [
+    "English (Native / Bilingual)",
+    "Spanish (Professional Working Proficiency)"
+  ]
+}
+
+export const DUMMY_FORM_JOBS: JobInput[] = [
+  {
+    company: "Apex Solutions",
+    role: "Senior Software Engineer",
+    startDate: "2022-01",
+    endDate: "Present",
+    location: "San Francisco, CA",
+    currentlyWorkHere: true,
+    points: [
+      "Architected and deployed a real-time event streaming pipeline processing **15M+ daily events**, reducing ingestion latency by **45%**.",
+      "Spearheaded migration of legacy monolith to Next.js and Go microservices, accelerating Core Web Vitals performance by **60%**.",
+      "Mentored a team of 6 engineers, instituted comprehensive automated testing, and increased unit/integration test coverage from 64% to **92%**."
+    ]
+  },
+  {
+    company: "Vanguard Technologies",
+    role: "Software Engineer",
+    startDate: "2019-06",
+    endDate: "2021-12",
+    location: "San Francisco, CA",
+    currentlyWorkHere: false,
+    points: [
+      "Engineered scalable RESTful and GraphQL APIs serving **500K+ daily active users** with a 99.99% uptime SLA.",
+      "Optimized complex PostgreSQL query execution plans and Redis caching, cutting average API response times from 320ms to **78ms**.",
+      "Collaborated with product managers and UX designers to deliver 14 high-impact feature releases on schedule."
+    ]
+  }
+]
+
+export const DUMMY_FORM_PROJECTS: ProjectInput[] = [
+  {
+    name: "CloudMesh Distributed Router",
+    techStack: "Go, Kafka, Redis, Docker",
+    projectLink: "https://github.com/alexmorgan/cloudmesh",
+    points: [
+      "High-throughput asynchronous message bus supporting **50K concurrent WebSocket connections** across distributed cluster nodes.",
+      "Implemented distributed consensus protocol ensuring automatic failover and zero-downtime rolling service upgrades."
+    ]
+  },
+  {
+    name: "DevPulse Analytics Platform",
+    techStack: "TypeScript, Next.js, PostgreSQL, Tailwind CSS",
+    projectLink: "https://github.com/alexmorgan/devpulse",
+    points: [
+      "Open-source developer analytics dashboard adopted by **2,500+ active GitHub repositories** worldwide.",
+      "Built end-to-end OAuth2 authentication, webhook ingestion engine, and automated weekly summary reporting."
+    ]
+  }
+]
+
+export const DUMMY_FORM_EDUCATION: EducationInput[] = [
+  {
+    institution: "Stanford University",
+    degree: "Bachelor of Science",
+    fieldOfStudy: "Computer Science",
+    year: "2015 – 2019",
+    grade: "GPA: 3.85 / 4.0"
+  }
+]
+
 interface TemplateCandidateData {
   name?: string
   role?: string
@@ -208,6 +363,9 @@ interface TemplateOption {
   id: string
   name: string
   description: string
+  category?: 'all' | 'ats' | 'tech' | 'executive' | 'photo' | 'creative'
+  badge?: string
+  atsScore?: number
   renderThumbnail: (data?: TemplateCandidateData) => React.ReactNode
 }
 
@@ -234,8 +392,8 @@ function RealisticHeadshot({ photoUrl, className = "w-7 h-8" }: { photoUrl?: str
   )
 }
 
-const getCandidate = (data?: TemplateCandidateData, defaultRole = "Senior Software Engineer") => {
-  const cName = data?.name && data.name.trim() ? data.name.trim() : "Alex Morgan"
+const getCandidate = (data?: TemplateCandidateData, defaultRole = DUMMY_RESUME_DATA.role) => {
+  const cName = data?.name && data.name.trim() ? data.name.trim() : DUMMY_RESUME_DATA.name
   const cRole = data?.role && data.role.trim() ? data.role.trim() : defaultRole
   return { name: cName, role: cRole }
 }
@@ -245,6 +403,9 @@ const TEMPLATES: TemplateOption[] = [
     id: "classic-serif",
     name: "Classic Serif",
     description: "Traditional academic styling with Times-Roman serif typography and centered headers.",
+    category: "ats",
+    badge: "Classic",
+    atsScore: 98,
     renderThumbnail: (data) => {
       const { name: cName, role: cRole } = getCandidate(data, "Senior Software Architect")
       return (
@@ -348,6 +509,9 @@ const TEMPLATES: TemplateOption[] = [
     id: "modern-minimal",
     name: "Modern Minimalist",
     description: "Clean sans-serif layout with muted slate tones and left-aligned headers.",
+    category: "creative",
+    badge: "Minimal",
+    atsScore: 95,
     renderThumbnail: (data) => {
       const { name: cName, role: cRole } = getCandidate(data, "Full Stack Developer")
       return (
@@ -451,6 +615,9 @@ const TEMPLATES: TemplateOption[] = [
     id: "executive-navy",
     name: "Executive Navy",
     description: "Polished corporate style featuring deep navy accents and sharp dividing lines.",
+    category: "executive",
+    badge: "Corporate",
+    atsScore: 96,
     renderThumbnail: (data) => {
       const { name: cName, role: cRole } = getCandidate(data, "Vice President of Engineering")
       return (
@@ -546,6 +713,9 @@ const TEMPLATES: TemplateOption[] = [
     id: "compact-tech",
     name: "Compact Tech",
     description: "High-density layout optimized for tech professionals with maximum content space.",
+    category: "tech",
+    badge: "Tech Mono",
+    atsScore: 97,
     renderThumbnail: (data) => {
       const { name: cName } = getCandidate(data, "Staff Backend Engineer")
       return (
@@ -631,6 +801,9 @@ const TEMPLATES: TemplateOption[] = [
     id: "two-column",
     name: "Two-Column",
     description: "30/70 split layout with skills & education on the left, experience & projects on the right.",
+    category: "creative",
+    badge: "2-Column",
+    atsScore: 88,
     renderThumbnail: (data) => {
       const { name: cName, role: cRole } = getCandidate(data, "Senior Full Stack Engineer")
       return (
@@ -766,6 +939,9 @@ const TEMPLATES: TemplateOption[] = [
     id: "creative-bold",
     name: "Creative Bold",
     description: "Eye-catching design with a vibrant accent bar and border-accented section headers.",
+    category: "creative",
+    badge: "Creative",
+    atsScore: 90,
     renderThumbnail: (data) => {
       const { name: cName, role: cRole } = getCandidate(data, "Lead Product Designer & UI Engineer")
       return (
@@ -872,6 +1048,9 @@ const TEMPLATES: TemplateOption[] = [
     id: "elegant-sidebar",
     name: "Elegant Sidebar",
     description: "Distinct left sidebar with contact info & skills separated by a clean vertical divider.",
+    category: "creative",
+    badge: "Sidebar",
+    atsScore: 86,
     renderThumbnail: (data) => {
       const { name: cName, role: cRole } = getCandidate(data, "Enterprise Solutions Architect")
       const initials = cName.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2).toUpperCase() || "AM"
@@ -992,6 +1171,9 @@ const TEMPLATES: TemplateOption[] = [
     id: "ats-clean",
     name: "ATS Clean",
     description: "Ultra-clean monospace layout without borders, engineered for 100% ATS readability.",
+    category: "ats",
+    badge: "100% ATS",
+    atsScore: 100,
     renderThumbnail: (data) => {
       const { name: cName } = getCandidate(data, "Senior Software Engineer")
       return (
@@ -1085,6 +1267,9 @@ const TEMPLATES: TemplateOption[] = [
     id: "photo-modern-sidebar",
     name: "Modern Photo Sidebar",
     description: "Professional two-column layout with candidate photo (sharp edges), skills & contacts in a stylish left sidebar.",
+    category: "photo",
+    badge: "Photo",
+    atsScore: 82,
     renderThumbnail: (data) => {
       const { name: cName, role: cRole } = getCandidate(data, "Senior Software Engineer")
       return (
@@ -1201,6 +1386,9 @@ const TEMPLATES: TemplateOption[] = [
     id: "photo-executive",
     name: "Executive Headshot",
     description: "Prestigious executive template with a sharp rectangular headshot and corporate navy accents.",
+    category: "photo",
+    badge: "Photo",
+    atsScore: 84,
     renderThumbnail: (data) => {
       const { name: cName, role: cRole } = getCandidate(data, "Chief Technology Officer")
       return (
@@ -1299,6 +1487,9 @@ const TEMPLATES: TemplateOption[] = [
     id: "photo-creative",
     name: "Creative Portfolio",
     description: "Dynamic layout featuring candidate headshot with clean sharp edges, vibrant indigo accents, and portfolio links.",
+    category: "photo",
+    badge: "Photo",
+    atsScore: 80,
     renderThumbnail: (data) => {
       const { name: cName, role: cRole } = getCandidate(data, "Product Designer & Frontend Dev")
       return (
@@ -1405,6 +1596,9 @@ const TEMPLATES: TemplateOption[] = [
     id: "photo-minimal",
     name: "Minimal Avatar",
     description: "Refined minimalist styling with a sharp rectangular profile photo badge alongside name & title.",
+    category: "photo",
+    badge: "Photo",
+    atsScore: 85,
     renderThumbnail: (data) => {
       const { name: cName, role: cRole } = getCandidate(data, "Senior Software Engineer")
       return (
@@ -1499,6 +1693,368 @@ const TEMPLATES: TemplateOption[] = [
         </div>
       )
     }
+  },
+  {
+    id: "ats-ivy-league",
+    name: "Ivy League Classic",
+    description: "Prestigious Wall Street & Tier-1 Consulting standard with Times-Roman typography, centered header, and 100% ATS score.",
+    category: "ats",
+    badge: "100% ATS",
+    atsScore: 100,
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Senior Investment Analyst")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-serif shadow-xs overflow-hidden select-none pointer-events-none">
+          <div className="text-center pb-0.5 border-b border-black dark:border-white">
+            <div className="text-[8.5px] font-bold text-slate-950 dark:text-white uppercase tracking-wider truncate">{cName}</div>
+            <div className="text-[4.5px] italic text-slate-700 dark:text-slate-300 truncate">{cRole}</div>
+            <div className="text-[3.8px] text-slate-600 dark:text-slate-400 truncate">
+              alex@email.com • +1 555-0192 • New York, NY • linkedin.com/in/alex
+            </div>
+          </div>
+          <div>
+            <div className="text-[4.5px] font-bold uppercase tracking-wider text-center text-black dark:text-white border-b border-slate-200 dark:border-slate-800 pb-0.2">
+              Education
+            </div>
+            <div className="flex justify-between items-baseline text-[4.2px] font-bold text-slate-900 dark:text-white">
+              <span className="truncate">Harvard University — B.A. Economics</span>
+              <span className="text-[3.8px] font-normal text-slate-500 shrink-0">GPA 3.92 • 2020</span>
+            </div>
+          </div>
+          <div className="space-y-0.5">
+            <div className="text-[4.5px] font-bold uppercase tracking-wider text-center text-black dark:text-white border-b border-slate-200 dark:border-slate-800 pb-0.2">
+              Professional Experience
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.2px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Blackstone Capital — Senior Analyst</span>
+                <span className="text-[3.8px] font-normal text-slate-500 shrink-0">2021 – Pres</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Built financial LBO models assessing $450M in enterprise acquisitions.
+              </p>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Advised corporate executive leadership on capital allocation strategies.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.2px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">McKinsey & Company — Business Analyst</span>
+                <span className="text-[3.8px] font-normal text-slate-500 shrink-0">2019 – 2021</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Spearheaded operational restructuring cutting client OpEx by $14M annually.
+              </p>
+            </div>
+          </div>
+          <div className="pt-0.5 border-t border-slate-200 dark:border-slate-800 space-y-0.2">
+            <div className="text-[4px] text-slate-700 dark:text-slate-300 truncate">
+              <span className="font-bold text-slate-900 dark:text-white">Skills:</span> Financial Modeling, DCF, M&A Diligence, SQL, Python, Bloomberg
+            </div>
+            <div className="flex justify-between text-[4px] text-slate-500">
+              <span>CFA Level II Candidate</span>
+              <span>English, French</span>
+            </div>
+          </div>
+        </div>
+      )
+    }
+  },
+  {
+    id: "ats-tech-faang",
+    name: "Silicon Valley FAANG",
+    description: "Engineered for Google/Meta/Amazon tech roles with top-placed categorized skills matrix for maximum ATS keyword extraction.",
+    category: "tech",
+    badge: "Top Pick",
+    atsScore: 100,
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Senior Cloud Architect")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          <div className="pb-0.5 border-b border-blue-600 dark:border-blue-500">
+            <div className="text-[9px] font-extrabold text-slate-950 dark:text-white truncate">{cName}</div>
+            <div className="text-[4.8px] font-bold text-blue-600 dark:text-blue-400 truncate">{cRole}</div>
+            <div className="text-[3.8px] text-slate-500 truncate">alex@tech.io • +1 555-0192 • Seattle, WA • github.com/alex • linkedin.com/in/alex</div>
+          </div>
+          <div className="bg-blue-50/50 dark:bg-blue-950/30 p-1 rounded border border-blue-100 dark:border-blue-900/40 text-[3.8px] leading-tight space-y-0.2">
+            <div className="truncate"><span className="font-bold text-slate-900 dark:text-white">LANGUAGES:</span> Go, TypeScript, Python, Rust, Java, SQL</div>
+            <div className="truncate"><span className="font-bold text-slate-900 dark:text-white">CLOUD / INFRA:</span> AWS (EKS, Lambda), Kubernetes, Docker, Terraform</div>
+            <div className="truncate"><span className="font-bold text-slate-900 dark:text-white">SYSTEMS:</span> Kafka, Redis, Distributed Consensus, gRPC, GraphQL</div>
+          </div>
+          <div className="space-y-0.5">
+            <div className="text-[4.5px] font-black uppercase tracking-wider text-blue-900 dark:text-blue-300 border-b border-slate-200 dark:border-slate-800 pb-0.2">
+              Work Experience
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.2px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Google Cloud — Staff Engineer</span>
+                <span className="text-[3.8px] text-slate-500 shrink-0">2021 – Pres</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Architected multi-tenant storage engine sustaining 450k IOPS with 99.999% uptime.
+              </p>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Reduced tail latency (p99) from 180ms to 24ms via custom memory allocators.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.2px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Amazon AWS — Senior SDE</span>
+                <span className="text-[3.8px] text-slate-500 shrink-0">2018 – 2021</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Led DynamoDB streaming ingestion pipeline handling 12B daily records.
+              </p>
+            </div>
+          </div>
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-0.5 flex justify-between text-[4px]">
+            <span className="font-bold text-slate-900 dark:text-white truncate">B.S. CS — University of Washington</span>
+            <span className="text-slate-500 shrink-0">AWS Certified Solutions Pro</span>
+          </div>
+        </div>
+      )
+    }
+  },
+  {
+    id: "ats-executive-modern",
+    name: "Executive Leadership",
+    description: "Commanding corporate layout with deep slate accents, Core Competencies matrix, and strategic leadership milestones.",
+    category: "executive",
+    badge: "Executive",
+    atsScore: 98,
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Vice President of Technology")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          <div className="pb-0.5 border-b-2 border-slate-800 dark:border-slate-200">
+            <div className="text-[9.5px] font-black uppercase text-slate-900 dark:text-white truncate">{cName}</div>
+            <div className="text-[4.8px] font-bold uppercase text-slate-600 dark:text-slate-400 truncate">{cRole}</div>
+            <div className="text-[3.8px] text-slate-500 truncate">alex.executive@domain.com • +1 555-0192 • New York, NY • linkedin.com/in/alex</div>
+          </div>
+          <div>
+            <div className="text-[4.5px] font-black uppercase tracking-wider text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-0.2 mb-0.2">
+              Executive Competencies & Scope
+            </div>
+            <div className="grid grid-cols-3 gap-0.5 text-[3.5px] text-slate-700 dark:text-slate-300">
+              <span className="bg-slate-100 dark:bg-slate-800 px-1 py-0.2 rounded truncate font-medium">• P&L ($35M+)</span>
+              <span className="bg-slate-100 dark:bg-slate-800 px-1 py-0.2 rounded truncate font-medium">• Global Team (120+)</span>
+              <span className="bg-slate-100 dark:bg-slate-800 px-1 py-0.2 rounded truncate font-medium">• SaaS Growth</span>
+            </div>
+          </div>
+          <div className="space-y-0.5">
+            <div className="text-[4.5px] font-black uppercase tracking-wider text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-0.2">
+              Career Trajectory
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.2px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Enterprise SaaS — VP Technology</span>
+                <span className="text-[3.8px] text-slate-500 shrink-0">2020 – Pres</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Scaled engineering organization from 25 to 110; delivered SaaS platform generating $42M ARR.
+              </p>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Spearheaded SOC2 Type II, ISO 27001, and HIPAA enterprise regulatory compliance.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.2px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">Global FinCorp — Director of Systems</span>
+                <span className="text-[3.8px] text-slate-500 shrink-0">2016 – 2020</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Reduced operational cloud infrastructure spend by 32% while doubling capacity.
+              </p>
+            </div>
+          </div>
+          <div className="border-t border-slate-200 dark:border-slate-700 pt-0.5 flex justify-between text-[4px]">
+            <span className="font-bold text-slate-900 dark:text-white truncate">Columbia University — M.S. CS & MBA</span>
+            <span className="text-slate-500 shrink-0">Advisory Board Member</span>
+          </div>
+        </div>
+      )
+    }
+  },
+  {
+    id: "ats-modern-swiss",
+    name: "Clean Swiss Minimal",
+    description: "International typographic hierarchy with generous tracking and subtle dividers, built for fast 6-second recruiter scans.",
+    category: "ats",
+    badge: "Fast Scan",
+    atsScore: 99,
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Product Architect")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          <div className="pb-0.5 border-b border-slate-200 dark:border-slate-800">
+            <div className="text-[9.5px] font-extrabold tracking-tight text-slate-900 dark:text-white truncate">{cName}</div>
+            <div className="text-[4.8px] font-semibold text-slate-600 dark:text-slate-400 truncate">{cRole}</div>
+            <div className="text-[3.8px] text-slate-400 mt-0.2 truncate">alex@domain.ch • +1 555-0192 • Zurich / SF • linkedin.com/in/alex</div>
+          </div>
+          <div>
+            <div className="text-[4.5px] font-bold text-slate-400 uppercase tracking-widest mb-0.2">Profile</div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight">
+              Product architect crafting clear design systems, accessible interfaces, and scalable web solutions.
+            </p>
+          </div>
+          <div className="space-y-0.5">
+            <div className="text-[4.5px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 pb-0.2">
+              Experience
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.2px] font-bold text-slate-800 dark:text-slate-200">
+                <span className="truncate">DesignLab Zurich — Lead Architect</span>
+                <span className="text-[3.8px] text-slate-400 shrink-0">2021 – Pres</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight pl-1">
+                • Built modular design component kit adopted by 18 enterprise development teams.
+              </p>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight pl-1">
+                • Improved user task completion rate by 28% through WCAG 2.1 AA accessibility overhaul.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.2px] font-bold text-slate-800 dark:text-slate-200">
+                <span className="truncate">Starlight Media — Senior UI Dev</span>
+                <span className="text-[3.8px] text-slate-400 shrink-0">2018 – 2021</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-400 leading-tight pl-1">
+                • Engineered high-performance Next.js web application handling 3M monthly visits.
+              </p>
+            </div>
+          </div>
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-0.5 space-y-0.2">
+            <div className="text-[4px] text-slate-600 dark:text-slate-400 truncate">
+              <span className="font-semibold text-slate-800 dark:text-slate-200">Toolkit:</span> TypeScript, React, Next.js, Figma, Tailwind, Node.js, GraphQL, PostgreSQL
+            </div>
+            <div className="flex justify-between text-[4px] text-slate-400">
+              <span>B.S. Interaction Design — ETH Zurich</span>
+              <span>English, German</span>
+            </div>
+          </div>
+        </div>
+      )
+    }
+  },
+  {
+    id: "ats-emerald-professional",
+    name: "Modern Emerald Corporate",
+    description: "Refined forest emerald accents on high-contrast black text, popular in healthcare, enterprise SaaS, and operations.",
+    category: "ats",
+    badge: "Modern",
+    atsScore: 99,
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Senior Operations Director")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          <div className="pb-0.5 border-b-2 border-emerald-700 dark:border-emerald-500">
+            <div className="text-[9.5px] font-extrabold text-emerald-900 dark:text-emerald-300 truncate">{cName}</div>
+            <div className="text-[4.8px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide truncate">{cRole}</div>
+            <div className="text-[3.8px] text-slate-500 truncate">alex.morgan@healthcorp.com • +1 555-0192 • Boston, MA • linkedin.com/in/alex</div>
+          </div>
+          <div>
+            <div className="text-[4.5px] font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 border-b border-emerald-100 dark:border-emerald-900 pb-0.2 mb-0.2">
+              Professional Summary
+            </div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight">
+              Results-oriented director specializing in clinical healthcare operations, hospital system workflows, and regulatory compliance.
+            </p>
+          </div>
+          <div className="space-y-0.5">
+            <div className="text-[4.5px] font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 border-b border-emerald-100 dark:border-emerald-900 pb-0.2">
+              Professional Experience
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.2px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">MassHealth Systems — Director</span>
+                <span className="text-[3.8px] font-semibold text-emerald-700 dark:text-emerald-400 shrink-0">2021 – Pres</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Directed clinical workflow modernization across 8 hospitals serving 180k patients.
+              </p>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Reduced patient intake wait times by 34% through automated digital triage systems.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between items-baseline text-[4.2px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">BioPharm Partners — Operations Manager</span>
+                <span className="text-[3.8px] font-semibold text-emerald-700 dark:text-emerald-400 shrink-0">2018 – 2021</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Managed $18M clinical trial supply chain pipeline ensuring 100% FDA audit readiness.
+              </p>
+            </div>
+          </div>
+          <div className="border-t border-emerald-100 dark:border-emerald-900 pt-0.5 space-y-0.2">
+            <div className="text-[4px] text-slate-700 dark:text-slate-300 truncate">
+              <span className="font-bold text-emerald-900 dark:text-emerald-300">Competencies:</span> Clinical Operations, Healthcare IT, EHR, FDA Audits, Six Sigma
+            </div>
+            <div className="flex justify-between text-[4px] text-slate-500">
+              <span>M.S. Healthcare Administration — Boston University</span>
+              <span>Lean Six Sigma Black Belt</span>
+            </div>
+          </div>
+        </div>
+      )
+    }
+  },
+  {
+    id: "ats-compact-onepage",
+    name: "High-Impact 1-Page",
+    description: "Space-efficient 1-page architecture fitting 5-10 years of experience with crisp compact line spacing.",
+    category: "ats",
+    badge: "1-Page",
+    atsScore: 100,
+    renderThumbnail: (data) => {
+      const { name: cName } = getCandidate(data, "Senior Full Stack Engineer")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-1.5 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          <div className="flex justify-between items-baseline border-b border-slate-900 dark:border-slate-100 pb-0.2">
+            <span className="text-[9px] font-black uppercase text-slate-950 dark:text-white truncate">{cName}</span>
+            <span className="text-[3.8px] text-slate-500 shrink-0">alex@dev.io • +1 555-0192 • San Francisco</span>
+          </div>
+          <div className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight">
+            Senior engineer with 8+ years building enterprise microservices, real-time data pipelines, and scalable cloud APIs.
+          </div>
+          <div className="space-y-0.5">
+            <div className="text-[4.3px] font-bold uppercase tracking-wider text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-0.2">
+              Experience
+            </div>
+            <div>
+              <div className="flex justify-between text-[4.2px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">TechScale Corp — Staff Engineer</span>
+                <span className="text-[3.8px] font-normal text-slate-500 shrink-0">2021 – Pres</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Built distributed event pipeline processing 25k events/sec with sub-50ms latency.
+              </p>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Cut monthly infrastructure costs by $45,000 via AWS container migration.
+              </p>
+            </div>
+            <div>
+              <div className="flex justify-between text-[4.2px] font-bold text-slate-900 dark:text-white">
+                <span className="truncate">CloudStream — Senior Backend Developer</span>
+                <span className="text-[3.8px] font-normal text-slate-500 shrink-0">2018 – 2021</span>
+              </div>
+              <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">
+                • Architected RESTful payment APIs processing over $60M in annual transactions.
+              </p>
+            </div>
+          </div>
+          <div className="border-t border-slate-200 dark:border-slate-700 pt-0.5 space-y-0.2">
+            <div className="text-[3.8px] text-slate-700 dark:text-slate-300 truncate">
+              <span className="font-bold text-slate-900 dark:text-white">Stack:</span> TypeScript, Go, Python, React, Next.js, Docker, Kubernetes, AWS, PostgreSQL, Redis
+            </div>
+            <div className="flex justify-between text-[3.8px] text-slate-500">
+              <span>B.S. Computer Science — UC Berkeley (GPA 3.88)</span>
+              <span>AWS Certified Solutions Architect</span>
+            </div>
+          </div>
+        </div>
+      )
+    }
   }
 ]
 
@@ -1568,6 +2124,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
   const [draftTitle, setDraftTitle] = useState("My Resume")
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [visualTemplate, setVisualTemplate] = useState<string>("classic-serif")
+  const [templateCategory, setTemplateCategory] = useState<'all' | 'ats' | 'tech' | 'executive' | 'photo' | 'creative'>('all')
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const templateScrollRef = useRef<HTMLDivElement>(null)
 
@@ -1665,6 +2222,74 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
   // Result State
   const [generatedResume, setGeneratedResume] = useState<ResumeData | null>(null)
+
+  // Computed effective data: If user data is not present, fall back to DUMMY_RESUME_DATA with all fields
+  const hasUserSkills = skills && skills.some(c => Array.isArray(c.skills) && c.skills.some(s => s && s.trim().length > 0))
+  const userJobsFilled = jobs.filter(j => (j.company && j.company.trim().length > 0) || (j.role && j.role.trim().length > 0))
+  const userProjectsFilled = projects.filter(p => p.name && p.name.trim().length > 0)
+  const userEducationFilled = education.filter(e => (e.institution && e.institution.trim().length > 0) || (e.degree && e.degree.trim().length > 0))
+  const userAchievementsFilled = achievements.filter(a => a && a.trim().length > 0)
+  const userLanguagesFilled = languages.filter(l => l && l.trim().length > 0)
+
+  const hasUserData = Boolean(
+    name.trim() ||
+    role.trim() ||
+    email.trim() ||
+    phone.trim() ||
+    location.trim() ||
+    professionalSummary.trim() ||
+    hasUserSkills ||
+    userJobsFilled.length > 0 ||
+    userProjectsFilled.length > 0 ||
+    userEducationFilled.length > 0
+  )
+
+  const effectiveName = name.trim() || DUMMY_RESUME_DATA.name
+  const effectiveRole = role.trim() || DUMMY_RESUME_DATA.role
+  const effectiveEmail = email.trim() || DUMMY_RESUME_DATA.contact.email
+  const effectivePhone = phone.trim() || DUMMY_RESUME_DATA.contact.phone
+  const effectiveLocation = location.trim() || DUMMY_RESUME_DATA.contact.location
+  const effectiveLinkedin = linkedinUrl.trim() || DUMMY_RESUME_DATA.contact.linkedin
+  const effectiveGithub = githubUrl.trim() || DUMMY_RESUME_DATA.contact.github
+  const effectivePortfolio = portfolioUrl.trim() || DUMMY_RESUME_DATA.contact.portfolio
+  const effectivePhotoUrl = photoUrl || undefined
+  const effectiveSummary = professionalSummary.trim() || DUMMY_RESUME_DATA.summary
+
+  const effectiveSkills = hasUserSkills ? skills : DUMMY_RESUME_DATA.skills
+  const effectiveJobs = userJobsFilled.length > 0 ? userJobsFilled : DUMMY_FORM_JOBS
+  const effectiveProjects = userProjectsFilled.length > 0 ? userProjectsFilled : DUMMY_FORM_PROJECTS
+  const effectiveEducation = userEducationFilled.length > 0 ? userEducationFilled : DUMMY_FORM_EDUCATION
+  const effectiveAchievements = userAchievementsFilled.length > 0 ? userAchievementsFilled : DUMMY_RESUME_DATA.achievements
+  const effectiveLanguages = userLanguagesFilled.length > 0 ? userLanguagesFilled : DUMMY_RESUME_DATA.languages
+
+
+  const handleClearForm = () => {
+    setName("")
+    setRole("")
+    setEmail("")
+    setPhone("")
+    setLocation("")
+    setLinkedinUrl("")
+    setGithubUrl("")
+    setPortfolioUrl("")
+    setPhotoUrl("")
+    setProfessionalSummary("")
+    setSkills([
+      { category: "Languages", skills: [""] },
+      { category: "Frameworks/Libraries", skills: [""] },
+      { category: "Databases", skills: [""] },
+      { category: "Tools/DevOps", skills: [""] }
+    ])
+    setJobs([{ company: "", role: "", startDate: "", endDate: "", location: "", points: [""], currentlyWorkHere: false }])
+    setProjects([{ name: "", techStack: "", projectLink: "", points: [""] }])
+    setEducation([{ institution: "", degree: "", fieldOfStudy: "", year: "", grade: "" }])
+    setAchievements([""])
+    setLanguages([""])
+    toast({
+      title: "Form Reset",
+      description: "All fields have been reset. Template preview is showing sample data.",
+    })
+  }
 
   const isLoadedRef = useRef(false)
 
@@ -2730,45 +3355,45 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
       return
     }
 
-    // Construct current state snapshot of candidate data
+    // Construct current state snapshot of candidate data (using effective data if not present)
     const currentResumeData = {
-      name: name || "Your Name",
-      role: role || "",
-      photoUrl: photoUrl || undefined,
+      name: effectiveName,
+      role: effectiveRole,
+      photoUrl: effectivePhotoUrl,
       contact: {
-        email: email || "",
-        phone: phone || "",
-        linkedin: linkedinUrl || "",
-        github: githubUrl || "",
-        portfolio: portfolioUrl || "",
-        location: location || "",
-        photoUrl: photoUrl || undefined
+        email: effectiveEmail,
+        phone: effectivePhone,
+        linkedin: effectiveLinkedin,
+        github: effectiveGithub,
+        portfolio: effectivePortfolio,
+        location: effectiveLocation,
+        photoUrl: effectivePhotoUrl
       },
-      summary: professionalSummary || "",
-      skills: skills.map(cat => ({
-        category: cat.category.trim(),
-        skills: cat.skills.map(s => s.trim()).filter(Boolean)
-      })).filter(cat => cat.category || cat.skills.length > 0),
-      languages: languages.map(l => l.trim()).filter(Boolean),
-      achievements: achievements.map(a => a.trim()).filter(Boolean),
-      experience: jobs.filter(j => j.company || j.role).map(j => ({
+      summary: effectiveSummary,
+      skills: (effectiveSkills as any).map((cat: any) => ({
+        category: (cat.category || "").trim(),
+        skills: (Array.isArray(cat.skills) ? cat.skills : []).map((s: any) => String(s).trim()).filter(Boolean)
+      })).filter((cat: any) => cat.category || cat.skills.length > 0),
+      languages: effectiveLanguages.map(l => l.trim()).filter(Boolean),
+      achievements: effectiveAchievements.map(a => a.trim()).filter(Boolean),
+      experience: effectiveJobs.map(j => ({
         company: j.company || "",
         role: j.role || "",
-        dates: formatExperienceDateRange(j.startDate, j.endDate, j.currentlyWorkHere),
+        dates: (j as any).dates || formatExperienceDateRange(j.startDate, j.endDate, j.currentlyWorkHere),
         location: j.location || "",
-        bullets: j.points.filter(Boolean)
+        bullets: (j as any).bullets || (j.points ? j.points.filter(Boolean) : [])
       })),
-      projects: projects.filter(p => p.name).map(p => ({
+      projects: effectiveProjects.map(p => ({
         name: p.name || "",
         techStack: p.techStack || "",
         projectLink: p.projectLink || "",
-        bullets: p.points.filter(Boolean)
+        bullets: (p as any).bullets || (p.points ? p.points.filter(Boolean) : [])
       })),
-      education: education.filter(e => e.institution || e.degree).map(e => ({
+      education: effectiveEducation.map(e => ({
         institution: e.institution || "",
         degree: e.degree || "",
         fieldOfStudy: e.fieldOfStudy || "",
-        dates: e.year || "",
+        dates: (e as any).dates || e.year || "",
         grade: e.grade || ""
       }))
     }
@@ -2994,11 +3619,33 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
             className="mb-6 overflow-hidden print:hidden"
           >
             <div className="p-4 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
-              <div className="flex items-center justify-between mb-3 px-1">
-                <div className="flex items-center gap-2">
-                  
+              {/* Drawer Toolbar & Category Filters */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3 px-1">
+                {/* Category Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                  {[
+                    { id: 'all', label: 'All Templates', count: TEMPLATES.length },
+                    { id: 'ats', label: '🎯 100% ATS', count: TEMPLATES.filter(t => t.category === 'ats').length },
+                    { id: 'tech', label: '💻 Tech & FAANG', count: TEMPLATES.filter(t => t.category === 'tech').length },
+                    { id: 'executive', label: '👔 Executive', count: TEMPLATES.filter(t => t.category === 'executive').length },
+                    { id: 'photo', label: '📸 With Photo', count: TEMPLATES.filter(t => t.category === 'photo').length },
+                    { id: 'creative', label: '🎨 Creative', count: TEMPLATES.filter(t => t.category === 'creative').length },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setTemplateCategory(cat.id as any)}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap transition-all ${
+                        templateCategory === cat.id
+                          ? "bg-indigo-600 text-white shadow-sm"
+                          : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300"
+                      }`}
+                    >
+                      {cat.label} ({cat.count})
+                    </button>
+                  ))}
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                   <Button
                     type="button"
                     variant="outline"
@@ -3036,7 +3683,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                 ref={templateScrollRef}
                 className="flex gap-3.5 overflow-x-auto pb-2 pt-1 px-1 scroll-smooth scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700"
               >
-                {TEMPLATES.map((tmpl) => {
+                {TEMPLATES.filter(t => templateCategory === 'all' || t.category === templateCategory).map((tmpl) => {
                   const isSelected = visualTemplate === tmpl.id;
                   return (
                     <div
@@ -3052,22 +3699,38 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       }`}
                     >
                       <div className="mb-2 overflow-hidden rounded-lg">
-                        {tmpl.renderThumbnail({ name, role, photoUrl })}
+                        {tmpl.renderThumbnail({ name: effectiveName, role: effectiveRole, photoUrl: effectivePhotoUrl })}
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate mr-1">
                             {tmpl.name}
                           </h4>
-                          {isSelected && (
-                            <Badge className="bg-indigo-600 text-white text-[9px] h-4 px-1.5 font-bold shrink-0">
-                              Active
-                            </Badge>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {tmpl.badge && (
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded font-extrabold ${
+                                tmpl.badge === "100% ATS" || tmpl.badge === "Ivy League" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" :
+                                tmpl.badge === "FAANG Pick" ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" :
+                                "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                              }`}>
+                                {tmpl.badge}
+                              </span>
+                            )}
+                            {isSelected && (
+                              <Badge className="bg-indigo-600 text-white text-[9px] h-4 px-1.5 font-bold shrink-0">
+                                Active
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 leading-tight mb-2">
+                          <span className="line-clamp-1 flex-1 mr-1">{tmpl.description}</span>
+                          {tmpl.atsScore && (
+                            <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
+                              ATS {tmpl.atsScore}%
+                            </span>
                           )}
                         </div>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mb-2 line-clamp-2">
-                          {tmpl.description}
-                        </p>
                         <Button
                           type="button"
                           size="sm"
@@ -3779,35 +4442,62 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
         {/* Live Resume Preview - Right Column */}
         <div className={`lg:col-span-7 space-y-4 ${activeTab === "preview" ? "block" : "hidden lg:block"}`}>
           <div className="space-y-4">
-            <div className="flex items-center justify-between print:hidden">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-slate-400" />
-                ATS Layout Preview
-              </h2>
-              {(name || email) && (
-                <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  ATS Layout Preview
+                </h2>
+                {!hasUserData ? (
+                  <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 font-semibold px-2 py-0.5">
+                    Sample Data Preview
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold px-2 py-0.5">
+                    Your Data
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {hasUserData && (
                   <Button
                     size="sm"
-                    className="rounded-xl h-8 text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 flex items-center gap-1 shadow-sm"
-                    onClick={handleDownloadPdf}
-                    disabled={isDownloadingPdf}
+                    variant="ghost"
+                    className="rounded-xl h-8 text-xs font-medium text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-1"
+                    onClick={handleClearForm}
+                    title="Clear all fields and revert to sample preview"
                   >
-                    {isDownloadingPdf ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Download className="w-3.5 h-3.5" />
-                    )}
-                    Save PDF
+                    Clear Form
                   </Button>
-                </div>
-              )}
+                )}
+                <Button
+                  size="sm"
+                  className="rounded-xl h-8 text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 flex items-center gap-1 shadow-sm"
+                  onClick={handleDownloadPdf}
+                  disabled={isDownloadingPdf}
+                >
+                  {isDownloadingPdf ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5" />
+                  )}
+                  Save PDF
+                </Button>
+              </div>
             </div>
             {/* Helper style definitions based on visualTemplate */}
             {(() => {
-              const isSerif = visualTemplate === 'classic-serif'
-              const isNavy = visualTemplate === 'executive-navy' || visualTemplate === 'photo-executive'
-              const isCompact = visualTemplate === 'compact-tech'
-              const isMinimal = visualTemplate === 'modern-minimal' || visualTemplate === 'photo-minimal'
+              const isIvyLeague = visualTemplate === 'ats-ivy-league'
+              const isTechFaang = visualTemplate === 'ats-tech-faang'
+              const isExecModern = visualTemplate === 'ats-executive-modern'
+              const isSwiss = visualTemplate === 'ats-modern-swiss'
+              const isEmerald = visualTemplate === 'ats-emerald-professional'
+              const isCompactOnePage = visualTemplate === 'ats-compact-onepage'
+
+              const isSerif = visualTemplate === 'classic-serif' || isIvyLeague
+              const isNavy = visualTemplate === 'executive-navy' || visualTemplate === 'photo-executive' || isExecModern
+              const isCompact = visualTemplate === 'compact-tech' || isCompactOnePage
+              const isMinimal = visualTemplate === 'modern-minimal' || visualTemplate === 'photo-minimal' || isSwiss
               const isTwoColumn = visualTemplate === 'two-column'
               const isCreative = visualTemplate === 'creative-bold' || visualTemplate === 'photo-creative'
               const isElegant = visualTemplate === 'elegant-sidebar'
@@ -3818,23 +4508,35 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               const isPhotoMinimal = visualTemplate === 'photo-minimal'
 
               const previewFontClass = isSerif ? "font-serif" : isAtsClean ? "font-mono" : "font-sans"
-              const previewTextColor = isMinimal || isElegant ? "text-slate-700 dark:text-slate-300" : "text-slate-950 dark:text-slate-100"
-              const previewPadding = isCompact ? "p-2.5 sm:p-5 md:p-7" : isAtsClean ? "p-3 sm:p-6 md:p-8" : "p-3 sm:p-8 lg:p-12"
+              const previewTextColor = isEmerald
+                ? "text-slate-900 dark:text-slate-100"
+                : isMinimal || isElegant || isSwiss
+                ? "text-slate-700 dark:text-slate-300"
+                : "text-slate-950 dark:text-slate-100"
+              const previewPadding = isCompact ? "p-2.5 sm:p-5 md:p-6" : isIvyLeague || isAtsClean ? "p-3 sm:p-6 md:p-8" : "p-3 sm:p-8 lg:p-12"
               const previewTextSize = isCompact ? "text-[8px] sm:text-[11px]" : "text-[8.5px] sm:text-xs"
               const previewSectionTitleSize = isCompact ? "text-[8px] sm:text-[10px] font-black uppercase tracking-wider" : "text-[8.5px] sm:text-xs font-black uppercase tracking-wider"
               const previewHeadlineSize = isCompact ? "text-[7.5px] sm:text-[10px]" : "text-[8px] sm:text-[11px]"
               const previewTitleSize = isCompact ? "text-sm sm:text-2xl" : isCreative ? "text-base sm:text-3xl md:text-4xl" : "text-base sm:text-2xl md:text-3xl"
               const previewSectionMargin = isCompact ? "mb-1 sm:mb-2" : (isTwoColumn || isElegant || isPhotoSidebar) ? "mb-1.5 sm:mb-2.5" : "mb-1.5 sm:mb-3"
               const previewSectionHeaderMargin = isCompact ? "mb-0.5 sm:mb-1" : "mb-0.5 sm:mb-1.5"
-              const previewSectionDividerColor = isNavy
+              const previewSectionDividerColor = isEmerald
+                ? "border-emerald-700 dark:border-emerald-500 border-b-2"
+                : isTechFaang
+                ? "border-blue-600 dark:border-blue-500 border-b-2"
+                : isExecModern
+                ? "border-slate-800 dark:border-slate-300 border-b-2"
+                : isNavy
                 ? "border-blue-900 dark:border-blue-800 border-b-2"
+                : isSwiss
+                ? "border-slate-300 dark:border-slate-700"
                 : isMinimal
                 ? "border-slate-200 dark:border-slate-800"
                 : isAtsClean || isCreative
                 ? "border-none"
                 : "border-slate-900 dark:border-slate-100"
-              const previewHeaderAlign = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isPhotoCreative || isPhotoMinimal) ? "text-left" : "text-center"
-              const previewContactJustify = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isPhotoCreative || isPhotoMinimal || isPhotoExec) ? "justify-start" : "justify-center"
+              const previewHeaderAlign = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isPhotoCreative || isPhotoMinimal || isTechFaang || isExecModern || isEmerald) ? "text-left" : "text-center"
+              const previewContactJustify = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isPhotoCreative || isPhotoMinimal || isPhotoExec || isTechFaang || isExecModern || isEmerald) ? "justify-start" : "justify-center"
 
               const renderAvatar = (size = "w-14 h-14 sm:w-28 sm:h-28") => {
                 if (photoUrl) {
@@ -3842,7 +4544,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     <div className={`relative group/photo ${size} rounded-none overflow-hidden border-2 border-slate-900 dark:border-slate-100 shadow-sm shrink-0`}>
                       <img
                         src={photoUrl}
-                        alt={name || "Candidate"}
+                        alt={effectiveName || "Candidate"}
                         className="w-full h-full object-cover rounded-none"
                       />
                       <button
@@ -3877,43 +4579,43 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
               const renderContactRow = () => (
                 <div className={`text-[8px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium flex flex-wrap ${previewContactJustify} gap-x-1 sm:gap-x-3 gap-y-0.5 sm:gap-y-1 items-center`}>
-                  {email && (
-                    <a href={`mailto:${email.trim()}`} className="hover:underline break-all">
-                      {email}
+                  {effectiveEmail && (
+                    <a href={`mailto:${effectiveEmail.trim()}`} className="hover:underline break-all">
+                      {effectiveEmail}
                     </a>
                   )}
-                  {phone && (
+                  {effectivePhone && (
                     <>
-                      {email && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
-                      <span className="shrink-0">{phone}</span>
+                      {effectiveEmail && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
+                      <span className="shrink-0">{effectivePhone}</span>
                     </>
                   )}
-                  {location && (
+                  {effectiveLocation && (
                     <>
-                      {(email || phone) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
-                      <span className="break-words">{location}</span>
+                      {(effectiveEmail || effectivePhone) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
+                      <span className="break-words">{effectiveLocation}</span>
                     </>
                   )}
-                  {linkedinUrl && (
+                  {effectiveLinkedin && (
                     <>
-                      {(email || phone || location) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
-                      <a href={formatUrl(linkedinUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
+                      {(effectiveEmail || effectivePhone || effectiveLocation) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
+                      <a href={formatUrl(effectiveLinkedin)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
                         LinkedIn
                       </a>
                     </>
                   )}
-                  {githubUrl && (
+                  {effectiveGithub && (
                     <>
-                      {(email || phone || location || linkedinUrl) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
-                      <a href={formatUrl(githubUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
+                      {(effectiveEmail || effectivePhone || effectiveLocation || effectiveLinkedin) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
+                      <a href={formatUrl(effectiveGithub)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
                         GitHub
                       </a>
                     </>
                   )}
-                  {portfolioUrl && (
+                  {effectivePortfolio && (
                     <>
-                      {(email || phone || location || linkedinUrl || githubUrl) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
-                      <a href={formatUrl(portfolioUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
+                      {(effectiveEmail || effectivePhone || effectiveLocation || effectiveLinkedin || effectiveGithub) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
+                      <a href={formatUrl(effectivePortfolio)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
                         Portfolio
                       </a>
                     </>
@@ -3923,68 +4625,71 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
               const renderContactColumn = () => (
                 <div className="text-[7.5px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium flex flex-col gap-y-0.5 sm:gap-y-1 break-words">
-                  {email && (
-                    <a href={`mailto:${email.trim()}`} className="hover:underline break-all">
-                      {email}
+                  {effectiveEmail && (
+                    <a href={`mailto:${effectiveEmail.trim()}`} className="hover:underline break-all">
+                      {effectiveEmail}
                     </a>
                   )}
-                  {phone && <span className="break-all">{phone}</span>}
-                  {location && <span className="break-words">{location}</span>}
-                  {linkedinUrl && (
-                    <a href={formatUrl(linkedinUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
+                  {effectivePhone && <span className="break-all">{effectivePhone}</span>}
+                  {effectiveLocation && <span className="break-words">{effectiveLocation}</span>}
+                  {effectiveLinkedin && (
+                    <a href={formatUrl(effectiveLinkedin)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
                       LinkedIn
                     </a>
                   )}
-                  {githubUrl && (
-                    <a href={formatUrl(githubUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
+                  {effectiveGithub && (
+                    <a href={formatUrl(effectiveGithub)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
                       GitHub
                     </a>
                   )}
-                  {portfolioUrl && (
-                    <a href={formatUrl(portfolioUrl)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
+                  {effectivePortfolio && (
+                    <a href={formatUrl(effectivePortfolio)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
                       Portfolio
                     </a>
                   )}
                 </div>
               )
 
-              const renderPreviewSummary = () => professionalSummary ? (
+              const getSectionHeadingClass = () => `${previewSectionTitleSize} ${
+                isEmerald ? "text-emerald-800 dark:text-emerald-400" :
+                isTechFaang ? "text-blue-700 dark:text-blue-400" :
+                isExecModern ? "text-slate-900 dark:text-slate-200" :
+                isNavy ? "text-blue-900 dark:text-blue-400" :
+                isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
+                isMinimal || isElegant || isSwiss ? "text-slate-700 dark:text-slate-400" :
+                "text-slate-905 dark:text-white"
+              } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`
+
+              const renderPreviewSummary = () => effectiveSummary ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={`${previewSectionTitleSize} ${
-                    isNavy ? "text-blue-900 dark:text-blue-400" :
-                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
-                    isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
-                    "text-slate-905 dark:text-white"
-                  } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
+                  <h2 className={getSectionHeadingClass()}>
                     Professional Summary
                   </h2>
-                  <p className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} break-words`}>{professionalSummary}</p>
+                  <p className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} break-words`}>{effectiveSummary}</p>
                 </div>
               ) : null
 
-              const renderPreviewSkills = () => skills && skills.length > 0 ? (
+              const renderPreviewSkills = () => effectiveSkills && effectiveSkills.length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={`${previewSectionTitleSize} ${
-                    isNavy ? "text-blue-900 dark:text-blue-400" :
-                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
-                    isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
-                    "text-slate-905 dark:text-white"
-                  } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
+                  <h2 className={getSectionHeadingClass()}>
                     Skills & Tech Stack
                   </h2>
-                  {typeof (skills as any)[0] === 'string' ? (
-                    <p className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} font-medium break-words`}>{(skills as any).filter(Boolean).join(",  ")}</p>
+                  {typeof (effectiveSkills as any)[0] === 'string' ? (
+                    <p className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} font-medium break-words`}>{(effectiveSkills as any).filter(Boolean).join(",  ")}</p>
                   ) : (
                     <div className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} font-medium space-y-0.5`}>
-                      {(skills as any).map((cat: any, idx: number) => {
+                      {(effectiveSkills as any).map((cat: any, idx: number) => {
                         const skillsList = Array.isArray(cat.skills) ? cat.skills.filter(Boolean) : [];
                         if (skillsList.length === 0) return null;
                         return (
                           <div key={idx} className="break-words">
                             <strong className={
+                              isEmerald ? "text-emerald-800 dark:text-emerald-400" :
+                              isTechFaang ? "text-blue-700 dark:text-blue-400" :
+                              isExecModern ? "text-slate-900 dark:text-slate-200" :
                               isNavy ? "text-blue-900 dark:text-blue-400" :
                               isCreative ? "text-indigo-950 dark:text-indigo-300" :
-                              isMinimal || isElegant ? "text-slate-800 dark:text-slate-200" :
+                              isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-slate-200" :
                               "text-slate-950 dark:text-white"
                             }>{cat.category}: </strong>
                             <span>{skillsList.join(",  ")}</span>
@@ -3996,23 +4701,21 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                 </div>
               ) : null
 
-              const renderPreviewExperience = () => jobs.filter(j => j.company || j.role).length > 0 ? (
+              const renderPreviewExperience = () => effectiveJobs.filter(j => j.company || j.role).length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={`${previewSectionTitleSize} ${
-                    isNavy ? "text-blue-900 dark:text-blue-400" :
-                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
-                    isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
-                    "text-slate-905 dark:text-white"
-                  } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
+                  <h2 className={getSectionHeadingClass()}>
                     Experience
                   </h2>
                   <div className={isCompact ? "space-y-1 sm:space-y-2" : "space-y-1.5 sm:space-y-3.5"}>
-                    {jobs.filter(j => j.company || j.role).map((job, idx) => (
+                    {effectiveJobs.filter(j => j.company || j.role).map((job, idx) => (
                       <div key={idx}>
                         <div className={`flex flex-wrap items-baseline justify-between ${previewTextSize} font-bold ${
+                          isEmerald ? "text-emerald-950 dark:text-emerald-200" :
+                          isTechFaang ? "text-slate-950 dark:text-white" :
+                          isExecModern ? "text-slate-950 dark:text-white" :
                           isNavy ? "text-blue-900 dark:text-blue-400" :
                           isCreative ? "text-slate-900 dark:text-white" :
-                          isMinimal || isElegant ? "text-slate-800 dark:text-white" :
+                          isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-white" :
                           "text-slate-950 dark:text-white"
                         } mb-0.5 gap-x-1 gap-y-0.5`}>
                           <span className="break-words">{job.role || "Role"} — {job.company || "Company"}{job.location ? ` (${job.location})` : ""}</span>
@@ -4031,23 +4734,21 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                 </div>
               ) : null
 
-              const renderPreviewProjects = () => projects.filter(p => p.name).length > 0 ? (
+              const renderPreviewProjects = () => effectiveProjects.filter(p => p.name).length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={`${previewSectionTitleSize} ${
-                    isNavy ? "text-blue-900 dark:text-blue-400" :
-                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
-                    isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
-                    "text-slate-905 dark:text-white"
-                  } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
+                  <h2 className={getSectionHeadingClass()}>
                     Projects
                   </h2>
                   <div className={isCompact ? "space-y-1 sm:space-y-2" : "space-y-1.5 sm:space-y-3.5"}>
-                    {projects.filter(p => p.name).length > 0 && projects.filter(p => p.name).map((proj, idx) => (
+                    {effectiveProjects.filter(p => p.name).map((proj, idx) => (
                       <div key={idx}>
                         <div className={`flex flex-wrap items-baseline justify-between ${previewTextSize} font-bold ${
+                          isEmerald ? "text-emerald-950 dark:text-emerald-200" :
+                          isTechFaang ? "text-slate-950 dark:text-white" :
+                          isExecModern ? "text-slate-950 dark:text-white" :
                           isNavy ? "text-blue-900 dark:text-blue-400" :
                           isCreative ? "text-slate-900 dark:text-white" :
-                          isMinimal || isElegant ? "text-slate-800 dark:text-white" :
+                          isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-white" :
                           "text-slate-950 dark:text-white"
                         } mb-0.5 gap-1`}>
                           <span className="break-words">
@@ -4079,23 +4780,21 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                 </div>
               ) : null
 
-              const renderPreviewEducation = () => education.filter(e => e.institution || e.degree).length > 0 ? (
+              const renderPreviewEducation = () => effectiveEducation.filter(e => e.institution || e.degree).length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={`${previewSectionTitleSize} ${
-                    isNavy ? "text-blue-900 dark:text-blue-400" :
-                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
-                    isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
-                    "text-slate-905 dark:text-white"
-                  } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
+                  <h2 className={getSectionHeadingClass()}>
                     Education
                   </h2>
                   <div className={isCompact ? "space-y-1 sm:space-y-1.5" : "space-y-1 sm:space-y-3"}>
-                    {education.filter(e => e.institution || e.degree).map((edu, idx) => (
+                    {effectiveEducation.filter(e => e.institution || e.degree).map((edu, idx) => (
                       <div key={idx}>
                         <div className={`flex flex-wrap items-baseline justify-between ${previewTextSize} font-bold ${
+                          isEmerald ? "text-emerald-950 dark:text-emerald-200" :
+                          isTechFaang ? "text-slate-950 dark:text-white" :
+                          isExecModern ? "text-slate-950 dark:text-white" :
                           isNavy ? "text-blue-900 dark:text-blue-400" :
                           isCreative ? "text-slate-900 dark:text-white" :
-                          isMinimal || isElegant ? "text-slate-800 dark:text-white" :
+                          isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-white" :
                           "text-slate-950 dark:text-white"
                         } gap-x-1 gap-y-0.5`}>
                           <span className="break-words">{edu.degree || "Degree"}{edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ""} — {edu.institution || "Institution"}</span>
@@ -4110,35 +4809,25 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                 </div>
               ) : null
 
-              const renderPreviewAchievements = () => achievements.filter(Boolean).length > 0 ? (
+              const renderPreviewAchievements = () => effectiveAchievements.filter(Boolean).length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={`${previewSectionTitleSize} ${
-                    isNavy ? "text-blue-900 dark:text-blue-400" :
-                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
-                    isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
-                    "text-slate-905 dark:text-white"
-                  } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
+                  <h2 className={getSectionHeadingClass()}>
                     Achievements & Certifications
                   </h2>
                   <ul className="list-disc pl-2.5 sm:pl-4 space-y-0.5">
-                    {achievements.filter(Boolean).map((achievement, aIdx) => (
+                    {effectiveAchievements.filter(Boolean).map((achievement, aIdx) => (
                       <li key={aIdx} className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} break-words`}>{renderRichText(achievement)}</li>
                     ))}
                   </ul>
                 </div>
               ) : null
 
-              const renderPreviewLanguages = () => languages.filter(Boolean).length > 0 ? (
+              const renderPreviewLanguages = () => effectiveLanguages.filter(Boolean).length > 0 ? (
                 <div className={previewSectionMargin}>
-                  <h2 className={`${previewSectionTitleSize} ${
-                    isNavy ? "text-blue-900 dark:text-blue-400" :
-                    isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
-                    isMinimal || isElegant ? "text-slate-700 dark:text-slate-400" :
-                    "text-slate-905 dark:text-white"
-                  } ${!isCreative && !isAtsClean ? "border-b " + previewSectionDividerColor : ""} pb-0.5 ${previewSectionHeaderMargin}`}>
+                  <h2 className={getSectionHeadingClass()}>
                     Languages
                   </h2>
-                  <p className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} font-medium break-words`}>{languages.filter(Boolean).join(", ")}</p>
+                  <p className={`${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} font-medium break-words`}>{effectiveLanguages.filter(Boolean).join(", ")}</p>
                 </div>
               ) : null
 
@@ -4171,11 +4860,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                         <div className="flex-1 min-w-0 pl-1 sm:pl-2">
                           <div className="pb-1.5 sm:pb-3 mb-2 sm:mb-3 border-b-2 border-indigo-600">
                             <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 break-words`}>
-                              {name || "Your Name"}
+                              {effectiveName}
                             </div>
-                            {role && (
+                            {effectiveRole && (
                               <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider break-words`}>
-                                {role}
+                                {effectiveRole}
                               </p>
                             )}
                           </div>
@@ -4191,11 +4880,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                           {renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
                           <div className="flex-1 min-w-0 text-left space-y-0.5 sm:space-y-1">
                             <div className={`${previewTitleSize} font-black text-blue-900 dark:text-blue-400 tracking-tight break-words`}>
-                              {name || "Your Name"}
+                              {effectiveName}
                             </div>
-                            {role && (
+                            {effectiveRole && (
                               <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider break-words`}>
-                                {role}
+                                {effectiveRole}
                               </p>
                             )}
                             {renderContactRow()}
@@ -4217,11 +4906,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                           {renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
                           <div className="flex-1 min-w-0 text-left space-y-0.5 sm:space-y-1">
                             <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight break-words`}>
-                              {name || "Your Name"}
+                              {effectiveName}
                             </div>
-                            {role && (
+                            {effectiveRole && (
                               <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider break-words`}>
-                                {role}
+                                {effectiveRole}
                               </p>
                             )}
                             {renderContactRow()}
@@ -4243,11 +4932,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                         <div className="flex flex-row items-center justify-between gap-2 pb-2 sm:pb-3 mb-2.5 sm:mb-4 border-b border-slate-200 dark:border-slate-800">
                           <div className="space-y-0.5 sm:space-y-1 text-left flex-1 min-w-0">
                             <div className={`${previewTitleSize} font-bold text-slate-800 dark:text-white tracking-tight break-words`}>
-                              {name || "Your Name"}
+                              {effectiveName}
                             </div>
-                            {role && (
+                            {effectiveRole && (
                               <p className={`${previewHeadlineSize} font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider break-words`}>
-                                {role}
+                                {effectiveRole}
                               </p>
                             )}
                             {renderContactRow()}
@@ -4267,9 +4956,9 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       <div>
                         {/* Header */}
                         <div className={`flex flex-col text-left mb-2.5 sm:mb-4`}>
-                          <div className={`${previewTitleSize} font-black tracking-tight mb-0.5 sm:mb-1 text-slate-950 dark:text-white break-words`}>{name || "Your Name"}</div>
-                          {role && (
-                            <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{role}</p>
+                          <div className={`${previewTitleSize} font-black tracking-tight mb-0.5 sm:mb-1 text-slate-950 dark:text-white break-words`}>{effectiveName}</div>
+                          {effectiveRole && (
+                            <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
                           )}
                           {renderContactRow()}
                         </div>
@@ -4295,9 +4984,9 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                         {/* Left Sidebar (30%) */}
                         <div className="w-[30%] sm:w-[30%] shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-4">
                           <div className={previewSectionMargin}>
-                            <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 sm:mb-1 break-words`}>{name || "Your Name"}</div>
-                            {role && (
-                              <p className={`${previewHeadlineSize} font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 sm:mb-2 break-words`}>{role}</p>
+                            <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 sm:mb-1 break-words`}>{effectiveName}</div>
+                            {effectiveRole && (
+                              <p className={`${previewHeadlineSize} font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 sm:mb-2 break-words`}>{effectiveRole}</p>
                             )}
                             {renderContactColumn()}
                           </div>
@@ -4319,34 +5008,63 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                         </div>
                       </div>
                     ) : (
-                      /* Single Column Layouts: Classic Serif, Modern Minimal, Executive Navy, Compact Tech, Creative Bold, ATS Clean */
+                      /* Single Column Layouts: Classic Serif, Modern Minimal, Executive Navy, Compact Tech, Creative Bold, ATS Clean, Ivy League, Tech FAANG, Exec Modern, Swiss, Emerald, Compact One-Page */
                       <div>
                         {/* Header */}
                         <div className={`flex flex-col ${previewHeaderAlign} mb-2.5 sm:mb-4`}>
                           <div className={`${previewTitleSize} font-black ${
+                            isEmerald ? "text-emerald-950 dark:text-emerald-100" :
+                            isTechFaang ? "text-slate-950 dark:text-white" :
+                            isExecModern ? "text-slate-950 dark:text-white" :
                             isNavy ? "text-blue-900 dark:text-blue-400" :
                             isMinimal ? "text-slate-800 dark:text-white" :
                             "text-slate-950 dark:text-white"
-                          } tracking-tight mb-0.5 sm:mb-1 break-words`}>{name || "Your Name"}</div>
-                          {role && (
+                          } tracking-tight mb-0.5 sm:mb-1 break-words`}>{effectiveName}</div>
+                          {effectiveRole && (
                             <p className={`${previewHeadlineSize} font-bold ${
+                              isEmerald ? "text-emerald-700 dark:text-emerald-400 font-bold" :
+                              isTechFaang ? "text-blue-600 dark:text-blue-400 font-bold" :
                               isNavy ? "text-blue-900 dark:text-blue-400" :
                               isCreative ? "text-indigo-600 dark:text-indigo-400 font-extrabold" :
                               isMinimal ? "text-slate-600 dark:text-slate-450" :
                               "text-slate-700 dark:text-slate-300"
-                            } uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{role}</p>
+                            } uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
                           )}
                           {isCreative && <div className="h-0.5 sm:h-1 w-full bg-indigo-600 rounded-full my-1.5 sm:my-2" />}
                           {renderContactRow()}
                         </div>
 
-                        {renderPreviewSummary()}
-                        {renderPreviewSkills()}
-                        {renderPreviewEducation()}
-                        {renderPreviewExperience()}
-                        {renderPreviewProjects()}
-                        {renderPreviewAchievements()}
-                        {renderPreviewLanguages()}
+                        {isIvyLeague ? (
+                          <>
+                            {renderPreviewSummary()}
+                            {renderPreviewEducation()}
+                            {renderPreviewExperience()}
+                            {renderPreviewProjects()}
+                            {renderPreviewSkills()}
+                            {renderPreviewAchievements()}
+                            {renderPreviewLanguages()}
+                          </>
+                        ) : isTechFaang ? (
+                          <>
+                            {renderPreviewSummary()}
+                            {renderPreviewSkills()}
+                            {renderPreviewExperience()}
+                            {renderPreviewProjects()}
+                            {renderPreviewEducation()}
+                            {renderPreviewAchievements()}
+                            {renderPreviewLanguages()}
+                          </>
+                        ) : (
+                          <>
+                            {renderPreviewSummary()}
+                            {renderPreviewSkills()}
+                            {renderPreviewEducation()}
+                            {renderPreviewExperience()}
+                            {renderPreviewProjects()}
+                            {renderPreviewAchievements()}
+                            {renderPreviewLanguages()}
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

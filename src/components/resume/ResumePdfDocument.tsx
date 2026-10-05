@@ -11,10 +11,17 @@ import {
 
 // Helper: Generates stylesheet based on the active visual template
 const getStyles = (template: string) => {
-  const isSerif = template === 'classic-serif';
-  const isNavy = template === 'executive-navy' || template === 'photo-executive';
-  const isCompact = template === 'compact-tech';
-  const isMinimal = template === 'modern-minimal' || template === 'photo-minimal';
+  const isIvyLeague = template === 'ats-ivy-league';
+  const isTechFaang = template === 'ats-tech-faang';
+  const isExecModern = template === 'ats-executive-modern';
+  const isSwiss = template === 'ats-modern-swiss';
+  const isEmerald = template === 'ats-emerald-professional';
+  const isCompactOnePage = template === 'ats-compact-onepage';
+
+  const isSerif = template === 'classic-serif' || isIvyLeague;
+  const isNavy = template === 'executive-navy' || template === 'photo-executive' || isExecModern;
+  const isCompact = template === 'compact-tech' || isCompactOnePage;
+  const isMinimal = template === 'modern-minimal' || template === 'photo-minimal' || isSwiss;
   const isTwoColumn = template === 'two-column';
   const isCreative = template === 'creative-bold' || template === 'photo-creative';
   const isElegant = template === 'elegant-sidebar';
@@ -33,7 +40,32 @@ const getStyles = (template: string) => {
   let sectionColor = "#000000";
   let borderColor = "#0f172a";
 
-  if (isNavy) {
+  if (isEmerald) {
+    textColor = "#111827";
+    nameColor = "#064e3b";
+    sectionColor = "#065f46";
+    borderColor = "#047857";
+  } else if (isExecModern) {
+    textColor = "#0f172a";
+    nameColor = "#0f172a";
+    sectionColor = "#1e293b";
+    borderColor = "#1e293b";
+  } else if (isIvyLeague) {
+    textColor = "#000000";
+    nameColor = "#000000";
+    sectionColor = "#000000";
+    borderColor = "#000000";
+  } else if (isTechFaang) {
+    textColor = "#0f172a";
+    nameColor = "#0f172a";
+    sectionColor = "#2563eb";
+    borderColor = "#2563eb";
+  } else if (isSwiss) {
+    textColor = "#1e293b";
+    nameColor = "#0f172a";
+    sectionColor = "#334155";
+    borderColor = "#cbd5e1";
+  } else if (isNavy) {
     nameColor = "#1e3a8a";
     sectionColor = "#1e3a8a";
     borderColor = "#1e3a8a";
@@ -60,14 +92,14 @@ const getStyles = (template: string) => {
   }
 
   // Header Align
-  const headerAlign = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant) ? "flex-start" : "center";
-  const contactJustify = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant) ? "flex-start" : "center";
+  const headerAlign = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isTechFaang || isExecModern || isEmerald) ? "flex-start" : "center";
+  const contactJustify = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isTechFaang || isExecModern || isEmerald) ? "flex-start" : "center";
 
   // Spacing
-  const pagePaddingTop = isCompact ? 18 : 28;
+  const pagePaddingTop = isCompact ? 16 : isIvyLeague ? 24 : 28;
   const pagePaddingBottom = isCompact ? 12 : 20;
-  const entryBlockMargin = isCompact ? 4 : (isTwoColumn || isElegant) ? 5 : 8;
-  const sectionMargin = isCompact ? 2 : (isTwoColumn || isElegant) ? 4 : 5;
+  const entryBlockMargin = isCompact ? 3.5 : (isTwoColumn || isElegant) ? 5 : 8;
+  const sectionMargin = isCompact ? 2 : (isTwoColumn || isElegant) ? 4 : isIvyLeague ? 4.5 : 5;
 
   return StyleSheet.create({
     page: {
@@ -528,6 +560,8 @@ export function ResumePdfDocument({ data, template = 'classic-serif' }: Props) {
   const isPhotoExec = template === 'photo-executive';
   const isPhotoCreative = template === 'photo-creative';
   const isPhotoMinimal = template === 'photo-minimal';
+  const isIvyLeague = template === 'ats-ivy-league';
+  const isTechFaang = template === 'ats-tech-faang';
 
   const photoSrc = data.photoUrl || data.contact?.photoUrl;
 
@@ -780,13 +814,37 @@ export function ResumePdfDocument({ data, template = 'classic-serif' }: Props) {
               </View>
             </View>
 
-            <SummarySection data={data} styles={styles} />
-            <SkillsSection data={data} styles={styles} />
-            <EducationSection data={data} styles={styles} />
-            <ExperienceSection data={data} styles={styles} />
-            <ProjectsSection data={data} styles={styles} formatUrl={formatUrl} />
-            <AchievementsSection data={data} styles={styles} />
-            <LanguagesSection data={data} styles={styles} />
+            {isIvyLeague ? (
+              <>
+                <SummarySection data={data} styles={styles} />
+                <EducationSection data={data} styles={styles} />
+                <ExperienceSection data={data} styles={styles} />
+                <ProjectsSection data={data} styles={styles} formatUrl={formatUrl} />
+                <SkillsSection data={data} styles={styles} />
+                <AchievementsSection data={data} styles={styles} />
+                <LanguagesSection data={data} styles={styles} />
+              </>
+            ) : isTechFaang ? (
+              <>
+                <SummarySection data={data} styles={styles} />
+                <SkillsSection data={data} styles={styles} />
+                <ExperienceSection data={data} styles={styles} />
+                <ProjectsSection data={data} styles={styles} formatUrl={formatUrl} />
+                <EducationSection data={data} styles={styles} />
+                <AchievementsSection data={data} styles={styles} />
+                <LanguagesSection data={data} styles={styles} />
+              </>
+            ) : (
+              <>
+                <SummarySection data={data} styles={styles} />
+                <SkillsSection data={data} styles={styles} />
+                <EducationSection data={data} styles={styles} />
+                <ExperienceSection data={data} styles={styles} />
+                <ProjectsSection data={data} styles={styles} formatUrl={formatUrl} />
+                <AchievementsSection data={data} styles={styles} />
+                <LanguagesSection data={data} styles={styles} />
+              </>
+            )}
           </View>
         )}
 

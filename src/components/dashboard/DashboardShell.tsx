@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { DashboardSidebar } from "./DashboardSidebar";
@@ -125,12 +125,14 @@ export function DashboardShell({ children }: DashboardShellProps) {
     return (
       <div className="flex h-screen overflow-hidden bg-slate-50">
         {/* Sidebar */}
-        <DashboardSidebar
-          mobileOpen={mobileOpen}
-          onMobileClose={() => setMobileOpen(false)}
-          collapsed={collapsed}
-          onToggleCollapse={handleToggleCollapse}
-        />
+        <Suspense fallback={<div className={cn("hidden lg:block shrink-0 bg-white border-r border-slate-200", collapsed ? "w-[68px]" : "w-64")} />}>
+          <DashboardSidebar
+            mobileOpen={mobileOpen}
+            onMobileClose={() => setMobileOpen(false)}
+            collapsed={collapsed}
+            onToggleCollapse={handleToggleCollapse}
+          />
+        </Suspense>
 
         {/* Main area — offset by sidebar width */}
         <div
@@ -166,9 +168,13 @@ export function DashboardShell({ children }: DashboardShellProps) {
   // ── Public Layout (Header + Footer) ────────────────────────────────────
   return (
     <div className="flex flex-col min-h-screen">
-      <PublicNavbar />
+      <div data-public-chrome="">
+        <PublicNavbar />
+      </div>
       <main className="flex-1">{children}</main>
-      <Footer />
+      <div data-public-chrome="">
+        <Footer />
+      </div>
     </div>
   );
 }

@@ -1,9 +1,57 @@
 import type { Metadata } from "next"
+import dynamic from "next/dynamic"
 import { cookies } from "next/headers"
 import { SITE_URL, siteUrl } from "@/lib/site"
-import ResumeBuilderPage from "./resume-builder-client"
 import { ResumeBuilderSeo } from "@/components/resume-builder-seo"
 import { RESUME_BUILDER_FAQS, RESUME_BUILDER_STEPS } from "@/lib/seo-content"
+
+function ResumeBuilderSkeleton() {
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
+      <div className="pt-8 pb-10 sm:pt-10 sm:pb-12 text-center print:hidden">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] text-slate-900 dark:text-white">
+            Build Your Perfect{" "}
+            <span className="text-indigo-600 dark:text-indigo-400">
+              Resume.
+            </span>
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 text-base sm:text-lg max-w-2xl mx-auto font-medium leading-relaxed">
+            Fill in your details, let our AI generate polished bullet points, score your ATS compatibility, and export a recruiter-ready PDF — all in one place.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-8 pt-2">
+            {[
+              { value: "Free", label: "First Resume" },
+              { value: "1 min", label: "To Generate" },
+              { value: "PDF", label: "ATS-Safe Export" },
+            ].map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                  {stat.value}
+                </div>
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-0.5">
+                  {stat.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="h-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl animate-pulse" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl h-[700px] animate-pulse p-6" />
+          <div className="lg:col-span-5 hidden lg:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl h-[700px] animate-pulse p-6" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const ResumeBuilderPage = dynamic(() => import("./resume-builder-client"), {
+  ssr: false,
+  loading: () => <ResumeBuilderSkeleton />,
+})
 
 const PAGE_URL = siteUrl("/resume-builder")
 const OG_IMAGE = siteUrl("/og-image.png")

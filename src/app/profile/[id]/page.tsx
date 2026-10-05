@@ -3,7 +3,7 @@
 
 import { useUser } from "@/contexts/user-context";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { ProfileSections } from "@/components/profile-sections";
 import type { User as UserType } from "@/lib/types";
 import {
@@ -19,7 +19,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import axiosInstance from "@/lib/axios";
 
-export default function PublicProfilePage() {
+function ProfileContent() {
   const { user: currentUser, loading: currentUserLoading } = useUser();
   const router = useRouter();
   const params = useParams();
@@ -530,5 +530,20 @@ export default function PublicProfilePage() {
 
       </div>
     </div>
+  );
+}
+
+export default function PublicProfilePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container max-w-5xl mx-auto py-8 px-4 sm:px-6 space-y-6">
+          <Skeleton className="h-48 w-full rounded-2xl" />
+          <Skeleton className="h-96 w-full rounded-2xl" />
+        </div>
+      }
+    >
+      <ProfileContent />
+    </Suspense>
   );
 }

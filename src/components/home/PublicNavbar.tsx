@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -175,7 +175,9 @@ export function PublicNavbar() {
                     <SheetTitle className="text-lg font-bold text-slate-800 dark:text-slate-200">Filter Jobs</SheetTitle>
                   </SheetHeader>
                   <div className="p-4">
-                    <JobFilters isSheet={true} />
+                    <Suspense fallback={<div className="p-4 text-center text-slate-400 text-sm animate-pulse">Loading filters...</div>}>
+                      <JobFilters isSheet={true} />
+                    </Suspense>
                   </div>
                 </SheetContent>
               </Sheet>

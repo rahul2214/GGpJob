@@ -418,15 +418,15 @@ export default function RootLayout({
       >
         <NetworkStatusIndicator />
         <UserProvider>
-          <Suspense
-            fallback={
-              <div className="h-16 border-b bg-white/80 animate-pulse" />
-            }
-          >
-            <DashboardShell>
+          <DashboardShell>
+            <Suspense
+              fallback={
+                <div className="h-16 border-b bg-white/80 animate-pulse" />
+              }
+            >
               {children}
-            </DashboardShell>
-          </Suspense>
+            </Suspense>
+          </DashboardShell>
 
           <Toaster />
 

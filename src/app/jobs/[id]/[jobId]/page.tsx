@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import JobDetailsClient from '../job-details-client';
@@ -145,7 +146,9 @@ export default async function JobDetailsPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <JobDetailsClient jobId={targetId} />
+      <Suspense fallback={null}>
+        <JobDetailsClient jobId={targetId} />
+      </Suspense>
     </>
   );
 }
