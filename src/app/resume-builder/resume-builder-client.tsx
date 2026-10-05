@@ -3690,7 +3690,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       key={tmpl.id}
                       onClick={() => {
                         setVisualTemplate(tmpl.id);
-                        toast({ title: "Template Selected ✨", description: `Switched to ${tmpl.name}` });
+                        toast({ title: "Template Selected", description: `Switched to ${tmpl.name}` });
                       }}
                       className={`group relative rounded-xl border p-2.5 cursor-pointer transition-all hover:scale-[1.02] flex flex-col justify-between shrink-0 w-[200px] sm:w-[220px] ${
                         isSelected
