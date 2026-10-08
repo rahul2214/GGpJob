@@ -40,9 +40,9 @@ export async function POST(req: NextRequest) {
 
     if (!isFirstTime) {
       const totalCredits = (jobseeker.subscription_credits || 0) + (jobseeker.purchased_credits || 0)
-      if (totalCredits < 1) {
+      if (totalCredits < 2) {
         return NextResponse.json({ 
-          error: "Insufficient credits. Generating an ATS resume with AI costs 1 credit.", 
+          error: "Insufficient credits. Generating an ATS resume with AI costs 2 credits.", 
           code: "INSUFFICIENT_CREDITS" 
         }, { status: 402 })
       }
@@ -197,14 +197,17 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks, no explanations
           console.log(`[RESUME_GENERATE_API] First-time free use completed for user: ${userId}`)
         }
       } else {
+        let creditsToDeduct = 2
         let newSubCredits = jobseeker.subscription_credits || 0
         let newPurCredits = jobseeker.purchased_credits || 0
-        if (newSubCredits > 0) {
-          newSubCredits -= 1
-        } else if (newPurCredits > 0) {
-          newPurCredits -= 1
+        if (newSubCredits >= creditsToDeduct) {
+          newSubCredits -= creditsToDeduct
+        } else {
+          creditsToDeduct -= newSubCredits
+          newSubCredits = 0
+          newPurCredits = Math.max(0, newPurCredits - creditsToDeduct)
         }
-        creditsDeducted = 1
+        creditsDeducted = 2
 
         const { error: updateErr } = await supabaseAdmin
           .from('jobseekers')
@@ -218,7 +221,7 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks, no explanations
         if (updateErr) {
           console.error("Failed to deduct credit from jobseeker:", updateErr)
         } else {
-          console.log(`[RESUME_GENERATE_API] Deducted 1 credit for user: ${userId}. Remaining credits: ${newSubCredits + newPurCredits}`)
+          console.log(`[RESUME_GENERATE_API] Deducted 2 credits for user: ${userId}. Remaining credits: ${newSubCredits + newPurCredits}`)
         }
       }
     } catch (creditErr) {

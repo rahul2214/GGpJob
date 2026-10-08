@@ -21,7 +21,7 @@ export const ATS_FAQS: FaqEntry[] = [
   },
   {
     q: "Is this ATS checker really free?",
-    a: "Yes, your first ATS analysis on JobsDart is completely free. Subsequent analyses cost 1 credit each."
+    a: "Yes, your first ATS analysis on JobsDart is completely free. Subsequent analyses cost 2 credits each."
   },
   {
     q: "What file formats does the resume checker support?",
@@ -48,7 +48,7 @@ export const ATS_FAQS: FaqEntry[] = [
 export const RESUME_BUILDER_FAQS: FaqEntry[] = [
   {
     q: "Is the JobsDart resume builder free?",
-    a: "Yes. You can build, preview and download your first resume for free. Additional AI rewrites and extra resume versions cost 1 credit each, and new accounts start with free credits."
+    a: "Yes. You can build, preview, and create your first resume for free. Generating an ATS resume with AI costs 2 credits, and downloading your final resume PDF costs 1 credit."
   },
   {
     q: "Are the resume templates ATS-friendly?",

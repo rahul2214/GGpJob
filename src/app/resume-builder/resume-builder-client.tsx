@@ -2110,6 +2110,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
   const isFirstTime = mounted ? isFirstTimeResumeBuilder : true;
   const userTotalCredits = user ? ((user.subscriptionCredits || 0) + (user.purchasedCredits || 0) || (user.credits || 0)) : 0
   const [showCreditConfirmDialog, setShowCreditConfirmDialog] = useState(false)
+  const [showDownloadConfirmDialog, setShowDownloadConfirmDialog] = useState(false)
 
   // App States
   const [isGenerating, setIsGenerating] = useState(false)
@@ -3234,7 +3235,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
         if (response.status === 402 || errData.code === "INSUFFICIENT_CREDITS") {
           toast({
             title: "Insufficient Credits 💳",
-            description: errData.error || "You need at least 1 credit to generate an ATS resume with AI.",
+            description: errData.error || "You need at least 2 credits to generate an ATS resume with AI.",
             variant: "destructive"
           })
           router.push("/jobseeker/credits")
@@ -3316,7 +3317,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
       if (data._isFirstTime || isFirstTimeResumeBuilder) {
         toast({ title: "Resume Generated! ✨ (Free Trial)", description: "Your ATS-safe resume is ready to preview or download as PDF." })
       } else {
-        toast({ title: "Resume Generated! ✨ (1 Credit Used)", description: "Your ATS-safe resume is ready to preview or download as PDF." })
+        toast({ title: "Resume Generated! ✨ (2 Credits Used)", description: "Your ATS-safe resume is ready to preview or download as PDF." })
       }
       await refreshUser()
     } catch (err: any) {
@@ -3338,10 +3339,10 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
       return
     }
 
-    if (!isFirstTimeResumeBuilder && userTotalCredits < 1) {
+    if (!isFirstTimeResumeBuilder && userTotalCredits < 2) {
       toast({
         title: "Insufficient Credits 💳",
-        description: "You need at least 1 credit to generate an ATS resume with AI. Please purchase credits to proceed.",
+        description: "You need at least 2 credits to generate an ATS resume with AI. Please purchase credits to proceed.",
         variant: "destructive"
       })
       router.push("/jobseeker/credits")
@@ -3363,6 +3364,30 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
   }
 
   const handleDownloadPdf = async () => {
+    if (!user) {
+      router.push("/login?redirect=/resume-builder")
+      return
+    }
+
+    if (userTotalCredits < 1) {
+      toast({
+        title: "Insufficient Credits 💳",
+        description: "You need at least 1 credit to download your resume. Please purchase credits to proceed.",
+        variant: "destructive"
+      })
+      router.push("/jobseeker/credits")
+      return
+    }
+
+    setShowDownloadConfirmDialog(true)
+  }
+
+  const handleConfirmDownload = async () => {
+    setShowDownloadConfirmDialog(false)
+    await executeDownloadPdf()
+  }
+
+  const executeDownloadPdf = async () => {
     if (!user) {
       router.push("/login?redirect=/resume-builder")
       return
@@ -3419,11 +3444,22 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
         body: JSON.stringify({
           data: currentResumeData,
           template: visualTemplate,
-          styleConfig: (styleConfig.fontFamily || styleConfig.fontSizeScale || styleConfig.primaryColor || styleConfig.textColor) ? styleConfig : undefined
+          styleConfig: (styleConfig.fontFamily || styleConfig.fontSizeScale || styleConfig.primaryColor || styleConfig.textColor) ? styleConfig : undefined,
+          userId: user.uuid
         })
       })
 
       if (!response.ok) {
+        if (response.status === 402) {
+          const errData = await response.json().catch(() => ({}))
+          toast({
+            title: "Insufficient Credits 💳",
+            description: errData.error || "You need at least 1 credit to download your resume. Please purchase credits to proceed.",
+            variant: "destructive"
+          })
+          router.push("/jobseeker/credits")
+          return
+        }
         throw new Error('Failed to render PDF on server')
       }
 
@@ -3445,8 +3481,10 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
       URL.revokeObjectURL(url)
 
       toast({
-        title: "PDF Saved! 📄"
+        title: "PDF Saved! 📄 (1 Credit Used)",
+        description: "Your ATS-safe resume PDF has been downloaded."
       })
+      await refreshUser()
     } catch (err: any) {
       console.error(err)
       toast({
@@ -4686,7 +4724,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               ) : (
                 <>
                   <Sparkles className="w-5 h-5 text-amber-300 fill-amber-300 animate-pulse" />
-                  {isFirstTime ? "Generate with AI (Free 1st Time)" : "Generate with AI (1 Credit)"}
+                  {isFirstTime ? "Generate with AI (Free 1st Time)" : "Generate with AI (2 Credits)"}
                   <ChevronRight className="w-5 h-5 ml-1" />
                 </>
               )}
@@ -4749,13 +4787,14 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                   className="rounded-xl h-8 text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 flex items-center gap-1 shadow-sm"
                   onClick={handleDownloadPdf}
                   disabled={isDownloadingPdf}
+                  title="Download ATS resume PDF (Costs 1 credit)"
                 >
                   {isDownloadingPdf ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <Download className="w-3.5 h-3.5" />
                   )}
-                  Save PDF
+                  Save PDF (1 Cr)
                 </Button>
               </div>
             </div>
@@ -5462,10 +5501,10 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               <Coins className="w-6 h-6 text-amber-500" />
             </div>
             <AlertDialogTitle className="text-lg font-extrabold text-slate-900 dark:text-white">
-              Use 1 Credit to Generate Resume?
+              Use 2 Credits to Generate Resume?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed pt-1">
-              Generating an ATS-optimized resume with AI will deduct <strong className="text-slate-900 dark:text-white font-bold">1 credit</strong> from your account balance.
+              Generating an ATS-optimized resume with AI will deduct <strong className="text-slate-900 dark:text-white font-bold">2 credits</strong> from your account balance.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -5489,6 +5528,47 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               onClick={handleConfirmCreditDeduction}
             >
               <Sparkles className="w-3.5 h-3.5" />
+              <span>Confirm & Use 2 Credits</span>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Download Resume Credit Confirmation Popup */}
+      <AlertDialog open={showDownloadConfirmDialog} onOpenChange={setShowDownloadConfirmDialog}>
+        <AlertDialogContent className="rounded-2xl border-slate-200 dark:border-slate-800 max-w-md bg-white dark:bg-slate-900 shadow-2xl backdrop-blur-md">
+          <AlertDialogHeader>
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/80 flex items-center justify-center mb-2 text-indigo-600 dark:text-indigo-400">
+              <Download className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <AlertDialogTitle className="text-lg font-extrabold text-slate-900 dark:text-white">
+              Download Resume PDF (1 Credit)
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed pt-1">
+              Downloading your ATS-optimized resume as a PDF will deduct <strong className="text-slate-900 dark:text-white font-bold">1 credit</strong> from your account balance.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="p-3 my-2 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 rounded-xl flex items-center justify-between text-xs">
+            <span className="text-slate-600 dark:text-slate-400 font-medium">Your current balance:</span>
+            <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
+              <Coins className="w-3.5 h-3.5 text-amber-500" />
+              {userTotalCredits} {userTotalCredits === 1 ? 'Credit' : 'Credits'}
+            </span>
+          </div>
+
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel 
+              className="rounded-xl border-slate-200 dark:border-slate-700 text-xs font-bold"
+              onClick={() => setShowDownloadConfirmDialog(false)}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md flex items-center justify-center gap-1"
+              onClick={handleConfirmDownload}
+            >
+              <Download className="w-3.5 h-3.5" />
               <span>Confirm & Use 1 Credit</span>
             </AlertDialogAction>
           </AlertDialogFooter>

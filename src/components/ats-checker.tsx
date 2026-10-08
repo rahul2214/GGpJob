@@ -224,8 +224,8 @@ export function AtsChecker() {
     const hasUsedAts = user.has_used_ats_checker === true || user.hasUsedAtsChecker === true || user.metadata?.has_used_ats_checker === true
     const totalCredits = user.totalCredits ?? 0
     
-    if (hasUsedAts && totalCredits < 1) {
-      setError("Insufficient credits. Analyzing your resume costs 1 credit.")
+    if (hasUsedAts && totalCredits < 2) {
+      setError("Insufficient credits. Analyzing your resume costs 2 credits.")
       return
     }
 
@@ -399,7 +399,7 @@ export function AtsChecker() {
                     {!(user.has_used_ats_checker || user.hasUsedAtsChecker || user.metadata?.has_used_ats_checker) ? (
                       <span>First scan is <strong className="text-indigo-600 dark:text-indigo-400 font-bold">FREE</strong>!</span>
                     ) : (
-                      <span>Scan cost: <strong className="font-semibold text-slate-700 dark:text-slate-300">1 Credit</strong></span>
+                      <span>Scan cost: <strong className="font-semibold text-slate-700 dark:text-slate-300">2 Credits</strong></span>
                     )}
                   </div>
                   <span className={`font-bold py-0.5 px-2.5 rounded-full text-[10px] sm:text-xs tracking-wide border shadow-sm ${
@@ -412,9 +412,9 @@ export function AtsChecker() {
                 </div>
               )}
 
-              {user && (user.has_used_ats_checker || user.hasUsedAtsChecker || user.metadata?.has_used_ats_checker) && (user.totalCredits || 0) < 1 && (
+              {user && (user.has_used_ats_checker || user.hasUsedAtsChecker || user.metadata?.has_used_ats_checker) && (user.totalCredits || 0) < 2 && (
                 <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-100 text-rose-800 dark:bg-rose-950/10 dark:border-rose-900/30 dark:text-rose-400 text-xs flex flex-col gap-2 shadow-sm">
-                  <p className="font-medium">You need at least 1 credit to perform this scan.</p>
+                  <p className="font-medium">You need at least 2 credits to perform this scan.</p>
                   <Link href="/jobseeker/credits" className="text-indigo-600 dark:text-indigo-400 font-bold underline hover:text-indigo-700 flex items-center gap-1">
                     Purchase Credits <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
@@ -425,7 +425,7 @@ export function AtsChecker() {
                 className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold h-12 text-sm shadow-lg shadow-indigo-500/20 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300 rounded-2xl" 
                 size="lg" 
                 onClick={handleAnalyze}
-                disabled={!file || isUploading || (user && (user.has_used_ats_checker || user.hasUsedAtsChecker || user.metadata?.has_used_ats_checker) && (user.totalCredits || 0) < 1)}
+                disabled={!file || isUploading || (user && (user.has_used_ats_checker || user.hasUsedAtsChecker || user.metadata?.has_used_ats_checker) && (user.totalCredits || 0) < 2)}
               >
                 {isUploading ? (
                   <>
@@ -820,7 +820,7 @@ export function AtsChecker() {
             </div>
             <AlertDialogTitle className="text-center text-xl font-bold text-slate-900 dark:text-white">Confirm Credit Charge</AlertDialogTitle>
             <AlertDialogDescription className="text-center text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-              Running this match assessment costs <strong className="text-slate-900 dark:text-slate-200 font-extrabold">1 credit</strong>. Your current credit balance is <strong className="text-indigo-600 dark:text-indigo-400 font-extrabold">{user?.totalCredits || 0} credits</strong>.
+              Running this match assessment costs <strong className="text-slate-900 dark:text-slate-200 font-extrabold">2 credits</strong>. Your current credit balance is <strong className="text-indigo-600 dark:text-indigo-400 font-extrabold">{user?.totalCredits || 0} credits</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:justify-center sm:space-x-3 mt-4">
@@ -832,7 +832,7 @@ export function AtsChecker() {
                 await executeAnalyze()
               }}
             >
-              Confirm & Analyze
+              Confirm & Use 2 Credits
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -57,9 +57,9 @@ export async function POST(req: NextRequest) {
         // If not first time, check credit balance
         if (!isFirstTime) {
           const totalCredits = (jobseeker.subscription_credits || 0) + (jobseeker.purchased_credits || 0)
-          if (totalCredits < 1) {
+          if (totalCredits < 2) {
             return NextResponse.json({ 
-              error: "Insufficient credits. Analyzing your resume costs 1 credit.", 
+              error: "Insufficient credits. Analyzing your resume costs 2 credits.", 
               code: "INSUFFICIENT_CREDITS" 
             }, { status: 402 })
           }
@@ -326,13 +326,16 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks (e.g., no \`\`\`
             .eq('id', jobseekerRecord.id)
           console.log(`[ATS_SCORE_API] Mark has_used_ats_checker for user: ${userId}`)
         } else {
-          // Deduct 1 credit
+          // Deduct 2 credits
+          let creditsToDeduct = 2
           let newSubCredits = jobseekerRecord.subscription_credits || 0
           let newPurCredits = jobseekerRecord.purchased_credits || 0
-          if (newSubCredits > 0) {
-            newSubCredits -= 1
-          } else if (newPurCredits > 0) {
-            newPurCredits -= 1
+          if (newSubCredits >= creditsToDeduct) {
+            newSubCredits -= creditsToDeduct
+          } else {
+            creditsToDeduct -= newSubCredits
+            newSubCredits = 0
+            newPurCredits = Math.max(0, newPurCredits - creditsToDeduct)
           }
           await supabaseAdmin
             .from('jobseekers')
@@ -341,7 +344,7 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks (e.g., no \`\`\`
               purchased_credits: newPurCredits
             })
             .eq('id', jobseekerRecord.id)
-          console.log(`[ATS_SCORE_API] Charged 1 credit from user: ${userId}`)
+          console.log(`[ATS_SCORE_API] Charged 2 credits from user: ${userId}. Remaining credits: ${newSubCredits + newPurCredits}`)
         }
 
         // Store analysis in Supabase (upsert)
