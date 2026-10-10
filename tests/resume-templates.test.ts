@@ -257,5 +257,74 @@ describe("Resume Templates & PDF Rendering Pipeline", () => {
       expect(header).toBe("%PDF-")
     })
   })
+
+  describe("Photo Integration in ATS and Standard Layouts", () => {
+    // 1x1 transparent PNG data URI
+    const DUMMY_PNG_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+
+    it("renders valid PDF when photoUrl is provided on single-column ATS template (ats-clean)", async () => {
+      const element = React.createElement(ResumePdfDocument, {
+        data: {
+          ...SAMPLE_RESUME_DATA,
+          photoUrl: DUMMY_PNG_DATA_URL,
+        },
+        template: "ats-clean",
+      })
+
+      const buffer = await renderToBuffer(element as any)
+      expect(buffer).toBeDefined()
+      expect(buffer.length).toBeGreaterThan(1000)
+      const header = buffer.subarray(0, 5).toString("ascii")
+      expect(header).toBe("%PDF-")
+    })
+
+    it("renders valid PDF when photoUrl is provided on two-column template (two-column)", async () => {
+      const element = React.createElement(ResumePdfDocument, {
+        data: {
+          ...SAMPLE_RESUME_DATA,
+          photoUrl: DUMMY_PNG_DATA_URL,
+        },
+        template: "two-column",
+      })
+
+      const buffer = await renderToBuffer(element as any)
+      expect(buffer).toBeDefined()
+      expect(buffer.length).toBeGreaterThan(1000)
+      const header = buffer.subarray(0, 5).toString("ascii")
+      expect(header).toBe("%PDF-")
+    })
+
+    it("renders valid PDF when photoUrl is provided on centered ATS template (ats-ivy-league)", async () => {
+      const element = React.createElement(ResumePdfDocument, {
+        data: {
+          ...SAMPLE_RESUME_DATA,
+          photoUrl: DUMMY_PNG_DATA_URL,
+        },
+        template: "ats-ivy-league",
+      })
+
+      const buffer = await renderToBuffer(element as any)
+      expect(buffer).toBeDefined()
+      expect(buffer.length).toBeGreaterThan(1000)
+      const header = buffer.subarray(0, 5).toString("ascii")
+      expect(header).toBe("%PDF-")
+    })
+
+    it("renders valid PDF when photoUrl is empty/omitted on ATS templates without leaving empty photo artifacts", async () => {
+      const element = React.createElement(ResumePdfDocument, {
+        data: {
+          ...SAMPLE_RESUME_DATA,
+          photoUrl: undefined,
+        },
+        template: "ats-tech-faang",
+      })
+
+      const buffer = await renderToBuffer(element as any)
+      expect(buffer).toBeDefined()
+      expect(buffer.length).toBeGreaterThan(1000)
+      const header = buffer.subarray(0, 5).toString("ascii")
+      expect(header).toBe("%PDF-")
+    })
+  })
 })
 

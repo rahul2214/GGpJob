@@ -2,6 +2,7 @@
 
 import { useUser } from "@/contexts/user-context";
 import { AtsChecker } from "@/components/ats-checker";
+import { AtsScoreImprovementGuide } from "@/components/ats-score-improvement-guide";
 import { AtsFaq } from "@/components/ats-faq";
 import { TrendingUp, AlertCircle, FileText, ArrowRight, CheckCircle } from "lucide-react";
 
@@ -61,6 +62,9 @@ export function AtsScoreClient({ initialShowPromo = true }: AtsScoreClientProps)
 
         {/* Core ATS Application panel */}
         <AtsChecker />
+
+        {/* What Things Improve ATS Score Guide */}
+        <AtsScoreImprovementGuide />
 
         {showPromo && (
           <>

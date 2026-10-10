@@ -607,6 +607,15 @@ export function ResumePdfDocument({ data, template = 'classic-serif', styleConfi
   const isPhotoMinimal = template === 'photo-minimal';
   const isIvyLeague = template === 'ats-ivy-league';
   const isTechFaang = template === 'ats-tech-faang';
+  const isCompact = template === 'compact-tech' || template === 'ats-compact-onepage';
+  const isMinimal = template === 'modern-minimal' || template === 'photo-minimal' || template === 'ats-modern-swiss';
+  const isExecModern = template === 'ats-executive-modern';
+  const isEmerald = template === 'ats-emerald-professional';
+  const isAtsClean = template === 'ats-clean';
+
+  const isScaleCompact = styleConfig?.fontSizeScale === 'compact' || (!styleConfig?.fontSizeScale && isCompact);
+  const isHeaderLeft = isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isTechFaang || isExecModern || isEmerald;
+  const isHeaderCenter = !isHeaderLeft;
 
   const photoSrc = data.photoUrl || data.contact?.photoUrl;
 
@@ -765,22 +774,44 @@ export function ResumePdfDocument({ data, template = 'classic-serif', styleConfi
         {isTwoColumn && (
           <View>
             {/* Header */}
-            <View style={styles.headerContainer}>
-              <Text style={styles.name}>{data.name}</Text>
-              {data.role && <Text style={styles.headline}>{data.role}</Text>}
-              <View style={styles.contactRow}>
-                {contactItems.map((item, i) => (
-                  <React.Fragment key={i}>
-                    {i > 0 && <Text style={styles.contactDot}>•</Text>}
-                    {item.type === "link" ? (
-                      <Link src={item.url} style={styles.contactLink}>{item.label}</Link>
-                    ) : (
-                      <Text style={styles.contactText}>{item.label}</Text>
-                    )}
-                  </React.Fragment>
-                ))}
+            {photoSrc ? (
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: isScaleCompact ? 3 : 6, paddingBottom: 2 }}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={styles.name}>{data.name}</Text>
+                  {data.role && <Text style={styles.headline}>{data.role}</Text>}
+                  <View style={styles.contactRow}>
+                    {contactItems.map((item, i) => (
+                      <React.Fragment key={i}>
+                        {i > 0 && <Text style={styles.contactDot}>•</Text>}
+                        {item.type === "link" ? (
+                          <Link src={item.url} style={styles.contactLink}>{item.label}</Link>
+                        ) : (
+                          <Text style={styles.contactText}>{item.label}</Text>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </View>
+                </View>
+                <Image src={photoSrc} style={styles.minimalAvatarPhoto} />
               </View>
-            </View>
+            ) : (
+              <View style={styles.headerContainer}>
+                <Text style={styles.name}>{data.name}</Text>
+                {data.role && <Text style={styles.headline}>{data.role}</Text>}
+                <View style={styles.contactRow}>
+                  {contactItems.map((item, i) => (
+                    <React.Fragment key={i}>
+                      {i > 0 && <Text style={styles.contactDot}>•</Text>}
+                      {item.type === "link" ? (
+                        <Link src={item.url} style={styles.contactLink}>{item.label}</Link>
+                      ) : (
+                        <Text style={styles.contactText}>{item.label}</Text>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </View>
+              </View>
+            )}
 
             {/* 2 Column Body */}
             <View style={{ flexDirection: "row", gap: 14, marginTop: 4 }}>
@@ -806,6 +837,9 @@ export function ResumePdfDocument({ data, template = 'classic-serif', styleConfi
           <View style={{ flexDirection: "row", gap: 14 }}>
             {/* Left Sidebar (30%) */}
             <View style={{ width: "30%", borderRightWidth: 1, borderRightColor: "#e2e8f0", paddingRight: 10 }}>
+              {photoSrc ? (
+                <Image src={photoSrc} style={styles.sidebarPhoto} />
+              ) : null}
               <View style={{ marginBottom: 10 }}>
                 <Text style={styles.name}>{data.name}</Text>
                 {data.role && <Text style={styles.headline}>{data.role}</Text>}
@@ -839,25 +873,73 @@ export function ResumePdfDocument({ data, template = 'classic-serif', styleConfi
         {!isTwoColumn && !isElegant && !isPhotoSidebar && !isPhotoExec && !isPhotoCreative && !isPhotoMinimal && (
           <View>
             {/* Header */}
-            <View style={styles.headerContainer}>
-              <Text style={styles.name}>{data.name}</Text>
-              {data.role && <Text style={styles.headline}>{data.role}</Text>}
-              {isCreative && <View style={styles.accentBar} />}
-              <View style={styles.contactRow}>
-                {contactItems.map((item, i) => (
-                  <React.Fragment key={i}>
-                    {i > 0 && <Text style={styles.contactDot}>•</Text>}
-                    {item.type === "link" ? (
-                      <Link src={item.url} style={styles.contactLink}>
-                        {item.label}
-                      </Link>
-                    ) : (
-                      <Text style={styles.contactText}>{item.label}</Text>
-                    )}
-                  </React.Fragment>
-                ))}
+            {photoSrc ? (
+              isHeaderCenter ? (
+                <View style={{ ...styles.headerContainer, alignItems: "center" }}>
+                  <Image src={photoSrc} style={{ width: 70, height: 70, borderRadius: 0, marginBottom: 6, borderWidth: 1, borderColor: styleConfig?.primaryColor || "#cbd5e1", alignSelf: "center" }} />
+                  <Text style={styles.name}>{data.name}</Text>
+                  {data.role && <Text style={styles.headline}>{data.role}</Text>}
+                  {isCreative && <View style={styles.accentBar} />}
+                  <View style={styles.contactRow}>
+                    {contactItems.map((item, i) => (
+                      <React.Fragment key={i}>
+                        {i > 0 && <Text style={styles.contactDot}>•</Text>}
+                        {item.type === "link" ? (
+                          <Link src={item.url} style={styles.contactLink}>
+                            {item.label}
+                          </Link>
+                        ) : (
+                          <Text style={styles.contactText}>{item.label}</Text>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </View>
+                </View>
+              ) : (
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: isScaleCompact ? 3 : 6, paddingBottom: 2 }}>
+                  <View style={{ flex: 1, paddingRight: 12 }}>
+                    <Text style={styles.name}>{data.name}</Text>
+                    {data.role && <Text style={styles.headline}>{data.role}</Text>}
+                    {isCreative && <View style={styles.accentBar} />}
+                    <View style={styles.contactRow}>
+                      {contactItems.map((item, i) => (
+                        <React.Fragment key={i}>
+                          {i > 0 && <Text style={styles.contactDot}>•</Text>}
+                          {item.type === "link" ? (
+                            <Link src={item.url} style={styles.contactLink}>
+                              {item.label}
+                            </Link>
+                          ) : (
+                            <Text style={styles.contactText}>{item.label}</Text>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </View>
+                  </View>
+                  <Image src={photoSrc} style={styles.minimalAvatarPhoto} />
+                </View>
+              )
+            ) : (
+              <View style={styles.headerContainer}>
+                <Text style={styles.name}>{data.name}</Text>
+                {data.role && <Text style={styles.headline}>{data.role}</Text>}
+                {isCreative && <View style={styles.accentBar} />}
+                <View style={styles.contactRow}>
+                  {contactItems.map((item, i) => (
+                    <React.Fragment key={i}>
+                      {i > 0 && <Text style={styles.contactDot}>•</Text>}
+                      {item.type === "link" ? (
+                        <Link src={item.url} style={styles.contactLink}>
+                          {item.label}
+                        </Link>
+                      ) : (
+                        <Text style={styles.contactText}>{item.label}</Text>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </View>
               </View>
-            </View>
+            )}
 
             {isIvyLeague ? (
               <>

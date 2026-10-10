@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     const { user: authUser, errorResponse } = await requireAuth(req);
     if (errorResponse) return errorResponse;
 
-    const { data, template, styleConfig, userId } = await req.json()
+    const { data, template, styleConfig, userId, isDummy } = await req.json()
 
     if (!data) {
       return NextResponse.json({ error: "Missing resume data" }, { status: 400 })
@@ -17,47 +17,62 @@ export async function POST(req: NextRequest) {
 
     const targetUserId = authUser!.uuid || userId;
 
-    // Credit check and deduction for PDF download (costs 1 credit)
-    const { data: jobseeker, error: dbErr } = await supabaseAdmin
-      .from('jobseekers')
-      .select('id, uuid, subscription_credits, purchased_credits')
-      .eq('uuid', targetUserId)
-      .maybeSingle()
+    // Detect if this is dummy/sample template data:
+    const isDummyData = Boolean(
+      isDummy ||
+      !data.name ||
+      data.name.trim() === "Alex Morgan" ||
+      data.name.trim() === "Your Name" ||
+      data.contact?.email === "alex.morgan@email.com" ||
+      data.contact?.email === "alex.morgan@example.com" ||
+      (Array.isArray(data.experience) && data.experience[0]?.company === "Apex Solutions")
+    );
 
-    if (dbErr) {
-      console.error("Database fetch error for jobseeker in export-pdf:", dbErr)
-    }
-
-    if (jobseeker) {
-      const totalCredits = (jobseeker.subscription_credits || 0) + (jobseeker.purchased_credits || 0)
-      if (totalCredits < 1) {
-        return NextResponse.json({
-          error: "Insufficient credits. Downloading your resume costs 1 credit.",
-          code: "INSUFFICIENT_CREDITS"
-        }, { status: 402 })
-      }
-
-      let newSubCredits = jobseeker.subscription_credits || 0
-      let newPurCredits = jobseeker.purchased_credits || 0
-      if (newSubCredits > 0) {
-        newSubCredits -= 1
-      } else if (newPurCredits > 0) {
-        newPurCredits -= 1
-      }
-
-      const { error: updateErr } = await supabaseAdmin
+    // Credit check and deduction for PDF download (costs 1 credit, FREE for sample/dummy data)
+    if (!isDummyData) {
+      const { data: jobseeker, error: dbErr } = await supabaseAdmin
         .from('jobseekers')
-        .update({
-          subscription_credits: newSubCredits,
-          purchased_credits: newPurCredits
-        })
-        .eq('id', jobseeker.id)
+        .select('id, uuid, subscription_credits, purchased_credits')
+        .eq('uuid', targetUserId)
+        .maybeSingle()
 
-      if (updateErr) {
-        console.error("Failed to deduct credit for PDF export:", updateErr)
-      } else {
-        console.log(`[PDF_EXPORT_API] Deducted 1 credit for user: ${targetUserId}. Remaining: ${newSubCredits + newPurCredits}`)
+      if (dbErr) {
+        console.error("Database fetch error for jobseeker in export-pdf:", dbErr)
       }
+
+      if (jobseeker) {
+        const totalCredits = (jobseeker.subscription_credits || 0) + (jobseeker.purchased_credits || 0)
+        if (totalCredits < 1) {
+          return NextResponse.json({
+            error: "Insufficient credits. Downloading your resume costs 1 credit.",
+            code: "INSUFFICIENT_CREDITS"
+          }, { status: 402 })
+        }
+
+        let newSubCredits = jobseeker.subscription_credits || 0
+        let newPurCredits = jobseeker.purchased_credits || 0
+        if (newSubCredits > 0) {
+          newSubCredits -= 1
+        } else if (newPurCredits > 0) {
+          newPurCredits -= 1
+        }
+
+        const { error: updateErr } = await supabaseAdmin
+          .from('jobseekers')
+          .update({
+            subscription_credits: newSubCredits,
+            purchased_credits: newPurCredits
+          })
+          .eq('id', jobseeker.id)
+
+        if (updateErr) {
+          console.error("Failed to deduct credit for PDF export:", updateErr)
+        } else {
+          console.log(`[PDF_EXPORT_API] Deducted 1 credit for user: ${targetUserId}. Remaining: ${newSubCredits + newPurCredits}`)
+        }
+      }
+    } else {
+      console.log(`[PDF_EXPORT_API] Free sample/dummy resume PDF export for user: ${targetUserId} (0 credits charged).`)
     }
 
     // Dynamic import to ensure Node-mode resolution (not webpack bundle)

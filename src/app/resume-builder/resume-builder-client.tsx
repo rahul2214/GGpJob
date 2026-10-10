@@ -2267,6 +2267,10 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
   const effectiveAchievements = userAchievementsFilled.length > 0 ? userAchievementsFilled : DUMMY_RESUME_DATA.achievements
   const effectiveLanguages = userLanguagesFilled.length > 0 ? userLanguagesFilled : DUMMY_RESUME_DATA.languages
 
+  const isDummyData = !hasUserData || (
+    effectiveName === DUMMY_RESUME_DATA.name &&
+    effectiveEmail === DUMMY_RESUME_DATA.contact.email
+  )
 
   const handleClearForm = () => {
     setName("")
@@ -2916,11 +2920,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
     setIsSavingDraft(true)
     try {
+      // Prepare payload to save in database without image data
       const resumePayload = {
         name,
         role,
-        photoUrl: photoUrl || undefined,
-        contact: { email, phone, linkedin: linkedinUrl, github: githubUrl, portfolio: portfolioUrl, location, photoUrl: photoUrl || undefined },
+        contact: { email, phone, linkedin: linkedinUrl, github: githubUrl, portfolio: portfolioUrl, location },
         summary: professionalSummary,
         skills: skills.map(cat => ({
           category: cat.category.trim(),
@@ -3365,7 +3369,17 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
   const handleDownloadPdf = async () => {
     if (!user) {
+      toast({
+        title: "Login Required 🔒",
+        description: "Please sign in to your account to download your resume PDF."
+      })
       router.push("/login?redirect=/resume-builder")
+      return
+    }
+
+    // If candidate is previewing dummy/sample data, allow free download without credit deduction!
+    if (isDummyData) {
+      await executeDownloadPdf()
       return
     }
 
@@ -3389,6 +3403,10 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
   const executeDownloadPdf = async () => {
     if (!user) {
+      toast({
+        title: "Login Required 🔒",
+        description: "Please sign in to your account to download your resume PDF."
+      })
       router.push("/login?redirect=/resume-builder")
       return
     }
@@ -3445,7 +3463,8 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
           data: currentResumeData,
           template: visualTemplate,
           styleConfig: (styleConfig.fontFamily || styleConfig.fontSizeScale || styleConfig.primaryColor || styleConfig.textColor) ? styleConfig : undefined,
-          userId: user.uuid
+          userId: user.uuid,
+          isDummy: isDummyData
         })
       })
 
@@ -3480,11 +3499,18 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
 
-      toast({
-        title: "PDF Saved! 📄 (1 Credit Used)",
-        description: "Your ATS-safe resume PDF has been downloaded."
-      })
-      await refreshUser()
+      if (isDummyData) {
+        toast({
+          title: "Sample PDF Saved! 📄 (Free)",
+          description: "Your sample resume PDF has been downloaded without using any credits."
+        })
+      } else {
+        toast({
+          title: "PDF Saved! 📄 (1 Credit Used)",
+          description: "Your ATS-safe resume PDF has been downloaded."
+        })
+        await refreshUser()
+      }
     } catch (err: any) {
       console.error(err)
       toast({
@@ -4244,7 +4270,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                         )}
                       </div>
                       <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
-                        PNG, JPG or WEBP up to 5MB. Rendered in Modern Photo Sidebar, Executive Headshot, Creative Portfolio, and Minimal Avatar templates.
+                        PNG, JPG or WEBP up to 5MB. When uploaded, your photo is displayed in ATS layouts and photo-based templates.
                       </p>
                     </div>
                   </div>
@@ -4787,14 +4813,14 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                   className="rounded-xl h-8 text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 flex items-center gap-1 shadow-sm"
                   onClick={handleDownloadPdf}
                   disabled={isDownloadingPdf}
-                  title="Download ATS resume PDF (Costs 1 credit)"
+                  title={isDummyData ? "Download sample resume PDF (Free)" : "Download ATS resume PDF (Costs 1 credit)"}
                 >
                   {isDownloadingPdf ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <Download className="w-3.5 h-3.5" />
                   )}
-                  Save PDF (1 Cr)
+                  {isDummyData ? "Save Sample PDF (Free)" : "Save PDF (1 Cr)"}
                 </Button>
               </div>
             </div>
@@ -4866,41 +4892,24 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               const previewContactJustify = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isPhotoCreative || isPhotoMinimal || isPhotoExec || isTechFaang || isExecModern || isEmerald) ? "justify-start" : "justify-center"
 
               const renderAvatar = (size = "w-14 h-14 sm:w-28 sm:h-28") => {
-                if (photoUrl) {
-                  return (
-                    <div className={`relative group/photo ${size} rounded-none overflow-hidden border-2 border-slate-900 dark:border-slate-100 shadow-sm shrink-0`}>
-                      <img
-                        src={photoUrl}
-                        alt={effectiveName || "Candidate"}
-                        className="w-full h-full object-cover rounded-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => photoInputRef.current?.click()}
-                        className="absolute inset-0 bg-black/60 opacity-0 group-hover/photo:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[8px] sm:text-[10px] font-bold gap-1 rounded-none print:hidden cursor-pointer"
-                      >
-                        <Camera className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                        Change
-                      </button>
-                    </div>
-                  )
-                }
+                if (!photoUrl) return null
 
                 return (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveSection('personal')
-                      photoInputRef.current?.click()
-                    }}
-                    className={`${size} rounded-none border-2 border-dashed border-indigo-400 dark:border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all flex flex-col items-center justify-center gap-1 text-indigo-600 dark:text-indigo-400 p-1 sm:p-2 shrink-0 group cursor-pointer print:hidden shadow-sm`}
-                    title="Click to upload profile photo"
-                  >
-                    <Upload className="w-3 h-3 sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
-                    <span className="text-[7.5px] sm:text-[10px] font-black uppercase tracking-tight text-center leading-tight">
-                      + Photo
-                    </span>
-                  </button>
+                  <div className={`relative group/photo ${size} rounded-none overflow-hidden border-2 border-slate-900 dark:border-slate-100 shadow-sm shrink-0`}>
+                    <img
+                      src={photoUrl}
+                      alt={effectiveName || "Candidate"}
+                      className="w-full h-full object-cover rounded-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => photoInputRef.current?.click()}
+                      className="absolute inset-0 bg-black/60 opacity-0 group-hover/photo:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[8px] sm:text-[10px] font-bold gap-1 rounded-none print:hidden cursor-pointer"
+                    >
+                      <Camera className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      Change
+                    </button>
+                  </div>
                 )
               }
 
@@ -5191,9 +5200,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       <div className="flex flex-row gap-2.5 sm:gap-6">
                         {/* Left Sidebar (25% on desktop, 28% on mobile) */}
                         <div className="w-[28%] sm:w-[25%] shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-4">
-                          <div className="flex justify-center sm:justify-start mb-2 sm:mb-3">
-                            {renderAvatar("w-14 h-14 sm:w-32 sm:h-32")}
-                          </div>
+                          {photoUrl && (
+                            <div className="flex justify-center sm:justify-start mb-2 sm:mb-3">
+                              {renderAvatar("w-14 h-14 sm:w-32 sm:h-32")}
+                            </div>
+                          )}
                           <div className={previewSectionMargin}>
                             <h2 className={`${previewSectionTitleSize} text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-0.5 mb-1 sm:mb-2`}>
                               Contact
@@ -5225,8 +5236,8 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     ) : isPhotoExec ? (
                       /* Executive Headshot Layout */
                       <div>
-                        <div className="flex flex-row items-center sm:items-start gap-2.5 sm:gap-5 pb-2.5 sm:pb-4 mb-2.5 sm:mb-4 border-b-2 border-blue-900 dark:border-blue-700" style={{ borderColor: styleConfig.primaryColor || undefined }}>
-                          {renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
+                        <div className={`flex flex-row items-center sm:items-start ${photoUrl ? "gap-2.5 sm:gap-5" : ""} pb-2.5 sm:pb-4 mb-2.5 sm:mb-4 border-b-2 border-blue-900 dark:border-blue-700`} style={{ borderColor: styleConfig.primaryColor || undefined }}>
+                          {photoUrl && renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
                           <div className="flex-1 min-w-0 text-left space-y-0.5 sm:space-y-1">
                             <div className={`${previewTitleSize} font-black text-blue-900 dark:text-blue-400 tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
                               {effectiveName}
@@ -5251,8 +5262,8 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     ) : isPhotoCreative ? (
                       /* Creative Portfolio Layout */
                       <div>
-                        <div className="flex flex-row items-center sm:items-start gap-2.5 sm:gap-5 pb-2 mb-2">
-                          {renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
+                        <div className={`flex flex-row items-center sm:items-start ${photoUrl ? "gap-2.5 sm:gap-5" : ""} pb-2 mb-2`}>
+                          {photoUrl && renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
                           <div className="flex-1 min-w-0 text-left space-y-0.5 sm:space-y-1">
                             <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
                               {effectiveName}
@@ -5290,7 +5301,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                             )}
                             {renderContactRow()}
                           </div>
-                          {renderAvatar("w-12 h-12 sm:w-20 sm:h-20")}
+                          {photoUrl && renderAvatar("w-12 h-12 sm:w-20 sm:h-20")}
                         </div>
 
                         {renderPreviewSummary()}
@@ -5304,13 +5315,26 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     ) : isTwoColumn ? (
                       <div>
                         {/* Header */}
-                        <div className={`flex flex-col text-left mb-2.5 sm:mb-4`}>
-                          <div className={`${previewTitleSize} font-black tracking-tight mb-0.5 sm:mb-1 text-slate-950 dark:text-white break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
-                          {effectiveRole && (
-                            <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
-                          )}
-                          {renderContactRow()}
-                        </div>
+                        {photoUrl ? (
+                          <div className="flex flex-row items-center sm:items-start justify-between gap-3 sm:gap-5 mb-2.5 sm:mb-4">
+                            <div className="flex-1 min-w-0">
+                              <div className={`${previewTitleSize} font-black tracking-tight mb-0.5 sm:mb-1 text-slate-950 dark:text-white break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                              {effectiveRole && (
+                                <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
+                              )}
+                              {renderContactRow()}
+                            </div>
+                            {renderAvatar("w-14 h-14 sm:w-24 sm:h-24")}
+                          </div>
+                        ) : (
+                          <div className={`flex flex-col text-left mb-2.5 sm:mb-4`}>
+                            <div className={`${previewTitleSize} font-black tracking-tight mb-0.5 sm:mb-1 text-slate-950 dark:text-white break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                            {effectiveRole && (
+                              <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
+                            )}
+                            {renderContactRow()}
+                          </div>
+                        )}
 
                         {/* 2 Column Body: 30% Left / 70% Right side-by-side */}
                         <div className="flex flex-row gap-2.5 sm:gap-6">
@@ -5333,6 +5357,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                         {/* Left Sidebar (30%) */}
                         <div className="w-[30%] sm:w-[30%] shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-4">
                           <div className={previewSectionMargin}>
+                            {photoUrl && (
+                              <div className="flex justify-center sm:justify-start mb-2 sm:mb-3">
+                                {renderAvatar("w-14 h-14 sm:w-24 sm:h-24")}
+                              </div>
+                            )}
                             <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
                             {effectiveRole && (
                               <p className={`${previewHeadlineSize} font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 sm:mb-2 break-words`}>{effectiveRole}</p>
@@ -5356,30 +5385,90 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       /* Single Column Layouts: Classic Serif, Modern Minimal, Executive Navy, Compact Tech, Creative Bold, ATS Clean, Ivy League, Tech FAANG, Exec Modern, Swiss, Emerald, Compact One-Page */
                       <div>
                         {/* Header */}
-                        <div className={`flex flex-col ${previewHeaderAlign} mb-2.5 sm:mb-4`}>
-                          <div className={`${previewTitleSize} font-black ${
-                            styleConfig.primaryColor ? "" : (
-                              isEmerald ? "text-emerald-950 dark:text-emerald-100" :
-                              isTechFaang ? "text-slate-950 dark:text-white" :
-                              isExecModern ? "text-slate-950 dark:text-white" :
-                              isNavy ? "text-blue-900 dark:text-blue-400" :
-                              isMinimal ? "text-slate-800 dark:text-white" :
-                              "text-slate-950 dark:text-white"
-                            )
-                          } tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
-                          {effectiveRole && (
-                            <p className={`${previewHeadlineSize} font-bold ${
-                              isEmerald ? "text-emerald-700 dark:text-emerald-400 font-bold" :
-                              isTechFaang ? "text-blue-600 dark:text-blue-400 font-bold" :
-                              isNavy ? "text-blue-900 dark:text-blue-400" :
-                              isCreative ? "text-indigo-600 dark:text-indigo-400 font-extrabold" :
-                              isMinimal ? "text-slate-600 dark:text-slate-450" :
-                              "text-slate-700 dark:text-slate-300"
-                            } uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
-                          )}
-                          {isCreative && <div className="h-0.5 sm:h-1 w-full bg-indigo-600 rounded-full my-1.5 sm:my-2" style={{ backgroundColor: styleConfig.primaryColor || undefined }} />}
-                          {renderContactRow()}
-                        </div>
+                        {photoUrl ? (
+                          previewHeaderAlign === "text-center" ? (
+                            <div className="flex flex-col items-center text-center mb-2.5 sm:mb-4">
+                              <div className="mb-2 sm:mb-3">
+                                {renderAvatar("w-14 h-14 sm:w-24 sm:h-24")}
+                              </div>
+                              <div className={`${previewTitleSize} font-black ${
+                                styleConfig.primaryColor ? "" : (
+                                  isEmerald ? "text-emerald-950 dark:text-emerald-100" :
+                                  isTechFaang ? "text-slate-950 dark:text-white" :
+                                  isExecModern ? "text-slate-950 dark:text-white" :
+                                  isNavy ? "text-blue-900 dark:text-blue-400" :
+                                  isMinimal ? "text-slate-800 dark:text-white" :
+                                  "text-slate-950 dark:text-white"
+                                )
+                              } tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                              {effectiveRole && (
+                                <p className={`${previewHeadlineSize} font-bold ${
+                                  isEmerald ? "text-emerald-700 dark:text-emerald-400 font-bold" :
+                                  isTechFaang ? "text-blue-600 dark:text-blue-400 font-bold" :
+                                  isNavy ? "text-blue-900 dark:text-blue-400" :
+                                  isCreative ? "text-indigo-600 dark:text-indigo-400 font-extrabold" :
+                                  isMinimal ? "text-slate-600 dark:text-slate-450" :
+                                  "text-slate-700 dark:text-slate-300"
+                                } uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
+                              )}
+                              {isCreative && <div className="h-0.5 sm:h-1 w-full bg-indigo-600 rounded-full my-1.5 sm:my-2" style={{ backgroundColor: styleConfig.primaryColor || undefined }} />}
+                              {renderContactRow()}
+                            </div>
+                          ) : (
+                            <div className="flex flex-row items-center sm:items-start justify-between gap-3 sm:gap-5 mb-2.5 sm:mb-4">
+                              <div className="flex-1 min-w-0">
+                                <div className={`${previewTitleSize} font-black ${
+                                  styleConfig.primaryColor ? "" : (
+                                    isEmerald ? "text-emerald-950 dark:text-emerald-100" :
+                                    isTechFaang ? "text-slate-950 dark:text-white" :
+                                    isExecModern ? "text-slate-950 dark:text-white" :
+                                    isNavy ? "text-blue-900 dark:text-blue-400" :
+                                    isMinimal ? "text-slate-800 dark:text-white" :
+                                    "text-slate-950 dark:text-white"
+                                  )
+                                } tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                                {effectiveRole && (
+                                  <p className={`${previewHeadlineSize} font-bold ${
+                                    isEmerald ? "text-emerald-700 dark:text-emerald-400 font-bold" :
+                                    isTechFaang ? "text-blue-600 dark:text-blue-400 font-bold" :
+                                    isNavy ? "text-blue-900 dark:text-blue-400" :
+                                    isCreative ? "text-indigo-600 dark:text-indigo-400 font-extrabold" :
+                                    isMinimal ? "text-slate-600 dark:text-slate-450" :
+                                    "text-slate-700 dark:text-slate-300"
+                                  } uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
+                                )}
+                                {isCreative && <div className="h-0.5 sm:h-1 w-full bg-indigo-600 rounded-full my-1.5 sm:my-2" style={{ backgroundColor: styleConfig.primaryColor || undefined }} />}
+                                {renderContactRow()}
+                              </div>
+                              {renderAvatar("w-14 h-14 sm:w-24 sm:h-24")}
+                            </div>
+                          )
+                        ) : (
+                          <div className={`flex flex-col ${previewHeaderAlign} mb-2.5 sm:mb-4`}>
+                            <div className={`${previewTitleSize} font-black ${
+                              styleConfig.primaryColor ? "" : (
+                                isEmerald ? "text-emerald-950 dark:text-emerald-100" :
+                                isTechFaang ? "text-slate-950 dark:text-white" :
+                                isExecModern ? "text-slate-950 dark:text-white" :
+                                isNavy ? "text-blue-900 dark:text-blue-400" :
+                                isMinimal ? "text-slate-800 dark:text-white" :
+                                "text-slate-950 dark:text-white"
+                              )
+                            } tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                            {effectiveRole && (
+                              <p className={`${previewHeadlineSize} font-bold ${
+                                isEmerald ? "text-emerald-700 dark:text-emerald-400 font-bold" :
+                                isTechFaang ? "text-blue-600 dark:text-blue-400 font-bold" :
+                                isNavy ? "text-blue-900 dark:text-blue-400" :
+                                isCreative ? "text-indigo-600 dark:text-indigo-400 font-extrabold" :
+                                isMinimal ? "text-slate-600 dark:text-slate-450" :
+                                "text-slate-700 dark:text-slate-300"
+                              } uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
+                            )}
+                            {isCreative && <div className="h-0.5 sm:h-1 w-full bg-indigo-600 rounded-full my-1.5 sm:my-2" style={{ backgroundColor: styleConfig.primaryColor || undefined }} />}
+                            {renderContactRow()}
+                          </div>
+                        )}
 
                         {isIvyLeague ? (
                           <>

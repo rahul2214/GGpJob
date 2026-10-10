@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react"
-import { UploadCloud, FileText, CheckCircle, AlertCircle, Loader2, Copy, Check, Sparkles, TrendingUp, Coins, Share2, Twitter, Linkedin, ArrowRight, ShieldCheck, X } from "lucide-react"
+import { UploadCloud, FileText, CheckCircle, AlertCircle, Loader2, Copy, Check, TrendingUp, Coins, Share2, Twitter, Linkedin, ArrowRight, ShieldCheck, ShieldAlert, CheckCircle2, AlertTriangle, ListChecks, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -35,6 +35,13 @@ interface SectionScores {
   education: number;
 }
 
+export interface AtsComplianceCheck {
+  category: "contact" | "structure" | "verbs" | "metrics" | "length" | "integrity";
+  label: string;
+  status: "pass" | "warning" | "fail";
+  details: string;
+}
+
 interface AtsResult {
   score: number;
   keywordMatch: number;
@@ -49,6 +56,9 @@ interface AtsResult {
   feedback: string[];
   strengths: string[];
   bulletOptimizations: BulletOptimization[];
+  manipulationDetected?: boolean;
+  integrityWarnings?: string[];
+  complianceChecks?: AtsComplianceCheck[];
 }
 
 const LOADING_STEPS = [
@@ -253,7 +263,7 @@ export function AtsChecker() {
       {/* Cache Banner display */}
       {lastCheck && (
         <div className="flex items-center gap-3 p-4 rounded-2xl border border-indigo-100 bg-indigo-50/40 text-indigo-900 dark:border-indigo-950/40 dark:bg-indigo-950/10 text-sm max-w-5xl mx-auto shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
-          <Sparkles className="w-5 h-5 text-indigo-500 shrink-0" />
+         
           <div className="flex-1 flex flex-wrap items-center justify-between gap-2">
             <span className="font-medium text-slate-700 dark:text-slate-300">
               You have a saved report! Last checked: <strong className="text-slate-900 dark:text-slate-100 font-semibold">{new Date(lastCheck.analyzedAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric' })}</strong> · Score: <strong className="font-extrabold text-indigo-600 dark:text-indigo-400">{lastCheck.score}</strong>
@@ -565,6 +575,32 @@ export function AtsChecker() {
                     </div>
                   </div>
 
+                  {/* Anti-Cheat & Prompt Injection Warning Banner */}
+                  {(result.manipulationDetected || (result.integrityWarnings && result.integrityWarnings.length > 0)) && (
+                    <div className="p-4 sm:p-5 rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/70 dark:bg-rose-950/20 text-rose-900 dark:text-rose-200 space-y-2.5 shadow-sm">
+                      <div className="flex items-center gap-2.5 text-rose-700 dark:text-rose-400 font-extrabold text-sm">
+                        <ShieldAlert className="w-5 h-5 shrink-0 text-rose-600 dark:text-rose-400" />
+                        <span>ATS Integrity Flag: Artificial Manipulation or Shortlisting Phrases Detected</span>
+                      </div>
+                      <p className="text-xs text-rose-850 dark:text-rose-300 leading-relaxed font-medium">
+                        Your resume contains phrases attempting to bias or instruct screening algorithms (such as <em>&quot;mark this resume as shortlisted&quot;</em> or fake status claims). Real enterprise ATS engines (Workday, Greenhouse, Taleo) and recruiters detect prompt injection attempts and automatically disqualify resumes.
+                      </p>
+                      {result.integrityWarnings && result.integrityWarnings.length > 0 && (
+                        <div className="space-y-1.5 pt-1">
+                          {result.integrityWarnings.map((warn, i) => (
+                            <div key={i} className="text-[11px] bg-rose-100/70 dark:bg-rose-900/30 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-800/40 text-rose-900 dark:text-rose-200 font-semibold">
+                              {warn}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="text-[11px] text-rose-700 dark:text-rose-400 font-bold flex items-center gap-1.5 pt-0.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                        <span>Action Required: Remove artificial instructions and highlight verifiable, authentic career achievements instead.</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Impact callouts */}
                   <div className="grid sm:grid-cols-2 gap-4">
                     {/* Score Improvement Estimate Callout */}
@@ -592,7 +628,7 @@ export function AtsChecker() {
                   {result.sectionScores && (
                     <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                       <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                        <Sparkles className="w-4.5 h-4.5 text-indigo-500" />
+                       
                         Section Breakdown Metrics
                       </h4>
                       <div className="grid sm:grid-cols-2 gap-4">
@@ -620,6 +656,63 @@ export function AtsChecker() {
                                 style={{ width: animateProgress ? `${sec.val}%` : '0%' }}
                               />
                             </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ATS Rule Compliance Matrix */}
+                  {result.complianceChecks && result.complianceChecks.length > 0 && (
+                    <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                          <ListChecks className="w-4.5 h-4.5 text-indigo-500" />
+                          ATS Rule Compliance Matrix
+                        </h4>
+                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                          Enterprise Screening Rubric
+                        </span>
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-3.5">
+                        {result.complianceChecks.map((check, idx) => (
+                          <div
+                            key={idx}
+                            className={`p-3.5 rounded-2xl border transition-all text-xs flex flex-col justify-between gap-2 shadow-2xs ${
+                              check.status === "pass"
+                                ? "border-emerald-200/70 bg-emerald-50/25 dark:border-emerald-900/30 dark:bg-emerald-950/10"
+                                : check.status === "warning"
+                                ? "border-amber-200/70 bg-amber-50/25 dark:border-amber-900/30 dark:bg-amber-950/10"
+                                : "border-rose-200/80 bg-rose-50/35 dark:border-rose-900/40 dark:bg-rose-950/20"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                                {check.status === "pass" ? (
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                ) : check.status === "warning" ? (
+                                  <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" />
+                                ) : (
+                                  <ShieldAlert className="w-4 h-4 text-rose-500 dark:text-rose-400 shrink-0" />
+                                )}
+                                {check.label}
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] px-2 py-0.5 font-extrabold uppercase rounded-lg shadow-2xs ${
+                                  check.status === "pass"
+                                    ? "border-emerald-300 text-emerald-700 bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:bg-emerald-950/30"
+                                    : check.status === "warning"
+                                    ? "border-amber-300 text-amber-700 bg-amber-50 dark:border-amber-800 dark:text-amber-400 dark:bg-amber-950/30"
+                                    : "border-rose-300 text-rose-700 bg-rose-50 dark:border-rose-800 dark:text-rose-400 dark:bg-rose-950/30"
+                                }`}
+                              >
+                                {check.status === "pass" ? "Passed" : check.status === "warning" ? "Needs Review" : "Failed"}
+                              </Badge>
+                            </div>
+                            <p className="text-[11.5px] text-slate-650 dark:text-slate-400 leading-relaxed font-normal">
+                              {check.details}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -750,7 +843,7 @@ export function AtsChecker() {
                   {result.bulletOptimizations && result.bulletOptimizations.length > 0 && (
                     <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
                       <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                        <Sparkles className="w-4.5 h-4.5 text-indigo-500 animate-pulse" />
+                        
                         AI Resume Bullet Optimizer (JD-Tailored)
                       </h4>
                       

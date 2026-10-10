@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 import { requireAuth, isOwnerOrAdmin } from "@/lib/auth-server"
 import { safeFetch, SsrfBlockedError } from "@/lib/ssrf-guard"
 import { validateFileContent, RESUME_FILE_RULES } from "@/lib/upload-validation"
+import { runDeterministicAtsChecks, buildAtsEvaluationPrompt, sanitizeAtsResult } from "@/lib/ats-engine"
 
 // Force nodejs runtime for parser compatibility
 export const runtime = "nodejs";
@@ -153,51 +154,11 @@ export async function POST(req: NextRequest) {
     const truncatedResume = resumeText.length > 12000 ? resumeText.substring(0, 12000) + "..." : resumeText;
     const truncatedJobDesc = jobDescription && jobDescription.length > 4000 ? jobDescription.substring(0, 4000) + "..." : jobDescription;
 
-    // Prompt construction
-    const prompt = `You are an expert ATS (Applicant Tracking System) simulator and technical recruiter.
-Analyze the candidate's resume and provide a compatibility score, detailed category breakdown, missing skills, strengths, feedback, and bullet-point optimizations.
+    // Perform deterministic pre-analysis and anti-cheat scan
+    const preAnalysis = runDeterministicAtsChecks(resumeText, jobDescription || undefined)
 
-You must reply with ONLY a valid JSON object matching this exact schema:
-{
-  "score": <number between 0 and 100, overall match>,
-  "keywordMatch": <number between 0 and 100>,
-  "formattingSafety": <number between 0 and 100>,
-  "roleAlignment": <number between 0 and 100>,
-  "skillsCoverage": <number between 0 and 100>,
-  "experienceImpact": <number between 0 and 100>,
-  "recruiterReadability": <number between 0 and 100>,
-  "sectionScores": {
-    "summary": <number between 0 and 100, score for Summary/Objective section>,
-    "experience": <number between 0 and 100, score for Work History/Experience section>,
-    "skills": <number between 0 and 100, score for Skills/Core Competencies section>,
-    "education": <number between 0 and 100, score for Education section>
-  },
-  "weakestSection": "<Exactly one of: Summary, Experience, Skills, Education, representing the section with the lowest score>",
-  "missingSkills": [<array of string, representing required skills from JD missing in resume. empty if no JD>],
-  "strengths": [<array of string, up to 3 key strengths or matches>],
-  "feedback": [<array of string, 3 to 5 actionable suggestions for improvement>],
-  "bulletOptimizations": [
-    {
-      "original": "<an actual weak or generic bullet point or sentence extracted from the candidate's work history or project details>",
-      "improved": "<an optimized, highly professional version of that bullet point incorporating quantified results, active verbs, and matching key requirements from the JD>",
-      "reason": "<brief rationale of why this change improves ATS compatibility and recruiter appeal>"
-    }
-  ]
-}
-
-If no Job Description is provided, evaluate the resume based on general ATS best practices (keywords, formatting, action verbs) and make the "bulletOptimizations" suggest general enhancements (e.g. adding metrics, active verbs).
-
-Resume Text:
-"""
-${truncatedResume}
-"""
-
-Job Description:
-"""
-${truncatedJobDesc || "Not provided. Score based on general ATS best practices such as formatting, keywords, and action verbs."}
-"""
-
-IMPORTANT: Return ONLY the JSON object, no markdown code blocks (e.g., no \`\`\`json), no explanations. Ensure it is perfectly valid JSON.`;
+    // Prompt construction with prompt injection protection & ATS rules
+    const prompt = buildAtsEvaluationPrompt(truncatedResume, truncatedJobDesc, preAnalysis)
 
     // Call AI API (x.ai or Groq)
     const response = await fetch(apiUrl, {
@@ -219,7 +180,7 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks (e.g., no \`\`\`
           }
         ],
         temperature: 0.2,
-        ...(isGroq ? { response_format: { type: "json_object" } } : { max_tokens: 1200 })
+        ...(isGroq ? { response_format: { type: "json_object" } } : { max_tokens: 1400 })
       })
     })
 
@@ -239,81 +200,14 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks (e.g., no \`\`\`
     content = content.replace(/```\s*/g, '')
     content = content.trim()
 
-    let parsedResult;
+    let parsedRaw: any = null
     try {
-      parsedResult = JSON.parse(content)
-      
-      // Ensure score is within bounds
-      parsedResult.score = Math.min(100, Math.max(0, typeof parsedResult.score === 'number' ? parsedResult.score : 50))
-      
-      // Sanitize sub-scores
-      parsedResult.keywordMatch = typeof parsedResult.keywordMatch === 'number' ? Math.min(100, Math.max(0, parsedResult.keywordMatch)) : Math.round(parsedResult.score * 0.9)
-      parsedResult.formattingSafety = typeof parsedResult.formattingSafety === 'number' ? Math.min(100, Math.max(0, parsedResult.formattingSafety)) : 90
-      parsedResult.roleAlignment = typeof parsedResult.roleAlignment === 'number' ? Math.min(100, Math.max(0, parsedResult.roleAlignment)) : Math.round(parsedResult.score * 0.95)
-      parsedResult.skillsCoverage = typeof parsedResult.skillsCoverage === 'number' ? Math.min(100, Math.max(0, parsedResult.skillsCoverage)) : Math.round(parsedResult.score * 0.85)
-      parsedResult.experienceImpact = typeof parsedResult.experienceImpact === 'number' ? Math.min(100, Math.max(0, parsedResult.experienceImpact)) : Math.round(parsedResult.score * 0.9)
-      parsedResult.recruiterReadability = typeof parsedResult.recruiterReadability === 'number' ? Math.min(100, Math.max(0, parsedResult.recruiterReadability)) : 85
-
-      // Sanitize section scores
-      if (!parsedResult.sectionScores || typeof parsedResult.sectionScores !== 'object') {
-        parsedResult.sectionScores = {
-          summary: Math.round(parsedResult.score * 0.9),
-          experience: Math.round(parsedResult.score * 0.85),
-          skills: Math.round(parsedResult.score * 0.95),
-          education: 90
-        }
-      } else {
-        parsedResult.sectionScores.summary = typeof parsedResult.sectionScores.summary === 'number' ? Math.min(100, Math.max(0, parsedResult.sectionScores.summary)) : Math.round(parsedResult.score * 0.9)
-        parsedResult.sectionScores.experience = typeof parsedResult.sectionScores.experience === 'number' ? Math.min(100, Math.max(0, parsedResult.sectionScores.experience)) : Math.round(parsedResult.score * 0.85)
-        parsedResult.sectionScores.skills = typeof parsedResult.sectionScores.skills === 'number' ? Math.min(100, Math.max(0, parsedResult.sectionScores.skills)) : Math.round(parsedResult.score * 0.95)
-        parsedResult.sectionScores.education = typeof parsedResult.sectionScores.education === 'number' ? Math.min(100, Math.max(0, parsedResult.sectionScores.education)) : 90
-      }
-
-      // Sanitize weakest section
-      const allowedSections = ["Summary", "Experience", "Skills", "Education"]
-      if (typeof parsedResult.weakestSection !== 'string' || !allowedSections.includes(parsedResult.weakestSection)) {
-        const scores = parsedResult.sectionScores;
-        let minScore = 101;
-        let weakest = "Experience";
-        for (const [sec, val] of Object.entries(scores)) {
-          if (typeof val === 'number' && val < minScore) {
-            minScore = val;
-            weakest = sec.charAt(0).toUpperCase() + sec.slice(1);
-          }
-        }
-        parsedResult.weakestSection = weakest;
-      }
-
-      // Sanitize arrays
-      parsedResult.missingSkills = Array.isArray(parsedResult.missingSkills) ? parsedResult.missingSkills : []
-      parsedResult.strengths = Array.isArray(parsedResult.strengths) ? parsedResult.strengths.slice(0, 3) : ["Good overall formatting"]
-      parsedResult.feedback = Array.isArray(parsedResult.feedback) ? parsedResult.feedback.slice(0, 5) : ["Consider adding more metrics"]
-      parsedResult.bulletOptimizations = Array.isArray(parsedResult.bulletOptimizations) ? parsedResult.bulletOptimizations : []
-      
+      parsedRaw = JSON.parse(content)
     } catch (parseError) {
       console.error("Failed to parse JSON from AI:", content)
-      // Return a fallback response
-      parsedResult = {
-        score: 50,
-        keywordMatch: 50,
-        formattingSafety: 85,
-        roleAlignment: 50,
-        skillsCoverage: 45,
-        experienceImpact: 45,
-        recruiterReadability: 70,
-        sectionScores: {
-          summary: 50,
-          experience: 45,
-          skills: 50,
-          education: 70
-        },
-        weakestSection: "Experience",
-        missingSkills: [],
-        strengths: ["Resume submitted successfully"],
-        feedback: ["Unable to perform detailed analysis. Please try again with a different PDF format."],
-        bulletOptimizations: []
-      }
     }
+
+    const parsedResult = sanitizeAtsResult(parsedRaw, preAnalysis)
 
     if (userId && jobseekerRecord) {
       try {

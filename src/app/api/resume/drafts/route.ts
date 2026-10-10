@@ -48,6 +48,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch drafts" }, { status: 500 })
     }
 
+    if (data && data.resume_data && typeof data.resume_data === 'object') {
+      delete data.resume_data.photoUrl
+      if (data.resume_data.contact && typeof data.resume_data.contact === 'object') {
+        delete data.resume_data.contact.photoUrl
+      }
+    }
+
     const mappedDrafts = data ? [{
       id: data.user_id.toString(),
       title: data.title,
@@ -92,11 +99,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to resolve jobseeker" }, { status: 400 })
     }
 
+    // Sanitize resumeData to ensure no image data / photoUrl is stored in the database
+    let sanitizedResumeData = resumeData
+    if (typeof resumeData === 'object' && resumeData !== null) {
+      sanitizedResumeData = { ...resumeData }
+      delete sanitizedResumeData.photoUrl
+      if (sanitizedResumeData.contact && typeof sanitizedResumeData.contact === 'object') {
+        sanitizedResumeData.contact = { ...sanitizedResumeData.contact }
+        delete sanitizedResumeData.contact.photoUrl
+      }
+    }
+
     const payload: any = {
       user_id: jobseeker.id,
       title: title || 'Untitled Resume',
       template_type: templateType || 'Software Engineer',
-      resume_data: resumeData,
+      resume_data: sanitizedResumeData,
       updated_at: new Date().toISOString()
     }
 

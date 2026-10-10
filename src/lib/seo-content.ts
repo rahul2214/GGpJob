@@ -42,6 +42,10 @@ export const ATS_FAQS: FaqEntry[] = [
   {
     q: "Does this ATS checker work for freshers and Indian job portals?",
     a: "Yes. The analyzer works for freshers, entry-level and experienced profiles, and checks the formatting and keyword density conventions used by corporate applicant tracking systems as well as portals like Naukri and LinkedIn."
+  },
+  {
+    q: "What things improve the ATS core score of a resume?",
+    a: "To significantly improve your ATS core score: 1) Align exact hard skills, tools, and certifications directly with the job description. 2) Quantify bullet points with measurable outcomes (%, $, latency, scale) using Google's XYZ formula. 3) Start every work experience bullet with a power action verb (Architected, Spearheaded, Accelerated). 4) Use standard section headings (Summary, Experience, Education, Skills). 5) Keep a single-column, parse-safe text PDF layout without tables or graphics. 6) Provide complete contact details (email, phone, LinkedIn). 7) Avoid prompt injection hacks or keyword stuffing, which cause immediate ATS disqualification."
   }
 ];
 
