@@ -142,8 +142,8 @@ const getStyles = (template: string, styleConfig?: ResumeStyleConfig) => {
   // Spacing
   const pagePaddingTop = isScaleCompact ? 16 : isScaleSpacious ? 28 : (isIvyLeague ? 24 : 28);
   const pagePaddingBottom = isScaleCompact ? 12 : isScaleSpacious ? 22 : 20;
-  const entryBlockMargin = isScaleCompact ? 3.5 : isScaleSpacious ? 9 : (isTwoColumn || isElegant) ? 5 : 8;
-  const sectionMargin = isScaleCompact ? 2 : isScaleSpacious ? 6 : (isTwoColumn || isElegant) ? 4 : isIvyLeague ? 4.5 : 5;
+  const entryBlockMargin = isScaleCompact ? 3 : isScaleSpacious ? 7 : (isTwoColumn || isElegant) ? 4.5 : 5.5;
+  const sectionMargin = isScaleCompact ? 2 : isScaleSpacious ? 4.5 : (isTwoColumn || isElegant) ? 3 : isIvyLeague ? 3.5 : 3.5;
 
   return StyleSheet.create({
     page: {
@@ -160,7 +160,7 @@ const getStyles = (template: string, styleConfig?: ResumeStyleConfig) => {
     headerContainer: {
       alignItems: headerAlign,
       paddingBottom: 0,
-      marginBottom: isScaleCompact ? 3 : 6,
+      marginBottom: isScaleCompact ? 2 : 4,
     },
     name: {
       fontSize: nameFontSize,
@@ -176,15 +176,15 @@ const getStyles = (template: string, styleConfig?: ResumeStyleConfig) => {
       color: isCreative ? (styleConfig?.primaryColor || "#4f46e5") : textColor,
       textTransform: "uppercase",
       letterSpacing: 0.5,
-      paddingTop: isScaleCompact ? 4 : 6,
+      paddingTop: isScaleCompact ? 3 : 5,
       marginBottom: 0,
     },
     accentBar: {
       width: "100%",
-      height: 3,
+      height: 2.5,
       backgroundColor: styleConfig?.primaryColor || "#4f46e5",
-      marginTop: 4,
-      marginBottom: 6,
+      marginTop: 3,
+      marginBottom: 4,
       borderRadius: 1.5,
     },
     contactRow: {
@@ -192,7 +192,7 @@ const getStyles = (template: string, styleConfig?: ResumeStyleConfig) => {
       flexWrap: "wrap",
       justifyContent: contactJustify,
       alignItems: "center",
-      marginTop: 6,
+      marginTop: isScaleCompact ? 3 : 4,
     },
     contactText: {
       fontSize: contactTextFontSize,
@@ -227,14 +227,14 @@ const getStyles = (template: string, styleConfig?: ResumeStyleConfig) => {
       borderLeftWidth: isCreative ? 3.5 : 0,
       borderLeftColor: isCreative ? (styleConfig?.primaryColor || "#4f46e5") : "transparent",
       paddingLeft: isCreative ? 5 : 0,
-      marginBottom: 3,
+      marginBottom: 2.5,
       paddingBottom: 1,
     },
     bodyText: {
       fontSize: bodyFontSize,
       color: textColor,
       lineHeight: 1.45,
-      marginBottom: 3,
+      marginBottom: 0,
     },
     skillsText: {
       fontSize: bodyFontSize,
@@ -331,7 +331,7 @@ const getStyles = (template: string, styleConfig?: ResumeStyleConfig) => {
     headerWithPhotoRow: {
       flexDirection: "row",
       alignItems: "center",
-      marginBottom: isScaleCompact ? 3 : 6,
+      marginBottom: isScaleCompact ? 2 : 4,
     },
     headerPhotoMeta: {
       flex: 1,
@@ -447,7 +447,7 @@ const EducationSection = ({ data, styles }: { data: ResumeData; styles: any }) =
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Education</Text>
       {data.education.map((edu, i) => (
-        <View key={i} style={styles.entryBlock}>
+        <View key={i} style={i === data.education.length - 1 ? undefined : styles.entryBlock}>
           <View style={styles.entryRow}>
             <Text style={styles.entryTitle}>
               {edu.degree}{edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ""} — {edu.institution}
@@ -509,7 +509,7 @@ const ExperienceSection = ({ data, styles }: { data: ResumeData; styles: any }) 
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Experience</Text>
       {data.experience.map((exp, i) => (
-        <View key={i} style={styles.entryBlock}>
+        <View key={i} style={i === data.experience.length - 1 ? undefined : styles.entryBlock}>
           <View style={styles.entryRow}>
             <Text style={styles.entryTitle}>
               {exp.role} — {exp.company}{exp.location ? ` (${exp.location})` : ""}
@@ -529,7 +529,7 @@ const ProjectsSection = ({ data, styles, formatUrl }: { data: ResumeData; styles
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Projects</Text>
       {data.projects.map((proj, i) => (
-        <View key={i} style={styles.entryBlock}>
+        <View key={i} style={i === data.projects.length - 1 ? undefined : styles.entryBlock}>
           <View style={styles.entryRow}>
             <Text style={styles.entryTitle}>
               {proj.name}
@@ -631,11 +631,11 @@ export function ResumePdfDocument({ data, template = 'classic-serif', styleConfi
               {photoSrc ? (
                 <Image src={photoSrc} style={styles.sidebarPhoto} />
               ) : null}
-              <View style={{ marginBottom: 8, marginTop: 2 }}>
+              <View style={{ marginBottom: 4, marginTop: 2 }}>
                 <Text style={{ fontSize: 13, fontFamily: styles.name.fontFamily, color: styles.sectionTitle.color, textTransform: "uppercase" }}>Contact</Text>
-                <View style={{ marginTop: 4 }}>
+                <View style={{ marginTop: 2 }}>
                   {contactItems.map((item, i) => (
-                    <View key={i} style={{ marginBottom: 2.5 }}>
+                    <View key={i} style={{ marginBottom: 2 }}>
                       {item.type === "link" ? (
                         <Link src={item.url} style={styles.contactLink}>{item.label}</Link>
                       ) : (
@@ -652,7 +652,7 @@ export function ResumePdfDocument({ data, template = 'classic-serif', styleConfi
             </View>
             {/* Right Column (75%) */}
             <View style={{ width: "75%", paddingLeft: 6 }}>
-              <View style={{ marginBottom: 8, paddingBottom: 6, borderBottomWidth: 1.5, borderBottomColor: styleConfig?.primaryColor || "#4f46e5" }}>
+              <View style={{ marginBottom: 5, paddingBottom: 3, borderBottomWidth: 1.5, borderBottomColor: styleConfig?.primaryColor || "#4f46e5" }}>
                 <Text style={styles.name}>{data.name}</Text>
                 {data.role && <Text style={{ ...styles.headline, color: styleConfig?.primaryColor || "#4f46e5" }}>{data.role}</Text>}
               </View>
@@ -738,7 +738,7 @@ export function ResumePdfDocument({ data, template = 'classic-serif', styleConfi
         {/* ── Photo Minimal Layout ── */}
         {isPhotoMinimal && (
           <View>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6, paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: "#e2e8f0" }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: isScaleCompact ? 2 : 4, paddingBottom: 3, borderBottomWidth: 1, borderBottomColor: "#e2e8f0" }}>
               <View style={{ flex: 1, paddingRight: 10 }}>
                 <Text style={styles.name}>{data.name}</Text>
                 {data.role && <Text style={styles.headline}>{data.role}</Text>}
@@ -775,7 +775,7 @@ export function ResumePdfDocument({ data, template = 'classic-serif', styleConfi
           <View>
             {/* Header */}
             {photoSrc ? (
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: isScaleCompact ? 3 : 6, paddingBottom: 2 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: isScaleCompact ? 2 : 4, paddingBottom: 2 }}>
                 <View style={{ flex: 1, paddingRight: 12 }}>
                   <Text style={styles.name}>{data.name}</Text>
                   {data.role && <Text style={styles.headline}>{data.role}</Text>}
@@ -814,7 +814,7 @@ export function ResumePdfDocument({ data, template = 'classic-serif', styleConfi
             )}
 
             {/* 2 Column Body */}
-            <View style={{ flexDirection: "row", gap: 14, marginTop: 4 }}>
+            <View style={{ flexDirection: "row", gap: 14, marginTop: 2 }}>
               {/* Left Column (30%) */}
               <View style={{ width: "30%" }}>
                 <SkillsSection data={data} styles={styles} />
@@ -840,12 +840,12 @@ export function ResumePdfDocument({ data, template = 'classic-serif', styleConfi
               {photoSrc ? (
                 <Image src={photoSrc} style={styles.sidebarPhoto} />
               ) : null}
-              <View style={{ marginBottom: 10 }}>
+              <View style={{ marginBottom: 5 }}>
                 <Text style={styles.name}>{data.name}</Text>
                 {data.role && <Text style={styles.headline}>{data.role}</Text>}
-                <View style={{ marginTop: 6 }}>
+                <View style={{ marginTop: 2 }}>
                   {contactItems.map((item, i) => (
-                    <View key={i} style={{ marginBottom: 2.5 }}>
+                    <View key={i} style={{ marginBottom: 2 }}>
                       {item.type === "link" ? (
                         <Link src={item.url} style={styles.contactLink}>{item.label}</Link>
                       ) : (
@@ -876,7 +876,7 @@ export function ResumePdfDocument({ data, template = 'classic-serif', styleConfi
             {photoSrc ? (
               isHeaderCenter ? (
                 <View style={{ ...styles.headerContainer, alignItems: "center" }}>
-                  <Image src={photoSrc} style={{ width: 70, height: 70, borderRadius: 0, marginBottom: 6, borderWidth: 1, borderColor: styleConfig?.primaryColor || "#cbd5e1", alignSelf: "center" }} />
+                  <Image src={photoSrc} style={{ width: 70, height: 70, borderRadius: 0, marginBottom: 4, borderWidth: 1, borderColor: styleConfig?.primaryColor || "#cbd5e1", alignSelf: "center" }} />
                   <Text style={styles.name}>{data.name}</Text>
                   {data.role && <Text style={styles.headline}>{data.role}</Text>}
                   {isCreative && <View style={styles.accentBar} />}
@@ -896,7 +896,7 @@ export function ResumePdfDocument({ data, template = 'classic-serif', styleConfi
                   </View>
                 </View>
               ) : (
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: isScaleCompact ? 3 : 6, paddingBottom: 2 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: isScaleCompact ? 2 : 4, paddingBottom: 2 }}>
                   <View style={{ flex: 1, paddingRight: 12 }}>
                     <Text style={styles.name}>{data.name}</Text>
                     {data.role && <Text style={styles.headline}>{data.role}</Text>}

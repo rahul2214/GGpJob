@@ -14,7 +14,7 @@ import {
   Loader2, Sparkles, Plus, Trash2, Check, Briefcase,
   Code, GraduationCap, User, FileText, ChevronRight, ChevronLeft, ChevronDown,
   Award, Download, Layers, Palette, X, Camera, Upload, Image as ImageIcon, Coins,
-  RotateCcw, Type, Sliders
+  RotateCcw, Type, Sliders, Eye
 } from "lucide-react"
 import type { ResumeStyleConfig } from "@/components/resume/ResumePdfDocument"
 import { AnimatePresence, motion } from "framer-motion"
@@ -2228,8 +2228,18 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
   // Result State
   const [generatedResume, setGeneratedResume] = useState<ResumeData | null>(null)
 
-  // Computed effective data: If user data is not present, fall back to DUMMY_RESUME_DATA with all fields
-  const hasUserSkills = skills && skills.some(c => Array.isArray(c.skills) && c.skills.some(s => s && s.trim().length > 0))
+  // State to explicitly toggle Sample Preview
+  const [isPreviewingSample, setIsPreviewingSample] = useState(false)
+
+  // Cleaned and filtered user data
+  const userSkillsCleaned = (skills || [])
+    .map(c => ({
+      category: (c.category || "").trim(),
+      skills: (Array.isArray(c.skills) ? c.skills : []).map(s => String(s).trim()).filter(Boolean)
+    }))
+    .filter(c => c.category && c.skills.length > 0)
+
+  const hasUserSkills = userSkillsCleaned.length > 0
   const userJobsFilled = jobs.filter(j => (j.company && j.company.trim().length > 0) || (j.role && j.role.trim().length > 0))
   const userProjectsFilled = projects.filter(p => p.name && p.name.trim().length > 0)
   const userEducationFilled = education.filter(e => (e.institution && e.institution.trim().length > 0) || (e.degree && e.degree.trim().length > 0))
@@ -2246,31 +2256,99 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
     hasUserSkills ||
     userJobsFilled.length > 0 ||
     userProjectsFilled.length > 0 ||
-    userEducationFilled.length > 0
+    userEducationFilled.length > 0 ||
+    userAchievementsFilled.length > 0 ||
+    userLanguagesFilled.length > 0
   )
 
-  const effectiveName = name.trim() || DUMMY_RESUME_DATA.name
-  const effectiveRole = role.trim() || DUMMY_RESUME_DATA.role
-  const effectiveEmail = email.trim() || DUMMY_RESUME_DATA.contact.email
-  const effectivePhone = phone.trim() || DUMMY_RESUME_DATA.contact.phone
-  const effectiveLocation = location.trim() || DUMMY_RESUME_DATA.contact.location
-  const effectiveLinkedin = linkedinUrl.trim() || DUMMY_RESUME_DATA.contact.linkedin
-  const effectiveGithub = githubUrl.trim() || DUMMY_RESUME_DATA.contact.github
-  const effectivePortfolio = portfolioUrl.trim() || DUMMY_RESUME_DATA.contact.portfolio
-  const effectivePhotoUrl = photoUrl || undefined
-  const effectiveSummary = professionalSummary.trim() || DUMMY_RESUME_DATA.summary
+  // Effective data: When isPreviewingSample is true, display full DUMMY_RESUME_DATA.
+  // When isPreviewingSample is false, display ONLY the user's actual entered data (no sample fallbacks).
+  const effectiveName = isPreviewingSample
+    ? DUMMY_RESUME_DATA.name
+    : (name.trim() || (hasUserData ? "" : "Your Name"))
 
-  const effectiveSkills = hasUserSkills ? skills : DUMMY_RESUME_DATA.skills
-  const effectiveJobs = userJobsFilled.length > 0 ? userJobsFilled : DUMMY_FORM_JOBS
-  const effectiveProjects = userProjectsFilled.length > 0 ? userProjectsFilled : DUMMY_FORM_PROJECTS
-  const effectiveEducation = userEducationFilled.length > 0 ? userEducationFilled : DUMMY_FORM_EDUCATION
-  const effectiveAchievements = userAchievementsFilled.length > 0 ? userAchievementsFilled : DUMMY_RESUME_DATA.achievements
-  const effectiveLanguages = userLanguagesFilled.length > 0 ? userLanguagesFilled : DUMMY_RESUME_DATA.languages
+  const effectiveRole = isPreviewingSample
+    ? DUMMY_RESUME_DATA.role
+    : role.trim()
 
-  const isDummyData = !hasUserData || (
-    effectiveName === DUMMY_RESUME_DATA.name &&
-    effectiveEmail === DUMMY_RESUME_DATA.contact.email
-  )
+  const effectiveEmail = isPreviewingSample
+    ? DUMMY_RESUME_DATA.contact.email
+    : email.trim()
+
+  const effectivePhone = isPreviewingSample
+    ? DUMMY_RESUME_DATA.contact.phone
+    : phone.trim()
+
+  const effectiveLocation = isPreviewingSample
+    ? DUMMY_RESUME_DATA.contact.location
+    : location.trim()
+
+  const effectiveLinkedin = isPreviewingSample
+    ? DUMMY_RESUME_DATA.contact.linkedin
+    : linkedinUrl.trim()
+
+  const effectiveGithub = isPreviewingSample
+    ? DUMMY_RESUME_DATA.contact.github
+    : githubUrl.trim()
+
+  const effectivePortfolio = isPreviewingSample
+    ? DUMMY_RESUME_DATA.contact.portfolio
+    : portfolioUrl.trim()
+
+  const effectivePhotoUrl = photoUrl || (isPreviewingSample ? DUMMY_RESUME_DATA.photoUrl : undefined)
+
+  const effectiveSummary = isPreviewingSample
+    ? DUMMY_RESUME_DATA.summary
+    : professionalSummary.trim()
+
+  const effectiveSkills = isPreviewingSample
+    ? DUMMY_RESUME_DATA.skills
+    : userSkillsCleaned
+
+  const effectiveJobs = isPreviewingSample
+    ? DUMMY_FORM_JOBS
+    : userJobsFilled
+
+  const effectiveProjects = isPreviewingSample
+    ? DUMMY_FORM_PROJECTS
+    : userProjectsFilled
+
+  const effectiveEducation = isPreviewingSample
+    ? DUMMY_FORM_EDUCATION
+    : userEducationFilled
+
+  const effectiveAchievements = isPreviewingSample
+    ? DUMMY_RESUME_DATA.achievements
+    : userAchievementsFilled
+
+  const effectiveLanguages = isPreviewingSample
+    ? DUMMY_RESUME_DATA.languages
+    : userLanguagesFilled
+
+  const isDummyData = isPreviewingSample || !hasUserData
+
+  const handleLoadSampleData = () => {
+    setName(DUMMY_RESUME_DATA.name)
+    setRole(DUMMY_RESUME_DATA.role)
+    setEmail(DUMMY_RESUME_DATA.contact.email)
+    setPhone(DUMMY_RESUME_DATA.contact.phone)
+    setLocation(DUMMY_RESUME_DATA.contact.location)
+    setLinkedinUrl(DUMMY_RESUME_DATA.contact.linkedin)
+    setGithubUrl(DUMMY_RESUME_DATA.contact.github)
+    setPortfolioUrl(DUMMY_RESUME_DATA.contact.portfolio)
+    setProfessionalSummary(DUMMY_RESUME_DATA.summary)
+    setSkills(DUMMY_RESUME_DATA.skills.map(s => ({ category: s.category, skills: [...s.skills] })))
+    setLanguages([...DUMMY_RESUME_DATA.languages])
+    setAchievements([...DUMMY_RESUME_DATA.achievements])
+    setJobs(DUMMY_FORM_JOBS.map(j => ({ ...j, points: [...j.points] })))
+    setProjects(DUMMY_FORM_PROJECTS.map(p => ({ ...p, points: [...p.points] })))
+    setEducation(DUMMY_FORM_EDUCATION.map(e => ({ ...e })))
+    setIsPreviewingSample(false)
+    toast({
+      title: "Sample Data Loaded! 📋",
+      description: "Sample resume details have been loaded into the editor.",
+    })
+  }
 
   const handleClearForm = () => {
     setName("")
@@ -2294,9 +2372,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
     setEducation([{ institution: "", degree: "", fieldOfStudy: "", year: "", grade: "" }])
     setAchievements([""])
     setLanguages([""])
+    setGeneratedResume(null)
+    setIsPreviewingSample(false)
     toast({
-      title: "Form Reset",
-      description: "All fields have been reset. Template preview is showing sample data.",
+      title: "Form Cleared",
+      description: "All fields have been cleared.",
     })
   }
 
@@ -4121,7 +4201,74 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
       <div className="grid lg:grid-cols-12 gap-8 items-start">
         {/* Step-by-Step Editor Panel - Left Column */}
-        <div className={`lg:col-span-5 space-y-6 print:hidden ${activeTab === "edit" ? "block" : "hidden lg:block"}`}>
+        <div className={`lg:col-span-5 space-y-4 print:hidden ${activeTab === "edit" ? "block" : "hidden lg:block"}`}>
+          {/* Always-Visible Standalone Profile Photo Widget */}
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-white/70 dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200/60 dark:border-slate-800/80 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 shadow-inner">
+                {photoUrl ? (
+                  <img
+                    src={photoUrl}
+                    alt="Profile Preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-6 h-6 text-slate-400 dark:text-slate-500" />
+                )}
+              </div>
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                      <Camera className="w-3.5 h-3.5 text-indigo-500" />
+                      Profile Photo
+                    </span>
+                    {photoUrl && (
+                      <span className="text-[9.5px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                        Added
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/png, image/jpeg, image/webp"
+                      className="hidden"
+                      onChange={handlePhotoUpload}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => photoInputRef.current?.click()}
+                      className="h-7 px-2.5 rounded-lg text-xs font-bold border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 shadow-xs"
+                    >
+                      <Upload className="w-3 h-3 mr-1" />
+                      {photoUrl ? "Change Photo" : "Upload Photo"}
+                    </Button>
+                    {photoUrl && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRemovePhoto}
+                        className="h-7 px-2 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                        title="Remove photo"
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
+                  PNG, JPG or WEBP up to 5MB. Visible across all ATS &amp; visual templates.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Section Selector Tab lists */}
           <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100/80 dark:bg-slate-950/40 border border-slate-200/30 dark:border-slate-850 rounded-2xl">
             {[
@@ -4216,63 +4363,6 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 block mb-1">Location</label>
                     <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="Bengaluru, India" className="rounded-xl h-9 text-xs" />
-                  </div>
-                </div>
-
-                {/* Profile Photo Upload Section */}
-                <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/80">
-                  <label className="text-[10px] font-bold text-slate-400 block mb-1.5 flex items-center gap-1.5">
-                    <Camera className="w-3.5 h-3.5 text-indigo-500" />
-                    Profile Photo
-                  </label>
-                  <div className="flex items-center gap-3.5 p-3 rounded-none bg-slate-50/70 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/60">
-                    <div className="relative w-14 h-14 rounded-none overflow-hidden bg-slate-200 dark:bg-slate-800 border-2 border-slate-900 dark:border-slate-100 flex items-center justify-center shrink-0 shadow-inner">
-                      {photoUrl ? (
-                        <img
-                          src={photoUrl}
-                          alt="Profile Preview"
-                          className="w-full h-full object-cover rounded-none"
-                        />
-                      ) : (
-                        <User className="w-7 h-7 text-slate-400 dark:text-slate-500" />
-                      )}
-                    </div>
-                    <div className="space-y-1.5 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <input
-                          ref={photoInputRef}
-                          type="file"
-                          accept="image/png, image/jpeg, image/webp"
-                          className="hidden"
-                          onChange={handlePhotoUpload}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => photoInputRef.current?.click()}
-                          className="h-8 px-3 rounded-lg text-xs font-bold border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 shadow-sm"
-                        >
-                          <Upload className="w-3.5 h-3.5 mr-1" />
-                          {photoUrl ? "Change Photo" : "Upload Photo"}
-                        </Button>
-                        {photoUrl && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleRemovePhoto}
-                            className="h-8 px-2.5 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                          >
-                            <Trash2 className="w-3.5 h-3.5 mr-1" />
-                            Remove
-                          </Button>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
-                        PNG, JPG or WEBP up to 5MB. When uploaded, your photo is displayed in ATS layouts and photo-based templates.
-                      </p>
-                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -4780,30 +4870,47 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
         <div className={`lg:col-span-7 space-y-4 ${activeTab === "preview" ? "block" : "hidden lg:block"}`}>
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                   ATS Layout Preview
                 </h2>
-                {!hasUserData ? (
-                  <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 font-semibold px-2 py-0.5">
-                    Sample Data Preview
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold px-2 py-0.5">
-                    Your Data
-                  </Badge>
-                )}
+                {/* Segmented Mode Switch: My Resume vs Sample Preview */}
+                <div className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-xs">
+                  <button
+                    type="button"
+                    onClick={() => setIsPreviewingSample(false)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      !isPreviewingSample
+                        ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs"
+                        : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                    }`}
+                  >
+                    <User className="w-3.5 h-3.5 text-emerald-500" />
+                    My Resume
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsPreviewingSample(true)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      isPreviewingSample
+                        ? "bg-amber-500 text-white shadow-xs font-bold"
+                        : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                    }`}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    Sample Preview
+                  </button>
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                
-                {hasUserData && (
+                {hasUserData && !isPreviewingSample && (
                   <Button
                     size="sm"
                     variant="ghost"
                     className="rounded-xl h-8 text-xs font-medium text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-1"
                     onClick={handleClearForm}
-                    title="Clear all fields and revert to sample preview"
+                    title="Clear all fields"
                   >
                     Clear Form
                   </Button>
@@ -4871,8 +4978,8 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               const previewSectionTitleSize = isEffectiveCompact ? "text-[7.5px] sm:text-[9.5px] font-black uppercase tracking-wider" : isEffectiveSpacious ? "text-[9.5px] sm:text-sm font-black uppercase tracking-wider" : "text-[8.5px] sm:text-xs font-black uppercase tracking-wider"
               const previewHeadlineSize = isEffectiveCompact ? "text-[7px] sm:text-[9.5px]" : isEffectiveSpacious ? "text-[9px] sm:text-xs" : "text-[8px] sm:text-[11px]"
               const previewTitleSize = isEffectiveCompact ? "text-sm sm:text-xl md:text-2xl" : isEffectiveSpacious ? "text-lg sm:text-3xl md:text-4xl" : (isCreative ? "text-base sm:text-3xl md:text-4xl" : "text-base sm:text-2xl md:text-3xl")
-              const previewSectionMargin = isEffectiveCompact ? "mb-1 sm:mb-2" : isEffectiveSpacious ? "mb-2 sm:mb-4" : ((isTwoColumn || isElegant || isPhotoSidebar) ? "mb-1.5 sm:mb-2.5" : "mb-1.5 sm:mb-3")
-              const previewSectionHeaderMargin = isEffectiveCompact ? "mb-0.5 sm:mb-1" : isEffectiveSpacious ? "mb-1 sm:mb-2" : "mb-0.5 sm:mb-1.5"
+              const previewSectionMargin = isEffectiveCompact ? "mb-1 sm:mb-1.5" : isEffectiveSpacious ? "mb-1.5 sm:mb-2.5" : ((isTwoColumn || isElegant || isPhotoSidebar) ? "mb-1 sm:mb-2" : "mb-1 sm:mb-2")
+              const previewSectionHeaderMargin = isEffectiveCompact ? "mb-0.5" : isEffectiveSpacious ? "mb-0.5 sm:mb-1" : "mb-0.5 sm:mb-1"
               const previewSectionDividerColor = isEmerald
                 ? "border-emerald-700 dark:border-emerald-500 border-b-2"
                 : isTechFaang
@@ -5187,14 +5294,42 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               ) : null
 
               return (
-                <div
-                  id="printable-resume-area"
-                  style={{
-                    color: styleConfig.textColor || undefined,
-                  }}
-                  className={`min-h-0 sm:min-h-[800px] w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl sm:rounded-3xl ${previewPadding} shadow-sm sm:shadow-xl shadow-slate-100 dark:shadow-none ${previewFontClass} ${previewTextColor} select-text overflow-hidden transition-all duration-350`}
-                >
-                  <div className="text-left max-w-full animate-in fade-in duration-500">
+                <>
+             
+
+                  <div
+                    id="printable-resume-area"
+                    style={{
+                      color: styleConfig.textColor || undefined,
+                    }}
+                    className={`min-h-0 sm:min-h-[800px] w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl sm:rounded-3xl ${previewPadding} shadow-sm sm:shadow-xl shadow-slate-100 dark:shadow-none ${previewFontClass} ${previewTextColor} select-text overflow-hidden transition-all duration-350`}
+                  >
+                    {!hasUserData && !isPreviewingSample && (
+                      <div className="my-6 p-6 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 text-center space-y-3 print:hidden">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                            Your Resume is Currently Empty
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                            Fill in your details on the left, or click <strong className="text-indigo-600 dark:text-indigo-400 font-bold">Sample Preview</strong> above to see how this template looks with sample data.
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setIsPreviewingSample(true)}
+                          className="h-8 text-xs font-bold border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50"
+                        >
+                          <Eye className="w-3.5 h-3.5 mr-1" />
+                          View Sample Preview
+                        </Button>
+                      </div>
+                    )}
+                    <div className="text-left max-w-full animate-in fade-in duration-500">
                     {/* Modern Photo Sidebar Layout */}
                     {isPhotoSidebar ? (
                       <div className="flex flex-row gap-2.5 sm:gap-6">
@@ -5505,7 +5640,8 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     )}
                   </div>
                 </div>
-              )
+              </>
+            )
             })()}
           </div>
         </div>
