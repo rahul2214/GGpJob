@@ -59,6 +59,36 @@ export const getSupabaseAdmin = () => {
     return _adminClient;
 };
 
+let _readReplicaClient: any = null;
+
+/**
+ * Gets a dedicated Supabase Read Replica client instance.
+ * Automatically routes high-volume read traffic to a replica when SUPABASE_READ_REPLICA_URL is set,
+ * separating read load from writes/payments to support 50k concurrent users.
+ */
+export const getSupabaseAdminRead = () => {
+    if (_readReplicaClient) return _readReplicaClient;
+
+    const readUrl = process.env.SUPABASE_READ_REPLICA_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!readUrl || !supabaseServiceKey || !readUrl.startsWith('http')) {
+        return getSupabaseAdmin();
+    }
+
+    _readReplicaClient = createClient(readUrl, supabaseServiceKey, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        },
+        global: {
+            fetch: resilientFetch
+        }
+    });
+
+    return _readReplicaClient;
+};
+
 /**
  * A proxy object that lazily initializes the Supabase Admin client on the first property access.
  * This prevents "Invalid supabaseUrl" errors during Next.js static analysis/build time.
@@ -70,6 +100,19 @@ export const supabaseAdmin = new Proxy({} as any, {
             // During build/static analysis, this might be called. 
             // We throw a descriptive error only if it's actually used.
             throw new Error(`Supabase Admin client is not initialized. Cannot access "${String(prop)}". Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.`);
+        }
+        return client[prop];
+    }
+});
+
+/**
+ * Read-optimized proxy that routes to Read Replica when configured, or defaults to Primary.
+ */
+export const supabaseAdminRead = new Proxy({} as any, {
+    get: (target, prop) => {
+        const client = getSupabaseAdminRead() || getSupabaseAdmin();
+        if (!client) {
+            throw new Error(`Supabase Admin client is not initialized. Cannot access "${String(prop)}".`);
         }
         return client[prop];
     }

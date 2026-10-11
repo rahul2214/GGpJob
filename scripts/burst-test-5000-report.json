@@ -1,0 +1,39 @@
+{
+  "testExecutedAt": "2026-10-11T08:45:13.995Z",
+  "totalRequestsSent": 5000,
+  "concurrentWorkers": 50,
+  "successfulRequests": 4980,
+  "failedRequests": 20,
+  "successRate": "99.60%",
+  "testDurationSeconds": "268.41",
+  "throughputRequestsPerSec": "18.6",
+  "serverCrashed": false,
+  "latencyMetricsMs": {
+    "min": "562.74",
+    "max": "10000.00",
+    "mean": "2676.43",
+    "median": "2347.05",
+    "p95": "7394.38",
+    "p99": "8970.60"
+  },
+  "breakdown": {
+    "jobs_api_3000_reqs": {
+      "count": 3000,
+      "successRate": "99.3%",
+      "avgLatencyMs": "3483.08",
+      "p95Ms": "7731.84"
+    },
+    "taxonomy_api_1000_reqs": {
+      "count": 1000,
+      "successRate": "100.0%",
+      "avgLatencyMs": "1579.56",
+      "p95Ms": "3196.08"
+    },
+    "health_api_1000_reqs": {
+      "count": 1000,
+      "successRate": "100.0%",
+      "avgLatencyMs": "1353.32",
+      "p95Ms": "2677.77"
+    }
+  }
+}

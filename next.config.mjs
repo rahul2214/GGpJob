@@ -8,6 +8,7 @@ config();
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* config options here */
+  output: process.env.DOCKER_BUILD === '1' ? 'standalone' : undefined,
   poweredByHeader: false,
   transpilePackages: [],
   experimental: {

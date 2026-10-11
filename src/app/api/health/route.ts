@@ -1,21 +1,20 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   return NextResponse.json(
-    { status: 'ok', timestamp: new Date().toISOString() },
     {
+      status: 'healthy',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      node: process.version,
+    },
+    {
+      status: 200,
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate',
       },
     }
   );
-}
-
-export async function HEAD() {
-  return new Response(null, {
-    status: 200,
-    headers: {
-      'Cache-Control': 'no-store, no-cache, must-revalidate',
-    },
-  });
 }

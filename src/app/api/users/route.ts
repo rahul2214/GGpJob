@@ -23,30 +23,27 @@ export async function GET(request: Request) {
             { data: recruiter, error: recruiterError },
             { data: admin, error: adminError }
         ] = await Promise.all([
-            // Jobseekers (heavy query) - Proactively check and reset credits if needed
-            (async () => {
-                await supabaseAdmin.rpc('check_and_reset_credits_by_uuid', { p_uuid: uid });
-                return supabaseAdmin.from('jobseekers').select(`
-                    *, 
-                    roles(name), 
-                    education(*), 
-                    experience(*), 
-                    projects(*), 
-                    languages(*), 
-                    jobseeker_personal_details(*), 
-                    jobseeker_skills(proficiency_level, years_experience, skills(id, uuid, name)),
-                    countries:current_country_id(id, name, code),
-                    states_provinces:current_state_province_id(id, name, code),
-                    cities:current_city_id(id, name, is_featured, states_provinces:state_province_id(id, name, code, countries:country_id(id, name, code))),
-                    jobseeker_achievements:jobseeker_achievements!jobseeker_id(*),
-                    jobseeker_certifications:jobseeker_certifications!jobseeker_id(*),
-                    jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name)),
-                    visa_requirements:visa_requirement_id(id, name),
-                    workplace_types:workplace_type_id(id, name),
-                    notice_periods:notice_period_id(id, name),
-                    currencies:preferred_currency_id(id, code, symbol, name)
-                `).eq('uuid', uid).maybeSingle();
-            })(),
+            // Jobseekers query
+            supabaseAdmin.from('jobseekers').select(`
+                *, 
+                roles(name), 
+                education(*), 
+                experience(*), 
+                projects(*), 
+                languages(*), 
+                jobseeker_personal_details(*), 
+                jobseeker_skills(proficiency_level, years_experience, skills(id, uuid, name)),
+                countries:current_country_id(id, name, code),
+                states_provinces:current_state_province_id(id, name, code),
+                cities:current_city_id(id, name, is_featured, states_provinces:state_province_id(id, name, code, countries:country_id(id, name, code))),
+                jobseeker_achievements:jobseeker_achievements!jobseeker_id(*),
+                jobseeker_certifications:jobseeker_certifications!jobseeker_id(*),
+                jobseeker_preferred_locations(id, country_id, state_province_id, city_id, countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name)),
+                visa_requirements:visa_requirement_id(id, name),
+                workplace_types:workplace_type_id(id, name),
+                notice_periods:notice_period_id(id, name),
+                currencies:preferred_currency_id(id, code, symbol, name)
+            `).eq('uuid', uid).maybeSingle(),
             // Recruiters
             supabaseAdmin.from('recruiters').select('*, roles(name), company_sizes(uuid, name), countries:country_id(id, name, code), states_provinces:state_province_id(id, name, code), cities:city_id(id, name, is_featured)').eq('uuid', uid).maybeSingle(),
             // Admins
@@ -57,6 +54,16 @@ export async function GET(request: Request) {
             console.error(`Error fetching jobseeker ${uid}:`, jobseekerError);
         }
         if (jobseeker) {
+            // Lazy credit reset: Only execute RPC if monthly reset is actually due (prevents 11,000+ redundant database writes)
+            const isResetDue = !jobseeker.next_credit_reset_at || new Date(jobseeker.next_credit_reset_at) <= new Date();
+            if (isResetDue) {
+                try {
+                    await supabaseAdmin.rpc('check_and_reset_credits_by_uuid', { p_uuid: uid });
+                    jobseeker.subscription_credits = jobseeker.subscription_allowance ?? 0;
+                } catch (rpcErr) {
+                    console.error(`[Users API] Credit reset check failed for ${uid}:`, rpcErr);
+                }
+            }
 
             // Resolve skills from junction table
             let resolvedSkills: any[] = [];

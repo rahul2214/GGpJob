@@ -1,8 +1,28 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
+import { requireAuth } from '@/lib/auth-server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { apiCache } from '@/lib/cache';
+import crypto from 'crypto';
 
 export const dynamic = "force-dynamic"
+
+// Concurrency gate to prevent Node process OOM crash under massive simultaneous traffic (50k user scale)
+let activePdfRenders = 0;
+const MAX_CONCURRENT_PDF_RENDERS = 6;
+
+async function acquirePdfRenderSlot(timeoutMs = 15000): Promise<() => void> {
+  const start = Date.now();
+  while (activePdfRenders >= MAX_CONCURRENT_PDF_RENDERS) {
+    if (Date.now() - start > timeoutMs) {
+      throw new Error("Server is currently handling high PDF export volume. Please try again shortly.");
+    }
+    await new Promise((r) => setTimeout(r, 150));
+  }
+  activePdfRenders++;
+  return () => {
+    activePdfRenders = Math.max(0, activePdfRenders - 1);
+  };
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,7 +48,7 @@ export async function POST(req: NextRequest) {
       (Array.isArray(data.experience) && data.experience[0]?.company === "Apex Solutions")
     );
 
-    // Credit check and deduction for PDF download (costs 1 credit, FREE for sample/dummy data)
+    // Credit check and deduction with optimistic locking (prevents double-spending race conditions under high concurrency)
     if (!isDummyData) {
       const { data: jobseeker, error: dbErr } = await supabaseAdmin
         .from('jobseekers')
@@ -57,44 +77,64 @@ export async function POST(req: NextRequest) {
           newPurCredits -= 1
         }
 
-        const { error: updateErr } = await supabaseAdmin
+        // Optimistic locking condition: credits must match what was read, avoiding race condition exploit
+        const { data: updatedRows, error: updateErr } = await supabaseAdmin
           .from('jobseekers')
           .update({
             subscription_credits: newSubCredits,
             purchased_credits: newPurCredits
           })
           .eq('id', jobseeker.id)
+          .eq('subscription_credits', jobseeker.subscription_credits || 0)
+          .eq('purchased_credits', jobseeker.purchased_credits || 0)
+          .select('id')
 
-        if (updateErr) {
-          console.error("Failed to deduct credit for PDF export:", updateErr)
-        } else {
-          console.log(`[PDF_EXPORT_API] Deducted 1 credit for user: ${targetUserId}. Remaining: ${newSubCredits + newPurCredits}`)
+        if (updateErr || !updatedRows || updatedRows.length === 0) {
+          return NextResponse.json({
+            error: "Credit balance updated concurrently. Please retry your request.",
+            code: "CONCURRENT_CONFLICT"
+          }, { status: 409 })
         }
+
+        console.log(`[PDF_EXPORT_API] Securely deducted 1 credit for user: ${targetUserId}. Remaining: ${newSubCredits + newPurCredits}`)
       }
     } else {
       console.log(`[PDF_EXPORT_API] Free sample/dummy resume PDF export for user: ${targetUserId} (0 credits charged).`)
     }
 
-    // Dynamic import to ensure Node-mode resolution (not webpack bundle)
-    const React = (await import("react")).default
-    const { renderToBuffer } = await import("@react-pdf/renderer")
-    const { ResumePdfDocument } = await import("@/components/resume/ResumePdfDocument")
+    // Hash data payload to check if identical PDF was already generated recently (CPU & RAM saver)
+    const pdfCacheKey = `pdf:${crypto.createHash('sha256').update(JSON.stringify({ data, template, styleConfig })).digest('hex')}`
+    let uint8Array = apiCache.get<Uint8Array>(pdfCacheKey)
 
-    const element = React.createElement(ResumePdfDocument as any, {
-      data,
-      template: template || "classic-serif",
-      styleConfig,
-    })
+    if (!uint8Array) {
+      // Throttle CPU-intensive PDF rendering through concurrency gate
+      const releaseSlot = await acquirePdfRenderSlot()
+      try {
+        const React = (await import("react")).default
+        const { renderToBuffer } = await import("@react-pdf/renderer")
+        const { ResumePdfDocument } = await import("@/components/resume/ResumePdfDocument")
 
-    const buffer = await renderToBuffer(element as any)
-    const uint8Array = new Uint8Array(buffer)
+        const element = React.createElement(ResumePdfDocument as any, {
+          data,
+          template: template || "classic-serif",
+          styleConfig,
+        })
+
+        const buffer = await renderToBuffer(element as any)
+        uint8Array = new Uint8Array(buffer)
+        // Cache rendered buffer for 5 minutes (300,000ms)
+        apiCache.set(pdfCacheKey, uint8Array, 300000)
+      } finally {
+        releaseSlot()
+      }
+    }
 
     const rawName = (data.name && data.name.trim() && data.name !== "Your Name")
       ? data.name.trim()
       : "Resume"
     const cleanName = rawName.replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, "_")
 
-    return new NextResponse(uint8Array, {
+    return new NextResponse(uint8Array as any, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

@@ -1,0 +1,37 @@
+{
+  "testExecutedAt": "2026-10-11T08:09:36.226Z",
+  "concurrencyLevel": 1000,
+  "totalRequestsSent": 1000,
+  "successfulRequests": 894,
+  "failedRequests": 106,
+  "successRate": "89.40%",
+  "testDurationSeconds": "149.68",
+  "throughputRequestsPerSec": "6.7",
+  "serverCrashed": false,
+  "databaseUsersCleanedUp": true,
+  "latencyMetricsMs": {
+    "min": "729.50",
+    "max": "15000.00",
+    "mean": "5045.63",
+    "median": "5820.40",
+    "p95": "7238.76",
+    "p99": "14266.81"
+  },
+  "breakdownByWave": {
+    "wave1_jobs_feed_800_users": {
+      "requests": 800,
+      "successRate": "99.3%",
+      "avgLatencyMs": "5627.15"
+    },
+    "wave2_notifications_100_users": {
+      "requests": 100,
+      "successRate": "0.0%",
+      "avgLatencyMs": "1274.67"
+    },
+    "wave3_profile_lookups_100_users": {
+      "requests": 100,
+      "successRate": "100.0%",
+      "avgLatencyMs": "4164.41"
+    }
+  }
+}

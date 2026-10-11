@@ -1,10 +1,11 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { supabaseAdmin, supabaseAdminRead } from '@/lib/supabase-admin';
 import type { Job } from '@/lib/types';
 import { getSubscriptionInfo, expiredResponse } from '@/lib/subscription';
 import { intelligentSearchJobs } from '@/lib/intelligent-search';
 import { matchesCountry } from '@/lib/recommendation-engine';
 import { requireAuth, isOwnerOrAdmin, getAuthenticatedUser } from '@/lib/auth-server';
+import { apiCache } from '@/lib/cache';
 import {
     WORLDWIDE_COUNTRY_ID,
     isWorldwideCountryId,
@@ -106,25 +107,65 @@ async function resolveJobNames(jobs: any[]): Promise<any[]> {
     const allBenefitPks = Array.from(new Set(uniqueInputJobs.flatMap(j => j.benefit_ids || [])));
     const allSkillPks = Array.from(new Set(uniqueInputJobs.flatMap(j => j.skill_pks || [])));
 
+    // 1. Resolve taxonomies from memory cache where available to prevent DB overload (50k user scale)
+    const cachedCities: any[] = [];
+    const uncachedCityPks: number[] = [];
+    for (const id of allLocationPks) {
+        const cached = apiCache.get<any>(`tax:city:${id}`);
+        if (cached) cachedCities.push(cached);
+        else uncachedCityPks.push(id);
+    }
+
+    const cachedBenefits: any[] = [];
+    const uncachedBenefitPks: number[] = [];
+    for (const id of allBenefitPks) {
+        const cached = apiCache.get<any>(`tax:benefit:${id}`);
+        if (cached) cachedBenefits.push(cached);
+        else uncachedBenefitPks.push(id);
+    }
+
+    const cachedSkills: any[] = [];
+    const uncachedSkillPks: number[] = [];
+    for (const id of allSkillPks) {
+        const cached = apiCache.get<any>(`tax:skill:${id}`);
+        if (cached) cachedSkills.push(cached);
+        else uncachedSkillPks.push(id);
+    }
+
     const [
-        { data: cities },
-        { data: benefits },
-        { data: skills },
+        { data: fetchedCities },
+        { data: fetchedBenefits },
+        { data: fetchedSkills },
         { data: jobLocs },
         { data: jobSkills },
         { data: jobBenefits }
     ] = await Promise.all([
-        allLocationPks.length > 0 ? supabaseAdmin.from('cities').select('id, name').in('id', allLocationPks) : { data: [] },
-        allBenefitPks.length > 0 ? supabaseAdmin.from('benefits').select('id, uuid, name').in('id', allBenefitPks) : { data: [] },
-        allSkillPks.length > 0 ? supabaseAdmin.from('skills').select('id, uuid, name').in('id', allSkillPks) : { data: [] },
-        jobPks.length > 0 ? supabaseAdmin.from('job_locations').select('job_id, country_id, countries:country_id(name), states_provinces:state_province_id(name), cities:city_id(name)').in('job_id', jobPks) : { data: [] },
-        jobPks.length > 0 ? supabaseAdmin.from('job_skills').select('job_pk, skills:skill_pk(id, uuid, name)').in('job_pk', jobPks) : { data: [] },
-        jobPks.length > 0 ? supabaseAdmin.from('job_benefits').select('job_pk, benefits:benefit_pk(id, uuid, name)').in('job_pk', jobPks) : { data: [] }
+        uncachedCityPks.length > 0 ? supabaseAdminRead.from('cities').select('id, name').in('id', uncachedCityPks) : { data: [] },
+        uncachedBenefitPks.length > 0 ? supabaseAdminRead.from('benefits').select('id, uuid, name').in('id', uncachedBenefitPks) : { data: [] },
+        uncachedSkillPks.length > 0 ? supabaseAdminRead.from('skills').select('id, uuid, name').in('id', uncachedSkillPks) : { data: [] },
+        jobPks.length > 0 ? supabaseAdminRead.from('job_locations').select('job_id, country_id, countries:country_id(name), states_provinces:state_province_id(name), cities:city_id(name)').in('job_id', jobPks) : { data: [] },
+        jobPks.length > 0 ? supabaseAdminRead.from('job_skills').select('job_pk, skills:skill_pk(id, uuid, name)').in('job_pk', jobPks) : { data: [] },
+        jobPks.length > 0 ? supabaseAdminRead.from('job_benefits').select('job_pk, benefits:benefit_pk(id, uuid, name)').in('job_pk', jobPks) : { data: [] }
     ]);
 
-    const cityMap = new Map<string, any>(cities?.map((c: any) => [String(c.id), { name: c.name, uuid: String(c.id) }]) || []);
-    const benefitMap = new Map<string, any>(benefits?.map((b: any) => [String(b.id), { name: b.name, uuid: b.uuid }]) || []);
-    const skillMap = new Map<string, any>(skills?.map((s: any) => [String(s.id), { name: s.name, uuid: s.uuid }]) || []);
+    // Cache newly fetched taxonomy records for 15 minutes
+    if (fetchedCities && fetchedCities.length > 0) {
+        fetchedCities.forEach((c: any) => apiCache.set(`tax:city:${c.id}`, c, 900000));
+    }
+    if (fetchedBenefits && fetchedBenefits.length > 0) {
+        fetchedBenefits.forEach((b: any) => apiCache.set(`tax:benefit:${b.id}`, b, 900000));
+    }
+    if (fetchedSkills && fetchedSkills.length > 0) {
+        fetchedSkills.forEach((s: any) => apiCache.set(`tax:skill:${s.id}`, s, 900000));
+    }
+
+    const totalCities = [...cachedCities, ...(fetchedCities || [])];
+    const totalBenefits = [...cachedBenefits, ...(fetchedBenefits || [])];
+    const totalSkills = [...cachedSkills, ...(fetchedSkills || [])];
+
+    const cityMap = new Map<string, any>(totalCities.map((c: any) => [String(c.id), { name: c.name, uuid: String(c.id) }]));
+    const benefitMap = new Map<string, any>(totalBenefits.map((b: any) => [String(b.id), { name: b.name, uuid: b.uuid }]));
+    const skillMap = new Map<string, any>(totalSkills.map((s: any) => [String(s.id), { name: s.name, uuid: s.uuid }]));
 
     const relSkillMap = new Map<number, any[]>();
     (jobSkills || []).forEach((js: any) => {

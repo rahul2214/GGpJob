@@ -298,7 +298,7 @@ export function middleware(request: NextRequest) {
     "frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
   );
 
-  // Responses carrying account data must not be retained by shared caches.
+  // Responses carrying account data or API responses must not be retained by shared caches by default.
   if (pathname.startsWith('/api/')) {
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     response.headers.set('Pragma', 'no-cache');
