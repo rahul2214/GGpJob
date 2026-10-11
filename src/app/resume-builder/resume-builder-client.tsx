@@ -2265,7 +2265,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
   // When isPreviewingSample is false, display ONLY the user's actual entered data (no sample fallbacks).
   const effectiveName = isPreviewingSample
     ? DUMMY_RESUME_DATA.name
-    : (name.trim() || (hasUserData ? "" : "Your Name"))
+    : name.trim()
 
   const effectiveRole = isPreviewingSample
     ? DUMMY_RESUME_DATA.role
@@ -5304,7 +5304,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     }}
                     className={`min-h-0 sm:min-h-[800px] w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl sm:rounded-3xl ${previewPadding} shadow-sm sm:shadow-xl shadow-slate-100 dark:shadow-none ${previewFontClass} ${previewTextColor} select-text overflow-hidden transition-all duration-350`}
                   >
-                    {!hasUserData && !isPreviewingSample && (
+                    {!hasUserData && !isPreviewingSample ? (
                       <div className="my-6 p-6 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 text-center space-y-3 print:hidden">
                         <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center">
                           <FileText className="w-5 h-5" />
@@ -5328,41 +5328,45 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                           View Sample Preview
                         </Button>
                       </div>
-                    )}
-                    <div className="text-left max-w-full animate-in fade-in duration-500">
-                    {/* Modern Photo Sidebar Layout */}
-                    {isPhotoSidebar ? (
-                      <div className="flex flex-row gap-2.5 sm:gap-6">
-                        {/* Left Sidebar (25% on desktop, 28% on mobile) */}
-                        <div className="w-[28%] sm:w-[25%] shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-4">
-                          {photoUrl && (
-                            <div className="flex justify-center sm:justify-start mb-2 sm:mb-3">
-                              {renderAvatar("w-14 h-14 sm:w-32 sm:h-32")}
-                            </div>
-                          )}
-                          <div className={previewSectionMargin}>
-                            <h2 className={`${previewSectionTitleSize} text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-0.5 mb-1 sm:mb-2`}>
-                              Contact
-                            </h2>
-                            {renderContactColumn()}
-                          </div>
-                          {renderPreviewSkills()}
-                          {renderPreviewEducation()}
-                          {renderPreviewLanguages()}
-                          {renderPreviewAchievements()}
-                        </div>
-                        {/* Right Main (72% on mobile, 75% on desktop) */}
-                        <div className="flex-1 min-w-0 pl-1 sm:pl-2">
-                          <div className="pb-1.5 sm:pb-3 mb-2 sm:mb-3 border-b-2 border-indigo-600" style={{ borderColor: styleConfig.primaryColor || undefined }}>
-                            <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
-                              {effectiveName}
-                            </div>
-                            {effectiveRole && (
-                              <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
-                                {effectiveRole}
-                              </p>
+                    ) : (
+                      <div className="text-left max-w-full animate-in fade-in duration-500">
+                      {/* Modern Photo Sidebar Layout */}
+                      {isPhotoSidebar ? (
+                        <div className="flex flex-row gap-2.5 sm:gap-6">
+                          {/* Left Sidebar (25% on desktop, 28% on mobile) */}
+                          <div className="w-[28%] sm:w-[25%] shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-4">
+                            {photoUrl && (
+                              <div className="flex justify-center sm:justify-start mb-2 sm:mb-3">
+                                {renderAvatar("w-14 h-14 sm:w-32 sm:h-32")}
+                              </div>
                             )}
+                            <div className={previewSectionMargin}>
+                              <h2 className={`${previewSectionTitleSize} text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-0.5 mb-1 sm:mb-2`}>
+                                Contact
+                              </h2>
+                              {renderContactColumn()}
+                            </div>
+                            {renderPreviewSkills()}
+                            {renderPreviewEducation()}
+                            {renderPreviewLanguages()}
+                            {renderPreviewAchievements()}
                           </div>
+                          {/* Right Main (72% on mobile, 75% on desktop) */}
+                          <div className="flex-1 min-w-0 pl-1 sm:pl-2">
+                            {(effectiveName || effectiveRole) && (
+                              <div className="pb-1.5 sm:pb-3 mb-2 sm:mb-3 border-b-2 border-indigo-600" style={{ borderColor: styleConfig.primaryColor || undefined }}>
+                                {effectiveName && (
+                                  <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
+                                    {effectiveName}
+                                  </div>
+                                )}
+                                {effectiveRole && (
+                                  <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
+                                    {effectiveRole}
+                                  </p>
+                                )}
+                              </div>
+                            )}
                           {renderPreviewSummary()}
                           {renderPreviewExperience()}
                           {renderPreviewProjects()}
@@ -5374,9 +5378,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                         <div className={`flex flex-row items-center sm:items-start ${photoUrl ? "gap-2.5 sm:gap-5" : ""} pb-2.5 sm:pb-4 mb-2.5 sm:mb-4 border-b-2 border-blue-900 dark:border-blue-700`} style={{ borderColor: styleConfig.primaryColor || undefined }}>
                           {photoUrl && renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
                           <div className="flex-1 min-w-0 text-left space-y-0.5 sm:space-y-1">
-                            <div className={`${previewTitleSize} font-black text-blue-900 dark:text-blue-400 tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
-                              {effectiveName}
-                            </div>
+                            {effectiveName && (
+                              <div className={`${previewTitleSize} font-black text-blue-900 dark:text-blue-400 tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
+                                {effectiveName}
+                              </div>
+                            )}
                             {effectiveRole && (
                               <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider break-words`}>
                                 {effectiveRole}
@@ -5400,9 +5406,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                         <div className={`flex flex-row items-center sm:items-start ${photoUrl ? "gap-2.5 sm:gap-5" : ""} pb-2 mb-2`}>
                           {photoUrl && renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
                           <div className="flex-1 min-w-0 text-left space-y-0.5 sm:space-y-1">
-                            <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
-                              {effectiveName}
-                            </div>
+                            {effectiveName && (
+                              <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
+                                {effectiveName}
+                              </div>
+                            )}
                             {effectiveRole && (
                               <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
                                 {effectiveRole}
@@ -5426,9 +5434,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       <div>
                         <div className="flex flex-row items-center justify-between gap-2 pb-2 sm:pb-3 mb-2.5 sm:mb-4 border-b border-slate-200 dark:border-slate-800">
                           <div className="space-y-0.5 sm:space-y-1 text-left flex-1 min-w-0">
-                            <div className={`${previewTitleSize} font-bold text-slate-800 dark:text-white tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
-                              {effectiveName}
-                            </div>
+                            {effectiveName && (
+                              <div className={`${previewTitleSize} font-bold text-slate-800 dark:text-white tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
+                                {effectiveName}
+                              </div>
+                            )}
                             {effectiveRole && (
                               <p className={`${previewHeadlineSize} font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider break-words`}>
                                 {effectiveRole}
@@ -5526,16 +5536,18 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                               <div className="mb-2 sm:mb-3">
                                 {renderAvatar("w-14 h-14 sm:w-24 sm:h-24")}
                               </div>
-                              <div className={`${previewTitleSize} font-black ${
-                                styleConfig.primaryColor ? "" : (
-                                  isEmerald ? "text-emerald-950 dark:text-emerald-100" :
-                                  isTechFaang ? "text-slate-950 dark:text-white" :
-                                  isExecModern ? "text-slate-950 dark:text-white" :
-                                  isNavy ? "text-blue-900 dark:text-blue-400" :
-                                  isMinimal ? "text-slate-800 dark:text-white" :
-                                  "text-slate-950 dark:text-white"
-                                )
-                              } tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                              {effectiveName && (
+                                <div className={`${previewTitleSize} font-black ${
+                                  styleConfig.primaryColor ? "" : (
+                                    isEmerald ? "text-emerald-950 dark:text-emerald-100" :
+                                    isTechFaang ? "text-slate-950 dark:text-white" :
+                                    isExecModern ? "text-slate-950 dark:text-white" :
+                                    isNavy ? "text-blue-900 dark:text-blue-400" :
+                                    isMinimal ? "text-slate-800 dark:text-white" :
+                                    "text-slate-950 dark:text-white"
+                                  )
+                                } tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                              )}
                               {effectiveRole && (
                                 <p className={`${previewHeadlineSize} font-bold ${
                                   isEmerald ? "text-emerald-700 dark:text-emerald-400 font-bold" :
@@ -5552,16 +5564,18 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                           ) : (
                             <div className="flex flex-row items-center sm:items-start justify-between gap-3 sm:gap-5 mb-2.5 sm:mb-4">
                               <div className="flex-1 min-w-0">
-                                <div className={`${previewTitleSize} font-black ${
-                                  styleConfig.primaryColor ? "" : (
-                                    isEmerald ? "text-emerald-950 dark:text-emerald-100" :
-                                    isTechFaang ? "text-slate-950 dark:text-white" :
-                                    isExecModern ? "text-slate-950 dark:text-white" :
-                                    isNavy ? "text-blue-900 dark:text-blue-400" :
-                                    isMinimal ? "text-slate-800 dark:text-white" :
-                                    "text-slate-950 dark:text-white"
-                                  )
-                                } tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                                {effectiveName && (
+                                  <div className={`${previewTitleSize} font-black ${
+                                    styleConfig.primaryColor ? "" : (
+                                      isEmerald ? "text-emerald-950 dark:text-emerald-100" :
+                                      isTechFaang ? "text-slate-950 dark:text-white" :
+                                      isExecModern ? "text-slate-950 dark:text-white" :
+                                      isNavy ? "text-blue-900 dark:text-blue-400" :
+                                      isMinimal ? "text-slate-800 dark:text-white" :
+                                      "text-slate-950 dark:text-white"
+                                    )
+                                  } tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                                )}
                                 {effectiveRole && (
                                   <p className={`${previewHeadlineSize} font-bold ${
                                     isEmerald ? "text-emerald-700 dark:text-emerald-400 font-bold" :
@@ -5580,16 +5594,18 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                           )
                         ) : (
                           <div className={`flex flex-col ${previewHeaderAlign} mb-2.5 sm:mb-4`}>
-                            <div className={`${previewTitleSize} font-black ${
-                              styleConfig.primaryColor ? "" : (
-                                isEmerald ? "text-emerald-950 dark:text-emerald-100" :
-                                isTechFaang ? "text-slate-950 dark:text-white" :
-                                isExecModern ? "text-slate-950 dark:text-white" :
-                                isNavy ? "text-blue-900 dark:text-blue-400" :
-                                isMinimal ? "text-slate-800 dark:text-white" :
-                                "text-slate-950 dark:text-white"
-                              )
-                            } tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                            {effectiveName && (
+                              <div className={`${previewTitleSize} font-black ${
+                                styleConfig.primaryColor ? "" : (
+                                  isEmerald ? "text-emerald-950 dark:text-emerald-100" :
+                                  isTechFaang ? "text-slate-950 dark:text-white" :
+                                  isExecModern ? "text-slate-950 dark:text-white" :
+                                  isNavy ? "text-blue-900 dark:text-blue-400" :
+                                  isMinimal ? "text-slate-800 dark:text-white" :
+                                  "text-slate-950 dark:text-white"
+                                )
+                              } tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                            )}
                             {effectiveRole && (
                               <p className={`${previewHeadlineSize} font-bold ${
                                 isEmerald ? "text-emerald-700 dark:text-emerald-400 font-bold" :
@@ -5639,6 +5655,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       </div>
                     )}
                   </div>
+                )}
                 </div>
               </>
             )

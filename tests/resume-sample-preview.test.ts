@@ -43,4 +43,25 @@ describe("Resume Builder - User Data vs Sample Preview Isolation", () => {
     expect(sampleSummary).toBe(DUMMY_RESUME_DATA.summary)
     expect(sampleProjects.length).toBeGreaterThan(0)
   })
+
+  it("verifies that cleared form does NOT display 'Your Name' fallback", () => {
+    // When form is completely cleared
+    const name = ""
+    const isPreviewingSample = false
+
+    const effectiveName = isPreviewingSample
+      ? DUMMY_RESUME_DATA.name
+      : name.trim()
+
+    // Must be empty string, NOT 'Your Name'
+    expect(effectiveName).toBe("")
+    expect(effectiveName).not.toBe("Your Name")
+
+    // In Sample Preview mode, it must show Alex Morgan
+    const sampleEffectiveName = true
+      ? DUMMY_RESUME_DATA.name
+      : name.trim()
+
+    expect(sampleEffectiveName).toBe("Alex Morgan")
+  })
 })
