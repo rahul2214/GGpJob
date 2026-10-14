@@ -10,6 +10,7 @@ import {
     resolveRemoteType,
     toJobLocationRows,
 } from '@/lib/worldwide';
+import { getJobScreeningQuestions, saveJobScreeningQuestions } from '@/lib/screening-questions-server';
 
 // Helper to map Supabase snake_case job to camelCase Job type
 async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Promise<any> {
@@ -135,9 +136,10 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
         companyWebsite: job.company_website,
         address: job.address,
         vacancies: job.vacancies,
-        sections: job.sections || [],
+        sections: (job.sections || []).filter(
+            (s: any) => s && s.type !== 'screening_questions' && s.title !== '__screening_questions__' && !String(s.title || '').startsWith('__')
+        ),
         benefitIds: benefitUuids,
-        benefits: benefitNames,
         jobTypeId: job.job_types?.uuid || null,
         jobTypePk: job.job_type_pk,
         workplaceTypeId: job.workplace_types?.uuid || null,
@@ -176,6 +178,7 @@ async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Pro
         isApplied: isApplied,
        
         isBoosted: job.plan_type_at_posting === 'boosted' || (job.plan_type_at_posting && job.plan_type_at_posting.endsWith('_boosted')) || false,
+        screeningQuestions: await getJobScreeningQuestions(job.id),
     };
 }
 
@@ -517,6 +520,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             }
         }
         
+        if (body.screeningQuestions !== undefined && updatedJob?.id) {
+            try {
+                await saveJobScreeningQuestions(updatedJob.id, body.screeningQuestions, authUser);
+            } catch (sqErr) {
+                console.error('[API_JOB_ID_PUT] Failed to update screening questions:', sqErr);
+            }
+        }
+
         return NextResponse.json(await mapJobDetailToFrontend(updatedJob), { status: 200 });
 
     } catch (e: any) {
@@ -577,6 +588,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
             await supabaseAdmin.from('job_skills').delete().eq('job_pk', jobPk);
             await supabaseAdmin.from('job_benefits').delete().eq('job_pk', jobPk);
             await supabaseAdmin.from('job_locations').delete().or(`job_id.eq.${jobPk}`);
+            try { await supabaseAdmin.from('job_screening_questions').delete().eq('job_pk', jobPk); } catch (e) {}
 
             // 3. Manually delete notifications linked to this job
             // This prevents: "violates foreign key constraint notifications_job_pk_fkey"

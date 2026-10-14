@@ -18,6 +18,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
+import { JobApplicationQuestionnaireModal } from '@/components/jobs/JobApplicationQuestionnaireModal';
+import type { ScreeningQuestion } from '@/lib/screening-questions';
 
 interface ApplyButtonProps {
     job: Job;
@@ -33,6 +35,10 @@ export function ApplyButton({ job, variant = 'default', isApplied: propIsApplied
     const [isLoading, setIsLoading] = useState(false);
     const [isApplied, setIsApplied] = useState(propIsApplied);
 
+    // Screening Questions state
+    const [screeningQuestions, setScreeningQuestions] = useState<ScreeningQuestion[]>(job.screeningQuestions || []);
+    const [isQuestionnaireOpen, setIsQuestionnaireOpen] = useState(false);
+
     // ATS checking states
     const [isCheckingAts, setIsCheckingAts] = useState(false);
     const [showWarningModal, setShowWarningModal] = useState(false);
@@ -45,11 +51,25 @@ export function ApplyButton({ job, variant = 'default', isApplied: propIsApplied
         setIsApplied(propIsApplied);
     }, [propIsApplied]);
 
+    useEffect(() => {
+        const jobId = job.id || job.uuid;
+        if (jobId) {
+            fetch(`/api/jobs/${jobId}/questions`)
+                .then(res => res.ok ? res.json() : [])
+                .then(data => {
+                    if (Array.isArray(data) && data.length > 0) {
+                        setScreeningQuestions(data);
+                    }
+                })
+                .catch(() => {});
+        }
+    }, [job.id, job.uuid]);
+
     // Calculate ownership synchronously
     const isJobOwner = (user && job) && (user.role === 'Recruiter' || user.role === 'Admin') && 
                        (job.recruiterId === user.uuid || job.recruiterPk === user.id);
 
-    const submitApplication = async () => {
+    const submitApplication = async (screeningAnswers?: Record<string, any>) => {
         setIsLoading(true);
         try {
             const response = await fetch('/api/applications', {
@@ -57,7 +77,11 @@ export function ApplyButton({ job, variant = 'default', isApplied: propIsApplied
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ jobId: job.uuid, userId: user?.uuid }),
+                body: JSON.stringify({
+                    jobId: job.uuid,
+                    userId: user?.uuid,
+                    screeningAnswers,
+                }),
             });
 
             const data = await response.json();
@@ -152,6 +176,11 @@ export function ApplyButton({ job, variant = 'default', isApplied: propIsApplied
             return;
         }
 
+        if (screeningQuestions.length > 0) {
+            setIsQuestionnaireOpen(true);
+            return;
+        }
+
         await submitApplication();
     };
 
@@ -165,7 +194,16 @@ export function ApplyButton({ job, variant = 'default', isApplied: propIsApplied
 
     const handleForceSubmit = async () => {
         setShowWarningModal(false);
-        await submitApplication();
+        if (screeningQuestions.length > 0) {
+            setIsQuestionnaireOpen(true);
+        } else {
+            await submitApplication();
+        }
+    };
+
+    const handleQuestionnaireSubmit = async (answers: Record<string, any>) => {
+        await submitApplication(answers);
+        setIsQuestionnaireOpen(false);
     };
     
     if (isJobOwner) {
@@ -250,6 +288,19 @@ export function ApplyButton({ job, variant = 'default', isApplied: propIsApplied
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Candidate Screening Questionnaire Modal */}
+            <JobApplicationQuestionnaireModal
+                isOpen={isQuestionnaireOpen}
+                onClose={() => setIsQuestionnaireOpen(false)}
+                questions={screeningQuestions}
+                jobTitle={job.title}
+                companyName={job.companyName || job.company || ''}
+                jobId={job.id || job.uuid}
+                userId={user?.uuid}
+                onSubmit={handleQuestionnaireSubmit}
+                isSubmitting={isLoading}
+            />
         </>
     );
 }

@@ -714,7 +714,15 @@ function JobDetailsContent({ jobId }: { jobId?: string } = {}) {
                                     </div>
 
                                     {/* Dynamic Sections (Responsibilities, Qualifications, etc.) */}
-                                    {job.sections && Array.isArray(job.sections) && job.sections.map((section, sIndex) => (
+                                    {job.sections && Array.isArray(job.sections) && job.sections
+                                        .filter((section: any) => 
+                                            section &&
+                                            section.type !== 'screening_questions' &&
+                                            section.title !== '__screening_questions__' &&
+                                            !String(section.title || '').startsWith('__') &&
+                                            ((Array.isArray(section.items) && section.items.length > 0) || Boolean(section.content))
+                                        )
+                                        .map((section, sIndex) => (
                                         <div key={sIndex} className="mt-8 border-t pt-8">
                                             {section.title && (
                                                 <h3 className="text-lg font-bold mb-4 text-slate-900">

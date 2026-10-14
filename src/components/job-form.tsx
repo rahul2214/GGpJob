@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, Briefcase, MapPin, Save, PlusCircle, Trash2, Link as LinkIcon, GripVertical, X, Check, ChevronsUpDown, Globe, Building2, FileText, Wallet, ChevronLeft, ChevronRight } from "lucide-react";
+import { LoaderCircle, Briefcase, MapPin, Save, PlusCircle, Trash2, Link as LinkIcon, GripVertical, X, Check, ChevronsUpDown, Globe, Building2, FileText, Wallet, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -32,6 +32,8 @@ import { onFormInvalid } from "@/lib/form-toast-utils";
 import { supabase } from "@/lib/supabase-client";
 import { WORLDWIDE_LOCATION, isWorldwideCountryId } from "@/lib/worldwide";
 import { JOB_FORM_STEPS, LAST_JOB_FORM_STEP, firstStepWithError } from "@/lib/job-form-steps";
+import { ScreeningQuestionsBuilder } from "@/components/recruiter/ScreeningQuestionsBuilder";
+import type { ScreeningQuestion } from "@/lib/screening-questions";
 
 const BLANK_LOCATION = { countryId: null, stateId: null, cityId: null, country: "", state: "", city: "" };
 
@@ -49,6 +51,7 @@ const STEP_ICONS: Record<string, typeof Briefcase> = {
   company: Building2,
   location: MapPin,
   details: FileText,
+  screening: HelpCircle,
   package: Wallet,
 };
 
@@ -375,6 +378,26 @@ export function JobForm({ job }: JobFormProps) {
 
 
 
+  const [screeningQuestions, setScreeningQuestions] = useState<ScreeningQuestion[]>(job?.screeningQuestions || []);
+  const [hasExistingApplicants, setHasExistingApplicants] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (job?.id) {
+      fetch(`/api/jobs/${job.id}/questions`)
+        .then((res) => (res.ok ? res.json() : []))
+        .then((data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            setScreeningQuestions(data);
+          }
+        })
+        .catch(() => {});
+
+      if (job.applicantCount && job.applicantCount > 0) {
+        setHasExistingApplicants(true);
+      }
+    }
+  }, [job?.id, job?.applicantCount]);
+
   const jobIsWorldwide = Boolean(
     (job as any)?.openToAllCountries ??
     (job as any)?.jobLocations?.some((l: any) => isWorldwideCountryId(l?.countryId))
@@ -430,7 +453,9 @@ export function JobForm({ job }: JobFormProps) {
       languages: job?.languages || [],
       companyVerification: job?.companyVerification ?? (job as any)?.company_verification ?? false,
       companyRating: job?.companyRating ?? (job as any)?.company_rating ?? 5.0,
-      sections: job?.sections?.map((s: any) => ({ title: s.title, items: (s.items || []).map((v: any) => ({ value: v })) })) ,
+      sections: (job?.sections || [])
+        .filter((s: any) => s && s.type !== 'screening_questions' && s.title !== '__screening_questions__' && !String(s.title || '').startsWith('__'))
+        .map((s: any) => ({ title: s.title, items: (s.items || []).map((v: any) => ({ value: v })) })),
     },
   });
 
@@ -465,9 +490,11 @@ export function JobForm({ job }: JobFormProps) {
     name: "sections",
   });
 
-   useEffect(() => {
+  useEffect(() => {
     if (job) {
-      const builtSections = job?.sections?.map((s: any) => ({ title: s.title, items: (s.items || []).map((v: any) => ({ value: v })) }));
+      const builtSections = (job?.sections || [])
+        .filter((s: any) => s && s.type !== 'screening_questions' && s.title !== '__screening_questions__' && !String(s.title || '').startsWith('__'))
+        .map((s: any) => ({ title: s.title, items: (s.items || []).map((v: any) => ({ value: v })) }));
       const resetLocations = (job as any)?.jobLocations?.length
         ? withoutWorldwide((job as any).jobLocations)
         : [{
@@ -608,6 +635,12 @@ export function JobForm({ job }: JobFormProps) {
           finalBody.sections = formattedNewSections;
         }
 
+        // Compare screening questions
+        const oldQuestions = job.screeningQuestions || [];
+        if (JSON.stringify(screeningQuestions) !== JSON.stringify(oldQuestions)) {
+          finalBody.screeningQuestions = screeningQuestions;
+        }
+
         if (Object.keys(finalBody).length === 0) {
           toast({
             title: "No Changes Detected",
@@ -620,6 +653,7 @@ export function JobForm({ job }: JobFormProps) {
         // Creation payload
         finalBody = {
           ...data,
+          screeningQuestions,
           jobId: data.jobId,
           title: data.jobTitle,
           description: data.jobDescription,
@@ -1368,8 +1402,19 @@ export function JobForm({ job }: JobFormProps) {
 
         </div>
 
-        {/* ── Step 5: Package ────────────────────────────────────────── */}
+        {/* ── Step 5: Application Questions / Candidate Screening ─────── */}
         <div className={cn("space-y-4", currentStep !== 4 && "hidden")}>
+          <ScreeningQuestionsBuilder
+            questions={screeningQuestions}
+            onChange={setScreeningQuestions}
+            hasExistingApplicants={hasExistingApplicants}
+            jobTitle={form.watch("jobTitle") || "Job Opening"}
+            companyName={form.watch("companyName") || "Company"}
+          />
+        </div>
+
+        {/* ── Step 6: Package ────────────────────────────────────────── */}
+        <div className={cn("space-y-4", currentStep !== 5 && "hidden")}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             <FormField
               control={form.control}

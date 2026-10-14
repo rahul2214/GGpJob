@@ -30,8 +30,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2, UploadCloud, AlertCircle } from "lucide-react";
+import { Loader2, UploadCloud, AlertCircle, FileText } from "lucide-react";
+import { CandidateScreeningAnswersModal } from "@/components/recruiter/CandidateScreeningAnswersModal";
 
 const ViewProfileLink = ({ applicationId, applicantId, children }: { applicationId: string, applicantId: string, children: React.ReactNode }) => {
     const router = useRouter();
@@ -72,6 +72,8 @@ export default function JobApplicationsPage() {
     const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
     const [verifyingApp, setVerifyingApp] = useState<Application | null>(null);
     const [isSubmittingVerify, setIsSubmittingVerify] = useState(false);
+    const [selectedAppForAnswers, setSelectedAppForAnswers] = useState<Application | null>(null);
+    const [isAnswersModalOpen, setIsAnswersModalOpen] = useState(false);
 
     const fetchJobAndApplications = useCallback(async (silent = false) => {
         if (id) {
@@ -315,6 +317,22 @@ export default function JobApplicationsPage() {
                                                      Confirm Joining
                                                  </Button>
                                              )}
+
+                                             {(app.hasScreeningAnswers || (job?.screeningQuestions && job.screeningQuestions.length > 0)) && (
+                                                 <Button 
+                                                     size="sm" 
+                                                     variant="outline"
+                                                     className="rounded-xl font-medium h-9 border-blue-200 text-blue-700 hover:bg-blue-50"
+                                                     onClick={() => {
+                                                         setSelectedAppForAnswers(app);
+                                                         setIsAnswersModalOpen(true);
+                                                     }}
+                                                 >
+                                                     <FileText className="w-4 h-4 mr-1.5" />
+                                                     Answers
+                                                 </Button>
+                                             )}
+
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" size="icon">
@@ -327,6 +345,15 @@ export default function JobApplicationsPage() {
                                                             <User className="mr-2 h-4 w-4" />
                                                             View Profile
                                                         </ViewProfileLink>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem 
+                                                        onClick={() => {
+                                                            setSelectedAppForAnswers(app);
+                                                            setIsAnswersModalOpen(true);
+                                                        }}
+                                                    >
+                                                        <FileText className="mr-2 h-4 w-4" />
+                                                        Screening Answers
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
@@ -379,6 +406,15 @@ export default function JobApplicationsPage() {
                 isOpen={isChatOpen} 
                 onClose={() => setIsChatOpen(false)} 
                 onMessageRead={() => fetchJobAndApplications(true)} 
+            />
+
+            <CandidateScreeningAnswersModal
+                isOpen={isAnswersModalOpen}
+                onClose={() => {
+                    setIsAnswersModalOpen(false);
+                    setSelectedAppForAnswers(null);
+                }}
+                application={selectedAppForAnswers}
             />
         </div>
     );

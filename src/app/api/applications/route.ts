@@ -3,6 +3,8 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { resolveResumeUrl } from '@/lib/resolve-resume';
 import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 import { safeErrorResponse } from '@/lib/security';
+import { getJobScreeningQuestions, saveApplicationAnswers } from '@/lib/screening-questions-server';
+import { validateQuestionnaireAnswers } from '@/lib/screening-questions';
 
 const statusMap: { [key: number]: string } = {
     1: 'Applied',
@@ -92,6 +94,10 @@ async function mapApplicationToFrontend(app: any, skillMap?: Map<string, string>
         posterName: null,
         posterEmail: null,
         verificationStatus: app.verification_status || 'none',
+        hasScreeningAnswers: Boolean(
+            (app.screening_answers && Array.isArray(app.screening_answers) && app.screening_answers.length > 0) ||
+            (app.job_application_answers && Array.isArray(app.job_application_answers) && app.job_application_answers.length > 0)
+        ),
     };
 }
 
@@ -281,7 +287,7 @@ export async function POST(request: Request) {
         const { user: authUser, errorResponse } = await requireAuth(request);
         if (errorResponse) return errorResponse;
 
-        const { jobId, userId } = await request.json();
+        const { jobId, userId, screeningAnswers } = await request.json();
         
         if (!jobId || !userId) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -352,6 +358,20 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'You have already applied for this job' }, { status: 409 });
         }
 
+        // 3. Validate screening questions if configured for this job
+        const screeningQuestions = await getJobScreeningQuestions(job.id);
+        let normalizedAnswers: any[] = [];
+        if (screeningQuestions.length > 0) {
+            const validation = validateQuestionnaireAnswers(screeningQuestions, screeningAnswers || {});
+            if (!validation.valid) {
+                return NextResponse.json({
+                    error: 'Screening questions validation failed',
+                    details: validation.errors,
+                }, { status: 400 });
+            }
+            normalizedAnswers = validation.normalizedAnswers;
+        }
+
         const newApplication = {
             job_pk: job.id,
             user_pk: userProfile.id,
@@ -367,6 +387,15 @@ export async function POST(request: Request) {
             .single();
 
         if (insertError) throw insertError;
+
+        // 4. Atomically persist questionnaire answers with immutable snapshots
+        if (createdApp?.id && normalizedAnswers.length > 0) {
+            try {
+                await saveApplicationAnswers(createdApp.id, normalizedAnswers);
+            } catch (ansErr) {
+                console.error('[API_APPLICATIONS_POST] Error saving application answers:', ansErr);
+            }
+        }
 
         return NextResponse.json(createdApp, { status: 201 });
 

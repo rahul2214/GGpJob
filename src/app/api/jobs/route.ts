@@ -14,6 +14,7 @@ import {
     resolveRemoteType,
     toJobLocationRows,
 } from '@/lib/worldwide';
+import { saveJobScreeningQuestions } from '@/lib/screening-questions-server';
 
 // Helper to map Supabase snake_case job to camelCase Job type
 function mapJobToFrontend(job: any): any {
@@ -45,7 +46,9 @@ function mapJobToFrontend(job: any): any {
         status: job.status,
         vacancies: job.vacancies,
         jobLink: job.job_link,
-        sections: job.sections || [],
+        sections: (job.sections || []).filter(
+            (s: any) => s && s.type !== 'screening_questions' && s.title !== '__screening_questions__' && !String(s.title || '').startsWith('__')
+        ),
         skillIds: job.skill_uuids || [],     // Resolved UUIDs
         skills: job.skill_names || [],       // Resolved Skill Names
         benefitIds: job.benefit_uuids || [], // Resolved UUIDs
@@ -87,6 +90,7 @@ function mapJobToFrontend(job: any): any {
             ? job.skill_names
             : (job.required_skills && job.required_skills.length > 0 ? job.required_skills : (job.requiredSkills || [])),
         isBoosted: job.plan_type_at_posting === 'boosted' || (job.plan_type_at_posting && job.plan_type_at_posting.endsWith('_boosted')) || false,
+        screeningQuestions: job.screening_questions || job.screeningQuestions || [],
     };
 }
 
@@ -1241,9 +1245,20 @@ export async function POST(request: Request) {
             }
         }
 
+        let savedQuestions: any[] = [];
+        if (data.screeningQuestions && Array.isArray(data.screeningQuestions) && newJob?.id) {
+            try {
+                const saveRes = await saveJobScreeningQuestions(newJob.id, data.screeningQuestions, authUser);
+                savedQuestions = saveRes.questions || [];
+            } catch (sqErr) {
+                console.error('[API_JOBS_POST] Failed to save screening questions:', sqErr);
+            }
+        }
+
         const createdJob = mapJobToFrontend({
             ...newJob,
             open_to_all_countries: normalizedLocations.openToAllCountries,
+            screening_questions: savedQuestions,
         });
 
         return NextResponse.json(createdJob, { status: 201 });

@@ -323,6 +323,7 @@ export interface Job {
   createdAt?: Date | string;
   /** Job lifecycle: active | draft | archived | closed | paused */
   status?: 'active' | 'draft' | 'archived' | 'closed' | 'paused' | string;
+  screeningQuestions?: import('./screening-questions').ScreeningQuestion[];
 }
 
 export interface ExperienceLevel {
@@ -383,6 +384,8 @@ export interface Application {
   isUnlocked?: boolean;
   internalReferralId?: string;
   updatedAt?: Date | string;
+  hasScreeningAnswers?: boolean;
+  screeningAnswers?: any[];
 }
 
 export interface CompanySize {
@@ -480,3 +483,10 @@ export interface VisaRequirement {
     description?: string;
     createdAt?: string;
 }
+
+export type {
+    ScreeningQuestion,
+    ApplicationAnswer,
+    ScreeningQuestionType,
+    QuestionSnapshot,
+} from './screening-questions';

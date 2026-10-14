@@ -35,6 +35,12 @@ export const JOB_FORM_STEPS = [
     fields: ['jobDescription', 'skillIds', 'sections', 'benefitIds'],
   },
   {
+    id: 'screening',
+    title: 'Screening',
+    description: 'Application Questions / Candidate Screening',
+    fields: ['screeningQuestions'],
+  },
+  {
     id: 'package',
     title: 'Package',
     description: 'Pay, sponsorship and how to apply.',
