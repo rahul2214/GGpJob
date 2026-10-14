@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Clock, Search, X, FileQuestion, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, Clock, Search, X, FileQuestion, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { categoryStyle, type BlogPostSummary } from "@/lib/blog";
 
@@ -147,8 +147,33 @@ function pageHref(page: number): string {
   return page <= 1 ? "/blog" : `/blog/page/${page}`;
 }
 
+/** Return a window of at most `maxCount` page numbers centered around `currentPage`. */
+function getVisiblePages(currentPage: number, totalPages: number, maxCount = 5): number[] {
+  if (totalPages <= maxCount) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const half = Math.floor(maxCount / 2);
+  let start = currentPage - half;
+  let end = currentPage + half;
+
+  if (start < 1) {
+    start = 1;
+    end = maxCount;
+  } else if (end > totalPages) {
+    end = totalPages;
+    start = totalPages - maxCount + 1;
+  }
+
+  const visible: number[] = [];
+  for (let i = start; i <= end; i++) {
+    visible.push(i);
+  }
+  return visible;
+}
+
 function Pagination({ page, totalPages }: { page: number; totalPages: number }) {
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+  const visiblePages = getVisiblePages(page, totalPages, 5);
   const isFirst = page === 1;
   const isLast = page === totalPages;
 
@@ -157,27 +182,50 @@ function Pagination({ page, totalPages }: { page: number; totalPages: number }) 
       aria-label="Blog pages"
       className="mt-12 flex flex-wrap items-center justify-center gap-2 border-t border-slate-200 dark:border-slate-800 pt-8"
     >
+      {/* First Page */}
       {isFirst ? (
         <span
           aria-disabled="true"
-          className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl text-sm font-bold text-slate-300 dark:text-slate-700 cursor-not-allowed select-none"
+          className="inline-flex items-center gap-1 h-10 px-3 rounded-xl text-sm font-bold text-slate-300 dark:text-slate-700 cursor-not-allowed select-none"
+        >
+          <ChevronsLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">First</span>
+        </span>
+      ) : (
+        <Link
+          href={pageHref(1)}
+          aria-label="First page"
+          className="inline-flex items-center gap-1 h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-slate-700 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+        >
+          <ChevronsLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">First</span>
+        </Link>
+      )}
+
+      {/* Previous Page */}
+      {isFirst ? (
+        <span
+          aria-disabled="true"
+          className="inline-flex items-center gap-1 h-10 px-3.5 rounded-xl text-sm font-bold text-slate-300 dark:text-slate-700 cursor-not-allowed select-none"
         >
           <ChevronLeft className="w-4 h-4" />
-          Previous
+          <span className="hidden sm:inline">Previous</span>
         </span>
       ) : (
         <Link
           href={pageHref(page - 1)}
           rel="prev"
-          className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-slate-700 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          aria-label="Previous page"
+          className="inline-flex items-center gap-1 h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-slate-700 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
-          Previous
+          <span className="hidden sm:inline">Previous</span>
         </Link>
       )}
 
+      {/* 5 Visible Page Numbers */}
       <div className="flex items-center gap-1.5">
-        {pages.map(n =>
+        {visiblePages.map(n =>
           n === page ? (
             <span
               key={n}
@@ -199,22 +247,44 @@ function Pagination({ page, totalPages }: { page: number; totalPages: number }) 
         )}
       </div>
 
+      {/* Next Page */}
       {isLast ? (
         <span
           aria-disabled="true"
-          className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl text-sm font-bold text-slate-300 dark:text-slate-700 cursor-not-allowed select-none"
+          className="inline-flex items-center gap-1 h-10 px-3.5 rounded-xl text-sm font-bold text-slate-300 dark:text-slate-700 cursor-not-allowed select-none"
         >
-          Next
+          <span className="hidden sm:inline">Next</span>
           <ChevronRight className="w-4 h-4" />
         </span>
       ) : (
         <Link
           href={pageHref(page + 1)}
           rel="next"
-          className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-slate-700 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          aria-label="Next page"
+          className="inline-flex items-center gap-1 h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-slate-700 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
         >
-          Next
+          <span className="hidden sm:inline">Next</span>
           <ChevronRight className="w-4 h-4" />
+        </Link>
+      )}
+
+      {/* Last Page */}
+      {isLast ? (
+        <span
+          aria-disabled="true"
+          className="inline-flex items-center gap-1 h-10 px-3 rounded-xl text-sm font-bold text-slate-300 dark:text-slate-700 cursor-not-allowed select-none"
+        >
+          <span className="hidden sm:inline">Last</span>
+          <ChevronsRight className="w-4 h-4" />
+        </span>
+      ) : (
+        <Link
+          href={pageHref(totalPages)}
+          aria-label="Last page"
+          className="inline-flex items-center gap-1 h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-slate-700 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+        >
+          <span className="hidden sm:inline">Last</span>
+          <ChevronsRight className="w-4 h-4" />
         </Link>
       )}
     </nav>

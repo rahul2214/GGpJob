@@ -37,6 +37,7 @@ const INTENTIONALLY_PUBLIC = new Set([
   '/api/skills',
   '/api/workplace-types',
   '/api/visa-requirements',
+  '/api/screening-question-types',
   '/api/payments/prices',
   '/api/geo',
   '/api/health',

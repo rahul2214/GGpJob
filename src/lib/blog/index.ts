@@ -279,6 +279,51 @@ import canPostgresqlReplaceAVectorDatabase from '@/content/blog/can-postgresql-r
 import webSearchVsRag from '@/content/blog/web-search-vs-rag';
 import howToBuildAnMcpServer from '@/content/blog/how-to-build-an-mcp-server';
 
+// 40 New High-Demand Career & Technical Guides (2026)
+import bestAiSkillsToLearnIn2026 from '@/content/blog/best-ai-skills-to-learn-in-2026';
+import willAiReplaceSoftwareDevelopersIn2026 from '@/content/blog/will-ai-replace-software-developers-in-2026';
+import topAiCareersForFreshers2026 from '@/content/blog/top-ai-careers-for-freshers-2026';
+import aiEngineerVsMachineLearningEngineer from '@/content/blog/ai-engineer-vs-machine-learning-engineer';
+import howToBecomeAnAiEngineerWithoutAMastersDegree from '@/content/blog/how-to-become-an-ai-engineer-without-a-masters-degree';
+import howGenerativeAiIsChangingTheJobMarket from '@/content/blog/how-generative-ai-is-changing-the-job-market';
+import topHighPayingTechnologySkills2026 from '@/content/blog/top-high-paying-technology-skills-2026';
+import bestFreeAiToolsForStudentsAndJobSeekers from '@/content/blog/best-free-ai-tools-for-students-and-job-seekers';
+import howToCreateAnAtsFriendlyResume2026 from '@/content/blog/how-to-create-an-ats-friendly-resume-2026';
+import bestFreeAiResumeBuilders2026 from '@/content/blog/best-free-ai-resume-builders-2026';
+
+import whyIsYourResumeGettingRejected12Mistakes from '@/content/blog/why-is-your-resume-getting-rejected-12-mistakes';
+import howToWriteAResumeWithChatgptWithoutSoundingGeneric from '@/content/blog/how-to-write-a-resume-with-chatgpt-without-sounding-generic';
+import bestResumeFormatForFreshersWithNoExperience from '@/content/blog/best-resume-format-for-freshers-with-no-experience';
+import howToWriteAProfessionalResumeSummary from '@/content/blog/how-to-write-a-professional-resume-summary';
+import howToImproveYourAtsResumeScoreBeforeApplying from '@/content/blog/how-to-improve-your-ats-resume-score-before-applying';
+import howToGetAJobAsAFresherWithNoExperience from '@/content/blog/how-to-get-a-job-as-a-fresher-with-no-experience';
+import topItCompaniesHiringFreshersInIndia2026 from '@/content/blog/top-it-companies-hiring-freshers-in-india-2026';
+import bestItJobsForFreshersInIndia2026 from '@/content/blog/best-it-jobs-for-freshers-in-india-2026';
+import howToFindPaidInternshipsInIndia from '@/content/blog/how-to-find-paid-internships-in-india';
+import bestProjectsForComputerScienceFresherResume from '@/content/blog/best-projects-for-computer-science-fresher-resume';
+
+import howToBuildAGithubPortfolioThatRecruitersNotice from '@/content/blog/how-to-build-a-github-portfolio-that-recruiters-notice';
+import bestCertificationsForFreshersToImproveEmployability from '@/content/blog/best-certifications-for-freshers-to-improve-employability';
+import mostCommonHrInterviewQuestionsAndAnswersForFreshers from '@/content/blog/most-common-hr-interview-questions-and-answers-for-freshers';
+import howToPrepareForATechnicalInterviewIn7Days from '@/content/blog/how-to-prepare-for-a-technical-interview-in-7-days';
+import bestAiMockInterviewTools from '@/content/blog/best-ai-mock-interview-tools';
+import howToExplainYourProjectsInAJobInterview from '@/content/blog/how-to-explain-your-projects-in-a-job-interview';
+import howToAnswerTellMeAboutYourselfInAnInterview from '@/content/blog/how-to-answer-tell-me-about-yourself-in-an-interview';
+import howToNegotiateYourFirstSalaryAsAFresher from '@/content/blog/how-to-negotiate-your-first-salary-as-a-fresher';
+import howToFindInternationalJobsFromIndiaIn2026 from '@/content/blog/how-to-find-international-jobs-from-india-in-2026';
+import bestCountriesForIndianItProfessionalsToWorkAbroad from '@/content/blog/best-countries-for-indian-it-professionals-to-work-abroad';
+
+import howToFindJobsWithVisaSponsorshipIn2026 from '@/content/blog/how-to-find-jobs-with-visa-sponsorship-in-2026';
+import bestLegitimateWorkFromHomeJobsForBeginners from '@/content/blog/best-legitimate-work-from-home-jobs-for-beginners';
+import howToFindRemoteJobsAtInternationalCompanies from '@/content/blog/how-to-find-remote-jobs-at-international-companies';
+import remoteJobsVsHybridJobsCareerComparison from '@/content/blog/remote-jobs-vs-hybrid-jobs-career-comparison';
+import pythonVsJavaVsJavascriptWhichToLearnIn2026 from '@/content/blog/python-vs-java-vs-javascript-which-to-learn-in-2026';
+import topCybersecurityJobsAndSkillsIn2026 from '@/content/blog/top-cybersecurity-jobs-and-skills-in-2026';
+import cloudComputingVsDevopsCareerPathsAndSkills from '@/content/blog/cloud-computing-vs-devops-career-paths-and-skills';
+import dataAnalystVsDataScientistSkillsSalariesJobs from '@/content/blog/data-analyst-vs-data-scientist-skills-salaries-jobs';
+import howToSwitchCareersIntoAiWithoutStartingFromZero from '@/content/blog/how-to-switch-careers-into-ai-without-starting-from-zero';
+import howToIdentifyFakeJobOffersAndRecruitmentScams from '@/content/blog/how-to-identify-fake-job-offers-and-recruitment-scams';
+
 /**
  * Declaration order is not display order — getAllPosts sorts by date — so a new
  * post can simply be appended.
@@ -534,6 +579,51 @@ export const BLOG_POSTS: BlogPost[] = [
   canPostgresqlReplaceAVectorDatabase,
   webSearchVsRag,
   howToBuildAnMcpServer,
+
+  // 40 New High-Demand Career & Technical Guides (2026)
+  bestAiSkillsToLearnIn2026,
+  willAiReplaceSoftwareDevelopersIn2026,
+  topAiCareersForFreshers2026,
+  aiEngineerVsMachineLearningEngineer,
+  howToBecomeAnAiEngineerWithoutAMastersDegree,
+  howGenerativeAiIsChangingTheJobMarket,
+  topHighPayingTechnologySkills2026,
+  bestFreeAiToolsForStudentsAndJobSeekers,
+  howToCreateAnAtsFriendlyResume2026,
+  bestFreeAiResumeBuilders2026,
+
+  whyIsYourResumeGettingRejected12Mistakes,
+  howToWriteAResumeWithChatgptWithoutSoundingGeneric,
+  bestResumeFormatForFreshersWithNoExperience,
+  howToWriteAProfessionalResumeSummary,
+  howToImproveYourAtsResumeScoreBeforeApplying,
+  howToGetAJobAsAFresherWithNoExperience,
+  topItCompaniesHiringFreshersInIndia2026,
+  bestItJobsForFreshersInIndia2026,
+  howToFindPaidInternshipsInIndia,
+  bestProjectsForComputerScienceFresherResume,
+
+  howToBuildAGithubPortfolioThatRecruitersNotice,
+  bestCertificationsForFreshersToImproveEmployability,
+  mostCommonHrInterviewQuestionsAndAnswersForFreshers,
+  howToPrepareForATechnicalInterviewIn7Days,
+  bestAiMockInterviewTools,
+  howToExplainYourProjectsInAJobInterview,
+  howToAnswerTellMeAboutYourselfInAnInterview,
+  howToNegotiateYourFirstSalaryAsAFresher,
+  howToFindInternationalJobsFromIndiaIn2026,
+  bestCountriesForIndianItProfessionalsToWorkAbroad,
+
+  howToFindJobsWithVisaSponsorshipIn2026,
+  bestLegitimateWorkFromHomeJobsForBeginners,
+  howToFindRemoteJobsAtInternationalCompanies,
+  remoteJobsVsHybridJobsCareerComparison,
+  pythonVsJavaVsJavascriptWhichToLearnIn2026,
+  topCybersecurityJobsAndSkillsIn2026,
+  cloudComputingVsDevopsCareerPathsAndSkills,
+  dataAnalystVsDataScientistSkillsSalariesJobs,
+  howToSwitchCareersIntoAiWithoutStartingFromZero,
+  howToIdentifyFakeJobOffersAndRecruitmentScams,
 ];
 
 export * from './types';
