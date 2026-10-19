@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, ShieldCheck, Lock, Tag } from "lucide-react";
+import { LoaderCircle, ShieldCheck, Lock, Tag, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -86,7 +86,8 @@ export default function PaymentPage() {
         setUser(updatedProfile);
         router.push("/");
       } else {
-        throw new Error("Verification failed.");
+        const errData = await verifyRes.json().catch(() => ({}));
+        throw new Error(errData.message || errData.error || "Verification failed.");
       }
     } catch (err: any) {
       toast({ title: "Verification Failed", description: err.message || "Something went wrong. Please contact support.", variant: "destructive" });
@@ -130,7 +131,8 @@ export default function PaymentPage() {
         await handlePaymentSuccess({
           razorpay_order_id: order.id,
           razorpay_payment_id: `free_pay_${Date.now()}`,
-          razorpay_signature: "free_sig"
+          razorpay_signature: "free_sig",
+          isFree: true
         });
         return;
       }
@@ -273,7 +275,8 @@ export default function PaymentPage() {
                                     try {
                                         const res = await fetch('/api/coupons/validate', { 
                                             method: 'POST', 
-                                            body: JSON.stringify({ code: couponCode, planId: selectedPlan.id }) 
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ code: couponCode, planId: selectedPlan.id, userId: user.uuid }) 
                                         });
                                         const data = await res.json();
                                         if(!res.ok) throw new Error(data.error);
@@ -323,7 +326,22 @@ export default function PaymentPage() {
           )}
 
           <DialogFooter className="mt-6 flex flex-col gap-3 sm:flex-col">
-             {gateway === 'paypal' ? (
+             {(appliedCoupon && appliedCoupon.discount >= 100) || (selectedPlan && (appliedCoupon ? Math.max(0, selectedPlan.price * (1 - appliedCoupon.discount / 100)) : selectedPlan.price) <= 0) ? (
+               <Button 
+                  onClick={confirmPayment} 
+                  disabled={!!processing}
+                  className="w-full h-12 text-white bg-emerald-600 hover:bg-emerald-700 font-bold rounded-xl shadow-lg shadow-emerald-200"
+               >
+                  {processing === selectedPlan?.id ? (
+                    <LoaderCircle className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Claim Plan Free
+                    </>
+                  )}
+               </Button>
+             ) : gateway === 'paypal' ? (
                <PayPalPaymentButton
                  amount={
                    appliedCoupon
@@ -340,14 +358,21 @@ export default function PaymentPage() {
              ) : (
                <Button 
                   onClick={confirmPayment} 
+                  disabled={!!processing}
                   className={cn(
                     "w-full h-12 text-white font-bold rounded-xl shadow-lg",
                     selectedPlan?.color === 'emerald' ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200" :
                     selectedPlan?.color === 'amber' ? "bg-amber-500 hover:bg-amber-600 shadow-amber-200" : "bg-sky-500 hover:bg-sky-600 shadow-sky-200"
                   )}
                >
-                  <Lock className="w-4 h-4 mr-2 opacity-70" />
-                  Confirm & Pay with Razorpay
+                  {processing === selectedPlan?.id ? (
+                    <LoaderCircle className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4 mr-2 opacity-70" />
+                      Confirm & Pay with Razorpay
+                    </>
+                  )}
                </Button>
              )}
              <Button variant="ghost" className="w-full h-10 rounded-xl font-bold text-slate-500 hover:text-slate-900" onClick={() => setIsModalOpen(false)}>Cancel</Button>

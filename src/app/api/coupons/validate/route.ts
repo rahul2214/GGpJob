@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { hasUserUsedCoupon } from '@/lib/coupon-service';
+import { extractAuthToken } from '@/lib/auth-server';
+import jwt from 'jsonwebtoken';
 
 export async function POST(request: Request) {
   try {
-    const { code, planId, packId } = await request.json();
+    const { code, planId, packId, userId } = await request.json();
     const targetId = planId || packId;
 
     if (!code) {
@@ -29,6 +32,25 @@ export async function POST(request: Request) {
     // Validate Usage Limits
     if (coupon.current_uses >= coupon.max_uses) {
         return NextResponse.json({ error: 'Coupon code usage limit reached' }, { status: 400 });
+    }
+
+    // Validate Single-Use Per User: Jobseekers / Recruiters can only use a coupon code once
+    let checkUserId = userId;
+    if (!checkUserId) {
+      const token = extractAuthToken(request);
+      if (token && process.env.SUPABASE_JWT_SECRET) {
+        try {
+          const decoded = jwt.verify(token, process.env.SUPABASE_JWT_SECRET, { algorithms: ['HS256'] }) as any;
+          if (decoded && decoded.sub) checkUserId = decoded.sub;
+        } catch {}
+      }
+    }
+
+    if (checkUserId) {
+      const alreadyUsed = await hasUserUsedCoupon(checkUserId, coupon.code);
+      if (alreadyUsed) {
+        return NextResponse.json({ error: 'You have already used this coupon code.' }, { status: 400 });
+      }
     }
 
     // Validate Applicable Plan

@@ -5,6 +5,7 @@ import { getExchangeRates, convertUSD } from '@/lib/exchange-rate-service';
 import { getPlanPrices } from '@/lib/plan-prices-service';
 import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 import { getBillingCurrency, getPaymentGateway } from '@/utils/currency';
+import { hasUserUsedCoupon } from '@/lib/coupon-service';
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder',
@@ -65,6 +66,11 @@ export async function POST(request: Request) {
 
     // Apply Coupon discount (if present)
     if (couponCode) {
+      const alreadyUsed = await hasUserUsedCoupon(userId, couponCode);
+      if (alreadyUsed) {
+        return NextResponse.json({ error: 'You have already used this coupon code.' }, { status: 400 });
+      }
+
       const { data: coupon } = await supabaseAdmin
         .from('coupons')
         .select('*')
@@ -75,7 +81,11 @@ export async function POST(request: Request) {
         const isValid = new Date(coupon.expires_at) >= new Date() && 
                         coupon.current_uses < coupon.max_uses && 
                         coupon.is_active &&
-                        (coupon.applicable_plan === 'all' || coupon.applicable_plan === planId || !coupon.applicable_plan);
+                        (coupon.applicable_plan === 'all' || 
+                         coupon.applicable_plan === planId || 
+                         !coupon.applicable_plan ||
+                         (coupon.applicable_plan === 'basic' && planId === 'basic_plan') ||
+                         (coupon.applicable_plan === 'basic_plan' && planId === 'basic'));
         
         if (isValid) {
           expectedAmountUSD = Math.max(0, expectedAmountUSD * (1 - coupon.discount_percent / 100));

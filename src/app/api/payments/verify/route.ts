@@ -6,6 +6,7 @@ import { getExchangeRates, convertUSD } from '@/lib/exchange-rate-service';
 import { getPlanPrices, getPlanCredits } from '@/lib/plan-prices-service';
 import { requireAuth, isOwnerOrAdmin } from '@/lib/auth-server';
 import { getBillingCurrency } from '@/utils/currency';
+import { hasUserUsedCoupon } from '@/lib/coupon-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,13 +86,71 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden: Cannot activate plan for another user account.' }, { status: 403 });
     }
 
+    const isFreeOrder = Boolean(
+      body.isFree ||
+      (razorpay_order_id && String(razorpay_order_id).startsWith('free_order_')) ||
+      (razorpay_payment_id && String(razorpay_payment_id).startsWith('free_pay_')) ||
+      (paypal_order_id && String(paypal_order_id).startsWith('free_order_'))
+    );
+
     const gateway = razorpay_payment_id ? 'razorpay' : 'paypal';
     let verified = false;
     let paymentId = '';
     let orderId = '';
 
     // 1. Signature Verification / Validation
-    if (gateway === 'razorpay') {
+    if (isFreeOrder) {
+      // Free orders MUST be authorized on server: base plan price is 0 or valid 100% coupon applied
+      const basePricesUSD = await getPlanPrices();
+      const baseAmountUSD = basePricesUSD[planId] !== undefined ? basePricesUSD[planId] : 0;
+
+      let authorizedFree = false;
+      if (baseAmountUSD === 0) {
+        authorizedFree = true;
+      } else if (couponCode) {
+        const alreadyUsed = await hasUserUsedCoupon(userId, couponCode);
+        if (alreadyUsed) {
+          return NextResponse.json(
+            { success: false, message: 'You have already used this coupon code.' },
+            { status: 400 }
+          );
+        }
+
+        const { data: coupon } = await supabaseAdmin
+          .from('coupons')
+          .select('*')
+          .eq('code', couponCode.toUpperCase().trim())
+          .maybeSingle();
+
+        if (coupon) {
+          const planMatches =
+            coupon.applicable_plan === 'all' ||
+            coupon.applicable_plan === planId ||
+            !coupon.applicable_plan ||
+            (coupon.applicable_plan === 'basic' && planId === 'basic_plan') ||
+            (coupon.applicable_plan === 'basic_plan' && planId === 'basic');
+          const notExpired = !coupon.expires_at || new Date(coupon.expires_at) >= new Date();
+          const underUseCap =
+            coupon.max_uses === null || coupon.max_uses === undefined || (coupon.current_uses || 0) < coupon.max_uses;
+          const isActive = coupon.is_active !== false;
+
+          if (planMatches && notExpired && underUseCap && isActive && Number(coupon.discount_percent) >= 100) {
+            authorizedFree = true;
+          }
+        }
+      }
+
+      if (!authorizedFree) {
+        return NextResponse.json(
+          { success: false, message: 'Invalid free activation: valid 100% discount coupon required.' },
+          { status: 400 }
+        );
+      }
+
+      verified = true;
+      paymentId = razorpay_payment_id || paypal_payment_id || `free_pay_${Date.now()}_${Math.random().toString(36).substring(4, 9)}`;
+      orderId = razorpay_order_id || paypal_order_id || `free_order_${userId}_${Date.now()}`;
+    } else if (gateway === 'razorpay') {
       if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
         return NextResponse.json({ error: 'Missing required Razorpay verification fields' }, { status: 400 });
       }
@@ -134,7 +193,7 @@ export async function POST(request: Request) {
     // for this plan and this user, and that it was actually captured. Without
     // this a customer could pay for the cheapest plan and then activate any
     // other plan using the same genuine signature.
-    if (gateway === 'razorpay') {
+    if (gateway === 'razorpay' && !isFreeOrder) {
       let razorpayOrder: any = null;
       let razorpayPayment: any = null;
       try {
@@ -266,6 +325,11 @@ export async function POST(request: Request) {
     let appliedCouponCode = null;
 
     if (couponCode) {
+      const alreadyUsed = await hasUserUsedCoupon(userId, couponCode);
+      if (alreadyUsed) {
+        return NextResponse.json({ success: false, message: 'You have already used this coupon code.' }, { status: 400 });
+      }
+
       const { data: coupon } = await supabaseAdmin
         .from('coupons')
         .select('*')
@@ -277,7 +341,11 @@ export async function POST(request: Request) {
         // active, unexpired, within its usage cap and applicable to this plan.
         // Checking only the plan here let expired or exhausted coupons through.
         const planMatches =
-          coupon.applicable_plan === 'all' || coupon.applicable_plan === planId || !coupon.applicable_plan;
+          coupon.applicable_plan === 'all' ||
+          coupon.applicable_plan === planId ||
+          !coupon.applicable_plan ||
+          (coupon.applicable_plan === 'basic' && planId === 'basic_plan') ||
+          (coupon.applicable_plan === 'basic_plan' && planId === 'basic');
         const notExpired = !coupon.expires_at || new Date(coupon.expires_at) >= new Date();
         const underUseCap =
           coupon.max_uses === null || coupon.max_uses === undefined || (coupon.current_uses || 0) < coupon.max_uses;

@@ -150,7 +150,8 @@ export default function CreditsPage() {
         setUser(updatedProfile);
         router.push("/profile");
       } else {
-        throw new Error("Verification failed.");
+        const errData = await verifyRes.json().catch(() => ({}));
+        throw new Error(errData.message || errData.error || "Verification failed.");
       }
     } catch (err: any) {
       toast({ title: "Verification Failed", description: err.message || "Something went wrong. Please contact support.", variant: "destructive" });
@@ -189,6 +190,17 @@ export default function CreditsPage() {
           throw new Error(errData.error || "Failed to create payment order.");
         }
         const order = await orderRes.json();
+
+        // Handle Free Activation (100% discount)
+        if (order.isFree) {
+            await handlePaymentSuccess({
+              razorpay_order_id: order.id,
+              razorpay_payment_id: `free_pay_${Date.now()}`,
+              razorpay_signature: "free_sig",
+              isFree: true
+            });
+            return;
+        }
 
         // Razorpay Checkout (Only for INR)
         if (order.gateway === 'razorpay') {
@@ -483,7 +495,8 @@ export default function CreditsPage() {
                                     try {
                                         const res = await fetch('/api/coupons/validate', { 
                                             method: 'POST', 
-                                            body: JSON.stringify({ code: couponCode, planId: selectedPack.id }) 
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ code: couponCode, planId: selectedPack.id, userId: user.uuid }) 
                                         });
                                         const data = await res.json();
                                         if(!res.ok) throw new Error(data.error);
@@ -533,7 +546,22 @@ export default function CreditsPage() {
           )}
 
           <DialogFooter className="mt-6 flex flex-col gap-3 sm:flex-col">
-             {gateway === 'paypal' ? (
+             {(appliedCoupon && appliedCoupon.discount >= 100) || (selectedPack && (appliedCoupon ? Math.max(0, selectedPack.price * (1 - appliedCoupon.discount / 100)) : selectedPack.price) <= 0) ? (
+               <Button 
+                  onClick={confirmActivation} 
+                  disabled={!!processing}
+                  className="w-full h-12 text-white bg-emerald-600 hover:bg-emerald-700 font-bold rounded-xl shadow-lg shadow-emerald-200"
+               >
+                  {processing === selectedPack?.id ? (
+                    <LoaderCircle className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Claim Credits Free
+                    </>
+                  )}
+               </Button>
+             ) : gateway === 'paypal' ? (
                <PayPalPaymentButton
                  amount={
                    appliedCoupon
@@ -550,10 +578,17 @@ export default function CreditsPage() {
              ) : (
                <Button 
                   onClick={confirmActivation} 
+                  disabled={!!processing}
                   className="w-full h-12 text-white bg-indigo-600 hover:bg-indigo-700 font-bold rounded-xl shadow-lg shadow-indigo-200"
                >
-                  <Lock className="w-4 h-4 mr-2 opacity-70" />
-                  Confirm & Pay with Razorpay
+                  {processing === selectedPack?.id ? (
+                    <LoaderCircle className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4 mr-2 opacity-70" />
+                      Confirm & Pay with Razorpay
+                    </>
+                  )}
                </Button>
              )}
              <Button variant="ghost" className="w-full h-10 rounded-xl font-bold text-slate-500 hover:text-slate-900" onClick={() => setIsModalOpen(false)}>Cancel</Button>
