@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, ShieldAlert, ArrowLeft, Save, Edit2, Coins, Briefcase, RefreshCw } from "lucide-react";
+import { LoaderCircle, ShieldAlert, ArrowLeft, Save, Edit2, Coins, Briefcase, RefreshCw, Gift, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase-client";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,8 @@ const PLAN_METADATA: Record<string, { name: string; type: string; category: stri
   'mini': { name: 'Mini Credit Pack', type: 'Credits', category: 'Job Seeker Pack', description: '10 credits for referrals and topups', defaultCredits: 10 },
   'popular_pack': { name: 'Popular Credit Pack', type: 'Credits', category: 'Job Seeker Pack', description: '60 credits for referrals and topups', defaultCredits: 60 },
   'pro_pack': { name: 'Pro Credit Pack', type: 'Credits', category: 'Job Seeker Pack', description: '150 credits for referrals and topups', defaultCredits: 150 },
+
+  'referral_bonus': { name: 'Referral Bonus Reward', type: 'Credits', category: 'Referral Rewards', description: 'Credits dynamically awarded to both referrer and new referee upon successful signup & verification.', defaultCredits: 2 },
 
   'jobseeker_basic': { name: 'Basic Candidate Plan', type: 'Plan', category: 'Job Seeker', description: 'Job seeker basic plan' },
   'jobseeker_premium': { name: 'Premium Candidate Plan', type: 'Plan', category: 'Job Seeker', description: 'Job seeker premium plan' },
@@ -101,8 +103,9 @@ export default function AdminPlansPage() {
   };
 
   const handleSavePrice = async (planId: string) => {
-    const numericPrice = parseFloat(editingPrice);
-    if (isNaN(numericPrice) || numericPrice < 0) {
+    const isReferral = planId === 'referral_bonus';
+    const numericPrice = isReferral ? 0 : parseFloat(editingPrice);
+    if (!isReferral && (isNaN(numericPrice) || numericPrice < 0)) {
       toast({
         title: "Invalid Price",
         description: "Please enter a valid non-negative number.",
@@ -112,7 +115,7 @@ export default function AdminPlansPage() {
     }
 
     const meta = PLAN_METADATA[planId] || { name: planId, type: 'Other', category: 'Other' };
-    const isCreditsPlan = meta.type === 'Credits' || meta.category === 'Job Seeker Pack';
+    const isCreditsPlan = isReferral || meta.type === 'Credits' || meta.category === 'Job Seeker Pack';
 
     let numericCredits: number | undefined = undefined;
     if (isCreditsPlan) {
@@ -205,15 +208,16 @@ export default function AdminPlansPage() {
 
   // Group prices by category
   const categories: Record<string, string[]> = {
+    'Referral Rewards': [],
+    'Job Seeker Pack': [],
     'Recruiter': [],
     'Job Seeker': [],
-    'Job Seeker Pack': [],
     'Other': []
   };
 
   Object.keys(prices).forEach(key => {
     const meta = PLAN_METADATA[key];
-    const category = meta?.category || (key.includes('pack') || key.includes('boost') ? 'Job Seeker Pack' : 'Recruiter');
+    const category = meta?.category || (key === 'referral_bonus' ? 'Referral Rewards' : key.includes('pack') || key.includes('boost') ? 'Job Seeker Pack' : 'Recruiter');
     if (!categories[category]) {
       categories[category] = [];
     }
@@ -245,16 +249,23 @@ export default function AdminPlansPage() {
         return (
           <div key={categoryName} className="space-y-4">
             <h2 className="text-xl font-extrabold text-slate-800 border-b pb-2 flex items-center gap-2">
-              {categoryName.includes('Pack') ? <Coins className="w-5 h-5 text-amber-500" /> : <Briefcase className="w-5 h-5 text-indigo-500" />}
-              {categoryName} {categoryName.includes('Pack') ? 'Packages' : 'Plans'}
+              {categoryName === 'Referral Rewards' ? (
+                <Gift className="w-5 h-5 text-indigo-600" />
+              ) : categoryName.includes('Pack') ? (
+                <Coins className="w-5 h-5 text-amber-500" />
+              ) : (
+                <Briefcase className="w-5 h-5 text-indigo-500" />
+              )}
+              {categoryName} {categoryName.includes('Pack') ? 'Packages' : categoryName === 'Referral Rewards' ? 'Program' : 'Plans'}
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {keys.map((id) => {
                 const meta = PLAN_METADATA[id] || { name: id, description: 'Dynamic Plan', type: 'Other', category: 'Other' };
-                const currentPrice = prices[id];
-                const isCreditsPlan = meta.type === 'Credits' || meta.category === 'Job Seeker Pack';
-                const currentCredits = credits[id] ?? meta.defaultCredits ?? (isCreditsPlan ? 10 : null);
+                const currentPrice = prices[id] ?? 0;
+                const isReferralBonus = id === 'referral_bonus';
+                const isCreditsPlan = isReferralBonus || meta.type === 'Credits' || meta.category === 'Job Seeker Pack';
+                const currentCredits = credits[id] ?? meta.defaultCredits ?? (isCreditsPlan ? (isReferralBonus ? 2 : 10) : null);
                 const isEditing = editingId === id;
                 const isUpdating = updatingId === id;
 
@@ -269,9 +280,9 @@ export default function AdminPlansPage() {
                         <div className="flex items-center justify-between">
                           <span className={cn(
                             "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
-                            isCreditsPlan ? "bg-amber-100 text-amber-700 font-extrabold" : "bg-slate-100 text-slate-600"
+                            isReferralBonus ? "bg-indigo-100 text-indigo-700 font-extrabold" : isCreditsPlan ? "bg-amber-100 text-amber-700 font-extrabold" : "bg-slate-100 text-slate-600"
                           )}>
-                            {meta.type}
+                            {isReferralBonus ? 'Referral Reward' : meta.type}
                           </span>
                           <span className="text-xs text-slate-400 font-mono">ID: {id}</span>
                         </div>
@@ -283,7 +294,47 @@ export default function AdminPlansPage() {
 
                       {isCreditsPlan ? (
                         <CardContent className="py-3 flex-grow flex flex-col justify-center bg-slate-50/50 border-y border-slate-100 px-6 min-h-[5.5rem] gap-2.5">
-                          {isEditing ? (
+                          {isReferralBonus ? (
+                            isEditing ? (
+                              <div className="space-y-2.5 w-full">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Reward Credits:</span>
+                                  <div className="flex items-center gap-1.5 max-w-[130px]">
+                                    <span className="text-sm">🪙</span>
+                                    <Input
+                                      type="number"
+                                      step="1"
+                                      min="1"
+                                      value={editingCredits}
+                                      onChange={(e) => setEditingCredits(e.target.value)}
+                                      className="h-8 font-bold rounded-lg text-right bg-white text-sm"
+                                      placeholder="Credits"
+                                    />
+                                  </div>
+                                </div>
+                                <p className="text-[11px] text-slate-400 leading-tight">
+                                  Awarded dynamically to both referrer and friend upon signup verification.
+                                </p>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Program Type:</span>
+                                  <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100">
+                                    Free Earnable
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between border-t border-slate-200/50 pt-2">
+                                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Credits / Referral:</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="inline-flex items-center gap-1 text-xs font-black text-indigo-700 bg-indigo-100/80 px-2.5 py-0.5 rounded-full border border-indigo-300">
+                                      🪙 +{currentCredits} Credits
+                                    </span>
+                                  </div>
+                                </div>
+                              </>
+                            )
+                          ) : isEditing ? (
                             <div className="space-y-2.5 w-full">
                               <div className="flex items-center justify-between gap-2">
                                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Base Price:</span>

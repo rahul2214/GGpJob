@@ -22,9 +22,21 @@ export async function GET() {
       }
     });
 
-    // Credit packs strictly from database where credits is configured and > 0
+    // Dynamic referral bonus credits configured by admin (defaults to 2 if not found)
+    const referralItem = data.find((item: any) => item.plan_id === 'referral_bonus');
+    const referralCredits = referralItem && referralItem.credits !== null && referralItem.credits !== undefined
+      ? Math.max(1, Math.round(Number(referralItem.credits)))
+      : 2;
+
+    // Credit packs strictly from database where credits is configured and > 0 (excluding referral settings)
     const creditPacks = data
-      .filter((item: any) => item.credits !== null && item.credits !== undefined && Number(item.credits) > 0)
+      .filter((item: any) => 
+        item.credits !== null && 
+        item.credits !== undefined && 
+        Number(item.credits) > 0 && 
+        item.plan_id !== 'referral_bonus' &&
+        !item.plan_id.startsWith('setting_')
+      )
       .map((item: any) => ({
         id: item.plan_id,
         name: item.name || item.plan_id,
@@ -34,7 +46,7 @@ export async function GET() {
       }))
       .sort((a: any, b: any) => a.credits - b.credits);
 
-    return NextResponse.json({ prices, credits, creditPacks, plans: data });
+    return NextResponse.json({ prices, credits, creditPacks, referralCredits, plans: data });
   } catch (err: any) {
     console.error('[API_PAYMENTS_PRICES] Lookup failed:', err.message);
     return NextResponse.json({ error: 'Failed to fetch prices from database', prices: {}, credits: {}, creditPacks: [], plans: [] }, { status: 500 });

@@ -16,6 +16,7 @@ import { CurrencySelector } from "@/components/currency-selector";
 import { formatPrice, convertPrice, BILLING_CURRENCY_CODES } from "@/utils/currency";
 import { useBillingCurrency } from "@/hooks/use-billing-currency";
 import { PayPalPaymentButton } from "@/components/paypal-payment-button";
+import { ReferAndEarnCard } from "@/components/refer-and-earn";
 
 declare global {
   interface Window {
@@ -67,6 +68,7 @@ export default function CreditsPage() {
   
   const [packs, setPacks] = useState<CreditPack[]>([]);
   const [loadingPacks, setLoadingPacks] = useState(true);
+  const [referralCredits, setReferralCredits] = useState<number>(2);
   const [selectedPack, setSelectedPack] = useState<CreditPack | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -74,6 +76,9 @@ export default function CreditsPage() {
     fetch('/api/payments/prices')
       .then(res => res.json())
       .then(data => {
+        if (data?.referralCredits && typeof data.referralCredits === 'number') {
+          setReferralCredits(data.referralCredits);
+        }
         if (data?.creditPacks && Array.isArray(data.creditPacks) && data.creditPacks.length > 0) {
           const dbPacks: CreditPack[] = data.creditPacks.map((item: any, idx: number) => {
             const style = PACK_STYLE_PRESETS[item.id] || {};
@@ -242,15 +247,29 @@ export default function CreditsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] py-20 px-6 relative overflow-hidden">
-      {/* Decorative Blobs */}
-      <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-indigo-100/30 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
-      
-      <div className="max-w-5xl mx-auto relative z-10">
-        <div className="flex items-center justify-between mb-8">
-          
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Currency:</span>
+    <div className="min-h-screen bg-[#f8fafc] py-6 sm:py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Decorative subtle background gradient */}
+      <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-indigo-100/30 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+
+      <div className="max-w-6xl mx-auto relative z-10 space-y-6">
+        {/* Compact Header Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-200/60">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                <Coins className="w-4 h-4" />
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                Credits
+              </h1>
+            </div>
+            <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
+              Check balance, earn free credits by referring peers, or purchase instant top-ups.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto bg-white border border-slate-200/80 rounded-xl px-2.5 py-1 shadow-2xs">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Currency:</span>
             <CurrencySelector
               options={BILLING_CURRENCY_CODES}
               value={currency}
@@ -259,190 +278,184 @@ export default function CreditsPage() {
           </div>
         </div>
 
-        <div className="text-center mb-10 space-y-4">
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <h1 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight flex items-center justify-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
-                <Coins className="w-6 h-6" />
+        {/* Top Section: Wallet Balance & Refer & Earn Side-by-Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+          {/* My Wallet & Balance (5 cols) */}
+          <div className="lg:col-span-5 flex flex-col">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 sm:p-6 h-full flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between gap-3 pb-3 mb-3.5 border-b border-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-xs shrink-0">
+                      <Wallet className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">My Credit Balance</h3>
+                      <p className="text-[11px] text-slate-400 font-medium">Available for applications & AI tools</p>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full text-[11px] font-bold">
+                    Active
+                  </span>
+                </div>
+
+                {/* Total Balance Highlight */}
+                <div className="bg-gradient-to-br from-indigo-50/90 via-indigo-50/50 to-violet-50/60 rounded-xl p-3.5 border border-indigo-100 mb-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Total Available</p>
+                    <div className="flex items-baseline gap-1.5 mt-0.5">
+                      <span className="text-3xl font-black text-indigo-700 tracking-tight">
+                        {(user.subscriptionCredits || 0) + (user.purchasedCredits || 0)}
+                      </span>
+                      <span className="text-xs font-bold text-indigo-500">Credits</span>
+                    </div>
+                  </div>
+                  <div className="w-9 h-9 rounded-xl bg-indigo-600/10 text-indigo-600 flex items-center justify-center">
+                    <Coins className="w-4 h-4" />
+                  </div>
+                </div>
+
+                {/* Breakdown by Type */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Subscription</p>
+                    <p className="text-sm font-black text-slate-800 mt-0.5">
+                      {user.subscriptionCredits || 0} <span className="text-[10px] font-medium text-slate-400">Monthly</span>
+                    </p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Purchased</p>
+                    <p className="text-sm font-black text-emerald-600 mt-0.5">
+                      {user.purchasedCredits || 0} <span className="text-[10px] font-medium text-slate-400">Top-up</span>
+                    </p>
+                  </div>
+                </div>
               </div>
-              Top-up Credits
-            </h1>
-            <p className="text-slate-500 text-base sm:text-lg max-w-xl mx-auto mt-3">
-              Get additional credits to fast-track your job applications and boost your profile visibility.
-            </p>
-          </motion.div>
+
+             
+            </div>
+          </div>
+
+          {/* Refer & Earn (7 cols) */}
+          <div className="lg:col-span-7 flex flex-col">
+            <ReferAndEarnCard creditsPerReferral={referralCredits} className="h-full" />
+          </div>
         </div>
 
-        {/* Current Balance / Wallet Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="max-w-3xl mx-auto mb-14 bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.03)] p-6 sm:p-7"
-        >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 mb-5 border-b border-slate-100">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm shrink-0">
-                <Wallet className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">My Wallet & Balance</h3>
-                <p className="text-xs text-slate-400 font-medium">Overview of your available credits</p>
-              </div>
+        {/* Credit Packs Section */}
+        <div className="space-y-4 pt-1">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <span>Top-up Credit Packs</span>
+              </h2>
+              <p className="text-xs text-slate-500">
+                Choose a pack to instantly power your applications and profile visibility.
+              </p>
             </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100/80 rounded-full text-xs font-bold self-start sm:self-auto">
-             
-              <span>Active Balance</span>
-            </div>
+            <span className="text-xs text-slate-400 font-medium hidden sm:inline-block">Instant Delivery • Secure Checkout</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Total Balance */}
-            <div className="bg-gradient-to-br from-indigo-50/90 via-indigo-50/50 to-violet-50/60 rounded-2xl p-4 border border-indigo-100 text-center sm:text-left">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Available</p>
-              <div className="flex items-baseline gap-1.5 justify-center sm:justify-start">
-                <span className="text-3xl font-black text-indigo-600 tracking-tight">
-                  {(user.subscriptionCredits || 0) + (user.purchasedCredits || 0)}
-                </span>
-                <span className="text-xs font-bold text-indigo-500">Credits</span>
-              </div>
-            </div>
-
-            {/* Subscription Credits */}
-            <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100 text-center sm:text-left">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Subscription Credits</p>
-              <div className="flex items-baseline gap-1.5 justify-center sm:justify-start">
-                <span className="text-3xl font-black text-slate-800 tracking-tight">
-                  {user.subscriptionCredits || 0}
-                </span>
-                <span className="text-xs font-medium text-slate-400">Monthly</span>
-              </div>
-            </div>
-
-            {/* Purchased Credits */}
-            <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100 text-center sm:text-left">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Purchased Credits</p>
-              <div className="flex items-baseline gap-1.5 justify-center sm:justify-start">
-                <span className="text-3xl font-black text-emerald-600 tracking-tight">
-                  {user.purchasedCredits || 0}
-                </span>
-                <span className="text-xs font-medium text-slate-400">Top-up</span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {loadingPacks ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            {[1, 2, 3].map((n) => (
-              <div
-                key={n}
-                className="h-[430px] rounded-[2.5rem] bg-white border border-slate-200/80 shadow-md animate-pulse p-8 flex flex-col justify-between"
-              >
-                <div className="space-y-4">
-                  <div className="h-6 w-2/3 bg-slate-200 rounded-xl mx-auto" />
-                  <div className="h-4 w-5/6 bg-slate-100 rounded-lg mx-auto" />
-                  <div className="h-16 w-24 bg-slate-200 rounded-2xl mx-auto mt-6" />
-                </div>
-                <div className="space-y-3">
-                  <div className="h-8 w-1/2 bg-slate-200 rounded-xl mx-auto" />
-                  <div className="h-12 w-full bg-slate-200 rounded-2xl" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : packs.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 max-w-md mx-auto p-8 shadow-sm">
-            <Coins className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-slate-700">No Credit Packs Available</h3>
-            <p className="text-sm text-slate-500 mt-1">Please check back later or contact support.</p>
-          </div>
-        ) : (
-          <div className={cn(
-            "grid gap-8 max-w-4xl mx-auto",
-            packs.length === 1 ? "grid-cols-1 max-w-md" : packs.length === 2 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3"
-          )}>
-            {packs.map((pack, idx) => {
-              const convertedPrice = convertPrice(pack.price, currency, exchangeRates);
-              const formattedPrice = formatPrice(convertedPrice, currency);
-
-              return (
-                <motion.div
-                  key={pack.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1, duration: 0.5 }}
-                  className="flex"
+          {loadingPacks ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[1, 2, 3].map((n) => (
+                <div
+                  key={n}
+                  className="h-64 rounded-2xl bg-white border border-slate-200/80 shadow-xs animate-pulse p-5 flex flex-col justify-between"
                 >
-                  <Card className={cn(
-                    "relative flex flex-col w-full border border-slate-200 shadow-xl rounded-[2.5rem] overflow-hidden bg-white transition-all hover:scale-[1.02]",
-                    pack.popular && "ring-4 ring-amber-400/30 shadow-amber-200/40 border-none"
-                  )}>
+                  <div className="space-y-3">
+                    <div className="h-5 w-1/2 bg-slate-200 rounded-lg" />
+                    <div className="h-8 w-1/3 bg-slate-200 rounded-lg" />
+                    <div className="h-4 w-5/6 bg-slate-100 rounded-lg" />
+                  </div>
+                  <div className="h-10 w-full bg-slate-200 rounded-xl" />
+                </div>
+              ))}
+            </div>
+          ) : packs.length === 0 ? (
+            <div className="text-center py-10 bg-white rounded-2xl border border-slate-200 max-w-md mx-auto p-6 shadow-xs">
+              <Coins className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+              <h3 className="text-base font-bold text-slate-700">No Credit Packs Available</h3>
+              <p className="text-xs text-slate-500 mt-1">Please check back later or contact support.</p>
+            </div>
+          ) : (
+            <div className={cn(
+              "grid gap-4 sm:gap-5",
+              packs.length === 1 ? "grid-cols-1 max-w-sm mx-auto" : packs.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto" : "grid-cols-1 md:grid-cols-3"
+            )}>
+              {packs.map((pack) => {
+                const convertedPrice = convertPrice(pack.price, currency, exchangeRates);
+                const formattedPrice = formatPrice(convertedPrice, currency);
+
+                return (
+                  <Card
+                    key={pack.id}
+                    className={cn(
+                      "relative flex flex-col justify-between w-full border border-slate-200/90 shadow-2xs hover:shadow-md rounded-2xl overflow-hidden bg-white transition-all hover:border-indigo-300",
+                      pack.popular && "ring-2 ring-amber-400/80 border-amber-300 shadow-amber-50"
+                    )}
+                  >
                     {pack.popular && (
-                      <div className="absolute top-0 right-0 bg-amber-500 text-white px-6 py-2 rounded-bl-[1.5rem] text-xs font-bold tracking-widest uppercase z-20">
+                      <div className="absolute top-3.5 right-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-2xs">
                         Best Value
                       </div>
                     )}
 
-                    <div className={cn(
-                      "p-8 text-white text-center",
-                      pack.color === 'sky' && "bg-gradient-to-br from-sky-500 to-blue-600",
-                      pack.color === 'amber' && "bg-gradient-to-br from-amber-500 to-orange-600",
-                      pack.color === 'indigo' && "bg-gradient-to-br from-indigo-600 to-purple-700",
-                      pack.color === 'emerald' && "bg-gradient-to-br from-emerald-500 to-teal-600",
-                      pack.color === 'purple' && "bg-gradient-to-br from-purple-600 to-pink-600"
-                    )}>
-                      <h3 className="text-2xl font-bold mb-1">{pack.name}</h3>
-                      <p className="text-white/80 text-xs leading-relaxed mb-6">{pack.description}</p>
-                      
-                      <div className="text-5xl font-black tracking-tighter text-white mb-2">
-                        {pack.credits}
+                    <div className="p-5">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        
+                        <h3 className="text-base font-bold text-slate-900 truncate pr-16">{pack.name}</h3>
                       </div>
-                      <span className="text-white/70 text-[10px] font-bold uppercase tracking-wider block">
-                        Credits Pack
-                      </span>
-                    </div>
 
-                    <CardContent className="p-8 flex-grow flex flex-col justify-center items-center text-center">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Price</p>
-                        <p className="text-3xl font-black text-slate-900">
-                          {formattedPrice}
-                        </p>
+                      <div className="flex items-baseline gap-1.5 my-2.5">
+                        <span className="text-3xl font-black text-slate-900 tracking-tight">{pack.credits}</span>
+                        <span className="text-xs font-bold text-indigo-600">Credits</span>
+                      </div>
+
+                      <p className="text-xs text-slate-500 line-clamp-2 min-h-[32px] mb-3 leading-relaxed">
+                        {pack.description}
+                      </p>
+
+                      <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100 flex items-center justify-between">
+                        <div>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Price</span>
+                          <span className="text-lg font-black text-slate-900">{formattedPrice}</span>
+                        </div>
                         {pack.perCredit > 0 && (
-                          <p className="text-xs text-slate-400 font-medium">
-                            {formatPrice(convertPrice(pack.perCredit, currency, exchangeRates), currency)} / credit
-                          </p>
+                          <span className="text-[11px] font-semibold text-slate-500 bg-white px-2 py-0.5 rounded-lg border border-slate-200/60 shadow-2xs">
+                            {formatPrice(convertPrice(pack.perCredit, currency, exchangeRates), currency)} / cr
+                          </span>
                         )}
                       </div>
-                    </CardContent>
+                    </div>
 
-                    <CardFooter className="p-8 pt-0">
+                    <div className="p-5 pt-0">
                       <Button
                         onClick={() => handlePackSelect(pack)}
                         disabled={!!processing}
+                        size="sm"
                         className={cn(
-                          "w-full h-12 rounded-2xl font-bold text-base transition-all text-white",
-                          pack.color === 'sky' && "bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-200",
-                          pack.color === 'amber' && "bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-200",
-                          pack.color === 'indigo' && "bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200",
-                          pack.color === 'emerald' && "bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200",
-                          pack.color === 'purple' && "bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-200"
+                          "w-full h-10 rounded-xl font-bold text-xs sm:text-sm text-white shadow-2xs transition-all",
+                          pack.color === 'sky' && "bg-sky-500 hover:bg-sky-600",
+                          pack.color === 'amber' && "bg-amber-500 hover:bg-amber-600",
+                          pack.color === 'indigo' && "bg-indigo-600 hover:bg-indigo-700",
+                          pack.color === 'emerald' && "bg-emerald-600 hover:bg-emerald-700",
+                          pack.color === 'purple' && "bg-purple-600 hover:bg-purple-700"
                         )}
                       >
                         {processing === pack.id ? (
-                          <LoaderCircle className="w-5 h-5 animate-spin" />
+                          <LoaderCircle className="w-4 h-4 animate-spin" />
                         ) : (
-                          <span>Buy Pack</span>
+                          <span>Buy {pack.credits} Credits</span>
                         )}
                       </Button>
-                    </CardFooter>
+                    </div>
                   </Card>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -556,7 +569,7 @@ export default function CreditsPage() {
                     <LoaderCircle className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
-                      <Sparkles className="w-4 h-4 mr-2" />
+                      
                       Claim Credits Free
                     </>
                   )}

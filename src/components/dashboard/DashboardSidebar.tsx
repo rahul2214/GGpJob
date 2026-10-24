@@ -14,6 +14,7 @@ import {
   ScanSearch,
   FileText,
   Coins,
+  Gift,
   User,
   MessageSquareQuote,
   LogOut,
@@ -44,7 +45,7 @@ import { supabase } from "@/lib/supabase-client";
 import { cn } from "@/lib/utils";
 
 // ── Nav configs per role ──────────────────────────────────────────────────
-const NAV_CONFIG: Record<string, NavSection[]> = {
+export const NAV_CONFIG: Record<string, NavSection[]> = {
   "Job Seeker": [
     {
       label: "Discover",
@@ -62,7 +63,7 @@ const NAV_CONFIG: Record<string, NavSection[]> = {
         { icon: Bookmark, label: "Saved Jobs", href: "/jobs/saved" },
         { icon: ScanSearch, label: "ATS Checker", href: "/ats-score", badge: "Free" },
         { icon: FileText, label: "Resume Builder", href: "/resume-builder", badge: "Free" },
-        { icon: Coins, label: "Credits", href: "/jobseeker/credits" },
+        { icon: Gift, label: "Refer & Earn", href: "/jobseeker/credits" },
       ],
     },
     {
@@ -144,14 +145,14 @@ const NAV_CONFIG: Record<string, NavSection[]> = {
 };
 
 
-type SubNavItem = {
+export type SubNavItem = {
   icon: React.ElementType;
   label: string;
   href: string;
   badge?: string;
 };
 
-type NavItem = {
+export type NavItem = {
   icon: React.ElementType;
   label: string;
   href: string;
@@ -160,7 +161,7 @@ type NavItem = {
   subItems?: SubNavItem[];
 };
 
-type NavSection = {
+export type NavSection = {
   label: string;
   items: NavItem[];
 };

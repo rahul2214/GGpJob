@@ -124,10 +124,25 @@ export async function POST(request: Request) {
             .maybeSingle();
 
           if (referrer) {
-            // 1. Award 2 credits to referrer
+            // Dynamic referral bonus configured by admin in plan_prices
+            let referralCredits = 2;
+            try {
+              const { data: bonusRow } = await supabaseAdmin
+                .from('plan_prices')
+                .select('credits')
+                .eq('plan_id', 'referral_bonus')
+                .maybeSingle();
+              if (bonusRow && bonusRow.credits !== null && bonusRow.credits !== undefined && Number(bonusRow.credits) > 0) {
+                referralCredits = Math.max(1, Math.round(Number(bonusRow.credits)));
+              }
+            } catch (fetchErr) {
+              console.warn('[confirm-email] Failed to fetch dynamic referral bonus, using default 2:', fetchErr);
+            }
+
+            // 1. Award referralCredits to referrer
             const { error: rpcError } = await supabaseAdmin.rpc('add_purchased_credits', {
               p_user_id: referrer.id,
-              p_amount: 2,
+              p_amount: referralCredits,
             });
 
             if (rpcError) {
@@ -140,16 +155,16 @@ export async function POST(request: Request) {
               await supabaseAdmin
                 .from('jobseekers')
                 .update({
-                  purchased_credits: (currentReferrer?.purchased_credits || 0) + 2,
+                  purchased_credits: (currentReferrer?.purchased_credits || 0) + referralCredits,
                   updated_at: new Date().toISOString(),
                 })
                 .eq('id', referrer.id);
             }
 
-            // 2. Award 2 credits to referee (the newly confirmed user)
+            // 2. Award referralCredits to referee (the newly confirmed user)
             const { error: refereeRpcError } = await supabaseAdmin.rpc('add_purchased_credits', {
               p_user_id: jobseeker.id,
-              p_amount: 2,
+              p_amount: referralCredits,
             });
 
             if (refereeRpcError) {
@@ -162,7 +177,7 @@ export async function POST(request: Request) {
               await supabaseAdmin
                 .from('jobseekers')
                 .update({
-                  purchased_credits: (currentReferee?.purchased_credits || 0) + 2,
+                  purchased_credits: (currentReferee?.purchased_credits || 0) + referralCredits,
                   updated_at: new Date().toISOString(),
                 })
                 .eq('id', jobseeker.id);
@@ -172,13 +187,13 @@ export async function POST(request: Request) {
             await supabaseAdmin.from('notifications').insert([
               {
                 user_pk: referrer.id,
-                message: `You earned 2 credits for referring ${jobseeker.name || 'a new user'} (now verified)!`,
+                message: `You earned ${referralCredits} credits for referring ${jobseeker.name || 'a new user'} (now verified)!`,
                 type: 'referral_bonus',
                 created_at: new Date().toISOString(),
               },
               {
                 user_pk: jobseeker.id,
-                message: `You received 2 bonus credits for joining through a referral!`,
+                message: `You received ${referralCredits} bonus credits for joining through a referral!`,
                 type: 'referral_bonus',
                 created_at: new Date().toISOString(),
               }
