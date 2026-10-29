@@ -455,7 +455,7 @@ const EducationSection = ({ data, styles }: { data: ResumeData; styles: any }) =
             <Text style={styles.entryDate}>{edu.dates}</Text>
           </View>
           {edu.grade && (
-            <Text style={styles.entrySubtitle}>Grade / GPA: {edu.grade}</Text>
+            <Text style={styles.entrySubtitle}>{/:/.test(edu.grade) ? edu.grade : `Grade / GPA: ${edu.grade}`}</Text>
           )}
         </View>
       ))}

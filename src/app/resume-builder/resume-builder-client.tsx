@@ -14,7 +14,7 @@ import {
   Loader2, Sparkles, Plus, Trash2, Check, Briefcase,
   Code, GraduationCap, User, FileText, ChevronRight, ChevronLeft, ChevronDown,
   Award, Download, Layers, Palette, X, Camera, Upload, Image as ImageIcon, Coins,
-  RotateCcw, Type, Sliders, Eye
+  RotateCcw, Type, Sliders, Eye, ArrowUp, ArrowDown, AlertCircle, CheckCircle2
 } from "lucide-react"
 import type { ResumeStyleConfig } from "@/components/resume/ResumePdfDocument"
 import { AnimatePresence, motion } from "framer-motion"
@@ -195,8 +195,147 @@ function renderRichText(text: string) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g)
   return parts.map((p, i) =>
     p.startsWith('**') && p.endsWith('**')
-      ? <strong key={i} className="font-bold text-slate-950 dark:text-white">{p.slice(2, -2)}</strong>
+      ? <strong key={i} className="font-bold text-slate-950">{p.slice(2, -2)}</strong>
       : <span key={i}>{p}</span>
+  )
+}
+
+// Education dates are free text ("2018 – 2022"); older drafts stored a month value ("2022-05")
+const formatEducationDates = (value?: string) => {
+  const v = (value || "").trim()
+  return /^d{4}-d{2}$/.test(v) ? formatMonthYear(v) : v
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+
+// Short human-readable form of a link for the resume body (e.g. "github.com/amit/repo")
+const displayLink = (url?: string) => {
+  if (!url) return ""
+  return url.trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/+$/, "")
+}
+
+// Downscale an uploaded photo so it stays small enough for localStorage autosave and PDF export
+const downscaleImage = (file: File, maxSize = 480): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error("Could not read the image file."))
+    reader.onload = () => {
+      const img = new window.Image()
+      img.onerror = () => reject(new Error("The selected file is not a valid image."))
+      img.onload = () => {
+        const ratio = Math.min(1, maxSize / Math.max(img.width, img.height))
+        const canvas = document.createElement("canvas")
+        canvas.width = Math.round(img.width * ratio)
+        canvas.height = Math.round(img.height * ratio)
+        const ctx = canvas.getContext("2d")
+        if (!ctx) return resolve(reader.result as string)
+        ctx.fillStyle = "#ffffff"
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL("image/jpeg", 0.85))
+      }
+      img.src = reader.result as string
+    }
+    reader.readAsDataURL(file)
+  })
+
+function FieldLabel({ htmlFor, children, required, hint }: { htmlFor?: string; children: React.ReactNode; required?: boolean; hint?: string }) {
+  return (
+    <label htmlFor={htmlFor} className="flex items-baseline justify-between gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+      <span>
+        {children}
+        {required && <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>}
+      </span>
+      {hint && <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">{hint}</span>}
+    </label>
+  )
+}
+
+// Bullet editor: grows with its content so long accomplishments stay fully visible
+function BulletTextarea({ value, onChange, onEnter, placeholder, dataKey }: {
+  value: string
+  onChange: (val: string) => void
+  onEnter: () => void
+  placeholder?: string
+  dataKey: string
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${el.scrollHeight}px`
+  }, [value])
+  return (
+    <textarea
+      ref={ref}
+      rows={1}
+      data-bullet={dataKey}
+      value={value}
+      onChange={e => onChange(e.target.value.replace(/\r?\n/g, " "))}
+      onKeyDown={e => {
+        if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+          e.preventDefault()
+          onEnter()
+        }
+      }}
+      placeholder={placeholder}
+      className="flex-1 min-w-0 resize-none overflow-hidden rounded-xl border border-input bg-white dark:bg-slate-950 px-3 py-2 text-xs leading-relaxed placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+    />
+  )
+}
+
+const A4_PAGE_WIDTH = 794 // A4 width in CSS px at 96dpi
+
+// Renders the resume as a fixed-width A4 page scaled to fit its column (tablet & desktop),
+// so the preview keeps the same proportions as the exported PDF on every screen size.
+function ScaledResumePage({ id, className, style, children }: {
+  id?: string
+  className?: string
+  style?: React.CSSProperties
+  children: React.ReactNode
+}) {
+  const outerRef = useRef<HTMLDivElement>(null)
+  const innerRef = useRef<HTMLDivElement>(null)
+  const [layout, setLayout] = useState<{ enabled: boolean; scale: number; height?: number }>({ enabled: false, scale: 1 })
+
+  useEffect(() => {
+    const outer = outerRef.current
+    const inner = innerRef.current
+    if (!outer || !inner) return
+    const update = () => {
+      const enabled = window.matchMedia("(min-width: 640px)").matches
+      if (!enabled) {
+        setLayout(prev => (prev.enabled ? { enabled: false, scale: 1 } : prev))
+        return
+      }
+      const scale = Math.min(1, outer.clientWidth / A4_PAGE_WIDTH)
+      const height = Math.ceil(inner.offsetHeight * scale)
+      setLayout(prev => (prev.enabled && prev.scale === scale && prev.height === height ? prev : { enabled: true, scale, height }))
+    }
+    const observer = new ResizeObserver(update)
+    observer.observe(outer)
+    observer.observe(inner)
+    update()
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <div ref={outerRef} className="w-full" style={{ height: layout.enabled ? layout.height : undefined }}>
+      <div
+        ref={innerRef}
+        id={id}
+        className={className}
+        style={{
+          ...style,
+          width: layout.enabled ? A4_PAGE_WIDTH : undefined,
+          transform: layout.enabled && layout.scale < 1 ? `scale(${layout.scale})` : undefined,
+          transformOrigin: "top left",
+        }}
+      >
+        {children}
+      </div>
+    </div>
   )
 }
 
@@ -2171,28 +2310,43 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
   const [isParsingResume, setIsParsingResume] = useState(false)
   const resumeFileInputRef = useRef<HTMLInputElement>(null)
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    if (!/^image\/(png|jpe?g|webp)$/i.test(file.type)) {
+      toast({
+        title: "Unsupported Image",
+        description: "Please select a PNG, JPG or WEBP image.",
+        variant: "destructive"
+      })
+      e.target.value = ""
+      return
+    }
     if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "File Too Large",
         description: "Please select an image smaller than 5MB.",
         variant: "destructive"
       })
+      e.target.value = ""
       return
     }
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result as string
-      setPhotoUrl(result)
+    try {
+      setPhotoUrl(await downscaleImage(file))
       toast({
-        title: "Photo Uploaded! 📸",
+        title: "Photo Added",
         description: "Your photo will display in photo-enabled templates."
       })
+    } catch (err: any) {
+      toast({ title: "Photo Upload Failed", description: err.message, variant: "destructive" })
+    } finally {
+      e.target.value = ""
     }
-    reader.readAsDataURL(file)
   }
+
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [showDeleteDraftConfirm, setShowDeleteDraftConfirm] = useState(false)
+  const [lastAutosavedAt, setLastAutosavedAt] = useState<Date | null>(null)
 
   const handleRemovePhoto = () => {
     setPhotoUrl("")
@@ -2327,6 +2481,26 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
   const isDummyData = isPreviewingSample || !hasUserData
 
+  const emailError = email.trim() !== "" && !EMAIL_PATTERN.test(email.trim())
+
+  // Editor sections in the order they are presented, with a simple completeness check for each
+  const EDITOR_STEPS: { id: EditorSection; label: string; done: boolean }[] = [
+    { id: 'personal', label: 'Contact', done: Boolean(name.trim() && role.trim() && email.trim() && !emailError) },
+    { id: 'summary', label: 'Summary', done: professionalSummary.trim().length >= 40 },
+    { id: 'experience', label: 'Experience', done: userJobsFilled.some(j => (j.points || []).some(p => p.trim())) },
+    { id: 'projects', label: 'Projects', done: userProjectsFilled.length > 0 },
+    { id: 'education', label: 'Education', done: userEducationFilled.length > 0 },
+    { id: 'skills', label: 'Skills', done: hasUserSkills },
+  ]
+  const completedSteps = EDITOR_STEPS.filter(s => s.done).length
+  const activeStepIndex = Math.max(0, EDITOR_STEPS.findIndex(s => s.id === activeSection))
+  const goToSection = (section: EditorSection) => {
+    setActiveSection(section)
+    requestAnimationFrame(() => {
+      document.getElementById("resume-editor-sections")?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+    })
+  }
+
   const handleLoadSampleData = () => {
     setName(DUMMY_RESUME_DATA.name)
     setRole(DUMMY_RESUME_DATA.role)
@@ -2380,7 +2554,9 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
     })
   }
 
-  const isLoadedRef = useRef(false)
+  // State (not a ref) so saving only starts on the render that already holds the restored data;
+  // otherwise the first save would overwrite the stored draft with the empty initial form.
+  const [isWipLoaded, setIsWipLoaded] = useState(false)
 
   // 1. Load work-in-progress data from localStorage on mount
   useEffect(() => {
@@ -2415,13 +2591,13 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
     } catch (e) {
       console.error("Error loading WIP from localStorage:", e)
     } finally {
-      isLoadedRef.current = true
+      setIsWipLoaded(true)
     }
   }, [])
 
   // 2. Save work-in-progress data to localStorage on change
   useEffect(() => {
-    if (!isLoadedRef.current) return
+    if (!isWipLoaded) return
     try {
       const wipData = {
         selectedDraftId,
@@ -2448,10 +2624,12 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
         generatedResume
       }
       localStorage.setItem("jobsdart_resume_builder_wip", JSON.stringify(wipData))
+      setLastAutosavedAt(new Date())
     } catch (e) {
       console.error("Error saving WIP to localStorage:", e)
     }
   }, [
+    isWipLoaded,
     selectedDraftId,
     draftTitle,
     templateType,
@@ -3029,7 +3207,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
           institution: e.institution,
           degree: e.degree,
           fieldOfStudy: e.fieldOfStudy,
-          dates: e.year,
+          dates: formatEducationDates(e.year),
           grade: e.grade
         })),
         visualTemplate,
@@ -3139,9 +3317,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
     if (aiAssistSection === 'summary') {
       setProfessionalSummary(suggestionText)
     } else {
-      const updated = [...jobs]
-      updated[aiAssistJobIndex].points[aiAssistPointIndex] = suggestionText
-      setJobs(updated)
+      updateJobPoint(aiAssistJobIndex, aiAssistPointIndex, suggestionText)
     }
     setShowAiAssist(false)
     toast({ title: "Applied! ✨", description: "Suggestion inserted successfully." })
@@ -3200,29 +3376,59 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
   }
 
   // Dynamic Array Modifiers
+  // Swap an entry with its neighbour (used for reordering jobs, projects and education)
+  const moveItem = <T,>(list: T[], index: number, direction: -1 | 1): T[] => {
+    const target = index + direction
+    if (target < 0 || target >= list.length) return list
+    const next = [...list]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    return next
+  }
+
+  // Focus a newly inserted bullet textarea after React has committed it
+  const pendingBulletFocusRef = useRef<string | null>(null)
+  const focusBullet = (key: string) => {
+    pendingBulletFocusRef.current = key
+  }
+  useEffect(() => {
+    const key = pendingBulletFocusRef.current
+    if (!key) return
+    pendingBulletFocusRef.current = null
+    document.querySelector<HTMLTextAreaElement>(`textarea[data-bullet="${key}"]`)?.focus()
+  })
+
+  const updateJobPoint = (jobIdx: number, pIdx: number, val: string) =>
+    setJobs(prev => prev.map((j, i) => i === jobIdx ? { ...j, points: j.points.map((p, k) => k === pIdx ? val : p) } : j))
+  const insertJobPoint = (jobIdx: number, afterIdx: number) => {
+    setJobs(prev => prev.map((j, i) => i === jobIdx ? { ...j, points: [...j.points.slice(0, afterIdx + 1), "", ...j.points.slice(afterIdx + 1)] } : j))
+    focusBullet(`job-${jobIdx}-${afterIdx + 1}`)
+  }
+  const removeJobPoint = (jobIdx: number, pIdx: number) =>
+    setJobs(prev => prev.map((j, i) => i === jobIdx ? { ...j, points: j.points.filter((_, k) => k !== pIdx) } : j))
+
+  const updateProjectPoint = (projIdx: number, pIdx: number, val: string) =>
+    setProjects(prev => prev.map((p, i) => i === projIdx ? { ...p, points: p.points.map((pt, k) => k === pIdx ? val : pt) } : p))
+  const insertProjectPoint = (projIdx: number, afterIdx: number) => {
+    setProjects(prev => prev.map((p, i) => i === projIdx ? { ...p, points: [...p.points.slice(0, afterIdx + 1), "", ...p.points.slice(afterIdx + 1)] } : p))
+    focusBullet(`proj-${projIdx}-${afterIdx + 1}`)
+  }
+  const removeProjectPoint = (projIdx: number, pIdx: number) =>
+    setProjects(prev => prev.map((p, i) => i === projIdx ? { ...p, points: p.points.filter((_, k) => k !== pIdx) } : p))
+
   const addJob = () => setJobs([...jobs, { company: "", role: "", startDate: "", endDate: "", location: "", points: [""], currentlyWorkHere: false }])
   const removeJob = (index: number) => setJobs(jobs.filter((_, i) => i !== index))
-  const updateJob = (index: number, field: keyof JobInput, val: any) => {
-    const updated = [...jobs]
-      ; (updated[index] as any)[field] = val
-    setJobs(updated)
-  }
+  const updateJob = (index: number, field: keyof JobInput, val: any) =>
+    setJobs(prev => prev.map((j, i) => i === index ? { ...j, [field]: val } : j))
 
   const addProject = () => setProjects([...projects, { name: "", techStack: "", projectLink: "", points: [""] }])
   const removeProject = (index: number) => setProjects(projects.filter((_, i) => i !== index))
-  const updateProject = (index: number, field: keyof ProjectInput, val: any) => {
-    const updated = [...projects]
-      ; (updated[index] as any)[field] = val
-    setProjects(updated)
-  }
+  const updateProject = (index: number, field: keyof ProjectInput, val: any) =>
+    setProjects(prev => prev.map((p, i) => i === index ? { ...p, [field]: val } : p))
 
   const addEducation = () => setEducation([...education, { institution: "", degree: "", fieldOfStudy: "", year: "", grade: "" }])
   const removeEducation = (index: number) => setEducation(education.filter((_, i) => i !== index))
-  const updateEducation = (index: number, field: keyof EducationInput, val: string) => {
-    const updated = [...education]
-    updated[index][field] = val
-    setEducation(updated)
-  }
+  const updateEducation = (index: number, field: keyof EducationInput, val: string) =>
+    setEducation(prev => prev.map((e, i) => i === index ? { ...e, [field]: val } : e))
 
   const addLanguage = () => setLanguages([...languages, ""])
   const removeLanguage = (index: number) => setLanguages(languages.filter((_, i) => i !== index))
@@ -3242,29 +3448,18 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
   const addSkillCategory = () => setSkills([...skills, { category: "", skills: [""] }])
   const removeSkillCategory = (catIdx: number) => setSkills(skills.filter((_, i) => i !== catIdx))
-  const updateCategoryName = (catIdx: number, val: string) => {
-    const updated = [...skills]
-    updated[catIdx].category = val
-    setSkills(updated)
-  }
-  const addSkillToCategory = (catIdx: number) => {
-    const updated = [...skills]
-    updated[catIdx].skills = [...updated[catIdx].skills, ""]
-    setSkills(updated)
-  }
-  const removeSkillFromCategory = (catIdx: number, skillIdx: number) => {
-    const updated = [...skills]
-    updated[catIdx].skills = updated[catIdx].skills.filter((_, i) => i !== skillIdx)
-    if (updated[catIdx].skills.length === 0) {
-      updated[catIdx].skills = [""]
-    }
-    setSkills(updated)
-  }
-  const updateSkillInCategory = (catIdx: number, skillIdx: number, val: string) => {
-    const updated = [...skills]
-    updated[catIdx].skills[skillIdx] = val
-    setSkills(updated)
-  }
+  const updateCategoryName = (catIdx: number, val: string) =>
+    setSkills(prev => prev.map((c, i) => i === catIdx ? { ...c, category: val } : c))
+  const addSkillToCategory = (catIdx: number) =>
+    setSkills(prev => prev.map((c, i) => i === catIdx ? { ...c, skills: [...c.skills, ""] } : c))
+  const removeSkillFromCategory = (catIdx: number, skillIdx: number) =>
+    setSkills(prev => prev.map((c, i) => {
+      if (i !== catIdx) return c
+      const remaining = c.skills.filter((_, k) => k !== skillIdx)
+      return { ...c, skills: remaining.length > 0 ? remaining : [""] }
+    }))
+  const updateSkillInCategory = (catIdx: number, skillIdx: number, val: string) =>
+    setSkills(prev => prev.map((c, i) => i === catIdx ? { ...c, skills: c.skills.map((s, k) => k === skillIdx ? val : s) } : c))
 
   const executeGenerate = async () => {
     setIsGenerating(true)
@@ -3291,7 +3486,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
         institution: e.institution,
         degree: e.degree,
         fieldOfStudy: e.fieldOfStudy,
-        year: e.year,
+        year: formatEducationDates(e.year),
         grade: e.grade
       }))
 
@@ -3413,8 +3608,14 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
   }
 
   const handleGenerate = async () => {
-    if (!name || !email) {
-      toast({ title: "Name & Email Required", description: "Please enter your name and email.", variant: "destructive" })
+    if (!name.trim() || !email.trim()) {
+      goToSection('personal')
+      toast({ title: "Name & Email Required", description: "Please enter your full name and email address in the Contact section.", variant: "destructive" })
+      return
+    }
+    if (emailError) {
+      goToSection('personal')
+      toast({ title: "Invalid Email", description: "Please enter a valid email address, e.g. name@example.com.", variant: "destructive" })
       return
     }
 
@@ -3529,7 +3730,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
         institution: e.institution || "",
         degree: e.degree || "",
         fieldOfStudy: e.fieldOfStudy || "",
-        dates: (e as any).dates || e.year || "",
+        dates: (e as any).dates || formatEducationDates(e.year),
         grade: e.grade || ""
       }))
     }
@@ -3603,6 +3804,50 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
     }
   }
 
+  // Shared editor styling
+  const sectionCardClass = "border border-slate-200/70 dark:border-slate-800/80 shadow-sm rounded-2xl bg-white dark:bg-slate-900"
+  const entryCardClass = "p-4 border border-slate-200 dark:border-slate-800 rounded-xl space-y-3 bg-slate-50/60 dark:bg-slate-950/30"
+  const inputClass = "rounded-xl h-9 text-xs bg-white dark:bg-slate-950"
+  const addEntryButtonClass = "w-full h-10 rounded-xl border-dashed border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/30"
+
+  const renderEntryHeader = (title: string, index: number, total: number, onMove: (direction: -1 | 1) => void, onRemove: () => void) => (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{title}</span>
+      <div className="flex items-center gap-0.5 shrink-0">
+        <Button type="button" variant="ghost" size="icon" disabled={index === 0} onClick={() => onMove(-1)} className="h-7 w-7 rounded-lg text-slate-500" title="Move up" aria-label={`Move ${title} up`}>
+          <ArrowUp className="w-3.5 h-3.5" />
+        </Button>
+        <Button type="button" variant="ghost" size="icon" disabled={index === total - 1} onClick={() => onMove(1)} className="h-7 w-7 rounded-lg text-slate-500" title="Move down" aria-label={`Move ${title} down`}>
+          <ArrowDown className="w-3.5 h-3.5" />
+        </Button>
+        {total > 1 && (
+          <Button type="button" variant="ghost" size="icon" onClick={onRemove} className="h-7 w-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40" title="Remove" aria-label={`Remove ${title}`}>
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+
+  const prevStep = EDITOR_STEPS[activeStepIndex - 1]
+  const nextStep = EDITOR_STEPS[activeStepIndex + 1]
+  const stepNav = (
+    <div className="flex items-center justify-between gap-2 border-t border-slate-200/70 dark:border-slate-800 pt-4">
+      {prevStep ? (
+        <Button type="button" variant="ghost" size="sm" onClick={() => goToSection(prevStep.id)} className="h-8 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300">
+          <ChevronLeft className="w-4 h-4 mr-0.5" /> {prevStep.label}
+        </Button>
+      ) : <span />}
+      {nextStep ? (
+        <Button type="button" variant="outline" size="sm" onClick={() => goToSection(nextStep.id)} className="h-8 rounded-lg text-xs font-semibold">
+          Next: {nextStep.label} <ChevronRight className="w-4 h-4 ml-0.5" />
+        </Button>
+      ) : (
+        <span className="text-[11px] text-slate-500 dark:text-slate-400">Last section — review the preview, then generate or download.</span>
+      )}
+    </div>
+  )
+
   return (
     <div className={`container max-w-7xl px-4 ${!showPromo ? "pt-6" : ""}`} style={{ paddingBottom: "3rem" }}>
       {/* CSS print override */}
@@ -3618,7 +3863,8 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%;
+            width: 100% !important;
+            transform: none !important;
             border: none !important;
             box-shadow: none !important;
             padding: 0 !important;
@@ -3684,8 +3930,9 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                 variant="ghost"
                 size="icon"
                 className="text-rose-500 hover:bg-rose-50 h-8 w-8 rounded-lg shrink-0"
-                onClick={handleDeleteDraft}
+                onClick={() => setShowDeleteDraftConfirm(true)}
                 title="Delete this version"
+                aria-label="Delete this version"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -3870,11 +4117,18 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                   return (
                     <div
                       key={tmpl.id}
-                      onClick={() => {
-                        setVisualTemplate(tmpl.id);
-                        toast({ title: "Template Selected", description: `Switched to ${tmpl.name}` });
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={isSelected}
+                      aria-label={`Use ${tmpl.name} template`}
+                      onClick={() => setVisualTemplate(tmpl.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setVisualTemplate(tmpl.id);
+                        }
                       }}
-                      className={`group relative rounded-xl border p-2.5 cursor-pointer transition-all hover:scale-[1.02] flex flex-col justify-between shrink-0 w-[200px] sm:w-[220px] ${
+                      className={`group relative rounded-xl border p-2.5 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 flex flex-col justify-between shrink-0 w-[200px] sm:w-[220px] ${
                         isSelected
                           ? "border-indigo-600 ring-2 ring-indigo-600/30 bg-indigo-50/60 dark:bg-indigo-950/40 shadow-sm"
                           : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900"
@@ -3925,7 +4179,6 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                           onClick={(e) => {
                             e.stopPropagation();
                             setVisualTemplate(tmpl.id);
-                            toast({ title: "Template Selected ✨", description: `Switched to ${tmpl.name}` });
                           }}
                         >
                           {isSelected ? "✓ Active" : "Use Template"}
@@ -4180,7 +4433,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
         <button
           onClick={() => setActiveTab("edit")}
           className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${activeTab === "edit"
-              ? "bg-[#2e5bff] text-white shadow-md"
+              ? "bg-indigo-600 text-white shadow-md"
               : "text-slate-600 dark:text-slate-400"
             }`}
         >
@@ -4190,11 +4443,11 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
         <button
           onClick={() => setActiveTab("preview")}
           className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${activeTab === "preview"
-              ? "bg-[#2e5bff] text-white shadow-md"
+              ? "bg-indigo-600 text-white shadow-md"
               : "text-slate-600 dark:text-slate-400"
             }`}
         >
-          <Sparkles className="w-4 h-4" />
+          <Eye className="w-4 h-4" />
           Preview
         </button>
       </div>
@@ -4233,7 +4486,8 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     <input
                       ref={photoInputRef}
                       type="file"
-                      accept="image/png, image/jpeg, image/webp"
+                      accept="image/png,image/jpeg,image/webp"
+                      aria-label="Upload profile photo"
                       className="hidden"
                       onChange={handlePhotoUpload}
                     />
@@ -4263,50 +4517,73 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                   </div>
                 </div>
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
-                  PNG, JPG or WEBP up to 5MB. Visible across all ATS &amp; visual templates.
+                  PNG, JPG or WEBP up to 5MB. Shown on templates that support a photo — most ATS-focused resumes work best without one.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Section Selector Tab lists */}
-          <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100/80 dark:bg-slate-950/40 border border-slate-200/30 dark:border-slate-850 rounded-2xl">
-            {[
-              { id: 'personal', label: 'Contact' },
-              { id: 'skills', label: 'Skills' },
-              { id: 'education', label: 'Education' },
-              { id: 'experience', label: 'Experience' },
-              { id: 'projects', label: 'Projects' },
-              { id: 'summary', label: 'Summary' }
-            ].map(sec => (
-              <button
-                key={sec.id}
-                onClick={() => setActiveSection(sec.id as EditorSection)}
-                className={`py-1.5 px-3 text-[11px] font-bold rounded-xl transition-all flex-1 ${activeSection === sec.id
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
-                  }`}
-              >
-                {sec.label}
-              </button>
-            ))}
+          {/* Section stepper with completeness progress */}
+          <div id="resume-editor-sections" className="scroll-mt-24 rounded-2xl border border-slate-200/70 dark:border-slate-800/80 bg-white dark:bg-slate-900 p-3 space-y-3 shadow-xs">
+            <div className="flex items-center justify-between gap-3 px-1">
+              <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                Resume completeness
+                <span className="ml-1.5 font-medium text-slate-400 dark:text-slate-500">{completedSteps} of {EDITOR_STEPS.length} sections</span>
+              </p>
+              {lastAutosavedAt && (
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1" title={`Last saved in this browser at ${lastAutosavedAt.toLocaleTimeString()}`}>
+                  <Check className="w-3 h-3 text-emerald-500" />
+                  Autosaved
+                </span>
+              )}
+            </div>
+            <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mx-1" aria-hidden="true">
+              <div className="h-full rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${(completedSteps / EDITOR_STEPS.length) * 100}%` }} />
+            </div>
+            <div role="tablist" aria-label="Resume sections" className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-3 gap-1">
+              {EDITOR_STEPS.map((step, i) => {
+                const isActive = activeSection === step.id
+                return (
+                  <button
+                    key={step.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => setActiveSection(step.id)}
+                    className={`min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isActive
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                      }`}
+                  >
+                    {step.done ? (
+                      <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white' : 'text-emerald-500'}`} />
+                    ) : (
+                      <span className={`w-4 h-4 shrink-0 rounded-full border text-[10px] leading-none flex items-center justify-center ${isActive ? 'border-white/70' : 'border-slate-300 dark:border-slate-600 text-slate-400'}`}>
+                        {i + 1}
+                      </span>
+                    )}
+                    {step.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Section Edit Cards */}
           {activeSection === 'personal' && (
-            <Card className="border border-slate-200/60 dark:border-slate-800/80 shadow-md rounded-2xl bg-white/70 dark:bg-slate-900/50 backdrop-blur-sm">
+            <Card className={sectionCardClass}>
               <CardHeader className="pb-4">
                 <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                   <User className="w-5 h-5 text-emerald-500" />
-                  1. Contact Information
+                  {activeStepIndex + 1}. Contact Information
                 </CardTitle>
-                <CardDescription className="text-xs">Select target profile standards & contact details</CardDescription>
+                <CardDescription className="text-xs">How recruiters will identify and reach you</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 block mb-1">Target Profile / Layout Standard</label>
+                  <FieldLabel htmlFor="rb-template-type">Target Profile</FieldLabel>
                   <Select value={templateType} onValueChange={setTemplateType}>
-                    <SelectTrigger className="rounded-xl border-slate-200 bg-white/50 h-9 text-xs">
+                    <SelectTrigger id="rb-template-type" className={`${inputClass} h-9`}>
                       <SelectValue placeholder="Select target role" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
@@ -4318,510 +4595,517 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       <SelectItem value="India Format" className="text-xs">India Standard format (City headers, structured)</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Used by AI generation to emphasise the right content.</p>
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 block mb-1">Full Name</label>
-                  <Input value={name} onChange={e => setName(e.target.value)} placeholder="Amit Kumar" className="rounded-xl h-9 text-xs" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 block mb-1">Role / Headline</label>
-                  <Input value={role} onChange={e => setRole(e.target.value)} placeholder="Software Engineer" className="rounded-xl h-9 text-xs" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 block mb-1">Email</label>
-                    <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="amit@gmail.com" className="rounded-xl h-9 text-xs" />
+                    <FieldLabel htmlFor="rb-name" required>Full Name</FieldLabel>
+                    <Input id="rb-name" autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="Amit Kumar" className={inputClass} />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 block mb-1">Phone</label>
+                    <FieldLabel htmlFor="rb-role">Job Title / Headline</FieldLabel>
+                    <Input id="rb-role" autoComplete="organization-title" value={role} onChange={e => setRole(e.target.value)} placeholder="Senior Software Engineer" className={inputClass} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <FieldLabel htmlFor="rb-email" required>Email</FieldLabel>
                     <Input
+                      id="rb-email"
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      placeholder="amit@gmail.com"
+                      aria-invalid={emailError || undefined}
+                      aria-describedby={emailError ? "rb-email-error" : undefined}
+                      className={`${inputClass} ${emailError ? "border-rose-400 focus-visible:ring-rose-400" : ""}`}
+                    />
+                    {emailError && (
+                      <p id="rb-email-error" className="text-[11px] text-rose-600 dark:text-rose-400 mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> Enter a valid email address
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <FieldLabel htmlFor="rb-phone">Phone</FieldLabel>
+                    <Input
+                      id="rb-phone"
                       type="tel"
-                      inputMode="numeric"
-                      maxLength={15}
+                      inputMode="tel"
+                      autoComplete="tel"
+                      maxLength={20}
                       value={phone}
-                      onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
-                      placeholder="9876543210"
-                      className="rounded-xl h-9 text-xs"
+                      onChange={e => setPhone(e.target.value.replace(/[^\d+\-()\s]/g, ''))}
+                      placeholder="+91 98765 43210"
+                      className={inputClass}
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 block mb-1">LinkedIn URL</label>
-                    <Input value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} placeholder="linkedin.com/in/amit" className="rounded-xl h-9 text-xs" />
+                    <FieldLabel htmlFor="rb-location">Location</FieldLabel>
+                    <Input id="rb-location" autoComplete="address-level2" value={location} onChange={e => setLocation(e.target.value)} placeholder="Bengaluru, India" className={inputClass} />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 block mb-1">GitHub URL</label>
-                    <Input value={githubUrl} onChange={e => setGithubUrl(e.target.value)} placeholder="github.com/amit" className="rounded-xl h-9 text-xs" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 block mb-1">Portfolio Link</label>
-                    <Input value={portfolioUrl} onChange={e => setPortfolioUrl(e.target.value)} placeholder="amit.dev" className="rounded-xl h-9 text-xs" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 block mb-1">Location</label>
-                    <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="Bengaluru, India" className="rounded-xl h-9 text-xs" />
+                    <FieldLabel htmlFor="rb-linkedin" hint="Optional">LinkedIn</FieldLabel>
+                    <Input id="rb-linkedin" type="url" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} placeholder="linkedin.com/in/amit" className={inputClass} />
                   </div>
                 </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <FieldLabel htmlFor="rb-github" hint="Optional">GitHub</FieldLabel>
+                    <Input id="rb-github" type="url" value={githubUrl} onChange={e => setGithubUrl(e.target.value)} placeholder="github.com/amit" className={inputClass} />
+                  </div>
+                  <div>
+                    <FieldLabel htmlFor="rb-portfolio" hint="Optional">Portfolio / Website</FieldLabel>
+                    <Input id="rb-portfolio" type="url" value={portfolioUrl} onChange={e => setPortfolioUrl(e.target.value)} placeholder="amit.dev" className={inputClass} />
+                  </div>
+                </div>
+                {stepNav}
               </CardContent>
             </Card>
           )}
 
           {activeSection === 'summary' && (
-            <Card className="border border-slate-200/60 dark:border-slate-800/80 shadow-md rounded-2xl bg-white/70 dark:bg-slate-900/50 backdrop-blur-sm">
+            <Card className={sectionCardClass}>
               <CardHeader className="pb-4">
-                <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white flex items-center justify-between">
+                <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
                     <FileText className="w-5 h-5 text-indigo-500" />
-                    6. Professional Summary
+                    {activeStepIndex + 1}. Professional Summary
                   </span>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="text-xs text-indigo-600 hover:text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50 rounded-xl h-8 px-2 font-bold flex items-center gap-1 shrink-0"
+                    className="text-xs text-indigo-600 hover:text-indigo-700 bg-indigo-50/60 hover:bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-300 rounded-xl h-8 px-2.5 font-bold flex items-center gap-1 shrink-0"
                     onClick={() => handleOpenAiAssist('summary')}
                   >
                     <Sparkles className="w-3.5 h-3.5" /> AI Assist
                   </Button>
                 </CardTitle>
-                <CardDescription className="text-xs">Write a brief overview of your professional background</CardDescription>
+                <CardDescription className="text-xs">2–4 sentences on who you are, your strongest skills and the impact you deliver</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-2">
                 <Textarea
+                  id="rb-summary"
+                  aria-label="Professional summary"
                   value={professionalSummary}
                   onChange={e => setProfessionalSummary(e.target.value)}
-                  placeholder="Experienced software engineer with 5+ years of scaling web apps and leading cloud migrations..."
-                  className="rounded-2xl resize-none min-h-[140px] text-xs sm:text-sm p-4 bg-white/50 focus:bg-white"
+                  placeholder="Software engineer with 5+ years of experience building scalable web applications. Led a cloud migration that cut infrastructure costs by 30%..."
+                  className="rounded-xl resize-y min-h-[160px] text-xs sm:text-sm leading-relaxed p-3.5 bg-white dark:bg-slate-950"
                 />
+                {(() => {
+                  const len = professionalSummary.trim().length
+                  const tone = len === 0 ? "text-slate-400" : len < 150 ? "text-amber-600 dark:text-amber-400" : len <= 700 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
+                  const note = len === 0 ? "Aim for 150–700 characters" : len < 150 ? "A little short — add a key achievement" : len <= 700 ? "Good length" : "Consider trimming — recruiters skim summaries"
+                  return (
+                    <p className={`text-[11px] flex justify-between ${tone}`}>
+                      <span>{note}</span>
+                      <span className="tabular-nums">{len} characters</span>
+                    </p>
+                  )
+                })()}
+                {stepNav}
               </CardContent>
             </Card>
           )}
 
           {activeSection === 'experience' && (
-            <Card className="border border-slate-200/60 dark:border-slate-800/80 shadow-md rounded-2xl bg-white/70 dark:bg-slate-900/50 backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center justify-between border-b py-4">
-                <div className="flex items-center gap-2">
+            <Card className={sectionCardClass}>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                   <Briefcase className="w-5 h-5 text-blue-500" />
-                  <div>
-                    <CardTitle className="text-base font-extrabold">4. Experience</CardTitle>
-                    <CardDescription className="text-xs">Add your professional work history</CardDescription>
-                  </div>
-                </div>
-                <Button size="sm" variant="outline" onClick={addJob} className="rounded-xl border-dashed h-8 text-xs font-bold">
-                  <Plus className="w-4 h-4 mr-1" /> Add Job
-                </Button>
+                  {activeStepIndex + 1}. Work Experience
+                </CardTitle>
+                <CardDescription className="text-xs">Most recent first. Start bullets with an action verb and include numbers where you can.</CardDescription>
               </CardHeader>
-              <CardContent className="pt-6 space-y-6">
-                {jobs.map((job, idx) => (
-                  <div key={idx} className="p-4 border border-slate-200/50 dark:border-slate-800/60 rounded-2xl relative space-y-3 bg-slate-50/20 dark:bg-slate-950/5">
-                    {jobs.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeJob(idx)}
-                        className="absolute right-2 top-2 h-7 w-7 text-rose-500 hover:bg-rose-50 rounded-lg"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Company</label>
-                        <Input value={job.company} onChange={e => updateJob(idx, "company", e.target.value)} placeholder="Google" className="rounded-xl h-9 text-xs bg-white/50" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Role</label>
-                        <Input value={job.role} onChange={e => updateJob(idx, "role", e.target.value)} placeholder="Software Engineer" className="rounded-xl h-9 text-xs bg-white/50" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Location</label>
-                        <Input value={job.location} onChange={e => updateJob(idx, "location", e.target.value)} placeholder="New York, NY" className="rounded-xl h-9 text-xs bg-white/50" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Start Date</label>
-                        <Input type="month" value={job.startDate} onChange={e => updateJob(idx, "startDate", e.target.value)} className="rounded-xl h-9 text-xs bg-white/50" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 items-center pt-1">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={`currently-work-${idx}`}
-                          checked={job.currentlyWorkHere || false}
-                          onChange={e => updateJob(idx, "currentlyWorkHere", e.target.checked)}
-                          className="rounded border-slate-350 text-indigo-600 h-3.5 w-3.5 accent-indigo-600"
-                        />
-                        <label htmlFor={`currently-work-${idx}`} className="text-[11px] font-bold text-slate-500 cursor-pointer">
-                          I work here now
-                        </label>
-                      </div>
-                      {!job.currentlyWorkHere && (
+              <CardContent className="space-y-4">
+                {jobs.map((job, idx) => {
+                  const hasDateOrderError = !job.currentlyWorkHere && /^\d{4}-\d{2}$/.test(job.startDate || "") && /^\d{4}-\d{2}$/.test(job.endDate || "") && job.endDate < job.startDate
+                  const title = [job.role, job.company].filter(s => s && s.trim()).join(" at ") || `Position ${idx + 1}`
+                  return (
+                    <div key={idx} className={entryCardClass}>
+                      {renderEntryHeader(title, idx, jobs.length, dir => setJobs(prev => moveItem(prev, idx, dir)), () => removeJob(idx))}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="text-[10px] font-bold text-slate-400 block mb-0.5">End Date</label>
-                          <Input type="month" value={job.endDate} onChange={e => updateJob(idx, "endDate", e.target.value)} className="rounded-xl h-9 text-xs bg-white/50" />
+                          <FieldLabel htmlFor={`rb-job-role-${idx}`}>Job Title</FieldLabel>
+                          <Input id={`rb-job-role-${idx}`} value={job.role} onChange={e => updateJob(idx, "role", e.target.value)} placeholder="Software Engineer" className={inputClass} />
                         </div>
-                      )}
-                    </div>
-
-                    <div className="border-t border-slate-200/50 pt-3 mt-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Key Accomplishments</label>
-                        <Button
-                          size="sm"
-                          type="button"
-                          variant="ghost"
-                          onClick={() => {
-                            const updatedJobs = [...jobs];
-                            updatedJobs[idx].points = [...(updatedJobs[idx].points || []), ""];
-                            setJobs(updatedJobs);
-                          }}
-                          className="h-7 rounded-lg text-xs font-bold text-indigo-600 hover:bg-slate-100"
-                        >
-                          <Plus className="w-3.5 h-3.5 mr-1" /> Add Point
-                        </Button>
+                        <div>
+                          <FieldLabel htmlFor={`rb-job-company-${idx}`}>Company</FieldLabel>
+                          <Input id={`rb-job-company-${idx}`} value={job.company} onChange={e => updateJob(idx, "company", e.target.value)} placeholder="Google" className={inputClass} />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        {(job.points || [""]).map((point, pIdx) => (
-                          <div key={pIdx} className="flex items-center gap-2 relative group">
-                            <span className="text-slate-400 font-black shrink-0 text-xs">•</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <FieldLabel htmlFor={`rb-job-location-${idx}`} hint="Optional">Location</FieldLabel>
+                          <Input id={`rb-job-location-${idx}`} value={job.location} onChange={e => updateJob(idx, "location", e.target.value)} placeholder="Bengaluru / Remote" className={inputClass} />
+                        </div>
+                        <div>
+                          <FieldLabel htmlFor={`rb-job-start-${idx}`}>Start Date</FieldLabel>
+                          <Input id={`rb-job-start-${idx}`} type="month" value={job.startDate} onChange={e => updateJob(idx, "startDate", e.target.value)} className={inputClass} />
+                        </div>
+                        <div>
+                          <FieldLabel htmlFor={`rb-job-end-${idx}`}>End Date</FieldLabel>
+                          {job.currentlyWorkHere ? (
+                            <Input id={`rb-job-end-${idx}`} value="Present" disabled className={inputClass} />
+                          ) : (
                             <Input
-                              value={point}
-                              onChange={e => {
-                                const updatedJobs = [...jobs];
-                                updatedJobs[idx].points[pIdx] = e.target.value;
-                                setJobs(updatedJobs);
-                              }}
-                              placeholder="e.g. Reduced latency by 20% using Redis caching"
-                              className="rounded-xl bg-white h-9 text-xs flex-1 pr-10"
+                              id={`rb-job-end-${idx}`}
+                              type="month"
+                              value={job.endDate}
+                              min={/^\d{4}-\d{2}$/.test(job.startDate || "") ? job.startDate : undefined}
+                              onChange={e => updateJob(idx, "endDate", e.target.value)}
+                              aria-invalid={hasDateOrderError || undefined}
+                              className={`${inputClass} ${hasDateOrderError ? "border-rose-400" : ""}`}
                             />
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <label htmlFor={`currently-work-${idx}`} className="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            id={`currently-work-${idx}`}
+                            checked={job.currentlyWorkHere || false}
+                            onChange={e => updateJob(idx, "currentlyWorkHere", e.target.checked)}
+                            className="h-3.5 w-3.5 rounded accent-indigo-600"
+                          />
+                          I currently work here
+                        </label>
+                        {hasDateOrderError && (
+                          <p className="text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> End date is before the start date
+                          </p>
+                        )}
+                      </div>
 
-                            <div className="absolute right-2 flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                      <div className="border-t border-slate-200/70 dark:border-slate-800 pt-3 space-y-2">
+                        <FieldLabel hint="Enter = new bullet · **bold** to emphasise">Key Accomplishments</FieldLabel>
+                        {(job.points.length > 0 ? job.points : [""]).map((point, pIdx) => (
+                          <div key={pIdx} className="flex items-start gap-2">
+                            <span className="text-slate-400 font-black text-xs pt-2.5" aria-hidden="true">•</span>
+                            <BulletTextarea
+                              dataKey={`job-${idx}-${pIdx}`}
+                              value={point}
+                              onChange={val => job.points.length > 0 ? updateJobPoint(idx, pIdx, val) : updateJob(idx, "points", [val])}
+                              onEnter={() => insertJobPoint(idx, pIdx)}
+                              placeholder="e.g. Reduced API latency by 40% by introducing Redis caching"
+                            />
+                            <div className="flex items-center gap-0.5 pt-1 shrink-0">
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className="h-6 w-6 rounded-md hover:bg-indigo-50 text-indigo-600"
-                                title="AI Assist suggestions"
+                                className="h-7 w-7 rounded-lg text-indigo-600 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
+                                title="Improve with AI"
+                                aria-label="Improve this bullet with AI"
                                 onClick={() => handleOpenAiAssist('experience', idx, pIdx)}
                               >
                                 <Sparkles className="w-3.5 h-3.5" />
                               </Button>
-                              {(job.points || [""]).length > 1 && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  type="button"
-                                  onClick={() => {
-                                    const updatedJobs = [...jobs];
-                                    updatedJobs[idx].points = updatedJobs[idx].points.filter((_, i) => i !== pIdx);
-                                    setJobs(updatedJobs);
-                                  }}
-                                  className="text-rose-500 hover:bg-rose-50 rounded-md h-6 w-6"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </Button>
-                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                type="button"
+                                disabled={job.points.length <= 1}
+                                onClick={() => removeJobPoint(idx, pIdx)}
+                                className="h-7 w-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                                title="Remove bullet"
+                                aria-label="Remove bullet"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </Button>
                             </div>
                           </div>
                         ))}
+                        <Button
+                          size="sm"
+                          type="button"
+                          variant="ghost"
+                          onClick={() => insertJobPoint(idx, job.points.length - 1)}
+                          className="h-7 ml-3 rounded-lg text-xs font-semibold text-indigo-600 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+                        >
+                          <Plus className="w-3.5 h-3.5 mr-1" /> Add bullet
+                        </Button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
+                <Button variant="outline" onClick={addJob} className={addEntryButtonClass}>
+                  <Plus className="w-4 h-4 mr-1" /> Add another position
+                </Button>
+                {stepNav}
               </CardContent>
             </Card>
           )}
 
           {activeSection === 'projects' && (
-            <Card className="border border-slate-200/60 dark:border-slate-800/80 shadow-md rounded-2xl bg-white/70 dark:bg-slate-900/50 backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center justify-between border-b py-4">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-indigo-500" />
-                  <div>
-                    <CardTitle className="text-base font-extrabold">5. Key Projects</CardTitle>
-                    <CardDescription className="text-xs">Add development or research projects</CardDescription>
-                  </div>
-                </div>
-                <Button size="sm" variant="outline" onClick={addProject} className="rounded-xl border-dashed h-8 text-xs font-bold">
-                  <Plus className="w-4 h-4 mr-1" /> Add Project
-                </Button>
+            <Card className={sectionCardClass}>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-indigo-500" />
+                  {activeStepIndex + 1}. Projects
+                </CardTitle>
+                <CardDescription className="text-xs">Personal, academic or open-source work that shows your skills in action</CardDescription>
               </CardHeader>
-              <CardContent className="pt-6 space-y-6">
+              <CardContent className="space-y-4">
                 {projects.map((proj, idx) => (
-                  <div key={idx} className="p-4 border border-slate-200/50 dark:border-slate-800/60 rounded-2xl relative space-y-3 bg-slate-50/20 dark:bg-slate-950/5">
-                    {projects.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeProject(idx)}
-                        className="absolute right-2 top-2 h-7 w-7 text-rose-500 hover:bg-rose-50 rounded-lg"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div key={idx} className={entryCardClass}>
+                    {renderEntryHeader(proj.name?.trim() || `Project ${idx + 1}`, idx, projects.length, dir => setProjects(prev => moveItem(prev, idx, dir)), () => removeProject(idx))}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Project Name</label>
-                        <Input value={proj.name} onChange={e => updateProject(idx, "name", e.target.value)} placeholder="E-Commerce API Service" className="rounded-xl h-9 text-xs bg-white/50" />
+                        <FieldLabel htmlFor={`rb-proj-name-${idx}`}>Project Name</FieldLabel>
+                        <Input id={`rb-proj-name-${idx}`} value={proj.name} onChange={e => updateProject(idx, "name", e.target.value)} placeholder="E-Commerce API Service" className={inputClass} />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Tech Stack</label>
-                        <Input value={proj.techStack} onChange={e => updateProject(idx, "techStack", e.target.value)} placeholder="React, Node.js, AWS" className="rounded-xl h-9 text-xs bg-white/50" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Project Link (Optional)</label>
-                        <Input value={proj.projectLink || ""} onChange={e => updateProject(idx, "projectLink", e.target.value)} placeholder="github.com/user/repo" className="rounded-xl h-9 text-xs bg-white/50" />
+                        <FieldLabel htmlFor={`rb-proj-link-${idx}`} hint="Optional">Project Link</FieldLabel>
+                        <Input id={`rb-proj-link-${idx}`} type="url" value={proj.projectLink || ""} onChange={e => updateProject(idx, "projectLink", e.target.value)} placeholder="github.com/user/repo" className={inputClass} />
                       </div>
                     </div>
                     <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Project Accomplishments</label>
-                        <Button
-                          size="sm"
-                          type="button"
-                          variant="ghost"
-                          onClick={() => {
-                            const updatedProjects = [...projects];
-                            updatedProjects[idx].points = [...(updatedProjects[idx].points || []), ""];
-                            setProjects(updatedProjects);
-                          }}
-                          className="h-7 rounded-lg text-xs font-bold text-indigo-600 hover:bg-slate-100"
-                        >
-                          <Plus className="w-3.5 h-3.5 mr-1" /> Add Point
-                        </Button>
-                      </div>
-                      <div className="space-y-2">
-                        {(proj.points || [""]).map((point, pIdx) => (
-                          <div key={pIdx} className="flex items-center gap-2 relative group">
-                            <span className="text-slate-400 font-black shrink-0 text-xs">•</span>
-                            <Input
-                              value={point}
-                              onChange={e => {
-                                const updatedProjects = [...projects];
-                                updatedProjects[idx].points[pIdx] = e.target.value;
-                                setProjects(updatedProjects);
-                              }}
-                              placeholder="e.g. Architected custom caching model to support 10k users"
-                              className="rounded-xl bg-white h-9 text-xs flex-1 pr-10"
-                            />
-
-                            <div className="absolute right-2 flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                              {(proj.points || [""]).length > 1 && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  type="button"
-                                  onClick={() => {
-                                    const updatedProjects = [...projects];
-                                    updatedProjects[idx].points = updatedProjects[idx].points.filter((_, i) => i !== pIdx);
-                                    setProjects(updatedProjects);
-                                  }}
-                                  className="text-rose-500 hover:bg-rose-50 rounded-md h-6 w-6"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <FieldLabel htmlFor={`rb-proj-tech-${idx}`}>Tech Stack</FieldLabel>
+                      <Input id={`rb-proj-tech-${idx}`} value={proj.techStack} onChange={e => updateProject(idx, "techStack", e.target.value)} placeholder="React, Node.js, PostgreSQL, AWS" className={inputClass} />
+                    </div>
+                    <div className="border-t border-slate-200/70 dark:border-slate-800 pt-3 space-y-2">
+                      <FieldLabel hint="Enter = new bullet">Highlights</FieldLabel>
+                      {(proj.points.length > 0 ? proj.points : [""]).map((point, pIdx) => (
+                        <div key={pIdx} className="flex items-start gap-2">
+                          <span className="text-slate-400 font-black text-xs pt-2.5" aria-hidden="true">•</span>
+                          <BulletTextarea
+                            dataKey={`proj-${idx}-${pIdx}`}
+                            value={point}
+                            onChange={val => proj.points.length > 0 ? updateProjectPoint(idx, pIdx, val) : updateProject(idx, "points", [val])}
+                            onEnter={() => insertProjectPoint(idx, pIdx)}
+                            placeholder="e.g. Built a caching layer that supports 10k concurrent users"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            type="button"
+                            disabled={proj.points.length <= 1}
+                            onClick={() => removeProjectPoint(idx, pIdx)}
+                            className="h-7 w-7 mt-1 shrink-0 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                            title="Remove bullet"
+                            aria-label="Remove bullet"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                        onClick={() => insertProjectPoint(idx, proj.points.length - 1)}
+                        className="h-7 ml-3 rounded-lg text-xs font-semibold text-indigo-600 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Add bullet
+                      </Button>
                     </div>
                   </div>
                 ))}
+                <Button variant="outline" onClick={addProject} className={addEntryButtonClass}>
+                  <Plus className="w-4 h-4 mr-1" /> Add another project
+                </Button>
+                {stepNav}
               </CardContent>
             </Card>
           )}
 
           {activeSection === 'skills' && (
-            <Card className="border border-slate-200/60 dark:border-slate-800/80 shadow-md rounded-2xl bg-white/70 dark:bg-slate-900/50 backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center justify-between border-b py-4">
-                <div className="flex items-center gap-2">
+            <Card className={sectionCardClass}>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                   <Code className="w-5 h-5 text-amber-500" />
-                  <div>
-                    <CardTitle className="text-base font-extrabold">2. Skills & Languages</CardTitle>
-                    <CardDescription className="text-xs">Organize skills into logical groups (e.g. Languages, Frameworks) for higher ATS scoring</CardDescription>
-                  </div>
-                </div>
-                <Button size="sm" variant="outline" onClick={addSkillCategory} className="rounded-xl border-dashed h-8 text-xs font-bold">
-                  <Plus className="w-4 h-4 mr-1" /> Add Category
-                </Button>
+                  {activeStepIndex + 1}. Skills & Languages
+                </CardTitle>
+                <CardDescription className="text-xs">Group skills into categories (e.g. Languages, Frameworks) — ATS systems match these keywords</CardDescription>
               </CardHeader>
-              <CardContent className="pt-6 space-y-6">
+              <CardContent className="space-y-4">
                 {skills.map((cat, catIdx) => (
-                  <div key={catIdx} className="p-4 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/60 space-y-4">
-                    <div className="flex items-center justify-between gap-3">
+                  <div key={catIdx} className={entryCardClass}>
+                    <div className="flex items-center gap-2">
                       <Input
                         value={cat.category}
                         onChange={e => updateCategoryName(catIdx, e.target.value)}
-                        placeholder="Category (e.g., Languages, Frameworks)"
-                        className="rounded-xl h-9 text-xs font-bold bg-white w-[60%] shrink-0 border-indigo-100"
+                        placeholder="Category (e.g. Frameworks)"
+                        aria-label={`Skill category ${catIdx + 1} name`}
+                        className={`${inputClass} font-semibold flex-1`}
                       />
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" variant="ghost" onClick={() => addSkillToCategory(catIdx)} className="h-8 text-[10px] font-extrabold text-indigo-600 hover:bg-white rounded-xl">
-                          <Plus className="w-3.5 h-3.5 mr-0.5" /> Add Skill
+                      {skills.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeSkillCategory(catIdx)}
+                          className="h-8 w-8 shrink-0 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                          title="Remove category"
+                          aria-label="Remove category"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
-                        {skills.length > 1 && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeSkillCategory(catIdx)}
-                            className="text-rose-500 hover:bg-rose-50 hover:dark:bg-rose-950/20 rounded-xl h-8 w-8"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
+                      )}
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {cat.skills.map((skill, skillIdx) => (
-                        <div key={skillIdx} className="flex items-center gap-2 relative group">
+                        <div key={skillIdx} className="relative">
                           <Input
                             value={skill}
                             onChange={e => updateSkillInCategory(catIdx, skillIdx, e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === "Enter") {
+                                e.preventDefault()
+                                addSkillToCategory(catIdx)
+                              }
+                            }}
                             placeholder="e.g. React"
-                            className="rounded-xl h-9 text-xs bg-white/70"
+                            aria-label={`${cat.category || "Category"} skill ${skillIdx + 1}`}
+                            className={`${inputClass} pr-9`}
                           />
                           {cat.skills.length > 1 && (
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => removeSkillFromCategory(catIdx, skillIdx)}
-                              className="absolute right-1 text-rose-500 hover:bg-rose-50 rounded-lg h-7 w-7 opacity-60 group-hover:opacity-100 transition-opacity"
+                              className="absolute right-1 top-1 h-7 w-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                              aria-label="Remove skill"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <X className="w-3.5 h-3.5" />
                             </Button>
                           )}
                         </div>
                       ))}
                     </div>
-                  </div>
-                ))}
-
-                <div className="border-t border-slate-200/50 pt-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700">Languages Spoken</label>
-                    <Button size="sm" variant="ghost" onClick={addLanguage} className="h-7 text-xs font-bold text-indigo-600 hover:bg-slate-100">
-                      <Plus className="w-3.5 h-3.5 mr-1" /> Add Language
+                    <Button size="sm" variant="ghost" onClick={() => addSkillToCategory(catIdx)} className="h-7 rounded-lg text-xs font-semibold text-indigo-600 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/40">
+                      <Plus className="w-3.5 h-3.5 mr-1" /> Add skill
                     </Button>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                ))}
+                <Button variant="outline" onClick={addSkillCategory} className={addEntryButtonClass}>
+                  <Plus className="w-4 h-4 mr-1" /> Add skill category
+                </Button>
+
+                <div className="border-t border-slate-200/70 dark:border-slate-800 pt-4 space-y-2">
+                  <FieldLabel hint="e.g. English (Fluent)">Languages Spoken</FieldLabel>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {languages.map((lang, idx) => (
-                      <div key={idx} className="flex items-center gap-2 relative group">
+                      <div key={idx} className="relative">
                         <Input
                           value={lang}
                           onChange={e => updateLanguage(idx, e.target.value)}
-                          placeholder="e.g. English (Fluent)"
-                          className="rounded-xl h-9 text-xs bg-white/50"
+                          placeholder="e.g. Hindi (Native)"
+                          aria-label={`Language ${idx + 1}`}
+                          className={`${inputClass} pr-9`}
                         />
                         {languages.length > 1 && (
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => removeLanguage(idx)}
-                            className="absolute right-1 text-rose-500 hover:bg-rose-50 rounded-lg h-7 w-7 opacity-60 group-hover:opacity-100 transition-opacity"
+                            className="absolute right-1 top-1 h-7 w-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                            aria-label="Remove language"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <X className="w-3.5 h-3.5" />
                           </Button>
                         )}
                       </div>
                     ))}
                   </div>
+                  <Button size="sm" variant="ghost" onClick={addLanguage} className="h-7 rounded-lg text-xs font-semibold text-indigo-600 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/40">
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Add language
+                  </Button>
                 </div>
+                {stepNav}
               </CardContent>
             </Card>
           )}
 
           {activeSection === 'education' && (
-            <Card className="border border-slate-200/60 dark:border-slate-800/80 shadow-md rounded-2xl bg-white/70 dark:bg-slate-900/50 backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center justify-between border-b py-4">
-                <div className="flex items-center gap-2">
+            <Card className={sectionCardClass}>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                   <GraduationCap className="w-5 h-5 text-purple-500" />
-                  <div>
-                    <CardTitle className="text-base font-extrabold">3. Education & Awards</CardTitle>
-                    <CardDescription className="text-xs">Add university and optional accomplishments</CardDescription>
-                  </div>
-                </div>
-                <Button size="sm" variant="outline" onClick={addEducation} className="rounded-xl border-dashed h-8 text-xs font-bold">
-                  <Plus className="w-4 h-4 mr-1" /> Add Edu
-                </Button>
+                  {activeStepIndex + 1}. Education & Certifications
+                </CardTitle>
+                <CardDescription className="text-xs">Degrees, diplomas, certifications and notable awards</CardDescription>
               </CardHeader>
-              <CardContent className="pt-6 space-y-6">
+              <CardContent className="space-y-4">
                 {education.map((edu, idx) => (
-                  <div key={idx} className="p-4 border border-slate-200/50 dark:border-slate-800/60 rounded-2xl relative space-y-3 bg-slate-50/20 dark:bg-slate-950/5">
-                    {education.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeEducation(idx)}
-                        className="absolute right-2 top-2 h-7 w-7 text-rose-500 hover:bg-rose-50 rounded-lg"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                  <div key={idx} className={entryCardClass}>
+                    {renderEntryHeader(
+                      [edu.degree, edu.institution].filter(s => s && s.trim()).join(", ") || `Education ${idx + 1}`,
+                      idx,
+                      education.length,
+                      dir => setEducation(prev => moveItem(prev, idx, dir)),
+                      () => removeEducation(idx)
                     )}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Institution</label>
-                        <Input value={edu.institution} onChange={e => updateEducation(idx, "institution", e.target.value)} placeholder="IIT Delhi" className="rounded-xl h-9 text-xs bg-white/50" />
+                        <FieldLabel htmlFor={`rb-edu-inst-${idx}`}>Institution</FieldLabel>
+                        <Input id={`rb-edu-inst-${idx}`} value={edu.institution} onChange={e => updateEducation(idx, "institution", e.target.value)} placeholder="IIT Delhi" className={inputClass} />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Graduation Date</label>
-                        <Input type="month" value={edu.year} onChange={e => updateEducation(idx, "year", e.target.value)} className="rounded-xl h-9 text-xs bg-white/50" />
+                        <FieldLabel htmlFor={`rb-edu-degree-${idx}`}>Degree</FieldLabel>
+                        <Input id={`rb-edu-degree-${idx}`} value={edu.degree} onChange={e => updateEducation(idx, "degree", e.target.value)} placeholder="B.Tech" className={inputClass} />
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Degree</label>
-                        <Input value={edu.degree} onChange={e => updateEducation(idx, "degree", e.target.value)} placeholder="B.Tech" className="rounded-xl h-9 text-xs bg-white/50" />
+                        <FieldLabel htmlFor={`rb-edu-field-${idx}`}>Field of Study</FieldLabel>
+                        <Input id={`rb-edu-field-${idx}`} value={edu.fieldOfStudy} onChange={e => updateEducation(idx, "fieldOfStudy", e.target.value)} placeholder="Computer Science" className={inputClass} />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Field of Study</label>
-                        <Input value={edu.fieldOfStudy} onChange={e => updateEducation(idx, "fieldOfStudy", e.target.value)} placeholder="Computer Science" className="rounded-xl h-9 text-xs bg-white/50" />
+                        <FieldLabel htmlFor={`rb-edu-year-${idx}`}>Dates</FieldLabel>
+                        <Input id={`rb-edu-year-${idx}`} value={edu.year} onChange={e => updateEducation(idx, "year", e.target.value)} placeholder="2018 – 2022" className={inputClass} />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Grade (Optional)</label>
-                        <Input value={edu.grade || ""} onChange={e => updateEducation(idx, "grade", e.target.value)} placeholder="9.2 CGPA or 92%" className="rounded-xl h-9 text-xs bg-white/50" />
+                        <FieldLabel htmlFor={`rb-edu-grade-${idx}`} hint="Optional">Grade</FieldLabel>
+                        <Input id={`rb-edu-grade-${idx}`} value={edu.grade || ""} onChange={e => updateEducation(idx, "grade", e.target.value)} placeholder="9.2 CGPA" className={inputClass} />
                       </div>
                     </div>
                   </div>
                 ))}
+                <Button variant="outline" onClick={addEducation} className={addEntryButtonClass}>
+                  <Plus className="w-4 h-4 mr-1" /> Add education
+                </Button>
 
-                <div className="border-t border-slate-200/50 pt-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                      <Award className="w-4 h-4 text-pink-500" />
-                      Achievements & Certifications
-                    </label>
-                    <Button size="sm" variant="ghost" onClick={addAchievement} className="h-7 text-xs font-bold text-indigo-600 hover:bg-slate-100">
-                      <Plus className="w-3.5 h-3.5 mr-1" /> Add Award
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    {achievements.map((achievement, idx) => (
-                      <div key={idx} className="flex items-center gap-2 relative group">
-                        <Input
-                          value={achievement}
-                          onChange={e => updateAchievement(idx, e.target.value)}
-                          placeholder="e.g. Winner of internal Hackathon"
-                          className="rounded-xl h-9 text-xs bg-white/50"
-                        />
-                        {achievements.length > 1 && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeAchievement(idx)}
-                            className="absolute right-1 text-rose-500 hover:bg-rose-50 rounded-lg h-7 w-7 opacity-60 group-hover:opacity-100 transition-opacity"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                <div className="border-t border-slate-200/70 dark:border-slate-800 pt-4 space-y-2">
+                  <FieldLabel>
+                    <span className="inline-flex items-center gap-1"><Award className="w-3.5 h-3.5 text-pink-500" /> Achievements & Certifications</span>
+                  </FieldLabel>
+                  {achievements.map((achievement, idx) => (
+                    <div key={idx} className="relative">
+                      <Input
+                        value={achievement}
+                        onChange={e => updateAchievement(idx, e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter") {
+                            e.preventDefault()
+                            addAchievement()
+                          }
+                        }}
+                        placeholder="e.g. AWS Certified Solutions Architect – Associate (2024)"
+                        aria-label={`Achievement ${idx + 1}`}
+                        className={`${inputClass} pr-9`}
+                      />
+                      {achievements.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeAchievement(idx)}
+                          className="absolute right-1 top-1 h-7 w-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                          aria-label="Remove achievement"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button size="sm" variant="ghost" onClick={addAchievement} className="h-7 rounded-lg text-xs font-semibold text-indigo-600 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/40">
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Add achievement
+                  </Button>
                 </div>
+                {stepNav}
               </CardContent>
             </Card>
           )}
@@ -4909,7 +5193,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     size="sm"
                     variant="ghost"
                     className="rounded-xl h-8 text-xs font-medium text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-1"
-                    onClick={handleClearForm}
+                    onClick={() => setShowClearConfirm(true)}
                     title="Clear all fields"
                   >
                     Clear Form
@@ -4964,10 +5248,10 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               const previewTextColor = styleConfig.textColor
                 ? ""
                 : (isEmerald
-                  ? "text-slate-900 dark:text-slate-100"
+                  ? "text-slate-900"
                   : isMinimal || isElegant || isSwiss
-                  ? "text-slate-700 dark:text-slate-300"
-                  : "text-slate-950 dark:text-slate-100")
+                  ? "text-slate-700"
+                  : "text-slate-950")
 
               const scale = styleConfig.fontSizeScale
               const isEffectiveCompact = scale === 'compact' || (!scale && isCompact)
@@ -4981,20 +5265,20 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               const previewSectionMargin = isEffectiveCompact ? "mb-1 sm:mb-1.5" : isEffectiveSpacious ? "mb-1.5 sm:mb-2.5" : ((isTwoColumn || isElegant || isPhotoSidebar) ? "mb-1 sm:mb-2" : "mb-1 sm:mb-2")
               const previewSectionHeaderMargin = isEffectiveCompact ? "mb-0.5" : isEffectiveSpacious ? "mb-0.5 sm:mb-1" : "mb-0.5 sm:mb-1"
               const previewSectionDividerColor = isEmerald
-                ? "border-emerald-700 dark:border-emerald-500 border-b-2"
+                ? "border-emerald-700 border-b-2"
                 : isTechFaang
-                ? "border-blue-600 dark:border-blue-500 border-b-2"
+                ? "border-blue-600 border-b-2"
                 : isExecModern
-                ? "border-slate-800 dark:border-slate-300 border-b-2"
+                ? "border-slate-800 border-b-2"
                 : isNavy
-                ? "border-blue-900 dark:border-blue-800 border-b-2"
+                ? "border-blue-900 border-b-2"
                 : isSwiss
-                ? "border-slate-300 dark:border-slate-700"
+                ? "border-slate-300"
                 : isMinimal
-                ? "border-slate-200 dark:border-slate-800"
+                ? "border-slate-200"
                 : isAtsClean || isCreative
                 ? "border-none"
-                : "border-slate-900 dark:border-slate-100"
+                : "border-slate-900"
               const previewHeaderAlign = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isPhotoCreative || isPhotoMinimal || isTechFaang || isExecModern || isEmerald) ? "text-left" : "text-center"
               const previewContactJustify = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isPhotoCreative || isPhotoMinimal || isPhotoExec || isTechFaang || isExecModern || isEmerald) ? "justify-start" : "justify-center"
 
@@ -5002,7 +5286,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                 if (!photoUrl) return null
 
                 return (
-                  <div className={`relative group/photo ${size} rounded-none overflow-hidden border-2 border-slate-900 dark:border-slate-100 shadow-sm shrink-0`}>
+                  <div className={`relative group/photo ${size} rounded-none overflow-hidden border-2 border-slate-900 shadow-sm shrink-0`}>
                     <img
                       src={photoUrl}
                       alt={effectiveName || "Candidate"}
@@ -5021,7 +5305,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               }
 
               const renderContactRow = () => (
-                <div className={`text-[8px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium flex flex-wrap ${previewContactJustify} gap-x-1 sm:gap-x-3 gap-y-0.5 sm:gap-y-1 items-center`}>
+                <div className={`text-[8px] sm:text-[11px] text-slate-500 font-medium flex flex-wrap ${previewContactJustify} gap-x-1 sm:gap-x-3 gap-y-0.5 sm:gap-y-1 items-center`}>
                   {effectiveEmail && (
                     <a href={`mailto:${effectiveEmail.trim()}`} className="hover:underline break-all">
                       {effectiveEmail}
@@ -5029,36 +5313,36 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                   )}
                   {effectivePhone && (
                     <>
-                      {effectiveEmail && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
+                      {effectiveEmail && <span className="hidden sm:inline text-slate-300">•</span>}
                       <span className="shrink-0">{effectivePhone}</span>
                     </>
                   )}
                   {effectiveLocation && (
                     <>
-                      {(effectiveEmail || effectivePhone) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
+                      {(effectiveEmail || effectivePhone) && <span className="hidden sm:inline text-slate-300">•</span>}
                       <span className="break-words">{effectiveLocation}</span>
                     </>
                   )}
                   {effectiveLinkedin && (
                     <>
-                      {(effectiveEmail || effectivePhone || effectiveLocation) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
-                      <a href={formatUrl(effectiveLinkedin)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
+                      {(effectiveEmail || effectivePhone || effectiveLocation) && <span className="hidden sm:inline text-slate-300">•</span>}
+                      <a href={formatUrl(effectiveLinkedin)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 font-semibold break-all">
                         LinkedIn
                       </a>
                     </>
                   )}
                   {effectiveGithub && (
                     <>
-                      {(effectiveEmail || effectivePhone || effectiveLocation || effectiveLinkedin) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
-                      <a href={formatUrl(effectiveGithub)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
+                      {(effectiveEmail || effectivePhone || effectiveLocation || effectiveLinkedin) && <span className="hidden sm:inline text-slate-300">•</span>}
+                      <a href={formatUrl(effectiveGithub)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 font-semibold break-all">
                         GitHub
                       </a>
                     </>
                   )}
                   {effectivePortfolio && (
                     <>
-                      {(effectiveEmail || effectivePhone || effectiveLocation || effectiveLinkedin || effectiveGithub) && <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>}
-                      <a href={formatUrl(effectivePortfolio)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
+                      {(effectiveEmail || effectivePhone || effectiveLocation || effectiveLinkedin || effectiveGithub) && <span className="hidden sm:inline text-slate-300">•</span>}
+                      <a href={formatUrl(effectivePortfolio)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 font-semibold break-all">
                         Portfolio
                       </a>
                     </>
@@ -5067,7 +5351,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               )
 
               const renderContactColumn = () => (
-                <div className="text-[7.5px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium flex flex-col gap-y-0.5 sm:gap-y-1 break-words">
+                <div className="text-[7.5px] sm:text-[11px] text-slate-500 font-medium flex flex-col gap-y-0.5 sm:gap-y-1 break-words">
                   {effectiveEmail && (
                     <a href={`mailto:${effectiveEmail.trim()}`} className="hover:underline break-all">
                       {effectiveEmail}
@@ -5076,17 +5360,17 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                   {effectivePhone && <span className="break-all">{effectivePhone}</span>}
                   {effectiveLocation && <span className="break-words">{effectiveLocation}</span>}
                   {effectiveLinkedin && (
-                    <a href={formatUrl(effectiveLinkedin)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
+                    <a href={formatUrl(effectiveLinkedin)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 font-semibold break-all">
                       LinkedIn
                     </a>
                   )}
                   {effectiveGithub && (
-                    <a href={formatUrl(effectiveGithub)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
+                    <a href={formatUrl(effectiveGithub)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 font-semibold break-all">
                       GitHub
                     </a>
                   )}
                   {effectivePortfolio && (
-                    <a href={formatUrl(effectivePortfolio)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 dark:text-indigo-400 font-semibold break-all">
+                    <a href={formatUrl(effectivePortfolio)} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-600 font-semibold break-all">
                       Portfolio
                     </a>
                   )}
@@ -5095,13 +5379,13 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
               const getSectionHeadingClass = () => `${previewSectionTitleSize} ${
                 styleConfig.primaryColor ? "" : (
-                  isEmerald ? "text-emerald-800 dark:text-emerald-400" :
-                  isTechFaang ? "text-blue-700 dark:text-blue-400" :
-                  isExecModern ? "text-slate-900 dark:text-slate-200" :
-                  isNavy ? "text-blue-900 dark:text-blue-400" :
-                  isCreative ? "text-indigo-950 dark:text-indigo-300 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
-                  isMinimal || isElegant || isSwiss ? "text-slate-700 dark:text-slate-400" :
-                  "text-slate-905 dark:text-white"
+                  isEmerald ? "text-emerald-800" :
+                  isTechFaang ? "text-blue-700" :
+                  isExecModern ? "text-slate-900" :
+                  isNavy ? "text-blue-900" :
+                  isCreative ? "text-indigo-950 border-l-2 sm:border-l-4 border-indigo-600 pl-1.5 sm:pl-2" :
+                  isMinimal || isElegant || isSwiss ? "text-slate-700" :
+                  "text-slate-905"
                 )
               } ${!isCreative && !isAtsClean ? (styleConfig.primaryColor ? "border-b" : "border-b " + previewSectionDividerColor) : (isCreative && styleConfig.primaryColor ? "border-l-2 sm:border-l-4 pl-1.5 sm:pl-2" : "")} pb-0.5 ${previewSectionHeaderMargin}`
 
@@ -5139,13 +5423,13 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                           <div key={idx} className="break-words">
                             <strong className={
                               styleConfig.primaryColor ? "" : (
-                                isEmerald ? "text-emerald-800 dark:text-emerald-400" :
-                                isTechFaang ? "text-blue-700 dark:text-blue-400" :
-                                isExecModern ? "text-slate-900 dark:text-slate-200" :
-                                isNavy ? "text-blue-900 dark:text-blue-400" :
-                                isCreative ? "text-indigo-950 dark:text-indigo-300" :
-                                isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-slate-200" :
-                                "text-slate-950 dark:text-white"
+                                isEmerald ? "text-emerald-800" :
+                                isTechFaang ? "text-blue-700" :
+                                isExecModern ? "text-slate-900" :
+                                isNavy ? "text-blue-900" :
+                                isCreative ? "text-indigo-950" :
+                                isMinimal || isElegant || isSwiss ? "text-slate-800" :
+                                "text-slate-950"
                               )
                             } style={{ color: styleConfig.primaryColor || undefined }}>{cat.category}: </strong>
                             <span>{skillsList.join(",  ")}</span>
@@ -5167,17 +5451,17 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       <div key={idx}>
                         <div className={`flex flex-wrap items-baseline justify-between ${previewTextSize} font-bold ${
                           styleConfig.primaryColor ? "" : (
-                            isEmerald ? "text-emerald-950 dark:text-emerald-200" :
-                            isTechFaang ? "text-slate-950 dark:text-white" :
-                            isExecModern ? "text-slate-950 dark:text-white" :
-                            isNavy ? "text-blue-900 dark:text-blue-400" :
-                            isCreative ? "text-slate-900 dark:text-white" :
-                            isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-white" :
-                            "text-slate-950 dark:text-white"
+                            isEmerald ? "text-emerald-950" :
+                            isTechFaang ? "text-slate-950" :
+                            isExecModern ? "text-slate-950" :
+                            isNavy ? "text-blue-900" :
+                            isCreative ? "text-slate-900" :
+                            isMinimal || isElegant || isSwiss ? "text-slate-800" :
+                            "text-slate-950"
                           )
                         } mb-0.5 gap-x-1 gap-y-0.5`}>
                           <span className="break-words" style={{ color: styleConfig.primaryColor || undefined }}>{job.role || "Role"} — {job.company || "Company"}{job.location ? ` (${job.location})` : ""}</span>
-                          <span className="font-semibold text-slate-500 dark:text-slate-400 text-[7.5px] sm:text-xs shrink-0">{formatExperienceDateRange(job.startDate, job.endDate, job.currentlyWorkHere)}</span>
+                          <span className="font-semibold text-slate-500 text-[7.5px] sm:text-xs shrink-0">{formatExperienceDateRange(job.startDate, job.endDate, job.currentlyWorkHere)}</span>
                         </div>
                         {job.points && job.points.filter(Boolean).length > 0 && (
                           <ul className="list-disc pl-2.5 sm:pl-4 space-y-0.5">
@@ -5202,28 +5486,28 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       <div key={idx}>
                         <div className={`flex flex-wrap items-baseline justify-between ${previewTextSize} font-bold ${
                           styleConfig.primaryColor ? "" : (
-                            isEmerald ? "text-emerald-950 dark:text-emerald-200" :
-                            isTechFaang ? "text-slate-950 dark:text-white" :
-                            isExecModern ? "text-slate-950 dark:text-white" :
-                            isNavy ? "text-blue-900 dark:text-blue-400" :
-                            isCreative ? "text-slate-900 dark:text-white" :
-                            isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-white" :
-                            "text-slate-950 dark:text-white"
+                            isEmerald ? "text-emerald-950" :
+                            isTechFaang ? "text-slate-950" :
+                            isExecModern ? "text-slate-950" :
+                            isNavy ? "text-blue-900" :
+                            isCreative ? "text-slate-900" :
+                            isMinimal || isElegant || isSwiss ? "text-slate-800" :
+                            "text-slate-950"
                           )
                         } mb-0.5 gap-1`}>
                           <span className="break-words" style={{ color: styleConfig.primaryColor || undefined }}>
                             {proj.name}
                             {proj.projectLink && (
-                              <span className="text-[7.5px] sm:text-[10px] font-normal text-slate-400 dark:text-slate-500 ml-1 inline-block">
-                                <a href={formatUrl(proj.projectLink)} target="_blank" rel="noopener noreferrer" style={{ color: styleConfig.primaryColor || undefined }} className="text-indigo-600 dark:text-indigo-400 hover:underline">
-                                  LINK
+                              <span className="text-[7.5px] sm:text-[10px] font-normal text-slate-400 ml-1 inline-block">
+                                <a href={formatUrl(proj.projectLink)} target="_blank" rel="noopener noreferrer" style={{ color: styleConfig.primaryColor || undefined }} className="text-indigo-600 hover:underline break-all">
+                                  {displayLink(proj.projectLink)}
                                 </a>
                               </span>
                             )}
                           </span>
                         </div>
                         {proj.techStack && proj.techStack.trim() ? (
-                          <p className={`text-[7.5px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1 break-words`}>
+                          <p className={`text-[7.5px] sm:text-[11px] font-semibold text-slate-500 mb-0.5 sm:mb-1 break-words`}>
                             Tech: {proj.techStack}
                           </p>
                         ) : null}
@@ -5250,20 +5534,20 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       <div key={idx}>
                         <div className={`flex flex-wrap items-baseline justify-between ${previewTextSize} font-bold ${
                           styleConfig.primaryColor ? "" : (
-                            isEmerald ? "text-emerald-950 dark:text-emerald-200" :
-                            isTechFaang ? "text-slate-950 dark:text-white" :
-                            isExecModern ? "text-slate-950 dark:text-white" :
-                            isNavy ? "text-blue-900 dark:text-blue-400" :
-                            isCreative ? "text-slate-900 dark:text-white" :
-                            isMinimal || isElegant || isSwiss ? "text-slate-800 dark:text-white" :
-                            "text-slate-950 dark:text-white"
+                            isEmerald ? "text-emerald-950" :
+                            isTechFaang ? "text-slate-950" :
+                            isExecModern ? "text-slate-950" :
+                            isNavy ? "text-blue-900" :
+                            isCreative ? "text-slate-900" :
+                            isMinimal || isElegant || isSwiss ? "text-slate-800" :
+                            "text-slate-950"
                           )
                         } gap-x-1 gap-y-0.5`}>
                           <span className="break-words" style={{ color: styleConfig.primaryColor || undefined }}>{edu.degree || "Degree"}{edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ""} — {edu.institution || "Institution"}</span>
-                          <span className="font-semibold text-slate-500 dark:text-slate-400 text-[7.5px] sm:text-xs shrink-0">{edu.year}</span>
+                          <span className="font-semibold text-slate-500 text-[7.5px] sm:text-xs shrink-0">{formatEducationDates(edu.year)}</span>
                         </div>
                         {edu.grade && (
-                          <p className={`text-[7.5px] sm:text-[11px] ${previewTextColor} font-medium mt-0.5 break-words`}>GPA/Grade: {edu.grade}</p>
+                          <p className={`text-[7.5px] sm:text-[11px] ${previewTextColor} font-medium mt-0.5 break-words`}>{/:/.test(edu.grade) ? edu.grade : `Grade: ${edu.grade}`}</p>
                         )}
                       </div>
                     ))}
@@ -5297,36 +5581,47 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                 <>
              
 
-                  <div
+                  <ScaledResumePage
                     id="printable-resume-area"
                     style={{
                       color: styleConfig.textColor || undefined,
                     }}
-                    className={`min-h-0 sm:min-h-[800px] w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl sm:rounded-3xl ${previewPadding} shadow-sm sm:shadow-xl shadow-slate-100 dark:shadow-none ${previewFontClass} ${previewTextColor} select-text overflow-hidden transition-all duration-350`}
+                    className={`min-h-0 sm:min-h-[1123px] w-full bg-white text-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-md ${previewPadding} shadow-sm sm:shadow-xl shadow-slate-200/60 dark:shadow-black/40 ${previewFontClass} ${previewTextColor} select-text overflow-hidden`}
                   >
                     {!hasUserData && !isPreviewingSample ? (
-                      <div className="my-6 p-6 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 text-center space-y-3 print:hidden">
-                        <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center">
+                      <div className="my-6 p-6 sm:p-10 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 text-center space-y-3 font-sans print:hidden">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center">
                           <FileText className="w-5 h-5" />
                         </div>
                         <div className="space-y-1">
-                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                          <p className="text-xs font-bold text-slate-800">
                             Your Resume is Currently Empty
                           </p>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                            Fill in your details on the left, or click <strong className="text-indigo-600 dark:text-indigo-400 font-bold">Sample Preview</strong> above to see how this template looks with sample data.
+                          <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                            Fill in your details on the left, upload an existing resume, or start from sample content and edit it to match your experience.
                           </p>
                         </div>
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleLoadSampleData}
+                          className="h-8 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
+                        >
+                          <FileText className="w-3.5 h-3.5 mr-1" />
+                          Start from Sample Content
+                        </Button>
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
                           onClick={() => setIsPreviewingSample(true)}
-                          className="h-8 text-xs font-bold border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50"
+                          className="h-8 text-xs font-bold border-indigo-200 text-indigo-600 hover:bg-indigo-50"
                         >
                           <Eye className="w-3.5 h-3.5 mr-1" />
                           View Sample Preview
                         </Button>
+                        </div>
                       </div>
                     ) : (
                       <div className="text-left max-w-full animate-in fade-in duration-500">
@@ -5334,14 +5629,14 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       {isPhotoSidebar ? (
                         <div className="flex flex-row gap-2.5 sm:gap-6">
                           {/* Left Sidebar (25% on desktop, 28% on mobile) */}
-                          <div className="w-[28%] sm:w-[25%] shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-4">
+                          <div className="w-[28%] sm:w-[25%] shrink-0 border-r border-slate-200 pr-2 sm:pr-4">
                             {photoUrl && (
                               <div className="flex justify-center sm:justify-start mb-2 sm:mb-3">
                                 {renderAvatar("w-14 h-14 sm:w-32 sm:h-32")}
                               </div>
                             )}
                             <div className={previewSectionMargin}>
-                              <h2 className={`${previewSectionTitleSize} text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-0.5 mb-1 sm:mb-2`}>
+                              <h2 className={`${previewSectionTitleSize} text-slate-900 border-b border-slate-200 pb-0.5 mb-1 sm:mb-2`}>
                                 Contact
                               </h2>
                               {renderContactColumn()}
@@ -5356,12 +5651,12 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                             {(effectiveName || effectiveRole) && (
                               <div className="pb-1.5 sm:pb-3 mb-2 sm:mb-3 border-b-2 border-indigo-600" style={{ borderColor: styleConfig.primaryColor || undefined }}>
                                 {effectiveName && (
-                                  <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
+                                  <div className={`${previewTitleSize} font-black text-slate-950 tracking-tight mb-0.5 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
                                     {effectiveName}
                                   </div>
                                 )}
                                 {effectiveRole && (
-                                  <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
+                                  <p className={`${previewHeadlineSize} font-bold text-indigo-600 uppercase tracking-wider break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
                                     {effectiveRole}
                                   </p>
                                 )}
@@ -5375,16 +5670,16 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     ) : isPhotoExec ? (
                       /* Executive Headshot Layout */
                       <div>
-                        <div className={`flex flex-row items-center sm:items-start ${photoUrl ? "gap-2.5 sm:gap-5" : ""} pb-2.5 sm:pb-4 mb-2.5 sm:mb-4 border-b-2 border-blue-900 dark:border-blue-700`} style={{ borderColor: styleConfig.primaryColor || undefined }}>
+                        <div className={`flex flex-row items-center sm:items-start ${photoUrl ? "gap-2.5 sm:gap-5" : ""} pb-2.5 sm:pb-4 mb-2.5 sm:mb-4 border-b-2 border-blue-900`} style={{ borderColor: styleConfig.primaryColor || undefined }}>
                           {photoUrl && renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
                           <div className="flex-1 min-w-0 text-left space-y-0.5 sm:space-y-1">
                             {effectiveName && (
-                              <div className={`${previewTitleSize} font-black text-blue-900 dark:text-blue-400 tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
+                              <div className={`${previewTitleSize} font-black text-blue-900 tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
                                 {effectiveName}
                               </div>
                             )}
                             {effectiveRole && (
-                              <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider break-words`}>
+                              <p className={`${previewHeadlineSize} font-bold text-slate-700 uppercase tracking-wider break-words`}>
                                 {effectiveRole}
                               </p>
                             )}
@@ -5407,12 +5702,12 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                           {photoUrl && renderAvatar("w-14 h-14 sm:w-28 sm:h-28")}
                           <div className="flex-1 min-w-0 text-left space-y-0.5 sm:space-y-1">
                             {effectiveName && (
-                              <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
+                              <div className={`${previewTitleSize} font-black text-slate-950 tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
                                 {effectiveName}
                               </div>
                             )}
                             {effectiveRole && (
-                              <p className={`${previewHeadlineSize} font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
+                              <p className={`${previewHeadlineSize} font-bold text-indigo-600 uppercase tracking-wider break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
                                 {effectiveRole}
                               </p>
                             )}
@@ -5432,15 +5727,15 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     ) : isPhotoMinimal ? (
                       /* Minimal Avatar Layout */
                       <div>
-                        <div className="flex flex-row items-center justify-between gap-2 pb-2 sm:pb-3 mb-2.5 sm:mb-4 border-b border-slate-200 dark:border-slate-800">
+                        <div className="flex flex-row items-center justify-between gap-2 pb-2 sm:pb-3 mb-2.5 sm:mb-4 border-b border-slate-200">
                           <div className="space-y-0.5 sm:space-y-1 text-left flex-1 min-w-0">
                             {effectiveName && (
-                              <div className={`${previewTitleSize} font-bold text-slate-800 dark:text-white tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
+                              <div className={`${previewTitleSize} font-bold text-slate-800 tracking-tight break-words`} style={{ color: styleConfig.primaryColor || undefined }}>
                                 {effectiveName}
                               </div>
                             )}
                             {effectiveRole && (
-                              <p className={`${previewHeadlineSize} font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider break-words`}>
+                              <p className={`${previewHeadlineSize} font-medium text-slate-500 uppercase tracking-wider break-words`}>
                                 {effectiveRole}
                               </p>
                             )}
@@ -5463,9 +5758,9 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                         {photoUrl ? (
                           <div className="flex flex-row items-center sm:items-start justify-between gap-3 sm:gap-5 mb-2.5 sm:mb-4">
                             <div className="flex-1 min-w-0">
-                              <div className={`${previewTitleSize} font-black tracking-tight mb-0.5 sm:mb-1 text-slate-950 dark:text-white break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                              <div className={`${previewTitleSize} font-black tracking-tight mb-0.5 sm:mb-1 text-slate-950 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
                               {effectiveRole && (
-                                <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
+                                <p className={`${previewHeadlineSize} font-bold text-slate-700 uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
                               )}
                               {renderContactRow()}
                             </div>
@@ -5473,9 +5768,9 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                           </div>
                         ) : (
                           <div className={`flex flex-col text-left mb-2.5 sm:mb-4`}>
-                            <div className={`${previewTitleSize} font-black tracking-tight mb-0.5 sm:mb-1 text-slate-950 dark:text-white break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                            <div className={`${previewTitleSize} font-black tracking-tight mb-0.5 sm:mb-1 text-slate-950 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
                             {effectiveRole && (
-                              <p className={`${previewHeadlineSize} font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
+                              <p className={`${previewHeadlineSize} font-bold text-slate-700 uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
                             )}
                             {renderContactRow()}
                           </div>
@@ -5500,16 +5795,16 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                       /* Elegant Sidebar */
                       <div className="flex flex-row gap-2.5 sm:gap-6">
                         {/* Left Sidebar (30%) */}
-                        <div className="w-[30%] sm:w-[30%] shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-4">
+                        <div className="w-[30%] sm:w-[30%] shrink-0 border-r border-slate-200 pr-2 sm:pr-4">
                           <div className={previewSectionMargin}>
                             {photoUrl && (
                               <div className="flex justify-center sm:justify-start mb-2 sm:mb-3">
                                 {renderAvatar("w-14 h-14 sm:w-24 sm:h-24")}
                               </div>
                             )}
-                            <div className={`${previewTitleSize} font-black text-slate-950 dark:text-white tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                            <div className={`${previewTitleSize} font-black text-slate-950 tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
                             {effectiveRole && (
-                              <p className={`${previewHeadlineSize} font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1 sm:mb-2 break-words`}>{effectiveRole}</p>
+                              <p className={`${previewHeadlineSize} font-bold text-slate-600 uppercase tracking-wider mb-1 sm:mb-2 break-words`}>{effectiveRole}</p>
                             )}
                             {renderContactColumn()}
                           </div>
@@ -5539,23 +5834,23 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                               {effectiveName && (
                                 <div className={`${previewTitleSize} font-black ${
                                   styleConfig.primaryColor ? "" : (
-                                    isEmerald ? "text-emerald-950 dark:text-emerald-100" :
-                                    isTechFaang ? "text-slate-950 dark:text-white" :
-                                    isExecModern ? "text-slate-950 dark:text-white" :
-                                    isNavy ? "text-blue-900 dark:text-blue-400" :
-                                    isMinimal ? "text-slate-800 dark:text-white" :
-                                    "text-slate-950 dark:text-white"
+                                    isEmerald ? "text-emerald-950" :
+                                    isTechFaang ? "text-slate-950" :
+                                    isExecModern ? "text-slate-950" :
+                                    isNavy ? "text-blue-900" :
+                                    isMinimal ? "text-slate-800" :
+                                    "text-slate-950"
                                   )
                                 } tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
                               )}
                               {effectiveRole && (
                                 <p className={`${previewHeadlineSize} font-bold ${
-                                  isEmerald ? "text-emerald-700 dark:text-emerald-400 font-bold" :
-                                  isTechFaang ? "text-blue-600 dark:text-blue-400 font-bold" :
-                                  isNavy ? "text-blue-900 dark:text-blue-400" :
-                                  isCreative ? "text-indigo-600 dark:text-indigo-400 font-extrabold" :
-                                  isMinimal ? "text-slate-600 dark:text-slate-450" :
-                                  "text-slate-700 dark:text-slate-300"
+                                  isEmerald ? "text-emerald-700 font-bold" :
+                                  isTechFaang ? "text-blue-600 font-bold" :
+                                  isNavy ? "text-blue-900" :
+                                  isCreative ? "text-indigo-600 font-extrabold" :
+                                  isMinimal ? "text-slate-600" :
+                                  "text-slate-700"
                                 } uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
                               )}
                               {isCreative && <div className="h-0.5 sm:h-1 w-full bg-indigo-600 rounded-full my-1.5 sm:my-2" style={{ backgroundColor: styleConfig.primaryColor || undefined }} />}
@@ -5567,23 +5862,23 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                                 {effectiveName && (
                                   <div className={`${previewTitleSize} font-black ${
                                     styleConfig.primaryColor ? "" : (
-                                      isEmerald ? "text-emerald-950 dark:text-emerald-100" :
-                                      isTechFaang ? "text-slate-950 dark:text-white" :
-                                      isExecModern ? "text-slate-950 dark:text-white" :
-                                      isNavy ? "text-blue-900 dark:text-blue-400" :
-                                      isMinimal ? "text-slate-800 dark:text-white" :
-                                      "text-slate-950 dark:text-white"
+                                      isEmerald ? "text-emerald-950" :
+                                      isTechFaang ? "text-slate-950" :
+                                      isExecModern ? "text-slate-950" :
+                                      isNavy ? "text-blue-900" :
+                                      isMinimal ? "text-slate-800" :
+                                      "text-slate-950"
                                     )
                                   } tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
                                 )}
                                 {effectiveRole && (
                                   <p className={`${previewHeadlineSize} font-bold ${
-                                    isEmerald ? "text-emerald-700 dark:text-emerald-400 font-bold" :
-                                    isTechFaang ? "text-blue-600 dark:text-blue-400 font-bold" :
-                                    isNavy ? "text-blue-900 dark:text-blue-400" :
-                                    isCreative ? "text-indigo-600 dark:text-indigo-400 font-extrabold" :
-                                    isMinimal ? "text-slate-600 dark:text-slate-450" :
-                                    "text-slate-700 dark:text-slate-300"
+                                    isEmerald ? "text-emerald-700 font-bold" :
+                                    isTechFaang ? "text-blue-600 font-bold" :
+                                    isNavy ? "text-blue-900" :
+                                    isCreative ? "text-indigo-600 font-extrabold" :
+                                    isMinimal ? "text-slate-600" :
+                                    "text-slate-700"
                                   } uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
                                 )}
                                 {isCreative && <div className="h-0.5 sm:h-1 w-full bg-indigo-600 rounded-full my-1.5 sm:my-2" style={{ backgroundColor: styleConfig.primaryColor || undefined }} />}
@@ -5597,23 +5892,23 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                             {effectiveName && (
                               <div className={`${previewTitleSize} font-black ${
                                 styleConfig.primaryColor ? "" : (
-                                  isEmerald ? "text-emerald-950 dark:text-emerald-100" :
-                                  isTechFaang ? "text-slate-950 dark:text-white" :
-                                  isExecModern ? "text-slate-950 dark:text-white" :
-                                  isNavy ? "text-blue-900 dark:text-blue-400" :
-                                  isMinimal ? "text-slate-800 dark:text-white" :
-                                  "text-slate-950 dark:text-white"
+                                  isEmerald ? "text-emerald-950" :
+                                  isTechFaang ? "text-slate-950" :
+                                  isExecModern ? "text-slate-950" :
+                                  isNavy ? "text-blue-900" :
+                                  isMinimal ? "text-slate-800" :
+                                  "text-slate-950"
                                 )
                               } tracking-tight mb-0.5 sm:mb-1 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
                             )}
                             {effectiveRole && (
                               <p className={`${previewHeadlineSize} font-bold ${
-                                isEmerald ? "text-emerald-700 dark:text-emerald-400 font-bold" :
-                                isTechFaang ? "text-blue-600 dark:text-blue-400 font-bold" :
-                                isNavy ? "text-blue-900 dark:text-blue-400" :
-                                isCreative ? "text-indigo-600 dark:text-indigo-400 font-extrabold" :
-                                isMinimal ? "text-slate-600 dark:text-slate-450" :
-                                "text-slate-700 dark:text-slate-300"
+                                isEmerald ? "text-emerald-700 font-bold" :
+                                isTechFaang ? "text-blue-600 font-bold" :
+                                isNavy ? "text-blue-900" :
+                                isCreative ? "text-indigo-600 font-extrabold" :
+                                isMinimal ? "text-slate-600" :
+                                "text-slate-700"
                               } uppercase tracking-wider mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
                             )}
                             {isCreative && <div className="h-0.5 sm:h-1 w-full bg-indigo-600 rounded-full my-1.5 sm:my-2" style={{ backgroundColor: styleConfig.primaryColor || undefined }} />}
@@ -5656,7 +5951,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     )}
                   </div>
                 )}
-                </div>
+                </ScaledResumePage>
               </>
             )
             })()}
@@ -5812,6 +6107,53 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
             >
               <Download className="w-3.5 h-3.5" />
               <span>Confirm & Use 1 Credit</span>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* Clear Form Confirmation */}
+      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <AlertDialogContent className="rounded-2xl border-slate-200 dark:border-slate-800 max-w-md bg-white dark:bg-slate-900">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-lg font-extrabold text-slate-900 dark:text-white">Clear all resume fields?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              This removes everything you have entered in the editor, including your photo. Saved versions are not affected. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel className="rounded-xl text-xs font-bold">Keep Editing</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold"
+              onClick={() => {
+                setShowClearConfirm(false)
+                handleClearForm()
+              }}
+            >
+              Clear Everything
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Saved Version Confirmation */}
+      <AlertDialog open={showDeleteDraftConfirm} onOpenChange={setShowDeleteDraftConfirm}>
+        <AlertDialogContent className="rounded-2xl border-slate-200 dark:border-slate-800 max-w-md bg-white dark:bg-slate-900">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-lg font-extrabold text-slate-900 dark:text-white">Delete this saved version?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              &ldquo;{drafts.find(d => d.id === selectedDraftId)?.title || draftTitle}&rdquo; will be permanently removed from your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel className="rounded-xl text-xs font-bold">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold"
+              onClick={() => {
+                setShowDeleteDraftConfirm(false)
+                handleDeleteDraft()
+              }}
+            >
+              Delete Version
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
