@@ -208,11 +208,6 @@ const formatEducationDates = (value?: string) => {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
-// Short human-readable form of a link for the resume body (e.g. "github.com/amit/repo")
-const displayLink = (url?: string) => {
-  if (!url) return ""
-  return url.trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/+$/, "")
-}
 
 // Downscale an uploaded photo so it stays small enough for localStorage autosave and PDF export
 const downscaleImage = (file: File, maxSize = 480): Promise<string> =>
@@ -504,7 +499,7 @@ interface TemplateOption {
   id: string
   name: string
   description: string
-  category?: 'all' | 'ats' | 'tech' | 'executive' | 'photo' | 'creative'
+  category?: 'all' | 'ats' | 'tech' | 'executive' | 'photo' | 'creative' | 'regional'
   badge?: string
   atsScore?: number
   renderThumbnail: (data?: TemplateCandidateData) => React.ReactNode
@@ -537,6 +532,15 @@ const getCandidate = (data?: TemplateCandidateData, defaultRole = DUMMY_RESUME_D
   const cName = data?.name && data.name.trim() ? data.name.trim() : DUMMY_RESUME_DATA.name
   const cRole = data?.role && data.role.trim() ? data.role.trim() : defaultRole
   return { name: cName, role: cRole }
+}
+
+// Default accent colour for templates whose headings and rules are tinted (overridable via Font & Styling)
+const TEMPLATE_ACCENTS: Record<string, string> = {
+  'ats-latex-classic': '#000000',
+  'ats-hybrid-competencies': '#1e293b',
+  'modern-banner': '#1e3a5f',
+  'regional-europass': '#0b4f9c',
+  'regional-lebenslauf': '#334155',
 }
 
 const TEMPLATES: TemplateOption[] = [
@@ -2196,6 +2200,199 @@ const TEMPLATES: TemplateOption[] = [
         </div>
       )
     }
+  },
+  {
+    id: "ats-latex-classic",
+    name: "LaTeX Classic",
+    description: "The engineering-favourite LaTeX layout: two-line entries with company, dates, role and location. Education first.",
+    category: "tech",
+    badge: "Engineer Fav",
+    atsScore: 100,
+    renderThumbnail: (data) => {
+      const { name: cName } = getCandidate(data, "Software Engineer")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-0.5 border border-slate-200 dark:border-slate-800 font-serif shadow-xs overflow-hidden select-none pointer-events-none">
+          <div className="text-center pb-0.5">
+            <div className="text-[10px] font-bold text-slate-950 dark:text-white truncate">{cName}</div>
+            <div className="text-[3.8px] text-slate-500 truncate">+1 555-0192 | alex@mail.com | linkedin.com/in/alex | github.com/alex</div>
+          </div>
+          {[
+            { h: "Education", rows: [["Stanford University", "Stanford, CA"], ["B.S. Computer Science", "2015 – 2019"]] },
+            { h: "Experience", rows: [["Apex Solutions", "Jan 2022 – Present"], ["Senior Software Engineer", "San Francisco, CA"]] },
+          ].map(sec => (
+            <div key={sec.h}>
+              <div className="text-[4.6px] font-bold uppercase tracking-wide text-slate-900 dark:text-white border-b border-slate-900 dark:border-slate-200 pb-0.2">{sec.h}</div>
+              <div className="flex justify-between text-[4.2px] font-bold text-slate-900 dark:text-slate-100"><span>{sec.rows[0][0]}</span><span className="font-normal">{sec.rows[0][1]}</span></div>
+              <div className="flex justify-between text-[3.9px] italic text-slate-600 dark:text-slate-400"><span>{sec.rows[1][0]}</span><span>{sec.rows[1][1]}</span></div>
+              {sec.h === "Experience" && (
+                <>
+                  <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">• Built event pipeline processing 15M+ daily events, cutting latency 45%.</p>
+                  <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">• Led migration to Next.js and Go microservices across 4 product teams.</p>
+                </>
+              )}
+            </div>
+          ))}
+          <div>
+            <div className="text-[4.6px] font-bold uppercase tracking-wide text-slate-900 dark:text-white border-b border-slate-900 dark:border-slate-200 pb-0.2">Projects</div>
+            <div className="flex justify-between text-[4.2px] font-bold text-slate-900 dark:text-slate-100"><span>CloudMesh Router <span className="font-normal italic">| Go, gRPC</span></span></div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">• Async message bus supporting 50K concurrent connections.</p>
+          </div>
+          <div>
+            <div className="text-[4.6px] font-bold uppercase tracking-wide text-slate-900 dark:text-white border-b border-slate-900 dark:border-slate-200 pb-0.2">Technical Skills</div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 truncate"><b className="text-slate-900 dark:text-white">Languages:</b> TypeScript, Go, Python, SQL</p>
+          </div>
+        </div>
+      )
+    }
+  },
+  {
+    id: "ats-hybrid-competencies",
+    name: "Hybrid Core Competencies",
+    description: "Combination format recommended by career coaches: a keyword-rich competencies grid followed by chronological experience.",
+    category: "ats",
+    badge: "Career Change",
+    atsScore: 99,
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Operations Manager")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-1 border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          <div className="border-b-2 border-slate-800 dark:border-slate-200 pb-0.5">
+            <div className="text-[9.5px] font-extrabold text-slate-950 dark:text-white truncate">{cName}</div>
+            <div className="text-[4.8px] font-semibold text-slate-600 dark:text-slate-300 truncate">{cRole}</div>
+            <div className="text-[3.8px] text-slate-400 truncate">alex@mail.com • +44 20 7946 0958 • London, UK</div>
+          </div>
+          <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight">Results-driven leader with 10+ years improving supply chain efficiency and team performance.</p>
+          <div>
+            <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-0.5">Core Competencies</div>
+            <div className="grid grid-cols-3 gap-x-1 gap-y-0.2 text-[3.8px] text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 rounded-sm p-1">
+              {["Process Improvement", "Budget Management", "Team Leadership", "Vendor Relations", "Lean Six Sigma", "KPI Reporting"].map(s => (
+                <span key={s} className="truncate">▪ {s}</span>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="text-[4.5px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-0.2">Professional Experience</div>
+            <div className="flex justify-between text-[4.2px] font-bold text-slate-900 dark:text-slate-100"><span className="truncate">Operations Manager — Northwind Ltd</span><span className="font-normal text-slate-500 shrink-0">2020 – Present</span></div>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">• Reduced fulfilment costs by 18% through warehouse layout redesign.</p>
+            <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">• Managed 45-person team across 3 distribution centres.</p>
+          </div>
+        </div>
+      )
+    }
+  },
+  {
+    id: "modern-banner",
+    name: "Modern Header Banner",
+    description: "Bold full-width colour header with clean single-column body — one of the most popular designs on resume builders worldwide.",
+    category: "creative",
+    badge: "Popular",
+    atsScore: 92,
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Marketing Manager")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg flex flex-col border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          <div className="bg-[#1e3a5f] px-2 py-1.5 flex items-center gap-1.5">
+            {data?.photoUrl && <RealisticHeadshot photoUrl={data.photoUrl} className="w-5 h-6" />}
+            <div className="min-w-0">
+              <div className="text-[9.5px] font-extrabold text-white truncate">{cName}</div>
+              <div className="text-[4.8px] font-semibold text-sky-200 uppercase tracking-wider truncate">{cRole}</div>
+              <div className="text-[3.8px] text-slate-200 truncate">alex@mail.com • +1 555-0192 • Toronto, ON</div>
+            </div>
+          </div>
+          <div className="p-2 space-y-1">
+            {["Profile", "Experience", "Education"].map((h, i) => (
+              <div key={h}>
+                <div className="text-[4.6px] font-bold uppercase tracking-wider text-[#1e3a5f] dark:text-sky-300 border-b border-[#1e3a5f]/40 pb-0.2">{h}</div>
+                {i === 0 && <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight">Data-driven marketer growing brand reach and pipeline for B2B SaaS companies.</p>}
+                {i === 1 && (
+                  <>
+                    <div className="flex justify-between text-[4.2px] font-bold text-slate-900 dark:text-slate-100"><span>Growth Lead — Brightwave</span><span className="font-normal text-slate-500">2021 – Pres</span></div>
+                    <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">• Grew organic traffic 3.2x in 18 months with SEO content engine.</p>
+                    <p className="text-[3.8px] text-slate-600 dark:text-slate-300 leading-tight pl-1">• Launched ABM program generating $2.4M qualified pipeline.</p>
+                  </>
+                )}
+                {i === 2 && <div className="flex justify-between text-[4.2px] font-bold text-slate-900 dark:text-slate-100"><span>BBA Marketing — University of Toronto</span><span className="font-normal text-slate-500">2016</span></div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+  },
+  {
+    id: "regional-europass",
+    name: "Europass CV",
+    description: "European standard CV structure with a section-label column, personal information block and language skills — used across the EU.",
+    category: "regional",
+    badge: "EU Standard",
+    atsScore: 94,
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Data Analyst")
+      const rows: [string, React.ReactNode][] = [
+        ["About me", <span key="a">Analyst with 6 years turning data into business decisions.</span>],
+        ["Work experience", <span key="w"><span className="text-[#0b4f9c] dark:text-sky-300">01/2021 – Current</span><br /><b className="text-slate-900 dark:text-white">Data Analyst</b> · Lumen GmbH, Berlin</span>],
+        ["Education", <span key="e"><span className="text-[#0b4f9c] dark:text-sky-300">2014 – 2018</span><br /><b className="text-slate-900 dark:text-white">MSc Statistics</b> · TU München</span>],
+        ["Language skills", <span key="l">German (C2) · English (C1) · French (B1)</span>],
+        ["Digital skills", <span key="d">Python · SQL · Power BI · Tableau</span>],
+      ]
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-1 border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          <div className="flex items-center justify-between gap-1 border-b-2 border-[#0b4f9c] pb-0.5">
+            <div className="min-w-0">
+              <div className="text-[9.5px] font-bold text-slate-950 dark:text-white truncate">{cName}</div>
+              <div className="text-[4.5px] text-slate-500 truncate">{cRole} · Nationality: German · alex@mail.eu</div>
+            </div>
+            {data?.photoUrl && <RealisticHeadshot photoUrl={data.photoUrl} className="w-5 h-6" />}
+          </div>
+          {rows.map(([label, content]) => (
+            <div key={label} className="grid grid-cols-[30%_1fr] gap-1 text-[3.9px] leading-tight text-slate-600 dark:text-slate-300">
+              <span className="text-right font-semibold uppercase tracking-wide text-[#0b4f9c] dark:text-sky-300 text-[3.6px]">{label}</span>
+              <span className="border-l border-slate-200 dark:border-slate-700 pl-1">{content}</span>
+            </div>
+          ))}
+        </div>
+      )
+    }
+  },
+  {
+    id: "regional-lebenslauf",
+    name: "German Lebenslauf",
+    description: "Tabular DACH-style CV with a dates column, professional photo and place/date line — the expected format in Germany, Austria and Switzerland.",
+    category: "regional",
+    badge: "DACH",
+    atsScore: 90,
+    renderThumbnail: (data) => {
+      const { name: cName, role: cRole } = getCandidate(data, "Mechanical Engineer")
+      return (
+        <div className="h-[180px] w-full bg-white dark:bg-slate-900 rounded-lg p-2 flex flex-col space-y-1 border border-slate-200 dark:border-slate-800 font-sans shadow-xs overflow-hidden select-none pointer-events-none">
+          <div className="flex items-start justify-between gap-1.5">
+            <div className="min-w-0">
+              <div className="text-[9.5px] font-bold text-slate-950 dark:text-white truncate">{cName}</div>
+              <div className="text-[4.6px] text-slate-500 truncate">{cRole}</div>
+              <div className="text-[3.8px] text-slate-400 truncate">Musterstraße 12, 80331 München</div>
+              <div className="text-[3.8px] text-slate-400 truncate">+49 89 1234567 · alex@mail.de</div>
+            </div>
+            <RealisticHeadshot photoUrl={data?.photoUrl} className="w-6 h-7" />
+          </div>
+          {[
+            { h: "Experience", rows: [["03/2020 – today", "Senior Engineer, Bosch GmbH"], ["2016 – 2020", "Engineer, Siemens AG"]] },
+            { h: "Education", rows: [["2011 – 2016", "M.Sc. Mechanical Eng., TU Munich"]] },
+            { h: "Skills", rows: [["Languages", "German (native), English (C1)"], ["IT", "CATIA, MATLAB, SAP"]] },
+          ].map(sec => (
+            <div key={sec.h}>
+              <div className="text-[4.6px] font-bold text-slate-800 dark:text-slate-200 border-b border-slate-300 dark:border-slate-700 pb-0.2 mb-0.3">{sec.h}</div>
+              {sec.rows.map(([l, r]) => (
+                <div key={l} className="grid grid-cols-[28%_1fr] gap-1 text-[3.9px] leading-tight">
+                  <span className="text-slate-500">{l}</span>
+                  <span className="text-slate-700 dark:text-slate-300 truncate">{r}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+          <div className="text-right text-[3.8px] text-slate-400 pt-0.5">Munich, 12 March 2026</div>
+        </div>
+      )
+    }
   }
 ]
 
@@ -2267,7 +2464,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [visualTemplate, setVisualTemplate] = useState<string>("classic-serif")
   const [styleConfig, setStyleConfig] = useState<ResumeStyleConfig>({})
-  const [templateCategory, setTemplateCategory] = useState<'all' | 'ats' | 'tech' | 'executive' | 'photo' | 'creative'>('all')
+  const [templateCategory, setTemplateCategory] = useState<'all' | 'ats' | 'tech' | 'executive' | 'photo' | 'creative' | 'regional'>('all')
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const [showStylingPicker, setShowStylingPicker] = useState(false)
   const templateScrollRef = useRef<HTMLDivElement>(null)
@@ -4059,6 +4256,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     { id: 'executive', label: '👔 Executive', count: TEMPLATES.filter(t => t.category === 'executive').length },
                     { id: 'photo', label: '📸 With Photo', count: TEMPLATES.filter(t => t.category === 'photo').length },
                     { id: 'creative', label: '🎨 Creative', count: TEMPLATES.filter(t => t.category === 'creative').length },
+                    { id: 'regional', label: '🌍 Regional CVs', count: TEMPLATES.filter(t => t.category === 'regional').length },
                   ].map((cat) => (
                     <button
                       key={cat.id}
@@ -4242,9 +4440,9 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
 
               {/* Controls Layout with Dropdown Selects */}
               {(() => {
-                const defaultFont = (visualTemplate === 'classic-serif' || visualTemplate === 'ats-ivy-league') ? 'serif' : (visualTemplate === 'ats-clean') ? 'mono' : 'sans';
+                const defaultFont = (visualTemplate === 'classic-serif' || visualTemplate === 'ats-ivy-league' || visualTemplate === 'ats-latex-classic') ? 'serif' : (visualTemplate === 'ats-clean') ? 'mono' : 'sans';
                 const defaultDensity = (visualTemplate === 'compact-tech' || visualTemplate === 'ats-compact-onepage') ? 'compact' : 'normal';
-                const defaultPrimaryColor = (visualTemplate === 'ats-emerald-professional') ? '#047857' : (visualTemplate === 'ats-tech-faang') ? '#2563eb' : (visualTemplate === 'ats-executive-modern') ? '#1e293b' : (visualTemplate === 'executive-navy' || visualTemplate === 'photo-executive') ? '#1e3a8a' : (visualTemplate === 'creative-bold' || visualTemplate === 'photo-creative') ? '#4f46e5' : '#0f172a';
+                const defaultPrimaryColor = TEMPLATE_ACCENTS[visualTemplate] ? TEMPLATE_ACCENTS[visualTemplate] : (visualTemplate === 'ats-emerald-professional') ? '#047857' : (visualTemplate === 'ats-tech-faang') ? '#2563eb' : (visualTemplate === 'ats-executive-modern') ? '#1e293b' : (visualTemplate === 'executive-navy' || visualTemplate === 'photo-executive') ? '#1e3a8a' : (visualTemplate === 'creative-bold' || visualTemplate === 'photo-creative') ? '#4f46e5' : '#0f172a';
                 const defaultTextColor = (visualTemplate === 'classic-serif' || visualTemplate === 'ats-ivy-league') ? '#000000' : '#0f172a';
 
                 return (
@@ -4367,6 +4565,14 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                               <span>Steel Blue (#0284c7)</span>
                             </div>
                           </SelectItem>
+                          {!['#0f172a', '#1e3a8a', '#4f46e5', '#047857', '#881337', '#0284c7'].includes(defaultPrimaryColor.toLowerCase()) && defaultPrimaryColor.toLowerCase() !== styleConfig.primaryColor?.toLowerCase() && (
+                            <SelectItem value={defaultPrimaryColor.toLowerCase()} className="text-xs">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/10" style={{ backgroundColor: defaultPrimaryColor }} />
+                                <span>Template Default ({defaultPrimaryColor})</span>
+                              </div>
+                            </SelectItem>
+                          )}
                           {styleConfig.primaryColor && !['#0f172a', '#1e3a8a', '#4f46e5', '#047857', '#881337', '#0284c7'].includes(styleConfig.primaryColor.toLowerCase()) && (
                             <SelectItem value={styleConfig.primaryColor.toLowerCase()} className="text-xs">
                               <div className="flex items-center gap-2">
@@ -5208,7 +5414,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               const isEmerald = visualTemplate === 'ats-emerald-professional'
               const isCompactOnePage = visualTemplate === 'ats-compact-onepage'
 
-              const isSerif = visualTemplate === 'classic-serif' || isIvyLeague
+              const isSerif = visualTemplate === 'classic-serif' || isIvyLeague || visualTemplate === 'ats-latex-classic'
               const isNavy = visualTemplate === 'executive-navy' || visualTemplate === 'photo-executive' || isExecModern
               const isCompact = visualTemplate === 'compact-tech' || isCompactOnePage
               const isMinimal = visualTemplate === 'modern-minimal' || visualTemplate === 'photo-minimal' || isSwiss
@@ -5220,6 +5426,12 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               const isPhotoExec = visualTemplate === 'photo-executive'
               const isPhotoCreative = visualTemplate === 'photo-creative'
               const isPhotoMinimal = visualTemplate === 'photo-minimal'
+              const isLatexClassic = visualTemplate === 'ats-latex-classic'
+              const isHybrid = visualTemplate === 'ats-hybrid-competencies'
+              const isBanner = visualTemplate === 'modern-banner'
+              const isEuropass = visualTemplate === 'regional-europass'
+              const isLebenslauf = visualTemplate === 'regional-lebenslauf'
+              const headingAccent = styleConfig.primaryColor || TEMPLATE_ACCENTS[visualTemplate]
 
               const previewFontClass = styleConfig.fontFamily === 'serif'
                 ? "font-serif"
@@ -5241,7 +5453,9 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               const isEffectiveCompact = scale === 'compact' || (!scale && isCompact)
               const isEffectiveSpacious = scale === 'spacious'
 
-              const previewPadding = isEffectiveCompact ? "p-2.5 sm:p-5 md:p-6" : isEffectiveSpacious ? "p-3 sm:p-8 lg:p-14" : (isIvyLeague || isAtsClean ? "p-3 sm:p-6 md:p-8" : "p-3 sm:p-8 lg:p-12")
+              const bannerPadding = isEffectiveCompact ? "p-2.5 sm:p-5 md:p-6" : isEffectiveSpacious ? "p-3 sm:p-8 lg:p-14" : (isIvyLeague || isAtsClean ? "p-3 sm:p-6 md:p-8" : "p-3 sm:p-8 lg:p-12")
+              // The banner template draws its own full-bleed header, so the page itself has no padding
+              const previewPadding = visualTemplate === 'modern-banner' ? "p-0" : bannerPadding
               const previewTextSize = isEffectiveCompact ? "text-[7.5px] sm:text-[10.5px]" : isEffectiveSpacious ? "text-[9.5px] sm:text-[13px]" : "text-[8.5px] sm:text-xs"
               const previewSectionTitleSize = isEffectiveCompact ? "text-[7.5px] sm:text-[9.5px] font-black uppercase tracking-wider" : isEffectiveSpacious ? "text-[9.5px] sm:text-sm font-black uppercase tracking-wider" : "text-[8.5px] sm:text-xs font-black uppercase tracking-wider"
               const previewHeadlineSize = isEffectiveCompact ? "text-[7px] sm:text-[9.5px]" : isEffectiveSpacious ? "text-[9px] sm:text-xs" : "text-[8px] sm:text-[11px]"
@@ -5264,7 +5478,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                 ? "border-none"
                 : "border-slate-900"
               const previewHeaderAlign = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isPhotoCreative || isPhotoMinimal || isTechFaang || isExecModern || isEmerald) ? "text-left" : "text-center"
-              const previewContactJustify = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isPhotoCreative || isPhotoMinimal || isPhotoExec || isTechFaang || isExecModern || isEmerald) ? "justify-start" : "justify-center"
+              const previewContactJustify = (visualTemplate === 'ats-hybrid-competencies' || isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isPhotoCreative || isPhotoMinimal || isPhotoExec || isTechFaang || isExecModern || isEmerald) ? "justify-start" : "justify-center"
 
               const renderAvatar = (size = "w-14 h-14 sm:w-28 sm:h-28") => {
                 if (!photoUrl) return null
@@ -5362,7 +5576,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
               )
 
               const getSectionHeadingClass = () => `${previewSectionTitleSize} ${
-                styleConfig.primaryColor ? "" : (
+                headingAccent ? "" : (
                   isEmerald ? "text-emerald-800" :
                   isTechFaang ? "text-blue-700" :
                   isExecModern ? "text-slate-900" :
@@ -5371,14 +5585,14 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                   isMinimal || isElegant || isSwiss ? "text-slate-700" :
                   "text-slate-905"
                 )
-              } ${!isCreative && !isAtsClean ? (styleConfig.primaryColor ? "border-b" : "border-b " + previewSectionDividerColor) : (isCreative && styleConfig.primaryColor ? "border-l-2 sm:border-l-4 pl-1.5 sm:pl-2" : "")} pb-0.5 ${previewSectionHeaderMargin}`
+              } ${!isCreative && !isAtsClean ? (headingAccent ? "border-b" : "border-b " + previewSectionDividerColor) : (isCreative && styleConfig.primaryColor ? "border-l-2 sm:border-l-4 pl-1.5 sm:pl-2" : "")} pb-0.5 ${previewSectionHeaderMargin}`
 
               const getSectionHeadingStyle = () => {
-                if (!styleConfig.primaryColor) return undefined
+                if (!headingAccent) return undefined
                 return {
-                  color: styleConfig.primaryColor,
-                  borderColor: isAtsClean ? 'transparent' : styleConfig.primaryColor,
-                  borderLeftColor: isCreative ? styleConfig.primaryColor : undefined,
+                  color: headingAccent,
+                  borderColor: isAtsClean ? 'transparent' : headingAccent,
+                  borderLeftColor: isCreative ? headingAccent : undefined,
                 }
               }
 
@@ -5483,8 +5697,8 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                             {proj.name}
                             {proj.projectLink && (
                               <span className="text-[7.5px] sm:text-[10px] font-normal text-slate-400 ml-1 inline-block">
-                                <a href={formatUrl(proj.projectLink)} target="_blank" rel="noopener noreferrer" style={{ color: styleConfig.primaryColor || undefined }} className="text-indigo-600 hover:underline break-all">
-                                  {displayLink(proj.projectLink)}
+                                <a href={formatUrl(proj.projectLink)} target="_blank" rel="noopener noreferrer" style={{ color: styleConfig.primaryColor || undefined }} className="text-indigo-600 hover:underline" title={formatUrl(proj.projectLink)}>
+                                  LINK
                                 </a>
                               </span>
                             )}
@@ -5561,6 +5775,85 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                 </div>
               ) : null
 
+
+              // ── Helpers for the LaTeX, Hybrid, Banner, Europass and Lebenslauf layouts ──
+              const accent = headingAccent || '#0f172a'
+              const filledJobs = effectiveJobs.filter(j => j.company || j.role)
+              const filledProjects = effectiveProjects.filter(p => p.name)
+              const filledEducation = effectiveEducation.filter(e => e.institution || e.degree)
+              const filledAchievements = effectiveAchievements.filter(Boolean)
+              const filledLanguages = effectiveLanguages.filter(Boolean)
+              const skillGroups: { category: string; skills: string[] }[] = (() => {
+                const list = (effectiveSkills || []) as any[]
+                if (list.length > 0 && typeof list[0] === 'string') return [{ category: 'Skills', skills: list.filter(Boolean) }]
+                return list
+                  .map((c: any) => ({ category: c.category || 'Skills', skills: (Array.isArray(c.skills) ? c.skills : []).filter(Boolean) }))
+                  .filter(c => c.skills.length > 0)
+              })()
+              const allSkills = skillGroups.flatMap(g => g.skills)
+              const jobDates = (job: JobInput) => formatExperienceDateRange(job.startDate, job.endDate, job.currentlyWorkHere)
+              const bulletsOf = (item: { points?: string[] }) => (item.points || []).filter(Boolean)
+              const bodyText = `${previewTextSize} leading-tight sm:leading-relaxed ${previewTextColor} break-words`
+              const mutedText = `${previewTextSize} leading-tight sm:leading-relaxed text-slate-600 break-words`
+
+              const renderHeading = (title: string) => (
+                <h2 className={getSectionHeadingClass()} style={getSectionHeadingStyle()}>{title}</h2>
+              )
+
+              const renderBulletList = (items: string[]) => items.length > 0 ? (
+                <ul className="list-disc pl-2.5 sm:pl-4 space-y-0.5 mt-0.5">
+                  {items.map((b, i) => <li key={i} className={bodyText}>{renderRichText(b)}</li>)}
+                </ul>
+              ) : null
+
+              const renderSkillLines = () => (
+                <div className={`${bodyText} space-y-0.5`}>
+                  {skillGroups.map((g, i) => (
+                    <div key={i}><strong className="text-slate-950">{g.category}:</strong> {g.skills.join(', ')}</div>
+                  ))}
+                </div>
+              )
+
+              // Two-line entry used by the LaTeX layout: bold title/date line, italic subtitle/location line
+              const renderTwoLineEntry = (key: number, topLeft: React.ReactNode, topRight: React.ReactNode, bottomLeft: React.ReactNode, bottomRight: React.ReactNode, bullets: string[]) => (
+                <div key={key}>
+                  <div className={`flex flex-wrap items-baseline justify-between gap-x-2 ${previewTextSize} font-bold text-slate-950`}>
+                    <span className="break-words min-w-0">{topLeft}</span>
+                    {topRight && <span className="shrink-0 font-semibold">{topRight}</span>}
+                  </div>
+                  {(bottomLeft || bottomRight) && (
+                    <div className={`flex flex-wrap items-baseline justify-between gap-x-2 ${previewTextSize} italic text-slate-700`}>
+                      <span className="break-words min-w-0">{bottomLeft}</span>
+                      {bottomRight && <span className="shrink-0">{bottomRight}</span>}
+                    </div>
+                  )}
+                  {renderBulletList(bullets)}
+                </div>
+              )
+
+              const projectLink = (url?: string) => url ? (
+                <a href={formatUrl(url)} target="_blank" rel="noopener noreferrer" className="font-normal hover:underline" style={{ color: accent }} title={formatUrl(url)}>
+                  LINK
+                </a>
+              ) : null
+
+              // Europass: section label column on the left, content on the right
+              const renderLabeledRow = (label: string, content: React.ReactNode) => (
+                <div key={label} className="grid grid-cols-[26%_1fr] gap-2 sm:gap-4 mb-1.5 sm:mb-3">
+                  <div className={`text-right ${previewSectionTitleSize} pt-px break-words`} style={{ color: accent }}>{label}</div>
+                  <div className="min-w-0 border-l pl-2 sm:pl-4 space-y-1 sm:space-y-2" style={{ borderColor: `${accent}40` }}>{content}</div>
+                </div>
+              )
+
+              // Lebenslauf: dates (or labels) in a narrow left column, details on the right
+              const renderDateRow = (key: React.Key, left: React.ReactNode, right: React.ReactNode) => (
+                <div key={key} className="grid grid-cols-[24%_1fr] gap-2 sm:gap-4 mb-1 sm:mb-2">
+                  <div className={`${previewTextSize} leading-tight sm:leading-relaxed text-slate-500 break-words`}>{left}</div>
+                  <div className="min-w-0">{right}</div>
+                </div>
+              )
+
+              const placeAndDate = `${effectiveLocation ? `${effectiveLocation.split(',')[0]}, ` : ''}${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`
               return (
                 <>
              
@@ -5610,7 +5903,236 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     ) : (
                       <div className="text-left max-w-full animate-in fade-in duration-500">
                       {/* Modern Photo Sidebar Layout */}
-                      {isPhotoSidebar ? (
+                      {isLatexClassic ? (
+                        /* LaTeX Classic: centred header, education first, two-line entries */
+                        <div>
+                          <div className="text-center mb-2 sm:mb-3">
+                            {effectiveName && (
+                              <div className={`${previewTitleSize} font-bold tracking-wide text-slate-950 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                            )}
+                            {effectiveRole && <p className={`${previewHeadlineSize} text-slate-600 mt-0.5 break-words`}>{effectiveRole}</p>}
+                            <div className="mt-0.5 sm:mt-1">{renderContactRow()}</div>
+                          </div>
+                          {renderPreviewSummary()}
+                          {filledEducation.length > 0 && (
+                            <div className={previewSectionMargin}>
+                              {renderHeading('Education')}
+                              <div className="space-y-1 sm:space-y-2">
+                                {filledEducation.map((edu, i) => renderTwoLineEntry(
+                                  i,
+                                  edu.institution,
+                                  formatEducationDates(edu.year),
+                                  [edu.degree, edu.fieldOfStudy].filter(Boolean).join(' in '),
+                                  edu.grade,
+                                  []
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {filledJobs.length > 0 && (
+                            <div className={previewSectionMargin}>
+                              {renderHeading('Experience')}
+                              <div className="space-y-1.5 sm:space-y-3">
+                                {filledJobs.map((job, i) => renderTwoLineEntry(i, job.company, jobDates(job), job.role, job.location, bulletsOf(job)))}
+                              </div>
+                            </div>
+                          )}
+                          {filledProjects.length > 0 && (
+                            <div className={previewSectionMargin}>
+                              {renderHeading('Projects')}
+                              <div className="space-y-1.5 sm:space-y-3">
+                                {filledProjects.map((proj, i) => renderTwoLineEntry(
+                                  i,
+                                  <>{proj.name}{proj.techStack ? <span className="font-normal italic"> | {proj.techStack}</span> : null}</>,
+                                  projectLink(proj.projectLink),
+                                  null,
+                                  null,
+                                  bulletsOf(proj)
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {skillGroups.length > 0 && (
+                            <div className={previewSectionMargin}>
+                              {renderHeading('Technical Skills')}
+                              {renderSkillLines()}
+                            </div>
+                          )}
+                          {renderPreviewAchievements()}
+                          {renderPreviewLanguages()}
+                        </div>
+                      ) : isHybrid ? (
+                        /* Hybrid / Combination: competencies grid ahead of chronological history */
+                        <div>
+                          <div className="pb-1.5 sm:pb-3 mb-2 sm:mb-4 border-b-2" style={{ borderColor: accent }}>
+                            {effectiveName && (
+                              <div className={`${previewTitleSize} font-black tracking-tight text-slate-950 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>
+                            )}
+                            {effectiveRole && (
+                              <p className={`${previewHeadlineSize} font-bold uppercase tracking-wider text-slate-600 mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
+                            )}
+                            {renderContactRow()}
+                          </div>
+                          {renderPreviewSummary()}
+                          {allSkills.length > 0 && (
+                            <div className={previewSectionMargin}>
+                              {renderHeading('Core Competencies')}
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-0.5 rounded bg-slate-50 p-1.5 sm:p-2.5 mt-1">
+                                {allSkills.map((skill, i) => (
+                                  <div key={i} className={`${bodyText} flex gap-1`}>
+                                    <span style={{ color: accent }} aria-hidden="true">▪</span>
+                                    <span className="min-w-0">{skill}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {renderPreviewExperience()}
+                          {renderPreviewProjects()}
+                          {renderPreviewEducation()}
+                          {renderPreviewAchievements()}
+                          {renderPreviewLanguages()}
+                        </div>
+                      ) : isBanner ? (
+                        /* Modern Header Banner: full-bleed colour header, single-column body */
+                        <div>
+                          <div className={`${bannerPadding} !pb-3 sm:!pb-6 flex items-center gap-3 sm:gap-5 text-white`} style={{ backgroundColor: accent }}>
+                            {photoUrl && renderAvatar("w-14 h-14 sm:w-24 sm:h-24")}
+                            <div className="min-w-0 flex-1">
+                              {effectiveName && <div className={`${previewTitleSize} font-black tracking-tight break-words`}>{effectiveName}</div>}
+                              {effectiveRole && (
+                                <p className={`${previewHeadlineSize} font-bold uppercase tracking-wider text-white/80 mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>
+                              )}
+                              <div className={`text-[8px] sm:text-[11px] text-white/85 flex flex-wrap gap-x-2 sm:gap-x-3 gap-y-0.5`}>
+                                {effectiveEmail && <span className="break-all">{effectiveEmail}</span>}
+                                {effectivePhone && <span>{effectivePhone}</span>}
+                                {effectiveLocation && <span>{effectiveLocation}</span>}
+                                {effectiveLinkedin && <a href={formatUrl(effectiveLinkedin)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">LinkedIn</a>}
+                                {effectiveGithub && <a href={formatUrl(effectiveGithub)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">GitHub</a>}
+                                {effectivePortfolio && <a href={formatUrl(effectivePortfolio)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">Portfolio</a>}
+                              </div>
+                            </div>
+                          </div>
+                          <div className={`${bannerPadding} !pt-3 sm:!pt-6`}>
+                            {renderPreviewSummary()}
+                            {renderPreviewSkills()}
+                            {renderPreviewExperience()}
+                            {renderPreviewProjects()}
+                            {renderPreviewEducation()}
+                            {renderPreviewAchievements()}
+                            {renderPreviewLanguages()}
+                          </div>
+                        </div>
+                      ) : isEuropass ? (
+                        /* Europass CV: label column + content column */
+                        <div>
+                          <div className="flex items-center justify-between gap-3 pb-1.5 sm:pb-3 mb-2 sm:mb-4 border-b-2" style={{ borderColor: accent }}>
+                            <div className="min-w-0">
+                              {effectiveName && <div className={`${previewTitleSize} font-bold text-slate-950 break-words`}>{effectiveName}</div>}
+                              {effectiveRole && <p className={`${previewHeadlineSize} font-semibold break-words`} style={{ color: accent }}>{effectiveRole}</p>}
+                            </div>
+                            {photoUrl && renderAvatar("w-12 h-14 sm:w-20 sm:h-24")}
+                          </div>
+                          {(effectiveEmail || effectivePhone || effectiveLocation || effectiveLinkedin || effectiveGithub || effectivePortfolio) && renderLabeledRow('Personal information', renderContactColumn())}
+                          {effectiveSummary && renderLabeledRow('About me', <p className={bodyText}>{effectiveSummary}</p>)}
+                          {filledJobs.length > 0 && renderLabeledRow('Work experience', filledJobs.map((job, i) => (
+                            <div key={i}>
+                              <p className={`${previewTextSize} font-semibold`} style={{ color: accent }}>{jobDates(job)}</p>
+                              <p className={`${previewTextSize} font-bold text-slate-950 break-words`}>{job.role}</p>
+                              <p className={mutedText}>{[job.company, job.location].filter(Boolean).join(' · ')}</p>
+                              {renderBulletList(bulletsOf(job))}
+                            </div>
+                          )))}
+                          {filledEducation.length > 0 && renderLabeledRow('Education and training', filledEducation.map((edu, i) => (
+                            <div key={i}>
+                              {edu.year && <p className={`${previewTextSize} font-semibold`} style={{ color: accent }}>{formatEducationDates(edu.year)}</p>}
+                              <p className={`${previewTextSize} font-bold text-slate-950 break-words`}>{[edu.degree, edu.fieldOfStudy].filter(Boolean).join(' in ')}</p>
+                              <p className={mutedText}>{edu.institution}{edu.grade ? ` · ${edu.grade}` : ''}</p>
+                            </div>
+                          )))}
+                          {filledProjects.length > 0 && renderLabeledRow('Projects', filledProjects.map((proj, i) => (
+                            <div key={i}>
+                              <p className={`${previewTextSize} font-bold text-slate-950 break-words`}>{proj.name} {projectLink(proj.projectLink)}</p>
+                              {proj.techStack && <p className={mutedText}>{proj.techStack}</p>}
+                              {renderBulletList(bulletsOf(proj))}
+                            </div>
+                          )))}
+                          {filledLanguages.length > 0 && renderLabeledRow('Language skills', <p className={bodyText}>{filledLanguages.join(' · ')}</p>)}
+                          {skillGroups.length > 0 && renderLabeledRow('Digital skills', renderSkillLines())}
+                          {filledAchievements.length > 0 && renderLabeledRow('Honours and awards', renderBulletList(filledAchievements))}
+                        </div>
+                      ) : isLebenslauf ? (
+                        /* German Lebenslauf: tabular CV with dates column, photo and place/date line */
+                        <div>
+                          <div className="flex items-start justify-between gap-3 mb-2 sm:mb-4">
+                            <div className="min-w-0">
+                              {effectiveName && <div className={`${previewTitleSize} font-bold text-slate-950 break-words`} style={{ color: styleConfig.primaryColor || undefined }}>{effectiveName}</div>}
+                              {effectiveRole && <p className={`${previewHeadlineSize} font-medium text-slate-600 mb-1 sm:mb-1.5 break-words`}>{effectiveRole}</p>}
+                              {renderContactColumn()}
+                            </div>
+                            {photoUrl && renderAvatar("w-14 h-[4.4rem] sm:w-24 sm:h-[7.5rem]")}
+                          </div>
+                          {effectiveSummary && (
+                            <div className={previewSectionMargin}>
+                              {renderHeading('Profile')}
+                              <p className={bodyText}>{effectiveSummary}</p>
+                            </div>
+                          )}
+                          {filledJobs.length > 0 && (
+                            <div className={previewSectionMargin}>
+                              {renderHeading('Professional Experience')}
+                              {filledJobs.map((job, i) => renderDateRow(i, jobDates(job), (
+                                <>
+                                  <p className={`${previewTextSize} font-bold text-slate-950 break-words`}>{job.role}</p>
+                                  <p className={mutedText}>{[job.company, job.location].filter(Boolean).join(', ')}</p>
+                                  {renderBulletList(bulletsOf(job))}
+                                </>
+                              )))}
+                            </div>
+                          )}
+                          {filledEducation.length > 0 && (
+                            <div className={previewSectionMargin}>
+                              {renderHeading('Education')}
+                              {filledEducation.map((edu, i) => renderDateRow(i, formatEducationDates(edu.year), (
+                                <>
+                                  <p className={`${previewTextSize} font-bold text-slate-950 break-words`}>{[edu.degree, edu.fieldOfStudy].filter(Boolean).join(' in ')}</p>
+                                  <p className={mutedText}>{edu.institution}{edu.grade ? ` — ${edu.grade}` : ''}</p>
+                                </>
+                              )))}
+                            </div>
+                          )}
+                          {filledProjects.length > 0 && (
+                            <div className={previewSectionMargin}>
+                              {renderHeading('Projects')}
+                              {filledProjects.map((proj, i) => renderDateRow(i, proj.techStack, (
+                                <>
+                                  <p className={`${previewTextSize} font-bold text-slate-950 break-words`}>{proj.name} {projectLink(proj.projectLink)}</p>
+                                  {renderBulletList(bulletsOf(proj))}
+                                </>
+                              )))}
+                            </div>
+                          )}
+                          {(skillGroups.length > 0 || filledLanguages.length > 0) && (
+                            <div className={previewSectionMargin}>
+                              {renderHeading('Skills & Languages')}
+                              {skillGroups.map((g, i) => renderDateRow(`s${i}`, g.category, <p className={bodyText}>{g.skills.join(', ')}</p>))}
+                              {filledLanguages.length > 0 && renderDateRow('lang', 'Languages', <p className={bodyText}>{filledLanguages.join(', ')}</p>)}
+                            </div>
+                          )}
+                          {filledAchievements.length > 0 && (
+                            <div className={previewSectionMargin}>
+                              {renderHeading('Certifications & Awards')}
+                              {renderBulletList(filledAchievements)}
+                            </div>
+                          )}
+                          <div className="mt-4 sm:mt-10 flex justify-end">
+                            <div className="text-center">
+                              <div className="w-24 sm:w-44 border-b border-slate-400 mb-0.5 sm:mb-1 h-4 sm:h-8" />
+                              <span className="text-[7.5px] sm:text-[11px] text-slate-500">{placeAndDate}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ) : isPhotoSidebar ? (
                         <div className="flex flex-row gap-2.5 sm:gap-6">
                           {/* Left Sidebar (25% on desktop, 28% on mobile) */}
                           <div className="w-[28%] sm:w-[25%] shrink-0 border-r border-slate-200 pr-2 sm:pr-4">

@@ -25,6 +25,12 @@ const ALL_TEMPLATE_IDS = [
   "ats-modern-swiss",
   "ats-emerald-professional",
   "ats-compact-onepage",
+  // Widely used international formats
+  "ats-latex-classic",
+  "ats-hybrid-competencies",
+  "modern-banner",
+  "regional-europass",
+  "regional-lebenslauf",
 ] as const
 
 const SAMPLE_RESUME_DATA = {
@@ -105,17 +111,22 @@ const SAMPLE_RESUME_DATA = {
 }
 
 describe("Resume Templates & PDF Rendering Pipeline", () => {
-  it("includes all 18 templates including the 6 new premier ATS templates", () => {
-    expect(ALL_TEMPLATE_IDS).toHaveLength(18)
+  it("includes all 23 templates including the premier ATS and international formats", () => {
+    expect(ALL_TEMPLATE_IDS).toHaveLength(23)
     expect(ALL_TEMPLATE_IDS).toContain("ats-ivy-league")
     expect(ALL_TEMPLATE_IDS).toContain("ats-tech-faang")
     expect(ALL_TEMPLATE_IDS).toContain("ats-executive-modern")
     expect(ALL_TEMPLATE_IDS).toContain("ats-modern-swiss")
     expect(ALL_TEMPLATE_IDS).toContain("ats-emerald-professional")
     expect(ALL_TEMPLATE_IDS).toContain("ats-compact-onepage")
+    expect(ALL_TEMPLATE_IDS).toContain("ats-latex-classic")
+    expect(ALL_TEMPLATE_IDS).toContain("ats-hybrid-competencies")
+    expect(ALL_TEMPLATE_IDS).toContain("modern-banner")
+    expect(ALL_TEMPLATE_IDS).toContain("regional-europass")
+    expect(ALL_TEMPLATE_IDS).toContain("regional-lebenslauf")
   })
 
-  describe("Server-Side PDF Buffer Generation for all 18 templates", () => {
+  describe("Server-Side PDF Buffer Generation for all 23 templates", () => {
     for (const templateId of ALL_TEMPLATE_IDS) {
       it(`renders valid PDF buffer for template "${templateId}"`, async () => {
         const element = React.createElement(ResumePdfDocument, {

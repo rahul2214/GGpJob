@@ -16,6 +16,15 @@ export interface ResumeStyleConfig {
   textColor?: string;
 }
 
+// Default accent colour for templates with tinted headings (kept in sync with the builder preview)
+const TEMPLATE_ACCENTS: Record<string, string> = {
+  'ats-latex-classic': '#000000',
+  'ats-hybrid-competencies': '#1e293b',
+  'modern-banner': '#1e3a5f',
+  'regional-europass': '#0b4f9c',
+  'regional-lebenslauf': '#334155',
+}
+
 // Helper: Generates stylesheet based on the active visual template
 const getStyles = (template: string, styleConfig?: ResumeStyleConfig) => {
   const isIvyLeague = template === 'ats-ivy-league';
@@ -25,7 +34,7 @@ const getStyles = (template: string, styleConfig?: ResumeStyleConfig) => {
   const isEmerald = template === 'ats-emerald-professional';
   const isCompactOnePage = template === 'ats-compact-onepage';
 
-  const isSerif = template === 'classic-serif' || isIvyLeague;
+  const isSerif = template === 'classic-serif' || isIvyLeague || template === 'ats-latex-classic';
   const isNavy = template === 'executive-navy' || template === 'photo-executive' || isExecModern;
   const isCompact = template === 'compact-tech' || isCompactOnePage;
   const isMinimal = template === 'modern-minimal' || template === 'photo-minimal' || isSwiss;
@@ -37,6 +46,11 @@ const getStyles = (template: string, styleConfig?: ResumeStyleConfig) => {
   const isPhotoMinimal = template === 'photo-minimal';
   const isPhotoCreative = template === 'photo-creative';
   const isAtsClean = template === 'ats-clean';
+  const isLatex = template === 'ats-latex-classic';
+  const isHybrid = template === 'ats-hybrid-competencies';
+  const isEuropass = template === 'regional-europass';
+  const isLebenslauf = template === 'regional-lebenslauf';
+  const templateAccent = TEMPLATE_ACCENTS[template];
 
   let fontFamily = isSerif ? "Times-Roman" : isAtsClean ? "Courier" : "Helvetica";
   let fontFamilyBold = isSerif ? "Times-Bold" : isAtsClean ? "Courier-Bold" : "Helvetica-Bold";
@@ -107,6 +121,11 @@ const getStyles = (template: string, styleConfig?: ResumeStyleConfig) => {
     nameColor = "#000000";
     sectionColor = "#000000";
     borderColor = "transparent";
+  } else if (templateAccent) {
+    textColor = isLatex ? "#000000" : "#1f2937";
+    nameColor = isLatex ? "#000000" : "#0f172a";
+    sectionColor = templateAccent;
+    borderColor = templateAccent;
   }
 
   // Apply explicit color overrides if provided
@@ -122,8 +141,9 @@ const getStyles = (template: string, styleConfig?: ResumeStyleConfig) => {
   }
 
   // Header Align
-  const headerAlign = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isTechFaang || isExecModern || isEmerald) ? "flex-start" : "center";
-  const contactJustify = (isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isTechFaang || isExecModern || isEmerald) ? "flex-start" : "center";
+  const isLeftAligned = isMinimal || isCompact || isCreative || isAtsClean || isTwoColumn || isElegant || isTechFaang || isExecModern || isEmerald || isHybrid || isEuropass || isLebenslauf;
+  const headerAlign = isLeftAligned ? "flex-start" : "center";
+  const contactJustify = isLeftAligned ? "flex-start" : "center";
 
   // Font sizing and density scales
   const scale = styleConfig?.fontSizeScale;
@@ -335,6 +355,9 @@ const getStyles = (template: string, styleConfig?: ResumeStyleConfig) => {
     },
     headerPhotoMeta: {
       flex: 1,
+    },
+    italicText: {
+      fontFamily: fontFamily === "Times-Roman" ? "Times-Italic" : fontFamily === "Courier" ? "Courier-Oblique" : "Helvetica-Oblique",
     },
   });
 };
@@ -561,7 +584,44 @@ const AchievementsSection = ({ data, styles }: { data: ResumeData; styles: any }
   )
 }
 
-const LanguagesSection = ({ data, styles }: { data: ResumeData; styles: any }) => {
+// LaTeX-style entry: bold title + date, then italic subtitle + location
+const TwoLineEntry = ({ styles, topLeft, topRight, bottomLeft, bottomRight, bullets, last }: {
+  styles: any; topLeft?: string; topRight?: string; bottomLeft?: string; bottomRight?: string; bullets?: string[]; last?: boolean
+}) => (
+  <View style={last ? undefined : styles.entryBlock}>
+    <View style={styles.entryRow}>
+      <Text style={styles.entryTitle}>{topLeft}</Text>
+      {topRight ? <Text style={styles.entryDate}>{topRight}</Text> : null}
+    </View>
+    {(bottomLeft || bottomRight) ? (
+      <View style={styles.entryRow}>
+        <Text style={{ ...styles.entrySubtitle, ...styles.italicText, flex: 1 }}>{bottomLeft}</Text>
+        {bottomRight ? <Text style={{ ...styles.entrySubtitle, ...styles.italicText }}>{bottomRight}</Text> : null}
+      </View>
+    ) : null}
+    {bullets && bullets.length > 0 ? <BulletList items={bullets} styles={styles} /> : null}
+  </View>
+)
+
+// Europass row: section label column + content column
+const LabeledRow = ({ label, accent, styles, children }: { label: string; accent: string; styles: any; children: React.ReactNode }) => (
+  <View style={{ flexDirection: "row", marginBottom: 8 }}>
+    <View style={{ width: "26%", paddingRight: 10 }}>
+      <Text style={{ fontSize: styles.sectionTitle.fontSize - 1, fontFamily: styles.sectionTitle.fontFamily, color: accent, textTransform: "uppercase", textAlign: "right" }}>{label}</Text>
+    </View>
+    <View style={{ flex: 1, borderLeftWidth: 0.75, borderLeftColor: "#cbd5e1", paddingLeft: 10 }}>{children}</View>
+  </View>
+)
+
+// Lebenslauf row: dates / label on the left, details on the right
+const DateRow = ({ left, styles, children }: { left?: string; styles: any; children: React.ReactNode }) => (
+  <View style={{ flexDirection: "row", marginBottom: 4 }}>
+    <Text style={{ width: "24%", paddingRight: 8, fontSize: styles.bodyText.fontSize, color: "#64748b" }}>{left || ""}</Text>
+    <View style={{ flex: 1 }}>{children}</View>
+  </View>
+)
+
+const LanguagesSection =({ data, styles }: { data: ResumeData; styles: any }) => {
   if (!data.languages || data.languages.length === 0) return null
   return (
     <View style={styles.section}>
@@ -618,6 +678,53 @@ export function ResumePdfDocument({ data, template = 'classic-serif', styleConfi
   const isHeaderCenter = !isHeaderLeft;
 
   const photoSrc = data.photoUrl || data.contact?.photoUrl;
+
+  const isLatex = template === 'ats-latex-classic';
+  const isHybrid = template === 'ats-hybrid-competencies';
+  const isBanner = template === 'modern-banner';
+  const isEuropass = template === 'regional-europass';
+  const isLebenslauf = template === 'regional-lebenslauf';
+  const accent = styleConfig?.primaryColor || TEMPLATE_ACCENTS[template] || "#0f172a";
+
+  const skillGroups: { category: string; skills: string[] }[] = !data.skills || data.skills.length === 0
+    ? []
+    : typeof data.skills[0] === 'string'
+      ? [{ category: "Skills", skills: (data.skills as string[]).filter(Boolean) }]
+      : (data.skills as { category: string; skills: string[] }[])
+        .map(c => ({ category: c.category || "Skills", skills: (Array.isArray(c.skills) ? c.skills : []).filter(Boolean) }))
+        .filter(c => c.skills.length > 0)
+  const allSkills = skillGroups.flatMap(g => g.skills)
+
+  const placeAndDate = `${data.contact.location ? `${data.contact.location.split(",")[0]}, ` : ""}${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`
+
+  const renderContactRow = () => (
+    <View style={styles.contactRow}>
+      {contactItems.map((item, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && <Text style={styles.contactDot}>{isLatex ? "|" : "•"}</Text>}
+          {item.type === "link" ? (
+            <Link src={item.url} style={styles.contactLink}>{item.label}</Link>
+          ) : (
+            <Text style={styles.contactText}>{item.label}</Text>
+          )}
+        </React.Fragment>
+      ))}
+    </View>
+  )
+
+  const renderContactColumn = () => (
+    <View>
+      {contactItems.map((item, i) => (
+        <View key={i} style={{ marginBottom: 1.5 }}>
+          {item.type === "link" ? (
+            <Link src={item.url} style={styles.contactLink}>{item.label}</Link>
+          ) : (
+            <Text style={styles.contactText}>{item.label}</Text>
+          )}
+        </View>
+      ))}
+    </View>
+  )
 
   return (
     <Document title={`${data.name} — Resume`} author={data.name}>
@@ -869,8 +976,310 @@ export function ResumePdfDocument({ data, template = 'classic-serif', styleConfi
           </View>
         )}
 
+        {/* ── LaTeX Classic Layout ── */}
+        {isLatex && (
+          <View>
+            <View style={{ ...styles.headerContainer, alignItems: "center" }}>
+              <Text style={{ ...styles.name, marginBottom: 5, textTransform: "none", letterSpacing: 0.3 }}>{data.name}</Text>
+              {data.role && <Text style={{ ...styles.headline, textTransform: "none", fontFamily: styles.page.fontFamily }}>{data.role}</Text>}
+              {renderContactRow()}
+            </View>
+            <SummarySection data={data} styles={styles} />
+            {data.education?.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Education</Text>
+                {data.education.map((edu, i) => (
+                  <TwoLineEntry
+                    key={i}
+                    styles={styles}
+                    last={i === data.education.length - 1}
+                    topLeft={edu.institution}
+                    topRight={edu.dates}
+                    bottomLeft={[edu.degree, edu.fieldOfStudy].filter(Boolean).join(" in ")}
+                    bottomRight={edu.grade}
+                  />
+                ))}
+              </View>
+            )}
+            {data.experience?.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Experience</Text>
+                {data.experience.map((exp, i) => (
+                  <TwoLineEntry
+                    key={i}
+                    styles={styles}
+                    last={i === data.experience.length - 1}
+                    topLeft={exp.company}
+                    topRight={formatPdfDates(exp.dates)}
+                    bottomLeft={exp.role}
+                    bottomRight={exp.location}
+                    bullets={exp.bullets}
+                  />
+                ))}
+              </View>
+            )}
+            {data.projects?.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Projects</Text>
+                {data.projects.map((proj, i) => (
+                  <View key={i} style={i === data.projects.length - 1 ? undefined : styles.entryBlock}>
+                    <View style={styles.entryRow}>
+                      <Text style={styles.entryTitle}>
+                        {proj.name}
+                        {proj.techStack ? <Text style={{ ...styles.italicText, fontSize: styles.bodyText.fontSize }}>{`  |  ${proj.techStack}`}</Text> : null}
+                      </Text>
+                      {proj.projectLink ? <Link src={formatUrl(proj.projectLink)} style={styles.projectLink}>LINK</Link> : null}
+                    </View>
+                    <BulletList items={proj.bullets} styles={styles} />
+                  </View>
+                ))}
+              </View>
+            )}
+            {skillGroups.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Technical Skills</Text>
+                {skillGroups.map((g, i) => (
+                  <Text key={i} style={styles.skillsText}>
+                    <Text style={styles.skillsTextBold}>{g.category}: </Text>
+                    {g.skills.join(", ")}
+                  </Text>
+                ))}
+              </View>
+            )}
+            <AchievementsSection data={data} styles={styles} />
+            <LanguagesSection data={data} styles={styles} />
+          </View>
+        )}
+
+        {/* ── Hybrid / Core Competencies Layout ── */}
+        {isHybrid && (
+          <View>
+            <View style={{ ...styles.headerContainer, alignItems: "flex-start", borderBottomWidth: 2, borderBottomColor: accent, paddingBottom: 5, marginBottom: 6 }}>
+              <Text style={{ ...styles.name, marginBottom: 5, textTransform: "none" }}>{data.name}</Text>
+              {data.role && <Text style={{ ...styles.headline, color: "#475569" }}>{data.role}</Text>}
+              {renderContactRow()}
+            </View>
+            <SummarySection data={data} styles={styles} />
+            {allSkills.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Core Competencies</Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", backgroundColor: "#f8fafc", paddingVertical: 4, paddingHorizontal: 6, marginTop: 1 }}>
+                  {allSkills.map((skill, i) => (
+                    <View key={i} style={{ width: "33.33%", flexDirection: "row", paddingRight: 4, marginBottom: 1.5 }}>
+                      <Text style={{ ...styles.bulletDot, color: accent }}>•</Text>
+                      <Text style={styles.bulletText}>{skill}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+            <ExperienceSection data={data} styles={styles} />
+            <ProjectsSection data={data} styles={styles} formatUrl={formatUrl} />
+            <EducationSection data={data} styles={styles} />
+            <AchievementsSection data={data} styles={styles} />
+            <LanguagesSection data={data} styles={styles} />
+          </View>
+        )}
+
+        {/* ── Modern Header Banner Layout ── */}
+        {isBanner && (
+          <View>
+            <View style={{
+              backgroundColor: accent,
+              marginTop: -styles.page.paddingTop,
+              marginHorizontal: -styles.page.paddingLeft,
+              paddingHorizontal: styles.page.paddingLeft,
+              paddingVertical: 18,
+              marginBottom: 10,
+              flexDirection: "row",
+              alignItems: "center",
+            }}>
+              {photoSrc ? <Image src={photoSrc} style={{ width: 72, height: 72, marginRight: 14, borderWidth: 1.5, borderColor: "#ffffff" }} /> : null}
+              <View style={{ flex: 1 }}>
+                <Text style={{ ...styles.name, marginBottom: 5, color: "#ffffff", textTransform: "none" }}>{data.name}</Text>
+                {data.role && <Text style={{ ...styles.headline, color: "#dbeafe" }}>{data.role}</Text>}
+                <View style={{ ...styles.contactRow, justifyContent: "flex-start" }}>
+                  {contactItems.map((item, i) => (
+                    <React.Fragment key={i}>
+                      {i > 0 && <Text style={{ ...styles.contactDot, color: "#cbd5e1" }}>•</Text>}
+                      {item.url ? (
+                        <Link src={item.url} style={{ ...styles.contactText, color: "#ffffff", textDecoration: item.type === "link" ? "underline" : "none" }}>{item.label}</Link>
+                      ) : (
+                        <Text style={{ ...styles.contactText, color: "#ffffff" }}>{item.label}</Text>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </View>
+              </View>
+            </View>
+            <SummarySection data={data} styles={styles} />
+            <SkillsSection data={data} styles={styles} />
+            <ExperienceSection data={data} styles={styles} />
+            <ProjectsSection data={data} styles={styles} formatUrl={formatUrl} />
+            <EducationSection data={data} styles={styles} />
+            <AchievementsSection data={data} styles={styles} />
+            <LanguagesSection data={data} styles={styles} />
+          </View>
+        )}
+
+        {/* ── Europass CV Layout ── */}
+        {isEuropass && (
+          <View>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 2, borderBottomColor: accent, paddingBottom: 5, marginBottom: 8 }}>
+              <View style={{ flex: 1, paddingRight: 10 }}>
+                <Text style={{ ...styles.name, marginBottom: 5, textTransform: "none", letterSpacing: 0.2 }}>{data.name}</Text>
+                {data.role && <Text style={{ ...styles.headline, color: accent, textTransform: "none" }}>{data.role}</Text>}
+              </View>
+              {photoSrc ? <Image src={photoSrc} style={{ width: 62, height: 76, borderWidth: 1, borderColor: "#cbd5e1" }} /> : null}
+            </View>
+            {contactItems.length > 0 && (
+              <LabeledRow label="Personal information" accent={accent} styles={styles}>
+                {renderContactColumn()}
+              </LabeledRow>
+            )}
+            {data.summary ? (
+              <LabeledRow label="About me" accent={accent} styles={styles}>
+                <Text style={styles.bodyText}>{data.summary}</Text>
+              </LabeledRow>
+            ) : null}
+            {data.experience?.length > 0 && (
+              <LabeledRow label="Work experience" accent={accent} styles={styles}>
+                {data.experience.map((exp, i) => (
+                  <View key={i} style={i === data.experience.length - 1 ? undefined : styles.entryBlock}>
+                    <Text style={{ ...styles.bodyText, color: accent, fontFamily: styles.entryTitle.fontFamily }}>{formatPdfDates(exp.dates)}</Text>
+                    <Text style={{ fontSize: styles.entryTitle.fontSize, fontFamily: styles.entryTitle.fontFamily, color: styles.bodyText.color, marginTop: 1 }}>{exp.role}</Text>
+                    <Text style={{ ...styles.bodyText, color: "#475569" }}>{[exp.company, exp.location].filter(Boolean).join(" · ")}</Text>
+                    <BulletList items={exp.bullets} styles={styles} />
+                  </View>
+                ))}
+              </LabeledRow>
+            )}
+            {data.education?.length > 0 && (
+              <LabeledRow label="Education and training" accent={accent} styles={styles}>
+                {data.education.map((edu, i) => (
+                  <View key={i} style={i === data.education.length - 1 ? undefined : styles.entryBlock}>
+                    {edu.dates ? <Text style={{ ...styles.bodyText, color: accent, fontFamily: styles.entryTitle.fontFamily }}>{edu.dates}</Text> : null}
+                    <Text style={{ fontSize: styles.entryTitle.fontSize, fontFamily: styles.entryTitle.fontFamily, color: styles.bodyText.color, marginTop: 1 }}>{[edu.degree, edu.fieldOfStudy].filter(Boolean).join(" in ")}</Text>
+                    <Text style={{ ...styles.bodyText, color: "#475569" }}>{edu.institution}{edu.grade ? ` · ${edu.grade}` : ""}</Text>
+                  </View>
+                ))}
+              </LabeledRow>
+            )}
+            {data.projects?.length > 0 && (
+              <LabeledRow label="Projects" accent={accent} styles={styles}>
+                {data.projects.map((proj, i) => (
+                  <View key={i} style={i === data.projects.length - 1 ? undefined : styles.entryBlock}>
+                    <Text style={{ fontSize: styles.entryTitle.fontSize, fontFamily: styles.entryTitle.fontFamily, color: styles.bodyText.color, marginTop: 1 }}>{proj.name}{proj.projectLink ? "  " : ""}{proj.projectLink ? <Link src={formatUrl(proj.projectLink)} style={styles.projectLink}>LINK</Link> : null}</Text>
+                    {proj.techStack ? <Text style={{ ...styles.bodyText, color: "#475569" }}>{proj.techStack}</Text> : null}
+                    <BulletList items={proj.bullets} styles={styles} />
+                  </View>
+                ))}
+              </LabeledRow>
+            )}
+            {data.languages && data.languages.length > 0 && (
+              <LabeledRow label="Language skills" accent={accent} styles={styles}>
+                <Text style={styles.bodyText}>{data.languages.join(" · ")}</Text>
+              </LabeledRow>
+            )}
+            {skillGroups.length > 0 && (
+              <LabeledRow label="Digital skills" accent={accent} styles={styles}>
+                {skillGroups.map((g, i) => (
+                  <Text key={i} style={styles.skillsText}>
+                    <Text style={styles.skillsTextBold}>{g.category}: </Text>
+                    {g.skills.join(", ")}
+                  </Text>
+                ))}
+              </LabeledRow>
+            )}
+            {data.achievements && data.achievements.length > 0 && (
+              <LabeledRow label="Honours and awards" accent={accent} styles={styles}>
+                <BulletList items={data.achievements} styles={styles} />
+              </LabeledRow>
+            )}
+          </View>
+        )}
+
+        {/* ── German Lebenslauf Layout ── */}
+        {isLebenslauf && (
+          <View>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                <Text style={{ ...styles.name, marginBottom: 5, textTransform: "none", letterSpacing: 0.2 }}>{data.name}</Text>
+                {data.role && <Text style={{ ...styles.headline, textTransform: "none", fontFamily: styles.page.fontFamily, color: "#475569", marginBottom: 3 }}>{data.role}</Text>}
+                {renderContactColumn()}
+              </View>
+              {photoSrc ? <Image src={photoSrc} style={{ width: 72, height: 90, borderWidth: 1, borderColor: "#cbd5e1" }} /> : null}
+            </View>
+            {data.summary ? (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Profile</Text>
+                <Text style={styles.bodyText}>{data.summary}</Text>
+              </View>
+            ) : null}
+            {data.experience?.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Professional Experience</Text>
+                {data.experience.map((exp, i) => (
+                  <DateRow key={i} styles={styles} left={formatPdfDates(exp.dates)}>
+                    <Text style={{ fontSize: styles.entryTitle.fontSize, fontFamily: styles.entryTitle.fontFamily, color: styles.bodyText.color, marginTop: 1 }}>{exp.role}</Text>
+                    <Text style={{ ...styles.bodyText, color: "#475569" }}>{[exp.company, exp.location].filter(Boolean).join(", ")}</Text>
+                    <BulletList items={exp.bullets} styles={styles} />
+                  </DateRow>
+                ))}
+              </View>
+            )}
+            {data.education?.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Education</Text>
+                {data.education.map((edu, i) => (
+                  <DateRow key={i} styles={styles} left={edu.dates}>
+                    <Text style={{ fontSize: styles.entryTitle.fontSize, fontFamily: styles.entryTitle.fontFamily, color: styles.bodyText.color, marginTop: 1 }}>{[edu.degree, edu.fieldOfStudy].filter(Boolean).join(" in ")}</Text>
+                    <Text style={{ ...styles.bodyText, color: "#475569" }}>{edu.institution}{edu.grade ? ` — ${edu.grade}` : ""}</Text>
+                  </DateRow>
+                ))}
+              </View>
+            )}
+            {data.projects?.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Projects</Text>
+                {data.projects.map((proj, i) => (
+                  <DateRow key={i} styles={styles} left={proj.techStack}>
+                    <Text style={{ fontSize: styles.entryTitle.fontSize, fontFamily: styles.entryTitle.fontFamily, color: styles.bodyText.color, marginTop: 1 }}>{proj.name}{proj.projectLink ? "  " : ""}{proj.projectLink ? <Link src={formatUrl(proj.projectLink)} style={styles.projectLink}>LINK</Link> : null}</Text>
+                    <BulletList items={proj.bullets} styles={styles} />
+                  </DateRow>
+                ))}
+              </View>
+            )}
+            {(skillGroups.length > 0 || (data.languages && data.languages.length > 0)) && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Skills & Languages</Text>
+                {skillGroups.map((g, i) => (
+                  <DateRow key={i} styles={styles} left={g.category}>
+                    <Text style={styles.bodyText}>{g.skills.join(", ")}</Text>
+                  </DateRow>
+                ))}
+                {data.languages && data.languages.length > 0 && (
+                  <DateRow styles={styles} left="Languages">
+                    <Text style={styles.bodyText}>{data.languages.join(", ")}</Text>
+                  </DateRow>
+                )}
+              </View>
+            )}
+            {data.achievements && data.achievements.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Certifications & Awards</Text>
+                <BulletList items={data.achievements} styles={styles} />
+              </View>
+            )}
+            <View style={{ alignSelf: "flex-end", alignItems: "center", marginTop: 26 }} wrap={false}>
+              <View style={{ width: 160, borderBottomWidth: 0.75, borderBottomColor: "#94a3b8", height: 22, marginBottom: 3 }} />
+              <Text style={{ ...styles.contactText, color: "#64748b" }}>{placeAndDate}</Text>
+            </View>
+          </View>
+        )}
+
         {/* ── Standard Single Column Layouts ── */}
-        {!isTwoColumn && !isElegant && !isPhotoSidebar && !isPhotoExec && !isPhotoCreative && !isPhotoMinimal && (
+        {!isTwoColumn && !isElegant && !isPhotoSidebar && !isPhotoExec && !isPhotoCreative && !isPhotoMinimal && !isLatex && !isHybrid && !isBanner && !isEuropass && !isLebenslauf && (
           <View>
             {/* Header */}
             {photoSrc ? (
