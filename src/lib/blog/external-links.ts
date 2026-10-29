@@ -42,6 +42,19 @@ export const ALLOWED_REFERENCE_DOMAINS: Record<string, string> = {
   'arxiv.org': 'arXiv',
   'gov.uk': 'GOV.UK',
   'uscis.gov': 'USCIS',
+  // Labour-market data, government immigration portals and certification
+  // bodies: the primary sources behind career, salary and visa guides.
+  'bls.gov': 'U.S. Bureau of Labor Statistics',
+  'dol.gov': 'U.S. Department of Labor',
+  'apprenticeship.gov': 'U.S. Department of Labor',
+  'ftc.gov': 'Federal Trade Commission',
+  'onetonline.org': 'O*NET OnLine',
+  'weforum.org': 'World Economic Forum',
+  'europa.eu': 'European Union',
+  'canada.ca': 'Government of Canada',
+  'make-it-in-germany.com': 'Make it in Germany',
+  'pmi.org': 'Project Management Institute',
+  'dev.java': 'Dev.java',
 };
 
 /*

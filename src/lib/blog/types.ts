@@ -262,6 +262,12 @@ export const CATEGORY_STYLES: Record<string, CategoryStyle> = {
     gradient: 'from-orange-500 to-amber-500',
     ring: 'hover:border-orange-300 dark:hover:border-orange-700',
   },
+  'Career Growth': {
+    pill: 'bg-lime-50 text-lime-800 dark:bg-lime-950/40 dark:text-lime-300',
+    text: 'text-lime-700 dark:text-lime-400',
+    gradient: 'from-lime-500 to-emerald-500',
+    ring: 'hover:border-lime-300 dark:hover:border-lime-700',
+  },
   'Job Search Safety': {
     pill: 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-300',
     text: 'text-fuchsia-600 dark:text-fuchsia-400',

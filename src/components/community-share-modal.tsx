@@ -13,7 +13,8 @@ interface CommunityShareModalProps {
   post: {
     title: string;
     content?: string;
-    communityId: number;
+    /** Path of the community page, e.g. "/communities/ai-machine-learning". */
+    communityPath: string;
     postId: number | string;
   } | null;
 }
@@ -25,7 +26,7 @@ export function CommunityShareModal({ open, onOpenChange, post }: CommunityShare
   if (!post) return null;
 
   const origin = typeof window !== "undefined" ? window.location.origin : "https://www.jobsdart.in";
-  const postUrl = `${origin}/communities/${post.communityId}/posts/${post.postId}`;
+  const postUrl = `${origin}${post.communityPath}/posts/${post.postId}`;
 
   const handleCopy = async () => {
     try {

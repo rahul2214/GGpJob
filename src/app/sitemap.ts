@@ -4,6 +4,7 @@ import { SITE_URL } from '@/lib/site';
 import { getLocationFacets } from '@/lib/job-taxonomy';
 import { getAllPosts, getTotalPages } from '@/lib/blog';
 import { jobTitleToSlug } from '@/lib/job-url';
+import { listCommunities, listRecentPostRefs } from '@/lib/communities-server';
 
 // Shared with metadataBase and every canonical tag, so the sitemap can never
 // advertise a different host than the pages themselves claim.
@@ -76,39 +77,32 @@ async function getJobEntries(): Promise<MetadataRoute.Sitemap> {
 }
 
 /**
- * Community pages carry real discussion content but the listing navigates with
- * router.push rather than an anchor, so nothing links to them that a crawler
- * can follow. The sitemap is currently their only route to discovery.
- *
- * The numeric-id form matches the canonical declared in
- * app/communities/[id]/layout.tsx, so this never advertises the uuid duplicate.
+ * One entry per community, at its slug URL (/communities/<slug>), which is the
+ * canonical form; numeric-id and uuid links redirect there.
  */
 async function getCommunityEntries(): Promise<MetadataRoute.Sitemap> {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('communities')
-      .select('id, updated_at, created_at')
-      .order('updated_at', { ascending: false })
-      .limit(1000);
+  const communities = await listCommunities();
+  return communities.map(c => ({
+    url: `${baseUrl}/communities/${c.slug}`,
+    lastModified: new Date(c.updatedAt || c.createdAt || Date.now()),
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
+  }));
+}
 
-    if (error) {
-      console.error('[SITEMAP] Failed to load communities:', error.message);
-      return [];
-    }
-
-    const rows = (data || []) as Array<{ id: number; updated_at: string | null; created_at: string | null }>;
-    return rows
-      .filter(row => row.id != null)
-      .map(row => ({
-        url: `${baseUrl}/communities/${row.id}`,
-        lastModified: new Date(row.updated_at || row.created_at || Date.now()),
-        changeFrequency: 'weekly' as const,
-        priority: 0.6,
-      }));
-  } catch (err) {
-    console.error('[SITEMAP] Unexpected error loading communities:', err);
-    return [];
-  }
+/**
+ * Community discussion threads. Posts are linked from their community page,
+ * but listing them here gets new threads discovered without waiting for a
+ * recrawl. Thin posts are excluded because their pages are noindex.
+ */
+async function getCommunityPostEntries(): Promise<MetadataRoute.Sitemap> {
+  const posts = await listRecentPostRefs(2000);
+  return posts.map(p => ({
+    url: `${baseUrl}/communities/${p.communitySlug}/posts/${p.id}`,
+    lastModified: new Date(p.updatedAt || Date.now()),
+    changeFrequency: 'weekly' as const,
+    priority: 0.5,
+  }));
 }
 
 /** One indexable landing page per location that currently has live jobs. */
@@ -153,10 +147,11 @@ function getBlogPageEntries(lastModified: Date): MetadataRoute.Sitemap {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
-  const [locations, jobs, communities] = await Promise.all([
+  const [locations, jobs, communities, communityPosts] = await Promise.all([
     getLocationEntries(lastModified),
     getJobEntries(),
     getCommunityEntries(),
+    getCommunityPostEntries(),
   ]);
 
   return [
@@ -165,6 +160,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...getBlogPageEntries(lastModified),
     ...locations,
     ...communities,
+    ...communityPosts,
     ...jobs,
   ];
 }

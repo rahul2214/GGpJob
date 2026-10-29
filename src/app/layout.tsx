@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { SITE_URL, siteUrl } from '@/lib/site';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
-import { Suspense } from 'react';
 
 // The stylesheet is handled by Next.js
 import './globals.css';
@@ -418,15 +417,13 @@ export default function RootLayout({
       >
         <NetworkStatusIndicator />
         <UserProvider>
-          <DashboardShell>
-            <Suspense
-              fallback={
-                <div className="h-16 border-b bg-white/80 animate-pulse" />
-              }
-            >
-              {children}
-            </Suspense>
-          </DashboardShell>
+          {/*
+            No Suspense boundary around the page: one here made every dynamic
+            route stream its response, so notFound() and redirect() could only
+            produce a 200 with a noindex tag or a meta refresh instead of a real
+            404 or 308. Pages that read useSearchParams wrap themselves.
+          */}
+          <DashboardShell>{children}</DashboardShell>
 
           <Toaster />
 

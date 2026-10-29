@@ -324,6 +324,48 @@ import dataAnalystVsDataScientistSkillsSalariesJobs from '@/content/blog/data-an
 import howToSwitchCareersIntoAiWithoutStartingFromZero from '@/content/blog/how-to-switch-careers-into-ai-without-starting-from-zero';
 import howToIdentifyFakeJobOffersAndRecruitmentScams from '@/content/blog/how-to-identify-fake-job-offers-and-recruitment-scams';
 
+// Batch — high-demand global career guides (resumes, interviews, salary, visas, roadmaps)
+import howToWriteACoverLetter from '@/content/blog/how-to-write-a-cover-letter';
+import resumeVsCvDifference from '@/content/blog/resume-vs-cv-difference';
+import skillsToPutOnAResume from '@/content/blog/skills-to-put-on-a-resume';
+import resumeActionVerbs from '@/content/blog/resume-action-verbs';
+import howLongShouldAResumeBe from '@/content/blog/how-long-should-a-resume-be';
+import howToExplainAnEmploymentGap from '@/content/blog/how-to-explain-an-employment-gap';
+import howToOptimizeYourLinkedinProfile from '@/content/blog/how-to-optimize-your-linkedin-profile';
+import starMethodInterviewAnswers from '@/content/blog/star-method-interview-answers';
+import behavioralInterviewQuestionsAndAnswers from '@/content/blog/behavioral-interview-questions-and-answers';
+import strengthsAndWeaknessesInterviewAnswer from '@/content/blog/strengths-and-weaknesses-interview-answer';
+import whyShouldWeHireYouAnswer from '@/content/blog/why-should-we-hire-you-answer';
+import whyDoYouWantToWorkHereAnswer from '@/content/blog/why-do-you-want-to-work-here-answer';
+import whereDoYouSeeYourselfIn5YearsAnswer from '@/content/blog/where-do-you-see-yourself-in-5-years-answer';
+import questionsToAskAtTheEndOfAnInterview from '@/content/blog/questions-to-ask-at-the-end-of-an-interview';
+import videoInterviewTips from '@/content/blog/video-interview-tips';
+import thankYouEmailAfterAnInterview from '@/content/blog/thank-you-email-after-an-interview';
+import howToAnswerSalaryExpectations from '@/content/blog/how-to-answer-salary-expectations';
+import systemDesignInterviewGuide from '@/content/blog/system-design-interview-guide';
+import sqlInterviewQuestions from '@/content/blog/sql-interview-questions';
+import javaInterviewQuestions from '@/content/blog/java-interview-questions';
+import javascriptInterviewQuestions from '@/content/blog/javascript-interview-questions';
+import howToNegotiateSalary from '@/content/blog/how-to-negotiate-salary';
+import howToAskForARaise from '@/content/blog/how-to-ask-for-a-raise';
+import howToResignProfessionally from '@/content/blog/how-to-resign-professionally';
+import howToChangeCareers from '@/content/blog/how-to-change-careers';
+import howToEvaluateAJobOffer from '@/content/blog/how-to-evaluate-a-job-offer';
+import howToNetworkForAJob from '@/content/blog/how-to-network-for-a-job';
+import howToFindAJobFast from '@/content/blog/how-to-find-a-job-fast';
+import fastestGrowingJobsWorldwide from '@/content/blog/fastest-growing-jobs-worldwide';
+import highestPayingJobsWithoutADegree from '@/content/blog/highest-paying-jobs-without-a-degree';
+import howToBecomeASoftwareEngineer from '@/content/blog/how-to-become-a-software-engineer';
+import howToBecomeADataAnalyst from '@/content/blog/how-to-become-a-data-analyst';
+import howToBecomeAUxDesigner from '@/content/blog/how-to-become-a-ux-designer';
+import howToBecomeAMachineLearningEngineer from '@/content/blog/how-to-become-a-machine-learning-engineer';
+import howToBecomeAProjectManager from '@/content/blog/how-to-become-a-project-manager';
+import howToStartFreelancingAsADeveloper from '@/content/blog/how-to-start-freelancing-as-a-developer';
+import howToGetAJobInCanada from '@/content/blog/how-to-get-a-job-in-canada';
+import howToGetAJobInGermany from '@/content/blog/how-to-get-a-job-in-germany';
+import ukSkilledWorkerVisaGuide from '@/content/blog/uk-skilled-worker-visa-guide';
+import h1bVisaExplained from '@/content/blog/h1b-visa-explained';
+
 /**
  * Declaration order is not display order — getAllPosts sorts by date — so a new
  * post can simply be appended.
@@ -624,6 +666,46 @@ export const BLOG_POSTS: BlogPost[] = [
   dataAnalystVsDataScientistSkillsSalariesJobs,
   howToSwitchCareersIntoAiWithoutStartingFromZero,
   howToIdentifyFakeJobOffersAndRecruitmentScams,
+  howToWriteACoverLetter,
+  resumeVsCvDifference,
+  skillsToPutOnAResume,
+  resumeActionVerbs,
+  howLongShouldAResumeBe,
+  howToExplainAnEmploymentGap,
+  howToOptimizeYourLinkedinProfile,
+  starMethodInterviewAnswers,
+  behavioralInterviewQuestionsAndAnswers,
+  strengthsAndWeaknessesInterviewAnswer,
+  whyShouldWeHireYouAnswer,
+  whyDoYouWantToWorkHereAnswer,
+  whereDoYouSeeYourselfIn5YearsAnswer,
+  questionsToAskAtTheEndOfAnInterview,
+  videoInterviewTips,
+  thankYouEmailAfterAnInterview,
+  howToAnswerSalaryExpectations,
+  systemDesignInterviewGuide,
+  sqlInterviewQuestions,
+  javaInterviewQuestions,
+  javascriptInterviewQuestions,
+  howToNegotiateSalary,
+  howToAskForARaise,
+  howToResignProfessionally,
+  howToChangeCareers,
+  howToEvaluateAJobOffer,
+  howToNetworkForAJob,
+  howToFindAJobFast,
+  fastestGrowingJobsWorldwide,
+  highestPayingJobsWithoutADegree,
+  howToBecomeASoftwareEngineer,
+  howToBecomeADataAnalyst,
+  howToBecomeAUxDesigner,
+  howToBecomeAMachineLearningEngineer,
+  howToBecomeAProjectManager,
+  howToStartFreelancingAsADeveloper,
+  howToGetAJobInCanada,
+  howToGetAJobInGermany,
+  ukSkilledWorkerVisaGuide,
+  h1bVisaExplained,
 ];
 
 export * from './types';
