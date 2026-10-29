@@ -4675,14 +4675,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                     <FileText className="w-5 h-5 text-indigo-500" />
                     {activeStepIndex + 1}. Professional Summary
                   </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-xs text-indigo-600 hover:text-indigo-700 bg-indigo-50/60 hover:bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-300 rounded-xl h-8 px-2.5 font-bold flex items-center gap-1 shrink-0"
-                    onClick={() => handleOpenAiAssist('summary')}
-                  >
-                    <Sparkles className="w-3.5 h-3.5" /> AI Assist
-                  </Button>
+                 
                 </CardTitle>
                 <CardDescription className="text-xs">2–4 sentences on who you are, your strongest skills and the impact you deliver</CardDescription>
               </CardHeader>
@@ -4794,16 +4787,7 @@ export default function ResumeBuilderPage({ initialShowPromo = true }: ResumeBui
                               placeholder="e.g. Reduced API latency by 40% by introducing Redis caching"
                             />
                             <div className="flex items-center gap-0.5 pt-1 shrink-0">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-7 w-7 rounded-lg text-indigo-600 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
-                                title="Improve with AI"
-                                aria-label="Improve this bullet with AI"
-                                onClick={() => handleOpenAiAssist('experience', idx, pIdx)}
-                              >
-                                <Sparkles className="w-3.5 h-3.5" />
-                              </Button>
+                              
                               <Button
                                 variant="ghost"
                                 size="icon"
