@@ -1,29 +1,48 @@
+export type OnboardingField = "phone" | "location" | "resume" | "skills";
+
+const nonEmptyArray = (value: unknown) => Array.isArray(value) && value.length > 0;
+
 /**
- * Helper to check if a jobseeker's onboarding is complete.
- * Complete if user has a valid phone number and any core profile data (resume, skills, experience, education, headline, or referral status).
+ * Lists the required onboarding fields a jobseeker has not filled in yet.
+ *
+ * These are exactly the fields the /onboarding form insists on, so every
+ * check (client redirects, login/signup, the OAuth callback) agrees on when
+ * a profile is complete. Accepts either the client `User` shape or a raw
+ * `jobseekers` row.
+ */
+export function getMissingOnboardingFields(user: any): OnboardingField[] {
+    if (!user) return ["phone", "location", "resume", "skills"];
+
+    const missing: OnboardingField[] = [];
+
+    const phoneDigits = user.phone ? String(user.phone).replace(/\D/g, "") : "";
+    if (phoneDigits.length < 7) missing.push("phone");
+
+    const hasCountry = Boolean(user.country || user.countryId || user.current_country_id);
+    const hasState = Boolean(user.state || user.stateId || user.current_state_province_id);
+    const hasCity = Boolean(user.currentCity || user.cityId || user.current_city || user.current_city_id);
+    if (!(hasCountry && hasState && hasCity)) missing.push("location");
+
+    const resume = user.resumeUrl ?? user.resume_url;
+    if (!resume || String(resume).trim() === "") missing.push("resume");
+
+    const hasSkills = Boolean(
+        user.profileStats?.hasSkills ||
+        nonEmptyArray(user.skills) ||
+        nonEmptyArray(user.skillIds) ||
+        nonEmptyArray(user.skill_ids) ||
+        nonEmptyArray(user.jobseeker_skills)
+    );
+    if (!hasSkills) missing.push("skills");
+
+    return missing;
+}
+
+/**
+ * A jobseeker's onboarding is complete once they have a phone number,
+ * a full location (country, state and city), a resume and at least one skill.
  */
 export function isOnboardingComplete(user: any): boolean {
     if (!user) return false;
-    
-    const hasSkills = Boolean(
-        user.profileStats?.hasSkills ||
-        (Array.isArray(user.skills) && user.skills.length > 0) ||
-        (Array.isArray(user.skill_ids) && user.skill_ids.length > 0)
-    );
-
-    const hasProfileDetails = Boolean(
-        user.resumeUrl ||
-        hasSkills ||
-        user.workStatus ||
-        user.headline ||
-        (Array.isArray(user.experience) && user.experience.length > 0) ||
-        (Array.isArray(user.education) && user.education.length > 0)
-    );
-
-    const phoneDigits = user.phone ? String(user.phone).replace(/\D/g, "") : "";
-
-    return Boolean(
-        phoneDigits.length >= 7 &&
-        hasProfileDetails
-    );
+    return getMissingOnboardingFields(user).length === 0;
 }

@@ -213,13 +213,13 @@ export default function SignupPage() {
           <p className="text-indigo-200 text-sm">
             Are you a recruiter?{" "}
             <Link href="/company/signup" className="text-white font-semibold underline underline-offset-2 hover:text-indigo-100 transition-colors">
-              Recruiter Sign Up â†’
+              Recruiter Sign Up →
             </Link>
           </p>
         </motion.div>
       </div>
 
-      {/* Right Panel â€” Form */}
+      {/* Right Panel — Form */}
       <div className="w-full lg:w-[58%] flex items-start justify-center px-6 py-10 lg:px-16 overflow-y-auto">
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="w-full max-w-lg py-4">
 

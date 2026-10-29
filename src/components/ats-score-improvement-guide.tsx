@@ -218,7 +218,7 @@ export function AtsScoreImprovementGuide() {
                 </div>
 
                 {/* Description */}
-                <p className="text-xs text-slate-650 dark:text-slate-350 leading-relaxed font-normal">
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                   {factor.description}
                 </p>
 
@@ -239,7 +239,7 @@ export function AtsScoreImprovementGuide() {
               </div>
 
               {/* Good vs Bad comparison */}
-              <div className="pt-3 border-t border-slate-150/60 dark:border-slate-800/80 space-y-2 text-xs">
+              <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800/80 space-y-2 text-xs">
                 <div className="p-2.5 rounded-xl bg-emerald-50/30 dark:bg-emerald-950/15 border border-emerald-200/50 dark:border-emerald-900/30 text-emerald-900 dark:text-emerald-300 flex items-start gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <div>

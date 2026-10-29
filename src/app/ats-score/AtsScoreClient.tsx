@@ -133,7 +133,7 @@ export function AtsScoreClient({ initialShowPromo = true }: AtsScoreClientProps)
                   </div>
 
                   <div className="p-3.5 bg-rose-50/30 border border-rose-100/50 text-rose-800 dark:border-rose-950/20 dark:bg-rose-950/5 text-xs rounded-xl flex gap-2.5 items-start">
-                    <AlertCircle className="w-4 h-4 text-rose-505 shrink-0 mt-0.5" />
+                    <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
                     <span className="text-slate-600 dark:text-slate-400 leading-relaxed">
                       <strong className="font-bold text-slate-800 dark:text-slate-300">Experience Alert:</strong> Your bullet points lack quantified impact. Using numbers like revenue growth or time saved can boost match scores by 15%.
                     </span>

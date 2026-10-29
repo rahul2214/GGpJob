@@ -11,6 +11,10 @@ import { runDeterministicAtsChecks, buildAtsEvaluationPrompt, sanitizeAtsResult 
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
 
+const MIN_RESUME_CHARS = 200
+const MAX_PASTED_RESUME_CHARS = 30000
+const AI_TIMEOUT_MS = 90_000
+
 export async function POST(req: NextRequest) {
   try {
     const { user: authUser, errorResponse } = await requireAuth(req)
@@ -21,9 +25,19 @@ export async function POST(req: NextRequest) {
     const resumeUrl = formData.get("resumeUrl") as string | null
     const jobDescription = formData.get("jobDescription") as string | null
     const userId = formData.get("userId") as string | null
+    // Plain-text resume pasted into the checker instead of a file upload.
+    const pastedResume = ((formData.get("resumeText") as string | null) || "").trim()
 
-    if (!file && !resumeUrl) {
-      return NextResponse.json({ error: "No file or resume URL provided" }, { status: 400 })
+    if (!file && !resumeUrl && !pastedResume) {
+      return NextResponse.json({ error: "Please upload a resume file or paste your resume text." }, { status: 400 })
+    }
+
+    if (pastedResume && pastedResume.length < MIN_RESUME_CHARS) {
+      return NextResponse.json({ error: `Pasted resume text is too short. Please paste your full resume (at least ${MIN_RESUME_CHARS} characters).` }, { status: 400 })
+    }
+
+    if (pastedResume.length > MAX_PASTED_RESUME_CHARS) {
+      return NextResponse.json({ error: "Pasted resume text is too long. Please keep it under 30,000 characters." }, { status: 400 })
     }
 
     if (file && file.size > 5 * 1024 * 1024) {
@@ -35,7 +49,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (jobDescription && jobDescription.length > 20000) {
-      return NextResponse.json({ error: "Job description is too long." }, { status: 400 })
+      return NextResponse.json({ error: "Job description is too long. Please keep it under 20,000 characters." }, { status: 400 })
     }
 
     // Credits & usage tracking
@@ -70,17 +84,20 @@ export async function POST(req: NextRequest) {
 
     const apiKey = process.env.GROK_API_KEY || process.env.GROQ_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: "API Key (GROK_API_KEY or GROQ_API_KEY) is missing. Please configure it in your environment." }, { status: 500 })
+      console.error("[ATS_SCORE_API] GROK_API_KEY / GROQ_API_KEY is not configured")
+      return NextResponse.json({ error: "ATS analysis is temporarily unavailable. Please try again later." }, { status: 503 })
     }
     const isGroq = apiKey.startsWith("gsk_");
     const apiUrl = isGroq ? "https://api.groq.com/openai/v1/chat/completions" : "https://api.x.ai/v1/chat/completions";
     const apiModel = isGroq ? "openai/gpt-oss-120b" : "grok-2-latest";
 
     // Convert file to buffer or fetch from URL
-    let buffer: Buffer
+    let buffer: Buffer | null = null
     let fileName = file?.name || ""
     let mimeType = file?.type || ""
-    if (file) {
+    if (pastedResume) {
+      // Pasted text needs no download or parsing.
+    } else if (file) {
       const bytes = await file.arrayBuffer()
       buffer = Buffer.from(bytes)
       const fileCheck = validateFileContent(buffer, file.name, file.type, RESUME_FILE_RULES)
@@ -132,22 +149,29 @@ export async function POST(req: NextRequest) {
     }
 
     // Parse Document
-    let resumeText = "";
-    try {
-      const data = await parseResumeDocument(buffer, fileName, mimeType);
-      resumeText = data.text;
-    } catch (docError: any) {
-      console.error("Resume Document Parse Error:", docError);
-      return NextResponse.json({ 
-        error: "Failed to parse resume document. Please ensure it is a valid text-based PDF, DOC, or DOCX file.",
-        details: docError?.message || String(docError)
-      }, { status: 400 });
+    let resumeText = pastedResume;
+    if (!pastedResume) {
+      try {
+        const data = await parseResumeDocument(buffer!, fileName, mimeType);
+        resumeText = data.text;
+      } catch (docError: any) {
+        console.error("Resume Document Parse Error:", docError);
+        return NextResponse.json({
+          error: "We couldn't read this file. Make sure it is a valid, text-based PDF, DOC or DOCX, or paste your resume text instead."
+        }, { status: 400 });
+      }
     }
 
     if (!resumeText || resumeText.trim().length === 0) {
-      return NextResponse.json({ 
-        error: "Could not extract text from the document. Please ensure it's not an image/scanned document." 
-      }, { status: 400 })
+      return NextResponse.json({
+        error: "We couldn't find any text in this document. It may be a scanned image. Try a text-based PDF/DOCX or paste your resume text instead."
+      }, { status: 422 })
+    }
+
+    if (resumeText.trim().length < MIN_RESUME_CHARS) {
+      return NextResponse.json({
+        error: "Very little text could be read from this resume. Try a text-based PDF/DOCX or paste your resume text instead."
+      }, { status: 422 })
     }
 
     // Truncate text to avoid token limits
@@ -161,7 +185,9 @@ export async function POST(req: NextRequest) {
     const prompt = buildAtsEvaluationPrompt(truncatedResume, truncatedJobDesc, preAnalysis)
 
     // Call AI API (x.ai or Groq)
-    const response = await fetch(apiUrl, {
+    let response: Response
+    try {
+      response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -181,19 +207,28 @@ export async function POST(req: NextRequest) {
         ],
         temperature: 0.2,
         ...(isGroq ? { response_format: { type: "json_object" } } : { max_tokens: 1400 })
+        }),
+        signal: AbortSignal.timeout(AI_TIMEOUT_MS),
       })
-    })
+    } catch (aiErr) {
+      console.error("AI request failed:", aiErr)
+      return NextResponse.json({
+        error: "The AI analyser didn't respond in time. No credits were charged. Please try again."
+      }, { status: 504 })
+    }
 
     if (!response.ok) {
       const errorText = await response.text()
       console.error("Grok API Error:", errorText)
-      return NextResponse.json({ 
-        error: `AI analysis failed: ${response.status}` 
-      }, { status: 500 })
+      return NextResponse.json({
+        error: response.status === 429
+          ? "The AI analyser is busy right now. No credits were charged. Please try again in a minute."
+          : "The AI analyser is unavailable right now. No credits were charged. Please try again."
+      }, { status: 502 })
     }
 
-    const grokData = await response.json()
-    let content = grokData.choices[0].message.content.trim()
+    const grokData = await response.json().catch(() => null)
+    let content: string = String(grokData?.choices?.[0]?.message?.content ?? "").trim()
     
     // Clean up any markdown formatting
     content = content.replace(/```json\s*/g, '')
@@ -205,6 +240,14 @@ export async function POST(req: NextRequest) {
       parsedRaw = JSON.parse(content)
     } catch (parseError) {
       console.error("Failed to parse JSON from AI:", content)
+    }
+
+    // Without a usable AI response the sanitizer can only return placeholder
+    // scores, so fail the request rather than charge for a fake report.
+    if (!parsedRaw || typeof parsedRaw !== "object") {
+      return NextResponse.json({
+        error: "The AI returned an incomplete report. No credits were charged. Please try again."
+      }, { status: 502 })
     }
 
     const parsedResult = sanitizeAtsResult(parsedRaw, preAnalysis)
@@ -265,9 +308,8 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error("ATS Score API Error:", error)
-    return NextResponse.json({ 
-      error: "Internal Server Error",
-      message: error.message 
+    return NextResponse.json({
+      error: "Something went wrong while analysing your resume. Please try again.",
     }, { status: 500 })
   }
 }

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { isOnboardingComplete } from '@/lib/onboarding';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
       for (const t of tables) {
         // Retrieve onboarding check and credit fields for jobseekers
         const selectQuery = t === 'jobseekers'
-          ? 'id, uuid, name, email, phone, resume_url, country, preferred_job_titles, subscription_credits, subscription_allowance, purchased_credits, referral_code, plan_type, is_paid, jobseeker_skills(id)'
+          ? '*, jobseeker_skills(id)'
           : 'id, uuid, name, email';
 
         const { data: profile } = await supabaseAdmin
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
       if (!foundProfile && user.email) {
         for (const t of tables) {
           const selectQuery = t === 'jobseekers'
-            ? 'id, uuid, name, email, phone, resume_url, country, preferred_job_titles, subscription_credits, subscription_allowance, purchased_credits, referral_code, plan_type, is_paid, jobseeker_skills(id)'
+            ? '*, jobseeker_skills(id)'
             : 'id, uuid, name, email';
 
           const { data: profileByEmail } = await supabaseAdmin
@@ -172,14 +173,8 @@ export async function GET(request: Request) {
       // Check onboarding completeness for existing Job Seekers
       let redirectNext = next;
       if (foundProfile && foundProfile.table === 'jobseekers') {
-        const phone = foundProfile.phone || '';
-        const resumeUrl = foundProfile.resume_url || '';
-        const country = foundProfile.country || '';
-        const hasJobTitles = Array.isArray(foundProfile.preferred_job_titles) && foundProfile.preferred_job_titles.length > 0;
-        const hasSkills = Array.isArray(foundProfile.jobseeker_skills) && foundProfile.jobseeker_skills.length > 0;
-        
-        const isComplete = !!(phone && phone.length >= 10 && resumeUrl && country && hasJobTitles && hasSkills);
-        if (!isComplete) {
+        // Same rule as the client so users aren't bounced between pages.
+        if (!isOnboardingComplete(foundProfile)) {
           redirectNext = '/onboarding';
         }
       }

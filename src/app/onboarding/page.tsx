@@ -583,9 +583,17 @@ export default function OnboardingPage() {
             }
             const data = await res.json();
             
-            // 1. Phone number
-            if (data.phone) {
-                setPhone(data.phone);
+            // 1. Phone number: keep the one given at signup, and split off a
+            // leading country code so it isn't prefixed twice on save.
+            if (data.phone && phone.replace(/\D/g, "").length < 7) {
+                const raw = String(data.phone).trim();
+                const matched = raw.match(/^\+(\d{1,3})[\s-]/);
+                if (matched) {
+                    setCountryCode(`+${matched[1]}`);
+                    setPhone(raw.slice(matched[0].length).replace(/\D/g, ''));
+                } else {
+                    setPhone(raw.replace(/\D/g, ''));
+                }
             }
             
             // 3. Social links
@@ -686,6 +694,22 @@ export default function OnboardingPage() {
             }
         }
     }, [user, loading, router]);
+
+    const pickResumeFile = (input: HTMLInputElement) => {
+        const file = input.files?.[0];
+        input.value = "";
+        if (!file) return;
+        const ext = file.name.split('.').pop()?.toLowerCase() || "";
+        if (!['pdf', 'doc', 'docx'].includes(ext)) {
+            toast({ title: "Unsupported file", description: "Please upload a PDF, DOC or DOCX resume.", variant: "destructive" });
+            return;
+        }
+        if (file.size === 0 || file.size > 5 * 1024 * 1024) {
+            toast({ title: "File size not allowed", description: "Your resume must be under 5 MB.", variant: "destructive" });
+            return;
+        }
+        setResumeFile(file);
+    };
 
     const toggleSkill = (skillId: string) => {
         setSelectedSkillIds(prev =>
@@ -897,8 +921,11 @@ export default function OnboardingPage() {
 
             // 5. Fetch fresh profile & update context
             const updatedProfileRes = await fetch(`/api/users?uid=${user.uuid}`, { headers: authHeaders });
-            const updatedProfile = await updatedProfileRes.json();
-            setUser(updatedProfile);
+            const updatedProfile = updatedProfileRes.ok ? await updatedProfileRes.json().catch(() => null) : null;
+            // Never replace the signed-in user with an error body.
+            if (updatedProfile && updatedProfile.uuid) {
+                setUser(updatedProfile);
+            }
 
             toast({ title: "Profile Completed! 🎉", description: "You're all set to explore jobs!" });
             router.push('/');
@@ -1140,6 +1167,14 @@ export default function OnboardingPage() {
 
     const progressPct = calculateProgressPct();
 
+    // Only the sections the user still has to fill in are rendered, so list those.
+    const requiredChecklist = [
+        needsLocation && { label: "Country, state and city", done: !!((selectedCountry || user.country) && (selectedState || user.state) && (selectedCity || selectedCityId || user.currentCity)) },
+        needsPhone && { label: "Phone number", done: phone.replace(/\D/g, "").length >= 7 },
+        needsResume && { label: "Resume", done: !!resumeFile },
+        needsSkills && { label: "At least one skill", done: selectedSkillIds.length > 0 },
+    ].filter(Boolean) as { label: string; done: boolean }[];
+
     if (!hasAnyIncompleteField) {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-hidden">
@@ -1298,10 +1333,7 @@ export default function OnboardingPage() {
                                     type="file"
                                     accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) setResumeFile(file);
-                                    }}
+                                    onChange={(e) => pickResumeFile(e.target)}
                                 />
                             </div>
                         </div>
@@ -1535,10 +1567,7 @@ export default function OnboardingPage() {
                                         type="file"
                                         accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) setResumeFile(file);
-                                        }}
+                                        onChange={(e) => pickResumeFile(e.target)}
                                     />
                                 </div>
                             </div>
@@ -2162,7 +2191,24 @@ export default function OnboardingPage() {
                     )}
 
                     {/* Submit */}
-                    <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+                    <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
+                        {requiredChecklist.length > 0 && (
+                            <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40 p-4">
+                                <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2">
+                                    {requiredChecklist.every(i => i.done) ? "All required details added" : "Required to finish"}
+                                </p>
+                                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                    {requiredChecklist.map(item => (
+                                        <li key={item.label} className={cn("flex items-center gap-2 text-xs font-medium", item.done ? "text-emerald-700 dark:text-emerald-400" : "text-slate-600 dark:text-slate-400")}>
+                                            {item.done
+                                                ? <CheckCircle2 className="w-4 h-4 shrink-0" />
+                                                : <span className="w-4 h-4 shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-600" />}
+                                            {item.label}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                         <Button
                             type="submit"
                             disabled={isSubmitting || uploadProgress !== null}
