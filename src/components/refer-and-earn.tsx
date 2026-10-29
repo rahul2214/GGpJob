@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useUser } from "@/contexts/user-context";
-import { useToast } from "@/hooks/use-toast";
 import { Button } from "./ui/button";
-import { Gift, Copy, CheckCircle, Share2, Users, Coins, Sparkles } from "lucide-react";
+import { Gift, Copy, Check, Share2, Users, Coins, Mail, Linkedin, MessageCircle, Send, UserPlus, BadgeCheck, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ReferAndEarnCardProps {
@@ -12,11 +11,24 @@ interface ReferAndEarnCardProps {
   creditsPerReferral?: number;
 }
 
+const STEPS = [
+  { icon: Send, title: "Share your link", body: "Send your invite link or code to friends who are job hunting." },
+  { icon: UserPlus, title: "Friend signs up", body: "They create a JobsDart account and enter your code during setup." },
+  { icon: BadgeCheck, title: "You both earn", body: "Credits land in both wallets once they verify their email." },
+]
+
 export function ReferAndEarnCard({ className, creditsPerReferral }: ReferAndEarnCardProps) {
   const { user } = useUser();
-  const { toast } = useToast();
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"link" | "code" | null>(null);
   const [dynamicCredits, setDynamicCredits] = useState<number | null>(null);
+  const [origin, setOrigin] = useState("");
+  const [canNativeShare, setCanNativeShare] = useState(false);
+
+  useEffect(() => {
+    // Read browser-only values after mount so server and client markup match.
+    setOrigin(window.location.origin);
+    setCanNativeShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
+  }, []);
 
   useEffect(() => {
     if (creditsPerReferral !== undefined) return;
@@ -33,145 +45,181 @@ export function ReferAndEarnCard({ className, creditsPerReferral }: ReferAndEarn
   const perReferral = creditsPerReferral ?? dynamicCredits ?? 2;
   const referralCount = user?.referralCount || 0;
   const creditsEarned = referralCount * perReferral;
-  const effectiveReferralCode =
+  // Same fallback the profile API persists when a user has no code yet.
+  const referralCode =
     user?.referralCode ||
     (user?.uuid ? "JD" + user.uuid.replace(/-/g, "").substring(0, 6).toUpperCase() : "");
-  const referralLink =
-    effectiveReferralCode && typeof window !== "undefined"
-      ? `${window.location.origin}/signup?ref=${effectiveReferralCode}`
-      : "";
+  const referralLink = referralCode && origin ? `${origin}/signup?ref=${referralCode}` : "";
+  const shareText = `I'm using JobsDart to find jobs. Sign up with my link and we both get ${perReferral} free credits:`;
 
-  const handleCopyLink = () => {
-    if (!referralLink) return;
-    navigator.clipboard.writeText(referralLink);
-    setCopied(true);
-    toast({
-      title: "Link Copied!",
-      description: `Share this link with your friends to earn ${perReferral} credits.`,
-    });
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleShare = async () => {
-    if (!referralLink) return;
-    const shareData = {
-      title: "Join JobsDart",
-      text: `Sign up using my referral link to get ${perReferral} free credits on JobsDart:`,
-      url: referralLink,
-    };
-
-    if (typeof window !== "undefined" && navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        handleCopyLink();
-      }
-    } else {
-      handleCopyLink();
+  const copy = async (value: string, kind: "link" | "code") => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(kind);
+      setTimeout(() => setCopied(cur => (cur === kind ? null : cur)), 2000);
+    } catch {
+      setCopied(null);
     }
   };
 
+  const handleNativeShare = async () => {
+    if (!referralLink) return;
+    try {
+      await navigator.share({ title: "Join JobsDart", text: shareText, url: referralLink });
+    } catch {
+      // Dismissing the share sheet is not an error worth surfacing.
+    }
+  };
+
+  const shareTargets = referralLink
+    ? [
+        { label: "WhatsApp", icon: MessageCircle, href: `https://wa.me/?text=${encodeURIComponent(`${shareText} ${referralLink}`)}` },
+        { label: "LinkedIn", icon: Linkedin, href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(referralLink)}` },
+        { label: "Email", icon: Mail, href: `mailto:?subject=${encodeURIComponent("Join me on JobsDart")}&body=${encodeURIComponent(`${shareText}\n\n${referralLink}`)}` },
+      ]
+    : [];
+
+  const focusRing = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900";
+
   return (
-    <div
+    <section
+      aria-labelledby="refer-heading"
       className={cn(
-        "bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-5 sm:p-6 relative overflow-hidden flex flex-col justify-between",
+        "rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden",
         className
       )}
     >
-      {/* Decorative accent glow */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-indigo-100/30 via-purple-100/10 to-transparent dark:from-indigo-950/20 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Header */}
-      <div className="relative z-10 flex items-center justify-between gap-3 pb-3.5 mb-3.5 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-xs shrink-0">
-            <Gift className="w-4 h-4" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
-              Refer & Earn Free Credits
-            </h3>
-            <p className="text-[11px] text-slate-400 font-medium">
-              Both get +{perReferral} credits when a friend joins
+      <div className="grid lg:grid-cols-5">
+        {/* Invite */}
+        <div className="lg:col-span-3 p-5 sm:p-7 space-y-6">
+          <div className="space-y-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-300">
+              <Gift className="h-3.5 w-3.5" aria-hidden="true" />
+              +{perReferral} credits each
+            </span>
+            <h2 id="refer-heading" className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Invite friends, you both earn {perReferral} credits
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 max-w-lg">
+              Credits work for job applications and AI tools like the ATS checker. There&apos;s no limit on how many friends you can invite.
             </p>
           </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="referral-link" className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+              Your invite link
+            </label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                id="referral-link"
+                readOnly
+                value={referralLink}
+                placeholder="Loading your link…"
+                onFocus={(e) => e.currentTarget.select()}
+                className={cn("h-11 w-full min-w-0 shrink-0 sm:flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 font-mono text-xs sm:text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200", focusRing)}
+              />
+              <Button
+                type="button"
+                onClick={() => copy(referralLink, "link")}
+                disabled={!referralLink}
+                className="h-11 rounded-xl bg-indigo-600 px-5 font-semibold text-white hover:bg-indigo-700 shrink-0"
+              >
+                {copied === "link" ? <Check className="mr-2 h-4 w-4" aria-hidden="true" /> : <Copy className="mr-2 h-4 w-4" aria-hidden="true" />}
+                {copied === "link" ? "Copied" : "Copy link"}
+              </Button>
+            </div>
+            <p className="sr-only" aria-live="polite">{copied ? `${copied === "link" ? "Link" : "Code"} copied to clipboard` : ""}</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-slate-600 dark:text-slate-400">Code</span>
+              <button
+                type="button"
+                onClick={() => copy(referralCode, "code")}
+                disabled={!referralCode}
+                aria-label={`Copy referral code ${referralCode}`}
+                className={cn("inline-flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 bg-white px-2.5 py-1 font-mono text-sm font-semibold tracking-wider text-slate-900 hover:border-indigo-400 dark:border-slate-600 dark:bg-slate-950/40 dark:text-white", focusRing)}
+              >
+                {referralCode || "—"}
+                {copied === "code"
+                  ? <Check className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
+                  : <Copy className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />}
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2" aria-label="Share your link">
+              {shareTargets.map(({ label, icon: Icon, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target={label === "Email" ? undefined : "_blank"}
+                  rel="noopener noreferrer"
+                  className={cn("inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800", focusRing)}
+                >
+                  <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                  {label}
+                </a>
+              ))}
+              {canNativeShare && referralLink && (
+                <button
+                  type="button"
+                  onClick={handleNativeShare}
+                  className={cn("inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800", focusRing)}
+                >
+                  <Share2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  More
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/50 rounded-full text-[11px] font-bold shrink-0">
-         
-          <span>+{perReferral} Credits / Friend</span>
+
+        {/* Stats */}
+        <div className="lg:col-span-2 border-t lg:border-t-0 lg:border-l border-slate-200/70 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/30 p-5 sm:p-7 flex flex-col justify-center gap-4">
+          <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">Your referrals</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-slate-200/70 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+              <Users className="h-4 w-4 text-indigo-500" aria-hidden="true" />
+              <p className="mt-2 text-2xl font-bold tabular-nums text-slate-900 dark:text-white">{referralCount}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{referralCount === 1 ? "Friend joined" : "Friends joined"}</p>
+            </div>
+            <div className="rounded-xl border border-slate-200/70 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+              <Coins className="h-4 w-4 text-emerald-500" aria-hidden="true" />
+              <p className="mt-2 text-2xl font-bold tabular-nums text-slate-900 dark:text-white">{creditsEarned}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Credits earned</p>
+            </div>
+          </div>
+          {referralCount === 0 && (
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              No referrals yet. Your first friend who joins earns you {perReferral} credits.
+            </p>
+          )}
         </div>
       </div>
 
-      <div className="relative z-10 space-y-4 flex-grow flex flex-col justify-between">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-100 dark:border-slate-800 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100/80 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-              <Users className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Friends</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-lg font-black text-slate-800 dark:text-white">{referralCount}</span>
-                <span className="text-[10px] text-slate-400">joined</span>
+      {/* How it works */}
+      <div className="border-t border-slate-200/70 dark:border-slate-800 px-5 py-5 sm:px-7">
+        <h3 className="mb-4 text-sm font-semibold text-slate-900 dark:text-white">How it works</h3>
+        <ol className="grid gap-4 sm:grid-cols-3">
+          {STEPS.map((step, idx) => (
+            <li key={step.title} className="flex gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-sm font-bold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
+                {idx + 1}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">{step.title}</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-slate-600 dark:text-slate-400">{step.body}</p>
               </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-indigo-50/80 to-violet-50/50 dark:from-indigo-950/40 dark:to-violet-950/30 rounded-xl p-3 border border-indigo-100/70 dark:border-indigo-900/50 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-              <Coins className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-[9px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">Earned</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-lg font-black text-indigo-600 dark:text-indigo-400">+{creditsEarned}</span>
-                <span className="text-[10px] font-bold text-indigo-500/80">Credits</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Link Box & Action Buttons */}
-        <div className="space-y-2.5 pt-1">
-          <div className="flex gap-2">
-            <div className="flex-1 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 rounded-xl px-3 py-2 flex items-center font-mono text-xs text-slate-700 dark:text-slate-300 font-semibold select-all overflow-hidden text-ellipsis whitespace-nowrap shadow-xs">
-              {referralLink || (typeof window !== "undefined" ? `${window.location.origin}/signup` : "...")}
-            </div>
-            <Button
-              onClick={handleCopyLink}
-              disabled={!referralLink}
-              variant="outline"
-              size="sm"
-              className={cn(
-                "rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 px-3 h-9 transition-all active:scale-95 shrink-0 font-bold text-xs gap-1.5",
-                copied && "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50"
-              )}
-            >
-              {copied ? (
-                <>
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Copied</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>Copy</span>
-                </>
-              )}
-            </Button>
-            <Button
-              onClick={handleShare}
-              disabled={!referralLink}
-              size="sm"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs transition-all h-9 px-3.5 flex items-center gap-1.5 shrink-0"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              <span>Invite</span>
-            </Button>
-          </div>
-        </div>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-4 flex items-start gap-1.5 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+          <Info className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          Rewards apply to new accounts that enter your code during setup and verify their email. Each friend can only be referred once, and you can&apos;t use your own code.
+        </p>
       </div>
-    </div>
+    </section>
   );
 }

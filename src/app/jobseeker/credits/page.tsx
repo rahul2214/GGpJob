@@ -240,120 +240,71 @@ export default function CreditsPage() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <LoaderCircle className="w-10 h-10 animate-spin text-indigo-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] py-6 sm:py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Decorative subtle background gradient */}
-      <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-indigo-100/30 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <header>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Refer &amp; Earn</h1>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Invite friends to earn free credits, or top up your balance any time.
+          </p>
+        </header>
 
-      <div className="max-w-6xl mx-auto relative z-10 space-y-6">
-        {/* Compact Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-200/60">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
-                <Coins className="w-4 h-4" />
+        <ReferAndEarnCard creditsPerReferral={referralCredits} />
+
+        {/* Balance */}
+        <section aria-labelledby="balance-heading" className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-5 sm:p-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-300">
+                <Wallet className="h-5 w-5" aria-hidden="true" />
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                Credits
-              </h1>
-            </div>
-            <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
-              Check balance, earn free credits by referring peers, or purchase instant top-ups.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 self-start sm:self-auto bg-white border border-slate-200/80 rounded-xl px-2.5 py-1 shadow-2xs">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Currency:</span>
-            <CurrencySelector
-              options={BILLING_CURRENCY_CODES}
-              value={currency}
-              onChange={setBillingCurrency}
-            />
-          </div>
-        </div>
-
-        {/* Top Section: Wallet Balance & Refer & Earn Side-by-Side */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-          {/* My Wallet & Balance (5 cols) */}
-          <div className="lg:col-span-5 flex flex-col">
-            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 sm:p-6 h-full flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between gap-3 pb-3 mb-3.5 border-b border-slate-100">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-xs shrink-0">
-                      <Wallet className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-800">My Credit Balance</h3>
-                      <p className="text-[11px] text-slate-400 font-medium">Available for applications & AI tools</p>
-                    </div>
-                  </div>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full text-[11px] font-bold">
-                    Active
-                  </span>
-                </div>
-
-                {/* Total Balance Highlight */}
-                <div className="bg-gradient-to-br from-indigo-50/90 via-indigo-50/50 to-violet-50/60 rounded-xl p-3.5 border border-indigo-100 mb-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Total Available</p>
-                    <div className="flex items-baseline gap-1.5 mt-0.5">
-                      <span className="text-3xl font-black text-indigo-700 tracking-tight">
-                        {(user.subscriptionCredits || 0) + (user.purchasedCredits || 0)}
-                      </span>
-                      <span className="text-xs font-bold text-indigo-500">Credits</span>
-                    </div>
-                  </div>
-                  <div className="w-9 h-9 rounded-xl bg-indigo-600/10 text-indigo-600 flex items-center justify-center">
-                    <Coins className="w-4 h-4" />
-                  </div>
-                </div>
-
-                {/* Breakdown by Type */}
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Subscription</p>
-                    <p className="text-sm font-black text-slate-800 mt-0.5">
-                      {user.subscriptionCredits || 0} <span className="text-[10px] font-medium text-slate-400">Monthly</span>
-                    </p>
-                  </div>
-                  <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Purchased</p>
-                    <p className="text-sm font-black text-emerald-600 mt-0.5">
-                      {user.purchasedCredits || 0} <span className="text-[10px] font-medium text-slate-400">Top-up</span>
-                    </p>
-                  </div>
-                </div>
+                <h2 id="balance-heading" className="text-xs font-semibold text-slate-600 dark:text-slate-300">Available balance</h2>
+                <p className="text-2xl font-bold tabular-nums text-slate-900 dark:text-white">
+                  {(user.subscriptionCredits || 0) + (user.purchasedCredits || 0)}
+                  <span className="ml-1.5 text-sm font-medium text-slate-500 dark:text-slate-400">credits</span>
+                </p>
               </div>
-
-             
             </div>
+            <dl className="grid grid-cols-2 gap-3 sm:min-w-[320px]">
+              <div className="rounded-xl bg-slate-50 dark:bg-slate-950/50 px-4 py-3">
+                <dt className="text-xs text-slate-500 dark:text-slate-400">Monthly plan</dt>
+                <dd className="text-lg font-semibold tabular-nums text-slate-900 dark:text-white">{user.subscriptionCredits || 0}</dd>
+              </div>
+              <div className="rounded-xl bg-slate-50 dark:bg-slate-950/50 px-4 py-3">
+                <dt className="text-xs text-slate-500 dark:text-slate-400">Purchased &amp; rewards</dt>
+                <dd className="text-lg font-semibold tabular-nums text-slate-900 dark:text-white">{user.purchasedCredits || 0}</dd>
+              </div>
+            </dl>
           </div>
-
-          {/* Refer & Earn (7 cols) */}
-          <div className="lg:col-span-7 flex flex-col">
-            <ReferAndEarnCard creditsPerReferral={referralCredits} className="h-full" />
-          </div>
-        </div>
+        </section>
 
         {/* Credit Packs Section */}
-        <div className="space-y-4 pt-1">
-          <div className="flex items-center justify-between">
+        <section aria-labelledby="packs-heading" className="space-y-4 pt-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <span>Top-up Credit Packs</span>
+              <h2 id="packs-heading" className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                Need more credits?
               </h2>
-              <p className="text-xs text-slate-500">
-                Choose a pack to instantly power your applications and profile visibility.
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Top-ups are added instantly after a secure checkout.
               </p>
             </div>
-            <span className="text-xs text-slate-400 font-medium hidden sm:inline-block">Instant Delivery • Secure Checkout</span>
+            <div className="flex items-center gap-2 self-start sm:self-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Currency</span>
+              <CurrencySelector
+                options={BILLING_CURRENCY_CODES}
+                value={currency}
+                onChange={setBillingCurrency}
+              />
+            </div>
           </div>
 
           {loadingPacks ? (
@@ -361,22 +312,22 @@ export default function CreditsPage() {
               {[1, 2, 3].map((n) => (
                 <div
                   key={n}
-                  className="h-64 rounded-2xl bg-white border border-slate-200/80 shadow-xs animate-pulse p-5 flex flex-col justify-between"
+                  className="h-56 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 animate-pulse p-5 flex flex-col justify-between"
                 >
                   <div className="space-y-3">
-                    <div className="h-5 w-1/2 bg-slate-200 rounded-lg" />
-                    <div className="h-8 w-1/3 bg-slate-200 rounded-lg" />
-                    <div className="h-4 w-5/6 bg-slate-100 rounded-lg" />
+                    <div className="h-4 w-1/2 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                    <div className="h-8 w-1/3 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                    <div className="h-4 w-5/6 bg-slate-100 dark:bg-slate-800/60 rounded-lg" />
                   </div>
-                  <div className="h-10 w-full bg-slate-200 rounded-xl" />
+                  <div className="h-10 w-full bg-slate-200 dark:bg-slate-800 rounded-xl" />
                 </div>
               ))}
             </div>
           ) : packs.length === 0 ? (
-            <div className="text-center py-10 bg-white rounded-2xl border border-slate-200 max-w-md mx-auto p-6 shadow-xs">
-              <Coins className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-              <h3 className="text-base font-bold text-slate-700">No Credit Packs Available</h3>
-              <p className="text-xs text-slate-500 mt-1">Please check back later or contact support.</p>
+            <div className="text-center rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 p-8">
+              <Coins className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" aria-hidden="true" />
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">No credit packs available right now</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Please check back later or contact support.</p>
             </div>
           ) : (
             <div className={cn(
@@ -391,39 +342,35 @@ export default function CreditsPage() {
                   <Card
                     key={pack.id}
                     className={cn(
-                      "relative flex flex-col justify-between w-full border border-slate-200/90 shadow-2xs hover:shadow-md rounded-2xl overflow-hidden bg-white transition-all hover:border-indigo-300",
-                      pack.popular && "ring-2 ring-amber-400/80 border-amber-300 shadow-amber-50"
+                      "relative flex w-full flex-col justify-between rounded-2xl border bg-white dark:bg-slate-900 shadow-sm transition-colors",
+                      pack.popular
+                        ? "border-indigo-300 ring-1 ring-indigo-300 dark:border-indigo-700 dark:ring-indigo-700"
+                        : "border-slate-200/70 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700"
                     )}
                   >
-                    {pack.popular && (
-                      <div className="absolute top-3.5 right-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-2xs">
-                        Best Value
-                      </div>
-                    )}
-
-                    <div className="p-5">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        
-                        <h3 className="text-base font-bold text-slate-900 truncate pr-16">{pack.name}</h3>
+                    <div className="p-5 space-y-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{pack.name}</h3>
+                        {pack.popular && (
+                          <span className="shrink-0 rounded-full bg-indigo-600 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                            Best value
+                          </span>
+                        )}
                       </div>
 
-                      <div className="flex items-baseline gap-1.5 my-2.5">
-                        <span className="text-3xl font-black text-slate-900 tracking-tight">{pack.credits}</span>
-                        <span className="text-xs font-bold text-indigo-600">Credits</span>
+                      <div>
+                        <p className="flex items-baseline gap-1.5">
+                          <span className="text-3xl font-bold tabular-nums tracking-tight text-slate-900 dark:text-white">{pack.credits}</span>
+                          <span className="text-sm font-medium text-slate-500 dark:text-slate-400">credits</span>
+                        </p>
+                        <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-400">{pack.description}</p>
                       </div>
 
-                      <p className="text-xs text-slate-500 line-clamp-2 min-h-[32px] mb-3 leading-relaxed">
-                        {pack.description}
-                      </p>
-
-                      <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100 flex items-center justify-between">
-                        <div>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Price</span>
-                          <span className="text-lg font-black text-slate-900">{formattedPrice}</span>
-                        </div>
+                      <div className="flex items-baseline justify-between border-t border-slate-100 dark:border-slate-800 pt-4">
+                        <span className="text-xl font-bold text-slate-900 dark:text-white">{formattedPrice}</span>
                         {pack.perCredit > 0 && (
-                          <span className="text-[11px] font-semibold text-slate-500 bg-white px-2 py-0.5 rounded-lg border border-slate-200/60 shadow-2xs">
-                            {formatPrice(convertPrice(pack.perCredit, currency, exchangeRates), currency)} / cr
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            {formatPrice(convertPrice(pack.perCredit, currency, exchangeRates), currency)} per credit
                           </span>
                         )}
                       </div>
@@ -433,20 +380,18 @@ export default function CreditsPage() {
                       <Button
                         onClick={() => handlePackSelect(pack)}
                         disabled={!!processing}
-                        size="sm"
+                        variant={pack.popular ? "default" : "outline"}
                         className={cn(
-                          "w-full h-10 rounded-xl font-bold text-xs sm:text-sm text-white shadow-2xs transition-all",
-                          pack.color === 'sky' && "bg-sky-500 hover:bg-sky-600",
-                          pack.color === 'amber' && "bg-amber-500 hover:bg-amber-600",
-                          pack.color === 'indigo' && "bg-indigo-600 hover:bg-indigo-700",
-                          pack.color === 'emerald' && "bg-emerald-600 hover:bg-emerald-700",
-                          pack.color === 'purple' && "bg-purple-600 hover:bg-purple-700"
+                          "w-full h-10 rounded-xl text-sm font-semibold",
+                          pack.popular
+                            ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                            : "border-slate-200 text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
                         )}
                       >
                         {processing === pack.id ? (
-                          <LoaderCircle className="w-4 h-4 animate-spin" />
+                          <LoaderCircle className="w-4 h-4 animate-spin" aria-label="Processing" />
                         ) : (
-                          <span>Buy {pack.credits} Credits</span>
+                          <span>Buy {pack.credits} credits</span>
                         )}
                       </Button>
                     </div>
@@ -455,7 +400,7 @@ export default function CreditsPage() {
               })}
             </div>
           )}
-        </div>
+        </section>
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
