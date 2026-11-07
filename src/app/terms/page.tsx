@@ -1,10 +1,26 @@
 import Link from "next/link";
 import { Scale, ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
+import { siteUrl } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: "Terms of Service | Jobs Dart",
+  title: "Terms of Service",
   description: "Read the Terms of Service for using the Jobs Dart platform.",
+  alternates: { canonical: siteUrl('/terms') },
+  openGraph: {
+    type: 'website',
+    url: siteUrl('/terms'),
+    siteName: 'JobsDart',
+    title: 'JobsDart Terms of Service',
+    description: "Read the Terms of Service for using the Jobs Dart platform.",
+    images: [{ url: siteUrl('/og-image.png'), width: 1200, height: 630, alt: 'JobsDart' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'JobsDart Terms of Service',
+    description: "Read the Terms of Service for using the Jobs Dart platform.",
+    images: [siteUrl('/og-image.png')],
+  },
 };
 
 const sections = [

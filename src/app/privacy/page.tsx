@@ -1,10 +1,26 @@
 import Link from "next/link";
 import { ShieldCheck, ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
+import { siteUrl } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Jobs Dart",
+  title: "Privacy Policy",
   description: "Learn how Jobs Dart collects, uses, and protects your personal information.",
+  alternates: { canonical: siteUrl('/privacy') },
+  openGraph: {
+    type: 'website',
+    url: siteUrl('/privacy'),
+    siteName: 'JobsDart',
+    title: 'JobsDart Privacy Policy',
+    description: "Learn how Jobs Dart collects, uses, and protects your personal information.",
+    images: [{ url: siteUrl('/og-image.png'), width: 1200, height: 630, alt: 'JobsDart' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'JobsDart Privacy Policy',
+    description: "Learn how Jobs Dart collects, uses, and protects your personal information.",
+    images: [siteUrl('/og-image.png')],
+  },
 };
 
 const sections = [

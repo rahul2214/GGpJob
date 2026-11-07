@@ -1,11 +1,27 @@
 import Link from "next/link";
 import { Cookie, ArrowLeft, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
+import { siteUrl } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: "Cookie Policy | JobsDart",
+  title: "Cookie Policy",
   description:
     "Learn how JobsDart uses cookies, analytics, and third-party advertising technologies including Google AdSense to deliver our career services.",
+  alternates: { canonical: siteUrl('/cookies') },
+  openGraph: {
+    type: 'website',
+    url: siteUrl('/cookies'),
+    siteName: 'JobsDart',
+    title: 'JobsDart Cookie Policy',
+    description: "Learn how JobsDart uses cookies, analytics, and third-party advertising technologies including Google AdSense to deliver our career services.",
+    images: [{ url: siteUrl('/og-image.png'), width: 1200, height: 630, alt: 'JobsDart' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'JobsDart Cookie Policy',
+    description: "Learn how JobsDart uses cookies, analytics, and third-party advertising technologies including Google AdSense to deliver our career services.",
+    images: [siteUrl('/og-image.png')],
+  },
 };
 
 const sections = [

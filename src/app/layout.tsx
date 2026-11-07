@@ -83,14 +83,16 @@ export const metadata: Metadata = {
     telephone: false,
   },
 
-  alternates: {
-    canonical: SITE_URL,
-  },
+  // No canonical or og:url here: child pages that set no alternates of their
+  // own inherit the root's, which would point every such page at the homepage.
+  // Each indexable page declares its own canonical instead.
+
+  applicationName: 'JobsDart',
+  category: 'jobs',
 
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    url: SITE_URL,
     siteName: 'JobsDart',
 
     title: 'JobsDart — Find Jobs, Build Your Resume & Grow Your Career',
@@ -123,7 +125,17 @@ export const metadata: Metadata = {
   // were declared but absent from public/, so every page load fired three 404s.
   // Re-add the entries alongside the files if those sizes are ever produced.
   icons: {
-    icon: [{ url: '/favicon.ico' }],
+    icon: [{ url: '/favicon.ico' }, { url: '/logo-icon.png', type: 'image/png' }],
+    apple: [{ url: '/logo-icon.png' }],
+  },
+
+  // Search Console / Bing Webmaster ownership tags for jobsdart.veltria.in.
+  // Set the env vars to the token each console gives you (or verify via DNS).
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+      ? { 'msvalidate.01': process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION }
+      : undefined,
   },
 
   robots: {

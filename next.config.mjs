@@ -49,8 +49,34 @@ const nextConfig = {
       },
     ],
   },
+  // jobsdart.veltria.in is the canonical host. If the old domains still point
+  // at this deployment, send them there with a permanent (308) redirect so
+  // search engines transfer ranking signals instead of indexing duplicates.
+  async redirects() {
+    return ['jobsdart.in', 'www.jobsdart.in'].map((host) => ({
+      source: '/:path*',
+      has: [{ type: 'host', value: host }],
+      destination: 'https://jobsdart.veltria.in/:path*',
+      permanent: true,
+    }));
+  },
   async headers() {
+    // Signed-in, transactional and admin surfaces. robots.txt already asks
+    // crawlers to skip them; this header keeps them out of the index even when
+    // a URL is discovered through an external link.
+    const privatePaths = [
+      '/admin/:path*', '/profile/:path*', '/applications/:path*', '/dashboard/:path*',
+      '/messages/:path*', '/notifications/:path*', '/onboarding/:path*', '/auth/:path*',
+      '/feedback/:path*', '/rewards/:path*', '/jobseeker/:path*', '/jobs/post/:path*',
+      '/jobs/edit/:path*', '/jobs/saved/:path*', '/company/payment/:path*',
+      '/company/jobs/:path*', '/communities/admin/:path*', '/network-error', '/offline',
+      '/api/:path*',
+    ];
     return [
+      ...privatePaths.map((source) => ({
+        source,
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      })),
       {
         // Apply security headers to all routes
         source: "/:path*",
@@ -69,7 +95,7 @@ const nextConfig = {
         source: "/api/:path*",
         headers: [
           { key: "Access-Control-Allow-Credentials", value: "true" },
-          { key: "Access-Control-Allow-Origin", value: process.env.NEXT_PUBLIC_APP_URL || "https://www.jobsdart.in" },
+          { key: "Access-Control-Allow-Origin", value: process.env.NEXT_PUBLIC_APP_URL || "https://jobsdart.veltria.in" },
           { key: "Access-Control-Allow-Methods", value: "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
           { key: "Access-Control-Allow-Headers", value: "Authorization, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version" },
         ]

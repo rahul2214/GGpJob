@@ -2,16 +2,15 @@
  * The single canonical origin for every absolute URL the app emits: metadata
  * base, canonical tags, Open Graph URLs, JSON-LD @ids, the sitemap and robots.
  *
- * These were previously hard-coded as "https://jobsdart.in" across the app
- * while NEXT_PUBLIC_APP_URL (and the CORS default in next.config.mjs) pointed
- * at "https://www.jobsdart.in". Serving both hosts with canonicals naming a
- * third opinion splits ranking signals, so the value now comes from one place.
+ * The canonical host is https://jobsdart.veltria.in (it replaced jobsdart.in
+ * and www.jobsdart.in). Serving several hosts with canonicals naming different
+ * ones splits ranking signals, so the value comes from one place.
  *
  * To switch the canonical host, change NEXT_PUBLIC_APP_URL — and make sure the
  * other host 301-redirects to it at the DNS/CDN layer.
  */
 
-const FALLBACK_ORIGIN = 'https://www.jobsdart.in';
+const FALLBACK_ORIGIN = 'https://jobsdart.veltria.in';
 
 function normalizeOrigin(raw?: string): string {
   const value = (raw || '').trim();

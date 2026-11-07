@@ -20,10 +20,12 @@ An integrated AI assistant guides candidates through job matching, customized in
 Recruiters and hiring managers can manage candidate pools, automate Brevo email drip campaigns, track referral conversions, and schedule interview rounds.
 
 ## Official Web Links
-- Main Website: https://jobsdart.in
-- Job Openings: https://jobsdart.in/jobs
-- Candidate Dashboard: https://jobsdart.in/dashboard
-- Employee Referral Portal: https://jobsdart.in/referral
-- Resume Optimization: https://jobsdart.in/resume
-- Community Discussions: https://jobsdart.in/community
-- Recruiter Portal: https://jobsdart.in/recruiter
+- Main Website: https://jobsdart.veltria.in
+- Job Openings: https://jobsdart.veltria.in/jobs
+- ATS Resume Score Checker: https://jobsdart.veltria.in/ats-score
+- Remote Jobs: https://jobsdart.veltria.in/jobs/remote
+- Career Blog: https://jobsdart.veltria.in/blog
+- Sitemap: https://jobsdart.veltria.in/sitemap.xml
+- Resume Optimization: https://jobsdart.veltria.in/resume-builder
+- Community Discussions: https://jobsdart.veltria.in/communities
+- Recruiter Portal: https://jobsdart.veltria.in/company/login

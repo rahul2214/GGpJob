@@ -1188,7 +1188,7 @@ export function AtsChecker() {
                         <a
                           href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
                             `I scored ${result.score}/100 on @JobsDart's AI ATS Resume Checker! Scan your resume for free to get an instant match score and optimizations: `
-                          )}&url=${encodeURIComponent("https://www.jobsdart.in/ats-score")}`}
+                          )}&url=${encodeURIComponent("https://jobsdart.veltria.in/ats-score")}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className={`flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 ${focusRing}`}
@@ -1196,7 +1196,7 @@ export function AtsChecker() {
                           <Twitter className="h-3.5 w-3.5" aria-hidden="true" /> Share on X
                         </a>
                         <a
-                          href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://www.jobsdart.in/ats-score")}`}
+                          href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://jobsdart.veltria.in/ats-score")}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className={`flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0a66c2] px-3 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#004182] ${focusRing}`}

@@ -207,7 +207,7 @@ export async function GET(req: NextRequest) {
                     fontWeight: 500,
                   }}
                 >
-                  jobsdart.in/ats-score
+                  jobsdart.veltria.in/ats-score
                 </span>
               </div>
             </div>

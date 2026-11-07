@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import RecruiterDashboard from "@/components/dashboards/recruiter-dashboard";
 
 export const metadata: Metadata = {
-  title: "My Job Postings | Jobs Dart",
+  title: "My Job Postings",
+  robots: { index: false, follow: false },
   description: "Manage your company's open positions and track candidate applications.",
 };
 

@@ -317,7 +317,7 @@ export default function AdminCRMPage() {
       ? blogs.filter(b => b.slug !== selectedBlog.slug).slice(0, 2)
       : [];
 
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://jobsdart.in';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://jobsdart.veltria.in';
 
     const { subject, htmlContent } = renderBlogEmailTemplate({
       candidate: sampleCandidate,
@@ -743,7 +743,7 @@ export default function AdminCRMPage() {
                   <h2 className="text-2xl font-black tracking-tight">Blog Newsletter & Traffic Acquisition</h2>
                 </div>
                 <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
-                  Boost site traffic by dispatching curated career roadmaps, tech interview guides, and industry insights directly to candidate inboxes. Every email includes UTM-tagged CTAs pointing back to your published articles on <strong>jobsdart.in/blog</strong>.
+                  Boost site traffic by dispatching curated career roadmaps, tech interview guides, and industry insights directly to candidate inboxes. Every email includes UTM-tagged CTAs pointing back to your published articles on <strong>jobsdart.veltria.in/blog</strong>.
                 </p>
               </div>
 
@@ -1344,7 +1344,7 @@ export default function AdminCRMPage() {
               </p>
 
               <div className="p-3 bg-slate-100 dark:bg-slate-950 rounded-xl font-mono text-xs text-indigo-600 dark:text-indigo-400 break-all select-all font-bold">
-                https://www.jobsdart.in/api/webhooks/brevo
+                https://jobsdart.veltria.in/api/webhooks/brevo
               </div>
             </Card>
           </div>

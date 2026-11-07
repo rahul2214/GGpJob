@@ -13,11 +13,27 @@ import {
   ChevronRight,
 } from "lucide-react";
 import type { Metadata } from "next";
+import { siteUrl } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: "About Us | JobsDart - A Sub-Product of Veltria",
+  title: "About Us — A Sub-Product of Veltria",
   description:
     "Learn about JobsDart, an AI-powered career growth and recruitment platform developed as a dedicated sub-product of Veltria.",
+  alternates: { canonical: siteUrl('/about') },
+  openGraph: {
+    type: 'website',
+    url: siteUrl('/about'),
+    siteName: 'JobsDart',
+    title: 'About JobsDart',
+    description: "Learn about JobsDart, an AI-powered career growth and recruitment platform developed as a dedicated sub-product of Veltria.",
+    images: [{ url: siteUrl('/og-image.png'), width: 1200, height: 630, alt: 'JobsDart' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About JobsDart',
+    description: "Learn about JobsDart, an AI-powered career growth and recruitment platform developed as a dedicated sub-product of Veltria.",
+    images: [siteUrl('/og-image.png')],
+  },
 };
 
 export default function AboutPage() {

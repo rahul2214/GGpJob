@@ -25,7 +25,7 @@ export function CommunityShareModal({ open, onOpenChange, post }: CommunityShare
 
   if (!post) return null;
 
-  const origin = typeof window !== "undefined" ? window.location.origin : "https://www.jobsdart.in";
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://jobsdart.veltria.in";
   const postUrl = `${origin}${post.communityPath}/posts/${post.postId}`;
 
   const handleCopy = async () => {

@@ -814,7 +814,7 @@ export function renderBlogEmailTemplate({
   candidate,
   blog,
   relatedBlogs = [],
-  origin = 'https://jobsdart.in',
+  origin = 'https://jobsdart.veltria.in',
   customSubject,
 }: RenderBlogEmailOptions): { subject: string; htmlContent: string; tags: string[] } {
   const firstName = candidate.name.split(' ')[0] || candidate.name;
@@ -980,7 +980,7 @@ export function renderCRMTemplate(
   templateId: string,
   candidate: CRMCandidate,
   jobsHtml: string = '',
-  origin: string = 'https://jobsdart.in'
+  origin: string = 'https://jobsdart.veltria.in'
 ): { subject: string; htmlContent: string; tags: string[] } {
   const template = EMAIL_TEMPLATE_CATALOG[templateId] || EMAIL_TEMPLATE_CATALOG.tpl_job_recommendations;
 

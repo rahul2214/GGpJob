@@ -52,7 +52,7 @@ export async function sendFirebaseVerificationEmail(
   let safeContinueUrl: string | undefined = undefined;
   if (redirectUrl && typeof redirectUrl === 'string') {
     try {
-      const allowedHosts = ['localhost', 'jobsdart.in', 'www.jobsdart.in', 'veltriajobportal.vercel.app'];
+      const allowedHosts = ['localhost', 'jobsdart.veltria.in', 'jobsdart.in', 'www.jobsdart.in', 'veltriajobportal.vercel.app'];
       if (process.env.NEXT_PUBLIC_APP_URL) {
         try { allowedHosts.push(new URL(process.env.NEXT_PUBLIC_APP_URL).hostname); } catch {}
       }

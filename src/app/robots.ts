@@ -26,6 +26,7 @@ export default function robots(): MetadataRoute.Robots {
           '/jobs/edit/',
           '/jobs/saved',
           '/company/payment',
+          '/company/jobs',
           '/communities/admin',
           '/network-error',
           '/offline',

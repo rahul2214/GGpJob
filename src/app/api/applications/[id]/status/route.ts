@@ -141,7 +141,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         try {
             console.log(`[API_APP_STATUS] Sending status email via Resend to ${applicant.email} (status: ${sId})`);
             const fromEmail = process.env.RESEND_FROM_EMAIL || 'info@jobsdart.in';
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.jobsdart.in';
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://jobsdart.veltria.in';
             
             const isSelected = sId === 3 || sId === 4;
             const statusColor = isSelected ? '#10b981' : '#ef4444';
@@ -226,7 +226,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                             <td style="background:#f1f5f9;padding:20px 40px;text-align:center;border-top:1px solid #e2e8f0;">
                               <p style="color:#94a3b8;font-size:12px;margin:0;">
                                 © ${new Date().getFullYear()} JobsDart. All rights reserved.<br/>
-                                <a href="${appUrl}" style="color:#6366f1;text-decoration:none;">jobsdart.in</a>
+                                <a href="${appUrl}" style="color:#6366f1;text-decoration:none;">jobsdart.veltria.in</a>
                               </p>
                             </td>
                           </tr>

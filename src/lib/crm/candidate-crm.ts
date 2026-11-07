@@ -227,7 +227,7 @@ export function canSendEmailToCandidate(candidate: CRMCandidate, campaignType: C
  */
 export async function getRecommendedJobsHtml(
   candidate: CRMCandidate,
-  origin: string = 'https://jobsdart.in',
+  origin: string = 'https://jobsdart.veltria.in',
   limit: number = 5
 ): Promise<{
   jobsHtml: string;
@@ -444,7 +444,7 @@ export async function runAIRecommendationForCandidate(
   }
 
   // 2. Score jobs using JobsDart Recommendation Engine & format top 5 jobs
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.jobsdart.in';
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://jobsdart.veltria.in';
   const { jobsHtml, jobIds: recommendedJobIds, jobTitles: recommendedTitles, avgScore: avgMatchScore, scoredJobs } = await getRecommendedJobsHtml(candidate, origin, 5);
 
   if (scoredJobs.length === 0) {
@@ -739,7 +739,7 @@ export function filterCandidatesByCampaignType(
  */
 export async function getRecentJobsHtml(
   candidate: CRMCandidate,
-  origin: string = 'https://jobsdart.in',
+  origin: string = 'https://jobsdart.veltria.in',
   limit: number = 5
 ): Promise<{ jobsHtml: string; jobIds: number[]; jobTitles: string[] }> {
   let jobs: any[] = [];
