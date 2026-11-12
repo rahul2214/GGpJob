@@ -14,6 +14,7 @@ import {
   AI_LIMIT_ANONYMOUS,
 } from "@/lib/ai-quota";
 import { getJobUrl } from "@/lib/job-url";
+import { toSalaryNumber } from "@/lib/salary";
 
 export const dynamic = "force-dynamic";
 
@@ -385,14 +386,14 @@ export async function POST(req: NextRequest) {
           title: job.title,
           company_name: job.company_name,
           description: neutraliseUntrustedText(job.description, LIST_DESCRIPTION_CHARS),
-          // Stored in cents. Passed raw, the model rendered 20400000 as a
-          // literal salary, so it is converted here and the currency named.
+          // Whole units of the job's currency (see src/lib/salary.ts); the
+          // currency is named so the model does not assume USD.
           salary:
             job.salary_min_usd_cents || job.salary_max_usd_cents
               ? {
                   currency: job.currencies?.code || "USD",
-                  min: job.salary_min_usd_cents ? Math.round(job.salary_min_usd_cents / 100) : null,
-                  max: job.salary_max_usd_cents ? Math.round(job.salary_max_usd_cents / 100) : null,
+                  min: toSalaryNumber(job.salary_min_usd_cents),
+                  max: toSalaryNumber(job.salary_max_usd_cents),
                 }
               : null,
           experience_min: job.experience_min,

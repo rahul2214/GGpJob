@@ -94,13 +94,56 @@ export function truncate(text: string, max: number): string {
   return text.slice(0, max - 1).trimEnd() + '…';
 }
 
+function toAmount(raw: unknown): number | null {
+  if (raw === null || raw === undefined || raw === '') return null;
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+const normalize = (s?: string | null) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/**
+ * Pulls streetAddress / postalCode out of the job's free-text `address` for
+ * Google's recommended fields. Nothing is invented: a postal code is only
+ * emitted when one is written in the address (6-digit Indian PIN or US ZIP),
+ * and the street part only when it says more than the city/state/country.
+ */
+export function addressDetails(
+  raw: string | null | undefined,
+  place: JobLocation
+): { streetAddress?: string; postalCode?: string } {
+  const text = (raw || '').replace(/\s+/g, ' ').trim();
+  if (!text) return {};
+
+  const out: { streetAddress?: string; postalCode?: string } = {};
+
+  const postal = text.match(/\b\d{3}\s?\d{3}\b/) || text.match(/\b\d{5}(?:-\d{4})?\b/);
+  if (postal) out.postalCode = postal[0].replace(/\s/g, '');
+
+  // Drop the postal code and any segment that only repeats the locality.
+  const known = new Set([place.city, place.state, place.country].map(normalize).filter(Boolean));
+  const street = text
+    .replace(postal?.[0] || '\u0000', '')
+    .split(',')
+    .map(part => part.trim())
+    // Also skip bare region codes such as "CA" or "KA".
+    .filter(part => part && !known.has(normalize(part)) && !/^[A-Z]{2,3}$/.test(part))
+    .join(', ')
+    .replace(/[\s,-]+$/, '');
+
+  if (street && /[a-z]/i.test(street)) out.streetAddress = street;
+  return out;
+}
+
 export function buildJobPostingSchema(job: any, canonicalUrl: string, locations?: JobLocation[]) {
   const remote = isRemote(job);
   const places = resolveLocations(job, locations);
 
   // Mirrors the API's own fallback so the markup matches the displayed salary.
-  const salaryMin = job.salary_min ?? job.salary_min_usd_cents ?? null;
-  const salaryMax = job.salary_max ?? job.salary_max_usd_cents ?? null;
+  // Stored in whole currency units despite the column name. Numeric columns can
+  // arrive as strings, which previously dropped baseSalary silently.
+  const salaryMin = toAmount(job.salary_min ?? job.salary_min_usd_cents);
+  const salaryMax = toAmount(job.salary_max ?? job.salary_max_usd_cents);
   const currency = job.currencies?.code || job.salary_currency || 'USD';
 
   const schema: Record<string, any> = {
@@ -143,10 +186,14 @@ export function buildJobPostingSchema(job: any, canonicalUrl: string, locations?
 
   // Google requires jobLocation, or jobLocationType TELECOMMUTE for remote roles.
   if (places.length && !worldwide) {
+    // The recruiter's free-text address is only trusted for a single-location
+    // role; with several places it cannot be tied to any one of them.
+    const extra = places.length === 1 ? addressDetails(job.address, places[0]) : {};
     const asPlace = (l: JobLocation) => ({
       '@type': 'Place',
       address: {
         '@type': 'PostalAddress',
+        ...extra,
         ...(l.city ? { addressLocality: l.city } : {}),
         ...(l.state ? { addressRegion: l.state } : {}),
         ...(l.country ? { addressCountry: l.country } : {}),
@@ -164,14 +211,14 @@ export function buildJobPostingSchema(job: any, canonicalUrl: string, locations?
     };
   }
 
-  if (typeof salaryMin === 'number' && salaryMin > 0) {
+  if (salaryMin !== null) {
     schema.baseSalary = {
       '@type': 'MonetaryAmount',
       currency,
       value: {
         '@type': 'QuantitativeValue',
         minValue: salaryMin,
-        ...(typeof salaryMax === 'number' && salaryMax > 0 ? { maxValue: salaryMax } : {}),
+        ...(salaryMax !== null && salaryMax >= salaryMin ? { maxValue: salaryMax } : {}),
         unitText: 'YEAR',
       },
     };

@@ -15,6 +15,7 @@ import {
     toJobLocationRows,
 } from '@/lib/worldwide';
 import { saveJobScreeningQuestions } from '@/lib/screening-questions-server';
+import { salaryUnitError } from '@/lib/salary';
 
 // Helper to map Supabase snake_case job to camelCase Job type
 function mapJobToFrontend(job: any): any {
@@ -1116,6 +1117,17 @@ export async function POST(request: Request) {
             const codeToFind = String(data.salaryCurrency || data.preferredCurrency || user?.preferred_currency || 'INR').toUpperCase();
             const { data: curr } = await supabaseAdmin.from('currencies').select('id').eq('code', codeToFind).maybeSingle();
             if (curr) currencyPk = curr.id;
+        }
+
+        // Salaries are stored in whole units of the job currency; reject cents.
+        {
+            let currencyCode: string | null = data.salaryCurrency ? String(data.salaryCurrency) : null;
+            if (!currencyCode && currencyPk) {
+                const { data: curr } = await supabaseAdmin.from('currencies').select('code').eq('id', currencyPk).maybeSingle();
+                currencyCode = curr?.code ?? null;
+            }
+            const salaryError = salaryUnitError(data.salaryMin ?? data.salary_min, data.salaryMax ?? data.salary_max, currencyCode);
+            if (salaryError) return NextResponse.json({ error: salaryError }, { status: 400 });
         }
 
         // Resolve Authenticated User UUID to BigInt ID (PK) for the Jobs table

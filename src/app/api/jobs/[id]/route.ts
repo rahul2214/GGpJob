@@ -11,6 +11,7 @@ import {
     toJobLocationRows,
 } from '@/lib/worldwide';
 import { getJobScreeningQuestions, saveJobScreeningQuestions } from '@/lib/screening-questions-server';
+import { salaryUnitError } from '@/lib/salary';
 
 // Helper to map Supabase snake_case job to camelCase Job type
 async function mapJobDetailToFrontend(job: any, isApplied: boolean = false): Promise<any> {
@@ -260,7 +261,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         const isNumericId = /^\d+$/.test(id);
         const { data: job, error: jobError } = await supabaseAdmin
             .from('jobs')
-            .select('id, recruiter_pk, workplace_type_pk, remote_type')
+            .select('id, recruiter_pk, workplace_type_pk, remote_type, salary_min_usd_cents, salary_max_usd_cents, currency_id')
             .eq(isNumericId ? 'id' : 'uuid', id)
             .single();
         if (jobError || !job) throw new Error('Job not found');
@@ -446,6 +447,23 @@ export async function PUT(request: Request, { params }: { params: { id: string }
                     ? 'Only a remote job can be open to all countries. Set the workplace type to Remote, or pick the countries you are hiring in.'
                     : 'This job is open to all countries, which only applies to remote roles. Pick the countries you are hiring in before changing the workplace type.',
             }, { status: 400 });
+        }
+
+        // Salaries are stored in whole units of the job currency; reject cents.
+        // Checked against the merged result so a currency-only change is covered too.
+        if ('salary_min_usd_cents' in dataToUpdate || 'salary_max_usd_cents' in dataToUpdate || 'currency_id' in dataToUpdate) {
+            const finalCurrencyId = 'currency_id' in dataToUpdate ? dataToUpdate.currency_id : job.currency_id;
+            let currencyCode: string | null = null;
+            if (finalCurrencyId) {
+                const { data: curr } = await supabaseAdmin.from('currencies').select('code').eq('id', finalCurrencyId).maybeSingle();
+                currencyCode = curr?.code ?? null;
+            }
+            const salaryError = salaryUnitError(
+                'salary_min_usd_cents' in dataToUpdate ? dataToUpdate.salary_min_usd_cents : job.salary_min_usd_cents,
+                'salary_max_usd_cents' in dataToUpdate ? dataToUpdate.salary_max_usd_cents : job.salary_max_usd_cents,
+                currencyCode,
+            );
+            if (salaryError) return NextResponse.json({ error: salaryError }, { status: 400 });
         }
 
         // Remove undefined fields

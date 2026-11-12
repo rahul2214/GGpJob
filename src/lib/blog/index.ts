@@ -366,6 +366,48 @@ import howToGetAJobInGermany from '@/content/blog/how-to-get-a-job-in-germany';
 import ukSkilledWorkerVisaGuide from '@/content/blog/uk-skilled-worker-visa-guide';
 import h1bVisaExplained from '@/content/blog/h1b-visa-explained';
 
+// 40 Trending High-Traffic SEO Pillars (2026)
+import howToBeatAts2026 from '@/content/blog/how-to-beat-ats-2026';
+import chatgptPromptsForResumeWriting from '@/content/blog/chatgpt-prompts-for-resume-writing';
+import onePageVsTwoPageResume from '@/content/blog/1-page-vs-2-page-resume';
+import techResumeActionVerbs from '@/content/blog/tech-resume-action-verbs';
+import howToTailorResumeForEachJob from '@/content/blog/how-to-tailor-resume-for-each-job';
+import atsFriendlyResumeTemplatesForSoftwareEngineers from '@/content/blog/ats-friendly-resume-templates-for-software-engineers';
+import howRecruitersUseAiToScreenResumes from '@/content/blog/how-recruiters-use-ai-to-screen-resumes';
+import techCoverLetterFormat from '@/content/blog/tech-cover-letter-format';
+import aiAutoApplyVsTargetedJobApplication from '@/content/blog/ai-auto-apply-vs-targeted-job-application';
+import aiJobSearchAgent from '@/content/blog/ai-job-search-agent';
+import automateJobSearchSafely from '@/content/blog/automate-job-search-safely';
+import howToFindHiddenTechJobs from '@/content/blog/how-to-find-hidden-tech-jobs';
+import jobSearchTrackerTemplate from '@/content/blog/job-search-tracker-template';
+import coldEmailRecruitersLinkedinTemplates from '@/content/blog/cold-email-recruiters-linkedin-templates';
+import howToSpotFakeJobScams2026 from '@/content/blog/how-to-spot-fake-job-scams-2026';
+import candidateSkillMatchScore from '@/content/blog/candidate-skill-match-score';
+import gccJobsInIndiaSalary2026 from '@/content/blog/gcc-jobs-in-india-salary-2026';
+import remoteUsTechJobsFromIndia from '@/content/blog/remote-us-tech-jobs-from-india';
+import techJobsWithVisaSponsorship2026 from '@/content/blog/tech-jobs-with-visa-sponsorship-2026';
+import germanyOpportunityCardTechJobs from '@/content/blog/germany-opportunity-card-tech-jobs';
+import tier2CollegeToProductCompanyRoadmap from '@/content/blog/tier-2-college-to-product-company-roadmap';
+import softwareEngineerSalaryInIndia2026 from '@/content/blog/software-engineer-salary-in-india-2026';
+import englishSpeakingTechJobsEurope from '@/content/blog/english-speaking-tech-jobs-europe';
+import usContractorRemoteWorkTaxesIndia from '@/content/blog/us-contractor-remote-work-taxes-india';
+import agenticAiDeveloperRoadmap2026 from '@/content/blog/agentic-ai-developer-roadmap-2026';
+import fullStackDeveloperVsAiEngineer from '@/content/blog/full-stack-developer-vs-ai-engineer';
+import whatIsContextEngineeringInAi from '@/content/blog/what-is-context-engineering-in-ai';
+import modelContextProtocolMcpExplained from '@/content/blog/model-context-protocol-mcp-explained';
+import devopsEngineerRoadmap2026 from '@/content/blog/devops-engineer-roadmap-2026';
+import skillsThatAiCannotReplaceInTech from '@/content/blog/skills-that-ai-cannot-replace-in-tech';
+import howToBecomeACybersecurityEngineer2026 from '@/content/blog/how-to-become-a-cybersecurity-engineer-2026';
+import pythonDeveloperRoadmap2026 from '@/content/blog/python-developer-roadmap-2026';
+import starMethodBehavioralInterviewQuestionsAndAnswers from '@/content/blog/star-method-behavioral-interview-questions-and-answers';
+import systemDesignInterviewCheatsheet2026 from '@/content/blog/system-design-interview-cheatsheet-2026';
+import howToNegotiateTechSalary from '@/content/blog/how-to-negotiate-tech-salary';
+import aiEngineerInterviewQuestionsAndAnswers from '@/content/blog/ai-engineer-interview-questions-and-answers';
+import whyShouldWeHireYouAnswerSoftwareDeveloper from '@/content/blog/why-should-we-hire-you-answer-software-developer';
+import howToExplainEmploymentGapOnResumeTech from '@/content/blog/how-to-explain-employment-gap-on-resume-tech';
+import questionsToAskInterviewerSoftwareEngineer from '@/content/blog/questions-to-ask-interviewer-software-engineer';
+import questionsToAskBeforeJoiningAStartup from '@/content/blog/questions-to-ask-before-joining-a-startup';
+
 /**
  * Declaration order is not display order — getAllPosts sorts by date — so a new
  * post can simply be appended.
@@ -706,6 +748,48 @@ export const BLOG_POSTS: BlogPost[] = [
   howToGetAJobInGermany,
   ukSkilledWorkerVisaGuide,
   h1bVisaExplained,
+
+  // 40 Trending High-Traffic SEO Pillars (2026)
+  howToBeatAts2026,
+  chatgptPromptsForResumeWriting,
+  onePageVsTwoPageResume,
+  techResumeActionVerbs,
+  howToTailorResumeForEachJob,
+  atsFriendlyResumeTemplatesForSoftwareEngineers,
+  howRecruitersUseAiToScreenResumes,
+  techCoverLetterFormat,
+  aiAutoApplyVsTargetedJobApplication,
+  aiJobSearchAgent,
+  automateJobSearchSafely,
+  howToFindHiddenTechJobs,
+  jobSearchTrackerTemplate,
+  coldEmailRecruitersLinkedinTemplates,
+  howToSpotFakeJobScams2026,
+  candidateSkillMatchScore,
+  gccJobsInIndiaSalary2026,
+  remoteUsTechJobsFromIndia,
+  techJobsWithVisaSponsorship2026,
+  germanyOpportunityCardTechJobs,
+  tier2CollegeToProductCompanyRoadmap,
+  softwareEngineerSalaryInIndia2026,
+  englishSpeakingTechJobsEurope,
+  usContractorRemoteWorkTaxesIndia,
+  agenticAiDeveloperRoadmap2026,
+  fullStackDeveloperVsAiEngineer,
+  whatIsContextEngineeringInAi,
+  modelContextProtocolMcpExplained,
+  devopsEngineerRoadmap2026,
+  skillsThatAiCannotReplaceInTech,
+  howToBecomeACybersecurityEngineer2026,
+  pythonDeveloperRoadmap2026,
+  starMethodBehavioralInterviewQuestionsAndAnswers,
+  systemDesignInterviewCheatsheet2026,
+  howToNegotiateTechSalary,
+  aiEngineerInterviewQuestionsAndAnswers,
+  whyShouldWeHireYouAnswerSoftwareDeveloper,
+  howToExplainEmploymentGapOnResumeTech,
+  questionsToAskInterviewerSoftwareEngineer,
+  questionsToAskBeforeJoiningAStartup,
 ];
 
 export * from './types';

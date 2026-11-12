@@ -9,6 +9,7 @@ import type {
   CampaignType,
 } from './types';
 import { getJobUrl } from '@/lib/job-url';
+import { formatSalaryRange } from '@/lib/salary';
 
 // In-Memory Fallback Cache for local development/environments without full SQL tables yet
 const IN_MEMORY_LOGS: CRMEmailLog[] = [];
@@ -240,7 +241,7 @@ export async function getRecommendedJobsHtml(
   try {
     const { data, error } = await supabaseAdmin
       .from('jobs')
-      .select('id, title, company_name, description, address, workplace_type_pk, posted_at, created_at, status, salary_min_usd_cents, salary_max_usd_cents, experience_range, industry')
+      .select('id, title, company_name, description, address, workplace_type_pk, posted_at, created_at, status, salary_min_usd_cents, salary_max_usd_cents, currencies!currency_id(code), experience_range, industry')
       .limit(60);
 
     if (!error && data && data.length > 0) {
@@ -334,7 +335,7 @@ export async function getRecommendedJobsHtml(
       const job = item.job;
       const company = job.company_name || job.companyName || 'Verified Tech Employer';
       const loc = job.address || job.location || (candidate.currentCity ? `${candidate.currentCity}, ${candidate.country || ''}` : 'Remote Worldwide');
-      const salary = job.salary_range || job.salaryRange || (job.salary_min_usd_cents && job.salary_max_usd_cents ? `$${Math.round(job.salary_min_usd_cents / 100)} - $${Math.round(job.salary_max_usd_cents / 100)}` : 'Competitive Compensation');
+      const salary = job.salary_range || job.salaryRange || (formatSalaryRange(job.salary_min_usd_cents, job.salary_max_usd_cents, job.currencies?.code) || 'Competitive Compensation');
       const applyUrl = `${origin}${getJobUrl({ id: job.id, uuid: job.uuid, title: job.title || job.role })}`;
       const workplace = job.workplaceType || job.workplace_type || 'Remote / Hybrid';
 
@@ -746,7 +747,7 @@ export async function getRecentJobsHtml(
   try {
     const { data, error } = await supabaseAdmin
       .from('jobs')
-      .select('id, title, company_name, description, address, posted_at, created_at, status, salary_min_usd_cents, salary_max_usd_cents, experience_range, industry')
+      .select('id, title, company_name, description, address, posted_at, created_at, status, salary_min_usd_cents, salary_max_usd_cents, currencies!currency_id(code), experience_range, industry')
       .order('posted_at', { ascending: false })
       .limit(25);
 
@@ -822,7 +823,7 @@ export async function getRecentJobsHtml(
     .map((job, idx) => {
       const company = job.company_name || job.companyName || 'Verified Employer';
       const loc = job.address || job.location || (candidate.currentCity ? `${candidate.currentCity}, ${candidate.country || ''}` : 'Remote / Hybrid');
-      const salary = job.salary_range || job.salaryRange || (job.salary_min_usd_cents && job.salary_max_usd_cents ? `$${Math.round(job.salary_min_usd_cents / 100)} - $${Math.round(job.salary_max_usd_cents / 100)}` : 'Competitive Compensation');
+      const salary = job.salary_range || job.salaryRange || (formatSalaryRange(job.salary_min_usd_cents, job.salary_max_usd_cents, job.currencies?.code) || 'Competitive Compensation');
       const industry = job.industry || 'Technology';
       const applyUrl = `${origin}${getJobUrl({ id: job.id, uuid: job.uuid, title: job.title || job.role })}`;
 

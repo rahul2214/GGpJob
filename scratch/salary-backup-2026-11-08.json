@@ -1,0 +1,506 @@
+[
+  {
+    "id": 174,
+    "currency": "USD",
+    "salary_min_usd_cents": 11900000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 175,
+    "currency": "USD",
+    "salary_min_usd_cents": 11900000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 176,
+    "currency": "USD",
+    "salary_min_usd_cents": 11900000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 177,
+    "currency": "USD",
+    "salary_min_usd_cents": 11900000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 178,
+    "currency": "USD",
+    "salary_min_usd_cents": 12325000,
+    "salary_max_usd_cents": 18125000
+  },
+  {
+    "id": 179,
+    "currency": "USD",
+    "salary_min_usd_cents": 11900000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 181,
+    "currency": "USD",
+    "salary_min_usd_cents": 11900000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 182,
+    "currency": "USD",
+    "salary_min_usd_cents": 11900000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 183,
+    "currency": "USD",
+    "salary_min_usd_cents": 12325000,
+    "salary_max_usd_cents": 18125000
+  },
+  {
+    "id": 184,
+    "currency": "USD",
+    "salary_min_usd_cents": 12325000,
+    "salary_max_usd_cents": 18125000
+  },
+  {
+    "id": 185,
+    "currency": "USD",
+    "salary_min_usd_cents": 11900000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 186,
+    "currency": "USD",
+    "salary_min_usd_cents": 11900000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 187,
+    "currency": "USD",
+    "salary_min_usd_cents": 11900000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 188,
+    "currency": "USD",
+    "salary_min_usd_cents": 11900000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 189,
+    "currency": "USD",
+    "salary_min_usd_cents": 11900000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 190,
+    "currency": "USD",
+    "salary_min_usd_cents": 11900000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 191,
+    "currency": "USD",
+    "salary_min_usd_cents": 11900000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 192,
+    "currency": "USD",
+    "salary_min_usd_cents": 11900000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 193,
+    "currency": "USD",
+    "salary_min_usd_cents": 12325000,
+    "salary_max_usd_cents": 18125000
+  },
+  {
+    "id": 194,
+    "currency": "CAD",
+    "salary_min_usd_cents": 10846000,
+    "salary_max_usd_cents": 15950000
+  },
+  {
+    "id": 195,
+    "currency": "USD",
+    "salary_min_usd_cents": 12325000,
+    "salary_max_usd_cents": 18125000
+  },
+  {
+    "id": 196,
+    "currency": "USD",
+    "salary_min_usd_cents": 12325000,
+    "salary_max_usd_cents": 18125000
+  },
+  {
+    "id": 197,
+    "currency": "USD",
+    "salary_min_usd_cents": 12325000,
+    "salary_max_usd_cents": 18125000
+  },
+  {
+    "id": 198,
+    "currency": "USD",
+    "salary_min_usd_cents": 12325000,
+    "salary_max_usd_cents": 18125000
+  },
+  {
+    "id": 199,
+    "currency": "CAD",
+    "salary_min_usd_cents": 10846000,
+    "salary_max_usd_cents": 15950000
+  },
+  {
+    "id": 201,
+    "currency": "CAD",
+    "salary_min_usd_cents": 10846000,
+    "salary_max_usd_cents": 15950000
+  },
+  {
+    "id": 202,
+    "currency": "USD",
+    "salary_min_usd_cents": 14875000,
+    "salary_max_usd_cents": 21875000
+  },
+  {
+    "id": 203,
+    "currency": "USD",
+    "salary_min_usd_cents": 12325000,
+    "salary_max_usd_cents": 18125000
+  },
+  {
+    "id": 204,
+    "currency": "USD",
+    "salary_min_usd_cents": 12325000,
+    "salary_max_usd_cents": 18125000
+  },
+  {
+    "id": 205,
+    "currency": "USD",
+    "salary_min_usd_cents": 18700000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 206,
+    "currency": "USD",
+    "salary_min_usd_cents": 12325000,
+    "salary_max_usd_cents": 18125000
+  },
+  {
+    "id": 207,
+    "currency": "CAD",
+    "salary_min_usd_cents": 10846000,
+    "salary_max_usd_cents": 15950000
+  },
+  {
+    "id": 208,
+    "currency": "USD",
+    "salary_min_usd_cents": 12325000,
+    "salary_max_usd_cents": 18125000
+  },
+  {
+    "id": 209,
+    "currency": "USD",
+    "salary_min_usd_cents": 12325000,
+    "salary_max_usd_cents": 18125000
+  },
+  {
+    "id": 231,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 233,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 235,
+    "currency": "USD",
+    "salary_min_usd_cents": 12600000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 237,
+    "currency": "USD",
+    "salary_min_usd_cents": 16600000,
+    "salary_max_usd_cents": 20800000
+  },
+  {
+    "id": 238,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 239,
+    "currency": "USD",
+    "salary_min_usd_cents": 12150000,
+    "salary_max_usd_cents": 16875000
+  },
+  {
+    "id": 240,
+    "currency": "USD",
+    "salary_min_usd_cents": 12150000,
+    "salary_max_usd_cents": 16875000
+  },
+  {
+    "id": 242,
+    "currency": "USD",
+    "salary_min_usd_cents": 12600000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 244,
+    "currency": "USD",
+    "salary_min_usd_cents": 15750000,
+    "salary_max_usd_cents": 21875000
+  },
+  {
+    "id": 246,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 247,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 248,
+    "currency": "USD",
+    "salary_min_usd_cents": 12150000,
+    "salary_max_usd_cents": 16875000
+  },
+  {
+    "id": 249,
+    "currency": "USD",
+    "salary_min_usd_cents": 12150000,
+    "salary_max_usd_cents": 16875000
+  },
+  {
+    "id": 250,
+    "currency": "USD",
+    "salary_min_usd_cents": 12600000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 251,
+    "currency": "USD",
+    "salary_min_usd_cents": 16800000,
+    "salary_max_usd_cents": 25200000
+  },
+  {
+    "id": 252,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 253,
+    "currency": "USD",
+    "salary_min_usd_cents": 20400000,
+    "salary_max_usd_cents": 24000000
+  },
+  {
+    "id": 254,
+    "currency": "USD",
+    "salary_min_usd_cents": 12150000,
+    "salary_max_usd_cents": 16875000
+  },
+  {
+    "id": 255,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 256,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 257,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 258,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 259,
+    "currency": "USD",
+    "salary_min_usd_cents": 15750000,
+    "salary_max_usd_cents": 21875000
+  },
+  {
+    "id": 260,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 268,
+    "currency": "USD",
+    "salary_min_usd_cents": 15750000,
+    "salary_max_usd_cents": 21875000
+  },
+  {
+    "id": 269,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 270,
+    "currency": "USD",
+    "salary_min_usd_cents": 12150000,
+    "salary_max_usd_cents": 16875000
+  },
+  {
+    "id": 271,
+    "currency": "USD",
+    "salary_min_usd_cents": 12600000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 272,
+    "currency": "USD",
+    "salary_min_usd_cents": 15750000,
+    "salary_max_usd_cents": 21875000
+  },
+  {
+    "id": 274,
+    "currency": "USD",
+    "salary_min_usd_cents": 20800000,
+    "salary_max_usd_cents": 31200000
+  },
+  {
+    "id": 275,
+    "currency": "USD",
+    "salary_min_usd_cents": 18275000,
+    "salary_max_usd_cents": 21500000
+  },
+  {
+    "id": 276,
+    "currency": "USD",
+    "salary_min_usd_cents": 12150000,
+    "salary_max_usd_cents": 16875000
+  },
+  {
+    "id": 277,
+    "currency": "USD",
+    "salary_min_usd_cents": 12150000,
+    "salary_max_usd_cents": 16875000
+  },
+  {
+    "id": 278,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 279,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 280,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 281,
+    "currency": "USD",
+    "salary_min_usd_cents": 8550000,
+    "salary_max_usd_cents": 11875000
+  },
+  {
+    "id": 282,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 283,
+    "currency": "USD",
+    "salary_min_usd_cents": 20500000,
+    "salary_max_usd_cents": 22000000
+  },
+  {
+    "id": 285,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 286,
+    "currency": "USD",
+    "salary_min_usd_cents": 15750000,
+    "salary_max_usd_cents": 21875000
+  },
+  {
+    "id": 287,
+    "currency": "USD",
+    "salary_min_usd_cents": 8550000,
+    "salary_max_usd_cents": 11875000
+  },
+  {
+    "id": 288,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  },
+  {
+    "id": 289,
+    "currency": "USD",
+    "salary_min_usd_cents": 12150000,
+    "salary_max_usd_cents": 16875000
+  },
+  {
+    "id": 290,
+    "currency": "USD",
+    "salary_min_usd_cents": 12600000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 291,
+    "currency": "USD",
+    "salary_min_usd_cents": 9525000,
+    "salary_max_usd_cents": 10850000
+  },
+  {
+    "id": 292,
+    "currency": "USD",
+    "salary_min_usd_cents": 12600000,
+    "salary_max_usd_cents": 17500000
+  },
+  {
+    "id": 293,
+    "currency": "USD",
+    "salary_min_usd_cents": 12150000,
+    "salary_max_usd_cents": 16875000
+  },
+  {
+    "id": 294,
+    "currency": "USD",
+    "salary_min_usd_cents": 18275000,
+    "salary_max_usd_cents": 21500000
+  },
+  {
+    "id": 295,
+    "currency": "USD",
+    "salary_min_usd_cents": 19800000,
+    "salary_max_usd_cents": 27500000
+  }
+]
