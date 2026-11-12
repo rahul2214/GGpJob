@@ -23,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { sanitizeRichText } from '@/lib/sanitize-html';
 import { Separator } from '@/components/ui/separator';
 import SkillMatchBadge from '@/components/skill-match-badge';
+import { CompanyLogo } from '@/components/ui/company-logo';
 import { calculateSkillMatch } from '@/lib/skill-match';
 import { Sparkles, Zap, Target, AlertCircle, PlusCircle } from 'lucide-react';
 
@@ -72,31 +73,14 @@ function renderFormattedDescription(desc?: string) {
 }
 
 function renderCompanyLogo(job: Job, sizeClass: string = "w-20 h-20 text-3xl") {
-    const logoUrl = job.companyLogo || (job as any).company_logo || (job as any).logo;
-    const initial = job.companyName?.charAt(0)?.toUpperCase() || '?';
-
     return (
-        <div className={cn(sizeClass, "rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center shadow-sm overflow-hidden p-2 shrink-0")}>
-            {logoUrl && typeof logoUrl === 'string' && (logoUrl.startsWith('http') || logoUrl.startsWith('/') || logoUrl.startsWith('data:')) ? (
-                <img 
-                    src={logoUrl} 
-                    alt={job.companyName} 
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = 'none';
-                        const parent = e.currentTarget.parentElement;
-                        if (parent) {
-                            parent.innerText = initial;
-                            parent.className = cn(sizeClass, "rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold");
-                        }
-                    }}
-                />
-            ) : (
-                <div className="w-full h-full rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">
-                    {initial}
-                </div>
-            )}
-        </div>
+        <CompanyLogo
+            companyName={job.companyName}
+            companyLogo={job.companyLogo || (job as any).company_logo || (job as any).logo}
+            companyWebsite={job.companyWebsite || (job as any).company_website}
+            size="lg"
+            className={sizeClass}
+        />
     );
 }
 

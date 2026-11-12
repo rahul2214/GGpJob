@@ -71,7 +71,17 @@ export function PublicNavbar() {
               </button>
             )}
             <Link href="/" className={`items-center gap-2.5 group ${(isJobDetailsPage || isJobsPage) ? 'hidden md:flex' : 'flex'}`}>
-              <img src="/logo.png" alt="JobsDart Logo" className="h-7 w-auto object-contain transition-transform group-hover:scale-105" />
+              <img
+                src="/logo.png"
+                alt="JobsDart Logo"
+                className="h-7 w-auto object-contain transition-transform group-hover:scale-105"
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  if (!target.src.endsWith('/logo-icon.png')) {
+                    target.src = '/logo-icon.png';
+                  }
+                }}
+              />
               <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center">
                 Jobs<span className="text-gradient-primary">Dart</span>
               </span>

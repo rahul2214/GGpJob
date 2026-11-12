@@ -13,6 +13,7 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import SkillMatchBadge from '@/components/skill-match-badge';
 import { getJobUrl } from '@/lib/job-url';
+import { CompanyLogo } from '@/components/ui/company-logo';
 
 interface JobCardProps {
   job: Job;
@@ -120,26 +121,13 @@ export default function JobCard({ job, isApplied = false, onSaveToggle }: JobCar
           <CardHeader className="relative pb-2 pt-2" style={{ paddingLeft : 8, paddingRight : 2 }}>
             <div className="flex justify-between items-start gap-3">
               <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                {/* Custom Brand Logo Tonal Box */}
-                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/50 flex items-center justify-center font-bold text-[#3525cd] dark:text-indigo-400 text-xl shadow-sm shrink-0 overflow-hidden p-1.5">
-                  {job.companyLogo ? (
-                    typeof job.companyLogo === 'string' && (job.companyLogo.startsWith('http') || job.companyLogo.startsWith('/')) ? (
-                      <img
-                        src={job.companyLogo}
-                        alt={job.companyName}
-                        className="w-full h-full object-contain"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display = 'none';
-                          (e.currentTarget.parentElement as HTMLElement).innerText = job.companyName?.charAt(0)?.toUpperCase() ?? '?';
-                        }}
-                      />
-                    ) : (
-                      <span className="text-xl leading-none">{job.companyLogo}</span>
-                    )
-                  ) : (
-                    <span className="text-base font-extrabold text-indigo-600 dark:text-indigo-400">{job.companyName?.charAt(0)?.toUpperCase() ?? '?'}</span>
-                  )}
-                </div>
+                {/* Custom Brand Logo */}
+                <CompanyLogo
+                  companyName={job.companyName}
+                  companyLogo={job.companyLogo || (job as any).company_logo}
+                  companyWebsite={job.companyWebsite || (job as any).company_website}
+                  size="md"
+                />
                 
                 <div className="min-w-0 flex-1">
                   <CardTitle className="text-base sm:text-md font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-snug truncate" title={job.title}>

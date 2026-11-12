@@ -12,7 +12,17 @@ export default function Footer() {
           {/* Col 1: Brand & Social External Links */}
           <div className="md:col-span-1">
             <Link href="/" className="inline-flex items-center gap-2.5 font-black text-2xl tracking-tight mb-4 text-white hover-scale">
-              <img src="/logo.png" alt="JobsDart Logo" className="h-8 w-auto object-contain" />
+              <img
+                src="/logo.png"
+                alt="JobsDart Logo"
+                className="h-8 w-auto object-contain"
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  if (!target.src.endsWith('/logo-icon.png')) {
+                    target.src = '/logo-icon.png';
+                  }
+                }}
+              />
               <span>Jobs<span className="text-gradient-primary">Dart</span></span>
             </Link>
             <p className="text-sm text-slate-400 mb-6 leading-relaxed">

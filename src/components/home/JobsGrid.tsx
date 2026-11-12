@@ -4,12 +4,15 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { MapPin, Briefcase, DollarSign, Search, ArrowRight, Building2 } from 'lucide-react';
+import { MapPin, Briefcase, Search, ArrowRight, Clock, CheckCircle2, Bookmark } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { intelligentSearchJobs } from '@/lib/intelligent-search';
 import { useUser } from '@/contexts/user-context';
 import { matchesCountry } from '@/lib/recommendation-engine';
 import { getJobUrl } from '@/lib/job-url';
+import { formatDistanceToNow } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import { CompanyLogo } from '@/components/ui/company-logo';
 
 const FALLBACK_JOBS = [
   {
@@ -17,7 +20,7 @@ const FALLBACK_JOBS = [
     uuid: "mnc-microsoft-101",
     title: "Principal Cloud Solutions Architect — Enterprise Azure",
     companyName: "Microsoft",
-    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo_%282012%29.svg",
+    companyLogo: "https://www.google.com/s2/favicons?domain=microsoft.com&sz=128",
     companyWebsite: "https://www.microsoft.com",
     companyLinkedinUrl: "https://www.linkedin.com/company/microsoft",
     location: "Redmond, WA / Remote, USA",
@@ -42,7 +45,7 @@ const FALLBACK_JOBS = [
     uuid: "mnc-google-102",
     title: "Senior Staff AI & LLM Systems Engineer",
     companyName: "Google",
-    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg",
+    companyLogo: "https://www.google.com/s2/favicons?domain=google.com&sz=128",
     companyWebsite: "https://about.google",
     companyLinkedinUrl: "https://www.linkedin.com/company/google",
     location: "Mountain View, CA / London, UK",
@@ -67,7 +70,7 @@ const FALLBACK_JOBS = [
     uuid: "mnc-aws-103",
     title: "Lead Full Stack Engineer — Global Payments",
     companyName: "Amazon Web Services (AWS)",
-    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg",
+    companyLogo: "https://www.google.com/s2/favicons?domain=amazon.com&sz=128",
     companyWebsite: "https://aws.amazon.com",
     companyLinkedinUrl: "https://www.linkedin.com/company/amazon-web-services",
     location: "Bengaluru, KA, India / Hybrid",
@@ -92,7 +95,7 @@ const FALLBACK_JOBS = [
     uuid: "mnc-meta-104",
     title: "Staff Machine Learning Infrastructure Engineer",
     companyName: "Meta",
-    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg",
+    companyLogo: "https://www.google.com/s2/favicons?domain=meta.com&sz=128",
     companyWebsite: "https://www.meta.com",
     companyLinkedinUrl: "https://www.linkedin.com/company/meta",
     location: "Menlo Park, CA / Remote",
@@ -117,7 +120,7 @@ const FALLBACK_JOBS = [
     uuid: "mnc-stripe-105",
     title: "Senior Backend Payments & Treasury Engineer",
     companyName: "Stripe",
-    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg",
+    companyLogo: "https://www.google.com/s2/favicons?domain=stripe.com&sz=128",
     companyWebsite: "https://stripe.com",
     companyLinkedinUrl: "https://www.linkedin.com/company/stripe",
     location: "San Francisco, CA / Dublin, Ireland",
@@ -142,7 +145,7 @@ const FALLBACK_JOBS = [
     uuid: "mnc-apple-106",
     title: "Lead iOS & Systems Performance Engineer",
     companyName: "Apple",
-    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg",
+    companyLogo: "https://www.google.com/s2/favicons?domain=apple.com&sz=128",
     companyWebsite: "https://www.apple.com",
     companyLinkedinUrl: "https://www.linkedin.com/company/apple",
     location: "Cupertino, CA / Munich, Germany",
@@ -167,7 +170,7 @@ const FALLBACK_JOBS = [
     uuid: "mnc-salesforce-107",
     title: "Principal DevOps & Kubernetes Specialist",
     companyName: "Salesforce",
-    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg",
+    companyLogo: "https://www.google.com/s2/favicons?domain=salesforce.com&sz=128",
     companyWebsite: "https://www.salesforce.com",
     companyLinkedinUrl: "https://www.linkedin.com/company/salesforce",
     location: "Hyderabad, TS, India / Remote",
@@ -192,7 +195,7 @@ const FALLBACK_JOBS = [
     uuid: "mnc-netflix-108",
     title: "Senior Data Engineer — Streaming Analytics",
     companyName: "Netflix",
-    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",
+    companyLogo: "https://www.google.com/s2/favicons?domain=netflix.com&sz=128",
     companyWebsite: "https://www.netflix.com",
     companyLinkedinUrl: "https://www.linkedin.com/company/netflix",
     location: "Los Gatos, CA / Remote",
@@ -217,7 +220,7 @@ const FALLBACK_JOBS = [
     uuid: "mnc-tesla-109",
     title: "Autopilot Embedded Software & Control Engineer",
     companyName: "Tesla",
-    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/e/e8/Tesla_logo.png",
+    companyLogo: "https://www.google.com/s2/favicons?domain=tesla.com&sz=128",
     companyWebsite: "https://www.tesla.com",
     companyLinkedinUrl: "https://www.linkedin.com/company/tesla-motors",
     location: "Austin, TX / Palo Alto, CA",
@@ -242,7 +245,7 @@ const FALLBACK_JOBS = [
     uuid: "mnc-adobe-110",
     title: "Senior UX Architect & Design Systems Lead",
     companyName: "Adobe",
-    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/7/7b/Adobe_Systems_logo_2020.svg",
+    companyLogo: "https://www.google.com/s2/favicons?domain=adobe.com&sz=128",
     companyWebsite: "https://www.adobe.com",
     companyLinkedinUrl: "https://www.linkedin.com/company/adobe",
     location: "San Jose, CA / Singapore / Remote",
@@ -277,12 +280,12 @@ const cardVariants = {
 };
 
 function formatSalary(job: any): string {
-  if (!job) return "Not Disclosed";
-  const min = job.salaryMin;
-  const max = job.salaryMax;
+  if (!job) return "Competitive";
+  const min = job.salaryMin ?? job.salary_min;
+  const max = job.salaryMax ?? job.salary_max;
   
   if (min || max) {
-    const code = (job.salaryCurrency || job.currency || 'USD').toUpperCase();
+    const code = (job.salaryCurrency || job.salary_currency || job.currency || 'USD').toUpperCase();
     
     const formatValue = (val: number) => {
       if (code === 'INR') {
@@ -309,16 +312,103 @@ function formatSalary(job: any): string {
     if (max) return `Up to ${formatValue(max)}`;
   }
 
-  return job.salary || "Not Disclosed";
+  return job.salary || "Competitive Salary";
 }
 
 export function JobsGrid() {
   const router = useRouter();
   const { user } = useUser();
+  const { toast } = useToast();
   const [dbJobs, setDbJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [savedJobUuids, setSavedJobUuids] = useState<Set<string>>(new Set());
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  // Sync user's bookmarked jobs
+  useEffect(() => {
+    if (user?.uuid && user.role === 'Job Seeker') {
+      fetch(`/api/jobs/saved?userId=${user.uuid}`)
+        .then(res => (res.ok ? res.json() : []))
+        .then(savedList => {
+          if (Array.isArray(savedList)) {
+            const ids = new Set<string>(savedList.map((j: any) => String(j.uuid || j.jobId || j.id)));
+            setSavedJobUuids(ids);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user?.uuid, user?.role]);
+
+  // Handle Save / Bookmark toggle
+  const handleBookmarkToggle = async (e: React.MouseEvent, job: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to save jobs to your bookmarks.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (user.role !== 'Job Seeker') {
+      toast({
+        title: "Access Restricted",
+        description: "Only candidates can bookmark jobs.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const jobUuid = String(job.uuid || job.id);
+    const isCurrentlySaved = savedJobUuids.has(jobUuid);
+    setSavingId(jobUuid);
+
+    try {
+      const method = isCurrentlySaved ? 'DELETE' : 'POST';
+      const url = isCurrentlySaved
+        ? `/api/jobs/saved?userId=${user.uuid}&jobId=${jobUuid}`
+        : `/api/jobs/saved`;
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: isCurrentlySaved ? undefined : JSON.stringify({ userId: user.uuid, jobId: jobUuid })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to update bookmark");
+      }
+
+      setSavedJobUuids(prev => {
+        const next = new Set(prev);
+        if (isCurrentlySaved) {
+          next.delete(jobUuid);
+        } else {
+          next.add(jobUuid);
+        }
+        return next;
+      });
+
+      toast({
+        title: !isCurrentlySaved ? "✓ Saved to Bookmarks" : "Removed from Bookmarks",
+        description: !isCurrentlySaved ? `"${job.title}" has been saved.` : `"${job.title}" was removed.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Bookmark Failed",
+        description: err.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   useEffect(() => {
     async function fetchRecentJobs() {
@@ -390,12 +480,15 @@ export function JobsGrid() {
           transition={{ duration: 0.6, ease: "easeOut" as any }}
           className="text-center mb-12"
         >
-          
-          <h2 className="section-heading mt-4 mb-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-violet-50 dark:bg-violet-950/40 border border-violet-200/60 dark:border-violet-800/40 text-violet-700 dark:text-violet-300 text-xs font-bold mb-3 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            Direct Recruiter Listings
+          </div>
+          <h2 className="section-heading mb-4">
             Latest <span className="text-gradient-primary">Verified Openings</span>
           </h2>
-          <p className="section-subheading mx-auto">
-            Explore the latest 6 verified job openings posted directly by hiring teams.
+          <p className="section-subheading mx-auto text-slate-600 dark:text-slate-400">
+            Explore verified career opportunities posted directly by hiring teams and multinational companies.
           </p>
         </motion.div>
 
@@ -418,7 +511,7 @@ export function JobsGrid() {
                 onClick={() => setActiveCategory(cat)}
                 className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all duration-200 ${
                   activeCategory === cat
-                    ? 'bg-violet-600 border-violet-600 text-white'
+                    ? 'bg-violet-600 border-violet-600 text-white shadow-sm'
                     : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
@@ -434,17 +527,19 @@ export function JobsGrid() {
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-slate-200 dark:border-white/10 space-y-4">
                 <div className="flex items-center gap-3">
-                  <Skeleton className="w-10 h-10 rounded-xl" />
+                  <Skeleton className="w-11 h-11 rounded-xl" />
                   <div className="space-y-2 flex-1">
                     <Skeleton className="h-4 w-3/4" />
                     <Skeleton className="h-3 w-1/2" />
                   </div>
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-3 w-24" />
                   <Skeleton className="h-3 w-20" />
                 </div>
-                <div className="flex gap-2 pt-2">
+                <div className="h-10 w-full rounded-xl bg-slate-100 dark:bg-white/5 animate-pulse" />
+                <div className="flex gap-2 pt-1">
+                  <Skeleton className="h-5 w-16 rounded-lg" />
                   <Skeleton className="h-5 w-16 rounded-lg" />
                   <Skeleton className="h-5 w-16 rounded-lg" />
                 </div>
@@ -463,76 +558,159 @@ export function JobsGrid() {
             {filtered.map(job => {
               const jobId = job.uuid || job.id;
               const roleTitle = job.title || job.role || "Software Engineer";
-              const company = job.companyName || job.company || "Top Tech Company";
-              const location = job.location || "Not Disclosed";
-              const typeName = job.type || job.workplaceType || "Not Disclosed";
+              const company = job.companyName || job.company_name || job.company || "Top Tech Company";
+              const location = (job.locations && job.locations.length > 0)
+                ? job.locations.join(', ')
+                : (job.location || job.location_names?.join(', ') || "Not Disclosed");
+              const typeName = job.type || job.workplaceType || job.workplace_type || job.remoteType || "Not Disclosed";
               const salaryStr = formatSalary(job);
+              const isSaved = savedJobUuids.has(String(jobId));
+              const isSaving = savingId === String(jobId);
+              const jobUrl = getJobUrl({ id: jobId, title: roleTitle });
+
               const skillsRaw = (Array.isArray(job.skills) && job.skills.length > 0)
                 ? job.skills
                 : ((Array.isArray(job.requiredSkills) && job.requiredSkills.length > 0)
                     ? job.requiredSkills
-                    : (Array.isArray(job.benefits) && job.benefits.length > 0 ? job.benefits : ["Full Stack", "Cloud"]));
-              const skillsStr = skillsRaw.join(', ');
+                    : (Array.isArray(job.required_skills) && job.required_skills.length > 0)
+                        ? job.required_skills
+                        : (Array.isArray(job.benefits) && job.benefits.length > 0 ? job.benefits : ["Full Stack", "Cloud"]));
+
+              const expStr = job.experienceLevel
+                ? job.experienceLevel
+                : (job.minExperience || job.experience_min)
+                  ? `${job.minExperience || job.experience_min}${job.maxExperience || job.experience_max ? `–${job.maxExperience || job.experience_max}` : '+'} Yrs Exp`
+                  : null;
+
+              const timeAgo = (job.postedAt || job.posted_at)
+                ? (() => {
+                    try {
+                      return formatDistanceToNow(new Date(job.postedAt || job.posted_at), { addSuffix: true }).replace(/^about\s+/i, '');
+                    } catch {
+                      return 'Recently posted';
+                    }
+                  })()
+                : 'Active Opening';
 
               return (
                 <motion.div
                   key={jobId}
                   variants={cardVariants}
                   whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                  className="relative bg-white dark:bg-white/5 rounded-2xl p-6 flex flex-col gap-4 cursor-pointer group border border-slate-200 dark:border-white/[0.07] hover:border-violet-500/50 shadow-sm transition-all duration-200"
+                  className="group relative bg-white dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-white/10 hover:border-violet-500/50 dark:hover:border-violet-400/50 shadow-sm hover:shadow-[0_16px_36px_rgba(124,58,237,0.09)] transition-all duration-300 flex flex-col justify-between"
                 >
-                  {/* Top row */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 flex items-center justify-center text-xl shrink-0 overflow-hidden p-1.5">
-                        {job.companyLogo ? (
-                          typeof job.companyLogo === 'string' && job.companyLogo.startsWith('http') ? (
-                            <img
-                              src={job.companyLogo}
-                              alt={company}
-                              className="w-full h-full object-contain"
-                              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                            />
-                          ) : (
-                            <span>{job.companyLogo}</span>
-                          )
-                        ) : (
-                          <Building2 className="w-5 h-5 text-violet-500" />
-                        )}
+                  <div className="flex flex-col gap-4">
+                    {/* Top Header Row */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                        <CompanyLogo
+                          companyName={company}
+                          companyLogo={job.companyLogo || job.company_logo}
+                          companyWebsite={job.companyWebsite || job.company_website}
+                          size="md"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <h3
+                            className="font-bold text-slate-900 dark:text-white text-base leading-snug group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors line-clamp-1"
+                            title={roleTitle}
+                          >
+                            <Link href={jobUrl} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded">
+                              {roleTitle}
+                            </Link>
+                          </h3>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 truncate max-w-[150px]" title={company}>
+                              {company}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800/40 px-2 py-0.5 rounded-full">
+                              <CheckCircle2 className="w-2.5 h-2.5" /> Verified
+                            </span>
+                            {job.visaSponsorship && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/40 border border-sky-200/60 dark:border-sky-800/40 px-2 py-0.5 rounded-full">
+                                ✈ Visa Sponsored
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors truncate" title={roleTitle}>
-                          <Link href={getJobUrl({ id: jobId, title: roleTitle })} className="after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded">
-                            {roleTitle}
-                          </Link>
-                        </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium truncate" title={company}>{company}</p>
-                        
-                      </div>
+
+                      {/* Bookmark Button */}
+                      <button
+                        onClick={(e) => handleBookmarkToggle(e, job)}
+                        disabled={isSaving}
+                        className={`p-2 rounded-xl transition-all duration-200 shrink-0 border ${
+                          isSaved
+                            ? 'bg-violet-50 border-violet-200 text-violet-600 dark:bg-violet-950/50 dark:border-violet-800/50 dark:text-violet-400'
+                            : 'bg-slate-50 dark:bg-white/5 border-slate-200/80 dark:border-white/10 text-slate-400 hover:text-violet-600 hover:border-violet-300 dark:hover:text-violet-400'
+                        }`}
+                        title={isSaved ? "Remove Bookmark" : "Save Job"}
+                        aria-label={isSaved ? "Remove Bookmark" : "Save Job"}
+                      >
+                        <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-violet-600 dark:fill-violet-400' : ''}`} />
+                      </button>
                     </div>
-                   
+
+                    {/* Location & Employment Type Meta */}
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
+                      <span className="flex items-center gap-1.5 truncate max-w-[160px]" title={location}>
+                        <MapPin className="w-3.5 h-3.5 text-violet-500 shrink-0" />
+                        <span className="truncate">{location}</span>
+                      </span>
+                      <span className="flex items-center gap-1.5 truncate max-w-[130px]" title={typeName}>
+                        <Briefcase className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                        <span className="truncate">{typeName}</span>
+                      </span>
+                      {expStr && (
+                        <span className="flex items-center gap-1.5 truncate" title={expStr}>
+                          <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          <span>{expStr}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Salary Box */}
+                    <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+                        <span className="text-emerald-600 dark:text-emerald-400 text-xs font-black">💰</span>
+                        <span className="truncate">{salaryStr}</span>
+                      </div>
+                      <span className="text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-md bg-slate-200/60 dark:bg-white/10 text-slate-700 dark:text-slate-300">
+                        {job.employmentType || job.type || "Full-Time"}
+                      </span>
+                    </div>
+
+                    {/* Skills Chips */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 shrink-0 mr-1">Skills:</span>
+                      {skillsRaw.slice(0, 3).map((skill: string, sIdx: number) => (
+                        <span
+                          key={sIdx}
+                          className="text-[11px] font-medium px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/10"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                      {skillsRaw.length > 3 && (
+                        <span className="text-[11px] font-medium px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-slate-500 border border-slate-200/60 dark:border-white/10">
+                          +{skillsRaw.length - 3}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Meta */}
-                  <div className="flex flex-wrap gap-3 text-xs text-slate-600 dark:text-slate-400">
-                    <span className="flex items-center gap-1 truncate max-w-[140px]" title={location}><MapPin className="w-3 h-3 text-violet-500 dark:text-violet-400 shrink-0" /><span className="truncate">{location}</span></span>
-                    <span className="flex items-center gap-1 truncate max-w-[120px]" title={typeName}><Briefcase className="w-3 h-3 text-blue-500 dark:text-blue-400 shrink-0" /><span className="truncate">{typeName}</span></span>
-                  </div>
-
-                  {/* Skills (comma separated with truncation ...) */}
-                  <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 min-w-0">
-                    <span className="font-bold text-slate-700 dark:text-slate-300 shrink-0">Skills:</span>
-                    <span className="truncate font-medium text-slate-600 dark:text-slate-300" title={skillsStr}>
-                      {skillsStr}
+                  {/* Card Footer */}
+                  <div className="flex items-center justify-between pt-3 mt-4 border-t border-slate-100 dark:border-white/5">
+                    <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-400" />
+                      {timeAgo}
                     </span>
-                  </div>
-
-                  {/* CTA */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-white/5 mt-auto">
-                    
-                    <span className="text-xs font-bold text-violet-600 dark:text-violet-400 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      View Role <ArrowRight className="w-3 h-3" />
-                    </span>
+                    <Link
+                      href={jobUrl}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-violet-600 dark:text-violet-400 group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors"
+                    >
+                      <span>View Details</span>
+                      <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
+                    </Link>
                   </div>
                 </motion.div>
               );
@@ -553,3 +731,4 @@ export function JobsGrid() {
     </section>
   );
 }
+export default JobsGrid;
